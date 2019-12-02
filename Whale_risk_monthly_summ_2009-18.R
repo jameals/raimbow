@@ -53,15 +53,7 @@ df.key.ym <- tibble(
   month = sprintf("%02d", c(11, 12, rep(1:12, 8), 1:7))
 )
 
-### 2) Change files paths as necessary. In order of appearance: 
-###   'Preprocessing_whalepredictions.R' in source() call above; 
-###   humpback preds; 5km grid; 5km land-erased grid; fishing data; 
-###   'Whale_risk_monthly_summ.Rdata' in save.image() and load() calls;
-###   'Whale_risk_monthly_summ_helper.R' in source() call
-
-### 3) Update code creating 'fish.summ' and 'fish.out1' as necessary
-
-### 4) If plotting, update the base filepath for all plots in plotting section
+### 2) Update code creating 'fish.summ' and 'fish.out1' if necessary
 
 
 ###############################################################################
@@ -179,6 +171,21 @@ df.key <- df.key.ym %>%
 risk.all <- humpback.all <- fish.all <- 
   humpback.sum %>% select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno)
 name.idx <- ncol(risk.all)
+
+
+# # Run the following to rescale whale and fishing values to 0-1
+# #   Does not change relative patterns because risk is linear
+# range(humpback.sum[, -c(1:4)], na.rm = TRUE)
+# range(fish.out[, -c(1:3)], na.rm = TRUE)
+# 
+# humpback.sum <- cbind(
+#   humpback.sum[, c(1:4)], 
+#   humpback.sum[, -c(1:4)] / max(humpback.sum[, -c(1:4)], na.rm = TRUE)
+# )
+# fish.out <- cbind(
+#   fish.out[, c(1:3)], 
+#   fish.out[, -c(1:3)] / max(fish.out[, -c(1:3)], na.rm = TRUE)
+# )
 
 
 #------------------------------------------------------------------------------
