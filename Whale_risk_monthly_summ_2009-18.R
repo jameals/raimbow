@@ -19,10 +19,11 @@ source("User_script_local.R")
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  path.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/"
-  path.data.mnpreds <- "../raimbow-local/Outputs/"
+  file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv"
+  file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 
+                     "Non-confidential VMS data summarized by 5km grid cell 2009-18 All 3 states.csv")
   path.rdata <- "../raimbow-local/RDATA_files/"
-  path.vms <- "../raimbow-local/Data/Non-confidential VMS monthly data/"
   path.plots <- "../raimbow-local/Plots/Risksum_linear_monthly_nonconfidential_0918/"
   
 } else {
@@ -61,10 +62,9 @@ df.key.ym <- tibble(
 # Humpback predictions processing
 
 ### Read in KAF Mn predictions that have been overlaid onto Blake's 5km EA grid
-humpback.raw <- paste0(path.data.mnpreds, "WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv") %>% 
-  read_csv() %>% 
+humpback.raw <- read_csv(file.data.mnpreds) %>% 
   mutate(H_10_12_27 = NA, H_10_12_29 = NA, H_10_12_31 = NA)
-grid.5km.geom <- st_read(paste0(path.data.grid, "five_km_grid_polys_geo.shp"))
+grid.5km.geom <- st_read(file.data.grid)
 
 
 #------------------------------------------------------------------------------
@@ -106,14 +106,9 @@ rm(humpback.sum.abund, humpback.sum.dens)
 # Fishing data processing
 
 #------------------------------------------------------------------------------
-### Currently monthly, non-confidential fishing data
-fish.raw <- read_csv(
-  paste0(path.vms, "Non-confidential VMS data summarized by 5km grid cell 2009-18 All 3 states.csv")
-)
-
 ### Process fishing data; commented out code is for looking at the amount
 #   of confidential data
-fish.summ <- fish.raw %>%
+fish.summ <- read_csv(file.vms) %>%
   mutate(VMS_pings = suppressWarnings(as.numeric(Num_DCRB_VMS_pings_noncon)),
          year_mo = paste0("DC_", year_mo)) %>%
   group_by(year_mo, GRID5KM_ID) %>%
@@ -144,6 +139,7 @@ stopifnot(!any(duplicated(fish.out$GRID5KM_ID)))
 
 
 # ### SMW experimental: Plot grid cells that have data but not Mn predictions
+# fish.raw <- read_csv(file.vms)
 # all(fish.raw$GRID5KM_ID %in% fish.out$GRID5KM_ID)
 # d <- unique(fish.raw$GRID5KM_ID[!(fish.raw$GRID5KM_ID %in% fish.out$GRID5KM_ID)])
 # plot(grid.5km.geom %>% filter(GRID5KM_ID %in% d) %>% st_geometry(), axes = TRUE,
