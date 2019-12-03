@@ -354,8 +354,8 @@ thirdly.flag.curr <- FALSE
 
 ### Regions in which to sum values for plots. CA-South is not included because
 ###   there is (virtually) no fishing there
-### Oregon and Washington are currently commented out b/c VMS data is 
-###   only for CA
+### To plot only data from CA, you can comment out the WA and OR lines in 
+###   'regions.list2'
 regions.list2 <- list(
   "WA" = reg.wa, "OR" = reg.or,
   "CA-N" = reg.ca.north, "CA-Cen" = reg.ca.central, "CA-SCen" = reg.ca.southcentral
