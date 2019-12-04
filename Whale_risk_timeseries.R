@@ -1,7 +1,9 @@
 ###############################################################################
-### Calculate and summarize Mn entanglement risk using:
+### Calculate and summarize (via time series) Mn entanglement risk using:
 ###   1) Karin's 3km Mn predictions overlayed onto Blake's 5km grid
 ###   2) monthly VMS data. 
+
+# Renamed from Whale_risk_monthly_summ_2009-18.R
 
 
 ###############################################################################
@@ -271,7 +273,7 @@ library(purrr)
 library(readr)
 library(sf)
 # load(paste0(path.rdata, "Whale_risk_monthly_summ_2009-18.Rdata"))
-source("Whale_risk_monthly_summ_funcs.R", local = TRUE, echo = FALSE)
+source("Whale_risk_timeseries_funcs.R", local = TRUE, echo = FALSE)
 
 risk.all.curr <- risk.all.nona
 humpback.all.curr <- humpback.all.nona
