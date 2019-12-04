@@ -54,7 +54,9 @@ df.key.ym <- tibble(
   month = sprintf("%02d", c(11, 12, rep(1:12, 8), 1:7))
 )
 
-### 2) Update code creating 'fish.summ' and 'fish.out1' if necessary
+### 2) Specify how to represent fishing effort, ie column name from file.vms
+vms.colname <- "dollars_DCRB_noncon"
+# vms.colname <- "Num_DCRB_VMS_pings_noncon"
 
 
 ###############################################################################
@@ -108,13 +110,14 @@ rm(humpback.sum.abund, humpback.sum.dens)
 #------------------------------------------------------------------------------
 ### Process fishing data; commented out code is for looking at the amount
 #   of confidential data
-fish.summ <- read_csv(file.vms) %>%
-  mutate(VMS_pings = suppressWarnings(as.numeric(Num_DCRB_VMS_pings_noncon)),
+fish.summ <- read_csv(file.vms)  %>%
+  rename(VMS_curr = !!vms.colname) %>%
+  mutate(VMS_metric = suppressWarnings(as.numeric(VMS_curr)),
          year_mo = paste0("DC_", year_mo)) %>%
   group_by(year_mo, GRID5KM_ID) %>%
   summarise(year = unique(year),
-            confid_any = any(Num_DCRB_VMS_pings_noncon == "CONFIDENTIAL"),
-            VMS_sum = sum(VMS_pings, na.rm = TRUE)) %>%
+            confid_any = any(VMS_curr == "CONFIDENTIAL"),
+            VMS_sum = sum(VMS_metric, na.rm = TRUE)) %>%
   ungroup() %>%
   mutate(confid_and_num = confid_any & (VMS_sum > 0)) %>%
   select(year, year_mo, GRID5KM_ID, confid_any, confid_and_num, 
