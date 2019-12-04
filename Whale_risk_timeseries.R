@@ -253,7 +253,13 @@ fish.all.nona <- fish.all[risk.nona.any, ]
 
 
 # # Save RDATA file that can be used in future if running just plotting code
-# save.image(paste0(path.rdata, "Whale_risk_monthly_summ_2009-18.Rdata"))
+# save.image(paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
+
+# # Save files for Whale_risk_maps
+# save(
+#   risk.all, fish.out, humpback.all, 
+#   file = paste0(path.rdata, "Whale_risk_formaps.Rdata")
+# )
 
 
 ###############################################################################
