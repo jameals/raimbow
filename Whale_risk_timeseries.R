@@ -57,8 +57,8 @@ df.key.ym <- tibble(
 )
 
 ### 2) Specify how to represent fishing effort, ie column name from file.vms
-vms.colname <- "dollars_DCRB_noncon"
-# vms.colname <- "Num_DCRB_VMS_pings_noncon"
+# vms.colname <- "dollars_DCRB_noncon"
+vms.colname <- "Num_DCRB_VMS_pings_noncon"
 
 
 ###############################################################################
@@ -257,7 +257,7 @@ fish.all.nona <- fish.all[risk.nona.any, ]
 
 # # Save files for Whale_risk_maps
 # save(
-#   risk.all, fish.out, humpback.all, 
+#   df.key.ym, risk.all, fish.out, humpback.all,
 #   file = paste0(path.rdata, "Whale_risk_formaps.Rdata")
 # )
 
