@@ -1,0 +1,200 @@
+---
+title: "Whale risk heat maps"
+author: "Sam Woodman"
+date: Sys.Date()
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This code was written to pkot heat maps of simple, linear, whale risk, using the humpback abundances, VMS data, and risk values calculated (and saved) in the first half of 'Whale_risk_timeseries.R'. 
+
+```{r, message=FALSE}
+rm(list = ls())
+
+library(classInt)
+library(dplyr)
+library(maps)
+library(RColorBrewer)
+library(sf)
+
+source("plot_raimbow.R")
+```
+
+## Prep work
+
+Set file paths depending on user.
+
+```{r}
+source("User_script_local.R")
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  path.rdata <- "../raimbow-local/RDATA_files/"
+  path.plots <- "../raimbow-local/Plots/Whale_risk_maps/"
+  
+} else {
+  stop("User not recognized")
+}
+```
+
+Now load humpback abundance, number of VMS pings, and risk values. Make these `sf` objects (`h.sf`, `f.sf`, and `r.sf`, respectively) by joining them with Blake's 5km grid. Then we can examine the distribution of the values across all years and months.
+
+```{r}
+load(paste0(path.rdata, "Whale_risk_formaps.Rdata"))
+# d <- sapply(fish.out, which.max)
+# table(fish.out$GRID5KM_ID[unname(unlist(d))])
+
+map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
+load(paste0(path.rdata, "Grid_5km_landerased.RDATA"))
+
+h.sf <- humpback.all %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf(agr = "constant") %>% 
+  select(starts_with("Mn_"))
+
+f.sf <- fish.out %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf(agr = "constant") %>% 
+  select(starts_with("DC_"))
+
+r.sf <- risk.all %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf(agr = "constant") %>% 
+  select(starts_with("Mn_DC_risk"))
+
+h.vals.all <- unlist(st_drop_geometry(h.sf))
+f.vals.all <- unlist(st_drop_geometry(f.sf))
+r.vals.all <- unlist(st_drop_geometry(r.sf))
+
+summary(h.vals.all)
+summary(f.vals.all)
+summary(r.vals.all)
+```
+
+Next, we determine the color break points (`h.br`, `f.br`, and `r.br`) to pass on to the plotting function. The large, large majority of fishing and risk values are closer to 0, so equal-sized bins do not result in useful maps, aka maps where not ever grid cell is in the lowest color bin. Thus, we use the jenks (fisher) style to determine the break points, using all of the values for each of humpbacks, fishing, and risk across all years/months. Because the numeric vectors are so large, the function `classIntervals` must subsample, and thus we must manually set the first and last break point to be 0 (~the min) and the max, respectively. See [here](http://wiki.objectvision.nl/index.php/Fisher%27s_Natural_Breaks_Classification) for a discussion of the fisher break point classifier.
+
+```{r}
+n.breakpts <- 5
+col.pal <- rev(brewer.pal(n.breakpts, "YlGnBu"))
+
+# h.br <- seq(0, max(st_drop_geometry(h.sf), na.rm = TRUE), length.out = 7)
+# f.br <- ceiling(seq(0, max(st_drop_geometry(f.sf), na.rm = TRUE), length.out = 7))
+# r.br <- ceiling(seq(0, max(st_drop_geometry(r.sf), na.rm = TRUE), length.out = 7))
+
+set.seed(42)
+# Takes ~3 min with samp_prop = default of 0.1
+h.br <- classIntervals(na.omit(h.vals.all), n.breakpts, style = "fisher", samp_prop = 0.01)$brks
+h.br[1] <- 0
+h.br[n.breakpts + 1] <- max(h.vals.all, na.rm = TRUE)
+
+set.seed(42)
+f.br <- classIntervals(na.omit(f.vals.all), n.breakpts, style = "fisher")$brks
+f.br <- round(f.br, 0) # Pings should be only whole numbers
+f.br[1] <- 0
+f.br[n.breakpts + 1] <- ceiling(max(f.vals.all, na.rm = TRUE))
+
+set.seed(42)
+r.br <- classIntervals(na.omit(r.vals.all), n.breakpts, style = "fisher")$brks
+r.br[1] <- 0
+r.br[n.breakpts + 1] <- ceiling(max(r.vals.all, na.rm = TRUE))
+```
+
+## Tester plots
+
+Make plots in RStudio (i.e. without saving them). This code was used for testing purposes, so it is not run by default.
+
+```{r, eval=FALSE, fig.width=7, fig.height=4}
+# Code not run
+layout(matrix(1:3, nrow = 1))
+i <- "2015_04"
+plot_raimbow(
+  h.sf, "Mn_2015_04", grid.5km.lno, map.base, 
+  col.pal = col.pal, col.breaks = h.br, 
+  asp = 0, ylim = c(34, 48), xaxt = "n", 
+  main = paste("Humpback abund", i)
+)
+legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.4)
+
+plot_raimbow(
+  f.sf, "DC_2015_04", NULL, map.base, 
+  col.pal = col.pal, col.breaks = f.br, 
+  asp = 0, ylim = c(34, 48), xaxt = "n", 
+  main = paste("Non-conf VMS pings", i)  
+)
+legend_raimbow(f.br, "%0.0f", fill = rev(col.pal), cex = 1.4)
+
+plot_raimbow(
+  r.sf, "Mn_DC_risk_2015_04", NULL, map.base, 
+  col.pal = col.pal, col.breaks = r.br, 
+  asp = 0, ylim = c(34, 48), xaxt = "n", 
+  main = paste("Risk (linear)", i)  
+)
+legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.4)
+rm(i)
+```
+
+## Save plots
+
+Generate and save a three panel plot, for each year-month, of humpback abundance, VMS pings, and whale risk
+
+```{r, eval = FALSE}
+# Code not run
+key.txt <- apply(df.key.ym, 1, paste, collapse = "_")
+
+for (i in key.txt) {
+  print(i)
+  h.curr <- paste0("Mn_", i)
+  f.curr <- paste0("DC_", i)
+  r.curr <- paste0("Mn_DC_risk_", i)
+  
+  png(paste0(path.plots, i, ".png"), height = 4, width = 7, units = "in", res = 300)
+  
+  layout(matrix(1:3, nrow = 1))
+  if (h.curr %in% names(h.sf)) {
+    plot_raimbow(
+      h.sf, h.curr, NULL, map.base, 
+      col.pal = col.pal, col.breaks = h.br, 
+      asp = 0, ylim = c(34, 48), xaxt = "n", 
+      main = paste("Humpback abund", i)
+    )
+    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2)
+  } else {
+    plot.new()
+    text(0.5, 0.7, labels = "No humpback data", adj = 0.5, cex = 1.7)
+  }
+  
+  if (f.curr %in% names(f.sf)) {
+    plot_raimbow(
+      f.sf, f.curr, NULL, map.base, 
+      col.pal = col.pal, col.breaks = f.br, 
+      asp = 0, ylim = c(34, 48), xaxt = "n", 
+      main = paste("Non-conf VMS pings", i)  
+    )
+    legend_raimbow(f.br, NULL, fill = rev(col.pal), cex = 1.2)
+  } else {
+    plot.new()
+    text(0.5, 0.7, labels = "No fishing data", adj = 0.5, cex = 1.7)
+  }
+  
+  if (r.curr %in% names(r.sf)) {
+    plot_raimbow(
+      r.sf, r.curr, NULL, map.base, 
+      col.pal = col.pal, col.breaks = r.br, 
+      asp = 0, ylim = c(34, 48), xaxt = "n", 
+      main = paste("Risk (linear)", i)  
+    )
+    legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.2)
+  } else {
+    plot.new()
+    text(0.5, 0.7, labels = "No risk data", adj = 0.5, cex = 1.7)
+  }
+  
+  dev.off()
+}
+```
