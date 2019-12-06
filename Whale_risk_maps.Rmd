@@ -1,7 +1,7 @@
 ---
 title: "Whale risk heat maps"
 author: "Sam Woodman"
-date: Sys.Date()
+date: "12/5/2019"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This code was written to pkot heat maps of simple, linear, whale risk, using the humpback abundances, VMS data, and risk values calculated (and saved) in the first half of 'Whale_risk_timeseries.R'. 
+This code was written to plot heat maps of simple, linear, whale risk. It uses the humpback abundances, VMS data, and risk values calculated (and saved) in the first half of 'Whale_risk_timeseries.R'. 
 
 ```{r, message=FALSE}
 rm(list = ls())
@@ -77,7 +77,9 @@ summary(f.vals.all)
 summary(r.vals.all)
 ```
 
-Next, we determine the color break points (`h.br`, `f.br`, and `r.br`) to pass on to the plotting function. The large, large majority of fishing and risk values are closer to 0, so equal-sized bins do not result in useful maps, aka maps where not ever grid cell is in the lowest color bin. Thus, we use the jenks (fisher) style to determine the break points, using all of the values for each of humpbacks, fishing, and risk across all years/months. Because the numeric vectors are so large, the function `classIntervals` must subsample, and thus we must manually set the first and last break point to be 0 (~the min) and the max, respectively. See [here](http://wiki.objectvision.nl/index.php/Fisher%27s_Natural_Breaks_Classification) for a discussion of the fisher break point classifier.
+Next, we need to determine the color break points (`h.br`, `f.br`, and `r.br`) to pass on to the plotting function. These break points should be the same for all plots for meaningful comparisons. The large, large majority of fishing and risk values are closer to 0, so equal-sized bins do not result in useful maps, aka the fishing and risk values were almost all in the lowest color bin. 
+
+Here, we use the jenks (fisher) style to determine the break points, using all of the values for each of humpbacks, fishing, and risk across all years-months. Because the numeric vectors are so large, the function `classIntervals` must subsample, and thus we must manually set the first and last break point to be 0 (~the min) and the max, respectively. The `set.seed` call keeps the break point values consistent when this subsampling occurs. See [here](http://wiki.objectvision.nl/index.php/Fisher%27s_Natural_Breaks_Classification) for a discussion of the fisher break point classifier. 
 
 ```{r}
 n.breakpts <- 5
@@ -107,7 +109,7 @@ r.br[n.breakpts + 1] <- ceiling(max(r.vals.all, na.rm = TRUE))
 
 ## Tester plots
 
-Make plots in RStudio (i.e. without saving them). This code was used for testing purposes, so it is not run by default.
+Use this code to make plots in RStudio (i.e. without saving them). It is not run when knitting.
 
 ```{r, eval=FALSE, fig.width=7, fig.height=4}
 # Code not run
@@ -141,7 +143,7 @@ rm(i)
 
 ## Save plots
 
-Generate and save a three panel plot, for each year-month, of humpback abundance, VMS pings, and whale risk
+Generate and save a three panel plot, for each year-month, of humpback abundance, VMS pings, and whale risk. It is not run when knitting.
 
 ```{r, eval = FALSE}
 # Code not run
