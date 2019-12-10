@@ -33,7 +33,6 @@ if (user == "JS") {
 }
 
 source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
-source("whalepreds_aggregate/Whalepreds_aggregate_dates.R", local = TRUE, echo = FALSE)
 
 
 ###############################################################################

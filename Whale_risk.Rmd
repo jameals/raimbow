@@ -1,0 +1,233 @@
+---
+title: "Whale risk"
+author: "Sam Woodman"
+date: "12/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The code in this document calculates (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure (e.g. # of VMS pings or $ of Dungeness crab landed)
+
+```{r, message=FALSE}
+rm(list = ls())
+
+library(dplyr)
+library(lubridate)
+library(purrr)
+library(readr)
+library(sf)
+library(tidyr)
+
+source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
+```
+
+## User TODO
+
+The user should update this section as desired to specify 1) the dates for which risk is calculated and 2) the specify the fishing measure, e.g. the number of VMS pings.
+
+```{r}
+# 1) Dates for which to calculate risk
+# df.key.ym <- tibble(
+#   year = c(rep(2015, 2), sapply(2016:2017, rep, 12)), 
+#   month = sprintf("%02d", c(11, 12, rep(1:12, 2)))
+# )
+# # Below is example df.key.ym for Nov 2009 - Dec 2018
+# df.key.ym <- tibble(
+#   year = c(rep(2009, 2), sapply(2010:2018, rep, 12)),
+#   month = sprintf("%02d", c(11, 12, rep(1:12, 9)))
+# )
+
+df.key.ym <- tibble(
+  year = c(rep(2009, 2), sapply(2010:2017, rep, 12), rep(2018, 7)),
+  month = sprintf("%02d", c(11, 12, rep(1:12, 8), 1:7))
+)
+
+### 2) Specify how to represent fishing effort, ie the column name from file.vms
+# vms.colname <- "dollars_DCRB_noncon"
+vms.colname <- "Num_DCRB_VMS_pings_noncon"
+```
+
+Set file paths depending on user.
+
+```{r}
+source("User_script_local.R")
+if (user == "JS") {
+  file.data.mnpreds <- ""
+  file.data.grid <- ""
+  file.vms <- ""
+  file.landerased <- ""
+  
+  path.save <- ""
+  
+} else if (user == "SMW") {
+  file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv"
+  file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 
+                     "Non-confidential VMS data summarized by 5km grid cell 2009-18 All 3 states.csv")
+  file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+  
+  path.save <- "../raimbow-local/RDATA_files/"
+
+} else {
+  stop("User not recognized")
+}
+
+source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
+```
+
+### Read and process humpback predictions
+
+First we read in the humpback predictions and aggregate (average) them by month. We will use the density values to calculate risk, so we do not calculate the abundance values. 
+
+```{r}
+### Read in KAF Mn predictions that have been overlaid onto Blake's 5km EA grid
+humpback.raw <- read_csv(file.data.mnpreds) %>% 
+  mutate(H_10_12_27 = NA, H_10_12_29 = NA, H_10_12_31 = NA)
+grid.5km.geom <- st_read(file.data.grid)
+
+
+#------------------------------------------------------------------------------
+### Summarize KAF Mn preds by month, and format
+###   Using the function above
+### Join with areas from 5km grid with land erased for abundance calcs
+load(file.landerased)
+
+range.dates <- seq(
+  from = as.Date("2008-01-01"), to = as.Date("2018-08-01"), by = "months"
+)
+
+humpback.dens <- whalepreds_aggregate(
+  humpback.raw, 2:2481, 3:10, aggr.level = NULL, range.dates = range.dates, 
+  se.calc = FALSE #Note: would need to change naming below if se.calc = TRUE
+)  %>% 
+  set_names(c("GRID5KM_ID", paste0("H_Avg_", substr(names(.)[-1], 10, 16)))) %>% 
+  left_join(grid.5km.geom, by = "GRID5KM_ID") %>% 
+  left_join(st_set_geometry(grid.5km.lno, NULL)) %>% 
+  select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, starts_with("H_Avg_"))
+
+# Check that there are no NA humpback predictions
+stopifnot(!any(is.na(humpback.dens)))
+
+# # Calculate abundances
+# tmp <- select(humpback.dens, starts_with("H_Avg"))
+# humpback.sum.abund <- as.data.frame(lapply(tmp, function(i, j) {
+#   i * j
+# }, j = humpback.dens$area_km_lno)); rm(tmp)
+# 
+# humpback.sum <- humpback.dens %>% 
+#   select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno) %>% 
+#   bind_cols(humpback.sum.abund)
+# 
+# rm(humpback.sum.abund, humpback.dens)
+```
+
+## Read and process fishing data
+
+```{r}
+###############################################################################
+# Fishing data processing
+
+#------------------------------------------------------------------------------
+### Process fishing data; commented out code is for looking at the amount
+#   of confidential data
+fish.summ <- read_csv(file.vms)  %>%
+  rename(VMS_curr = !!vms.colname) %>%
+  mutate(VMS_metric = suppressWarnings(as.numeric(VMS_curr)),
+         year_mo = paste0("DC_", year_mo)) %>%
+  group_by(year_mo, GRID5KM_ID) %>%
+  summarise(year = unique(year),
+            confid_any = any(VMS_curr == "CONFIDENTIAL"),
+            VMS_sum = sum(VMS_metric, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(confid_and_num = confid_any & (VMS_sum > 0)) %>%
+  select(year, year_mo, GRID5KM_ID, confid_any, confid_and_num, 
+         VMS_sum)
+
+### fish.out1 needs to be a data frame with 1) the grid ID (GRID5KM_ID) in the
+#   first column, and 2) all subsequent columns being the monthly sums of 
+#   the fishing data with names paste0("DC_", year_mo)
+fish.out1 <- fish.summ %>%
+  select(year_mo, GRID5KM_ID, VMS_sum) %>%
+  spread(key = year_mo, value = VMS_sum)
+
+### Make data frame have rows for all grid cells with either Mn or fish data
+fish.out <- humpback.raw %>%
+  select(GRID5KM_ID) %>%
+  left_join(st_set_geometry(grid.5km.geom, NULL)) %>%
+  left_join(fish.out1) %>% 
+  select(GRID5KM_ID, LONGITUDE, LATITUDE, starts_with("DC"))
+
+rm(fish.out1)
+stopifnot(!any(duplicated(fish.out$GRID5KM_ID)))
+```
+
+## Calculate risk
+
+We create the data frame to use as a key for getting data form the desired months. Then we loop through the key, calculating and storing the risk as we go.
+
+```{r}
+### Add Mn and fish data column names to data frame
+df.key <- df.key.ym %>% 
+  mutate(humpback_name = paste("H_Avg", year, month, sep = "_"), 
+         fish_name = paste("DC", year, month, sep = "_"))
+
+risk.all <- humpback.all <- fish.all <- 
+  humpback.dens %>% select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno)
+name.idx <- ncol(risk.all)
+
+#------------------------------------------------------------------------------
+### For loop; set path below for output if desired
+for (i in 1: nrow(df.key)) {
+  # Conditional for months where there is no fishing data, and thus no column
+  #   in fishing data frame
+  if (df.key$fish_name[i] %in% names(fish.out)) {
+    df.out <- data.frame(
+      humpback.dens %>% select(GRID5KM_ID, df.key$humpback_name[i]), 
+      fish.out %>% select(df.key$fish_name[i])
+    )
+  } else {
+    df.out <- data.frame(
+      humpback.dens %>% select(GRID5KM_ID, df.key$humpback_name[i]), 
+      as.numeric(NA)
+    )
+  }
+  
+  # Calculate risk, and add data to applicable data frames
+  df.out <- df.out %>% 
+    set_names(c("GRID5KM_ID", "humpback_curr", "fish_curr")) %>% 
+    mutate(risk_curr = humpback_curr * fish_curr)
+  
+  risk.all <- cbind(risk.all, df.out$risk_curr)
+  names(risk.all)[i+name.idx] <- paste("Mn_DC_risk", df.key$year[i], df.key$month[i], sep = "_")
+  
+  humpback.all <- cbind(humpback.all, df.out$humpback_curr)
+  names(humpback.all)[i+name.idx] <- paste("Mn", df.key$year[i], df.key$month[i], sep = "_")
+  
+  fish.all <- cbind(fish.all, df.out$fish_curr)
+  names(fish.all)[i+name.idx] <- paste("DC", df.key$year[i], df.key$month[i], sep = "_")
+  
+  
+  # file.out <- paste0("Mn_DC_risk", df.key$year[i], "_", df.key$month[i], ".csv")
+  # write.csv(df.out, file = file.out, row.names = FALSE)
+  
+  rm(df.out) #, file.out)
+}; rm(i, name.idx)
+```
+
+Finally, we save the key, humpback densities, fishing values, and risk values for use in other scripts. 
+
+Note this code is not run when knitting.
+
+```{r, eval=FALSE}
+# Code not run
+# Save files for Whale_risk_maps
+save(
+  df.key.ym, risk.all, fish.all, humpback.all,
+  file = paste0(path.save, "Whale_risk.Rdata")
+)
+```

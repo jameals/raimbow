@@ -1,0 +1,43 @@
+---
+title: "Whale risk time series"
+author: "Sam Woodman"
+date: "12/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This document summarizes humpback whale risk of entanglement by region over time
+
+```{r, message=FALSE}
+rm(list = ls())
+
+library(dplyr)
+library(sf)
+
+source("Whale_risk_timeseries_funcs.R")
+```
+
+## Prep work
+
+Set file paths depending on user.
+
+```{r}
+source("User_script_local.R")
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.contour <- "../raimbow-local/Data/West_coast_bathy/West_Coast_geo.shp"
+  
+  path.rdata <- "../raimbow-local/RDATA_files/"
+  path.plots <- "../raimbow-local/Plots/Whale_risk_maps/"
+  
+} else {
+  stop("User not recognized")
+}
+```
