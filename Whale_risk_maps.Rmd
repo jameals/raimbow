@@ -25,8 +25,6 @@ library(sf)
 source("plot_raimbow.R")
 ```
 
-## Prep work
-
 Set file paths depending on user.
 
 ```{r}
@@ -35,6 +33,9 @@ if (user == "JS") {
   
 } else if (user == "SMW") {
   file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.contour <- "../raimbow-local/Data/West_coast_bathy/West_Coast_geo.shp"
+  file.risk <- "../raimbow-local/RDATA_files/Whale_risk.Rdata"
+  
   path.rdata <- "../raimbow-local/RDATA_files/"
   path.plots <- "../raimbow-local/Plots/Whale_risk_maps/"
   
@@ -43,23 +44,35 @@ if (user == "JS") {
 }
 ```
 
-Now load humpback abundance, number of VMS pings, and risk values. Make these `sf` objects (`h.sf`, `f.sf`, and `r.sf`, respectively) by joining them with Blake's 5km grid. Then we can examine the distribution of the values across all years and months.
+## Load and process data
+
+Now load humpback abundance, number of VMS pings, and risk values. Make these `sf` objects (`h.sf`, `f.sf`, and `r.sf`, respectively) by joining them with Blake's 5km grid, and convert the values to densities. Then we can examine the distribution of the values across all years and months.
 
 ```{r}
-load(paste0(path.rdata, "Whale_risk_formaps.Rdata"))
-# d <- sapply(fish.out, which.max)
-# table(fish.out$GRID5KM_ID[unname(unlist(d))])
+load(file.risk)
+# d <- sapply(fish.all, which.max)
+# table(fish.all$GRID5KM_ID[unname(unlist(d))])
+
+# Prep - background map objects
+map.contours <- st_read(file.contour)
+map.contours.100m <- map.contours %>% filter(Contour == -100) %>% st_geometry()
+map.contours.200m <- map.contours %>% filter(Contour == -200) %>% st_geometry()
 
 map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
 load(paste0(path.rdata, "Grid_5km_landerased.RDATA"))
+
+# Process humpback, VMS, and risk data, including converting fishing values to density
+div.func <- function(x, y) {x / y}
+grid.area <- fish.all$area_km_lno
 
 h.sf <- humpback.all %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf(agr = "constant") %>% 
   select(starts_with("Mn_"))
 
-f.sf <- fish.out %>% 
+f.sf <- fish.all %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  mutate_at(vars(starts_with("DC_")), div.func, y = grid.area) %>%
   st_sf(agr = "constant") %>% 
   select(starts_with("DC_"))
 
@@ -117,27 +130,36 @@ layout(matrix(1:3, nrow = 1))
 i <- "2015_04"
 plot_raimbow(
   h.sf, "Mn_2015_04", grid.5km.lno, map.base, 
+  map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
   col.pal = col.pal, col.breaks = h.br, 
   asp = 0, ylim = c(34, 48), xaxt = "n", 
-  main = paste("Humpback abund", i)
+  main = paste("Humpback density", i)
 )
-legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.4)
+legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.4, title = "Whales/km2")
+legend.raimbow.bathy()
+
 
 plot_raimbow(
   f.sf, "DC_2015_04", NULL, map.base, 
+  map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
   col.pal = col.pal, col.breaks = f.br, 
   asp = 0, ylim = c(34, 48), xaxt = "n", 
-  main = paste("Non-conf VMS pings", i)  
+  main = paste("Non-conf VMS ping dens", i)  
 )
-legend_raimbow(f.br, "%0.0f", fill = rev(col.pal), cex = 1.4)
+legend_raimbow(f.br, "%0.0f", fill = rev(col.pal), cex = 1.4, title = "Pings/km2")
+legend.raimbow.bathy()
+
 
 plot_raimbow(
   r.sf, "Mn_DC_risk_2015_04", NULL, map.base, 
+  map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
   col.pal = col.pal, col.breaks = r.br, 
   asp = 0, ylim = c(34, 48), xaxt = "n", 
-  main = paste("Risk (linear)", i)  
+  main = paste("Risk (linear) dens", i)  
 )
-legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.4)
+legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.4, title = "Whales*Pings/km2")
+legend.raimbow.bathy()
+
 rm(i)
 ```
 
@@ -147,7 +169,7 @@ Generate and save a three panel plot, for each year-month, of humpback abundance
 
 ```{r, eval = FALSE}
 # Code not run
-key.txt <- apply(df.key.ym, 1, paste, collapse = "_")
+key.txt <- apply(df.key[, 1:2], 1, paste, collapse = "_")
 
 for (i in key.txt) {
   print(i)
@@ -161,11 +183,13 @@ for (i in key.txt) {
   if (h.curr %in% names(h.sf)) {
     plot_raimbow(
       h.sf, h.curr, NULL, map.base, 
+      map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
       col.pal = col.pal, col.breaks = h.br, 
       asp = 0, ylim = c(34, 48), xaxt = "n", 
-      main = paste("Humpback abund", i)
+      main = paste("Humpback density", i)
     )
-    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2)
+    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2, title = "Whales/km2")
+    legend.raimbow.bathy()
   } else {
     plot.new()
     text(0.5, 0.7, labels = "No humpback data", adj = 0.5, cex = 1.7)
@@ -174,11 +198,13 @@ for (i in key.txt) {
   if (f.curr %in% names(f.sf)) {
     plot_raimbow(
       f.sf, f.curr, NULL, map.base, 
+      map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
       col.pal = col.pal, col.breaks = f.br, 
       asp = 0, ylim = c(34, 48), xaxt = "n", 
-      main = paste("Non-conf VMS pings", i)  
+      main = paste("Non-conf VMS density", i)  
     )
-    legend_raimbow(f.br, NULL, fill = rev(col.pal), cex = 1.2)
+    legend_raimbow(f.br, NULL, fill = rev(col.pal), cex = 1.2, title = "Pings/km2")
+    legend.raimbow.bathy()
   } else {
     plot.new()
     text(0.5, 0.7, labels = "No fishing data", adj = 0.5, cex = 1.7)
@@ -187,11 +213,13 @@ for (i in key.txt) {
   if (r.curr %in% names(r.sf)) {
     plot_raimbow(
       r.sf, r.curr, NULL, map.base, 
+      map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
       col.pal = col.pal, col.breaks = r.br, 
       asp = 0, ylim = c(34, 48), xaxt = "n", 
-      main = paste("Risk (linear)", i)  
+      main = paste("Risk (linear) dens", i)  
     )
-    legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.2)
+    legend_raimbow(r.br, "%0.1f", fill = rev(col.pal), cex = 1.2, title = "Whales*Pings/km2")
+    legend.raimbow.bathy()
   } else {
     plot.new()
     text(0.5, 0.7, labels = "No risk data", adj = 0.5, cex = 1.7)

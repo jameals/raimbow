@@ -20,4 +20,5 @@ This repository contains code for calculating, analyzing, and visualizing whale 
 ### Helper files
 * plot_raimbow.R: Functions for plotting objects; functions fairly specific to raimbow analyses
 * User_script_local.R: Script for determining whom is running the code (user info used to set appropriate file paths); sourced in relevant files
-* whalepreds_aggregate: Summarize whale predictions by specified time interval. Do not edit; any edits should be done in [this repository](smwoodman/whale-model-prep)
+* Whale_risk_timeseries_funcs.R: Helper plotting functions for Whale_rsik_timeseries file(s)
+* whalepreds_aggregate: Summarize whale predictions by specified time interval. Do not edit; any edits should be done in [this repository](smwoodman/whale-model-prep) and copied over
