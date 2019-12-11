@@ -37,3 +37,7 @@ rsconnect/
 
 # Knitted markdown output
 *.html
+
+# Sam things
+maps_tmp*
+*exp*
