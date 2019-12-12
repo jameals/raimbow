@@ -1,0 +1,155 @@
+---
+title: "Entanglement Grid ID"
+author: "Sam Woodman"
+date: "12/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Determine grid cell values, for report location and gear set county, for CA DC humpback entanglements with known gear set/time 
+
+```{r, message=FALSE}
+rm(list = ls())
+
+library(dplyr)
+library(readxl)
+library(rnaturalearth)
+library(sf)
+
+user <- switch(
+  Sys.info()["nodename"], 
+  "SWC-SWOODMAN-L" = "SMW"
+  # TODO: "Jameal nodename" = "JS"
+)
+
+if (user == "JS") {
+  file.data.grid <- ""
+  file.entanglements <- ""
+  file.out <- ""
+  
+} else if (user == "SMW") {
+  file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.entanglements <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
+  file.out <- "../raimbow-local/RDATA_files/Entanglement_gridID.Rdata"
+  
+} else {
+  stop("User not recognized")
+}
+```
+
+## Load data and create regions
+
+First, load in and briefly process grid and entanglement data. Create an sf object using report lat/long to intersect with grid.
+
+```{r}
+x <- readxl::read_xlsx(file.entanglements) %>% 
+  mutate(Gear_Set_County = gsub(" ", "_", Gear_Set_County)) #to match counties below
+table(x$Gear_Set_County)
+
+x.report.sf <- x %>% 
+  select(Report_Long, Report_Lat, CaseID, Gear_Set_County) %>% 
+  st_as_sf(coords = c(1, 2), crs = 4326, agr = "constant")
+
+grid.5km.geom <- st_read(file.data.grid)
+```
+
+Next, we want to define regions (counties) so that we can get all of the grid cell IDs in each county. We're working on a county level because that is the best gear set location info we have for most of the entanglements. note that these county polygons could be replaced by the 'entanglement polygons' currently being developed by Lauren and Karin.
+
+```{r}
+reg.bound <- c(
+  42, 41.5, 40, 38.83, 38.3, 
+  37.8, 37.7, 37.1, 36.83, 35.8, 
+  35, 34.375, 34, 33.75, 33.35, 
+  32.5
+)
+
+reg.list <- list(
+  "Del_Norte"       = c(reg.bound[1], reg.bound[2]), 
+  "Humboldt"         = c(reg.bound[2], reg.bound[3]), 
+  "Mendocino"       = c(reg.bound[3], reg.bound[4]), 
+  "Sonoma"          = c(reg.bound[4], reg.bound[5]), 
+  "Marin"           = c(reg.bound[5], reg.bound[6]), 
+  "San_Francisco"   = c(reg.bound[6], reg.bound[7]), 
+  "San_Mateo"       = c(reg.bound[7], reg.bound[8]), 
+  "Santa_Cruz"      = c(reg.bound[8], reg.bound[9]), 
+  "Monterey"        = c(reg.bound[9], reg.bound[10]), 
+  "San_Luis_Obispo" = c(reg.bound[10], reg.bound[11]), 
+  "Santa_Barbara"   = c(reg.bound[11], reg.bound[12]), 
+  "Ventura"         = c(reg.bound[12], reg.bound[13]), 
+  "Los_Angeles"     = c(reg.bound[13], reg.bound[14]), 
+  "Orange"          = c(reg.bound[14], reg.bound[15]), 
+  "San_Diego"       = c(reg.bound[15], reg.bound[16])
+)
+
+# Make regional polygons
+b0 = st_polygon(list(rbind(c(-1,-1), c(1,-1), c(1,1), c(-1,1), c(-1,-1))))
+reg.list.sfg <- lapply(reg.list, function(i, x.min, x.max) {
+  st_polygon(list(rbind(
+    c(x.min, i[1]), c(x.min, i[2]), c(x.max, i[2]), c(x.max, i[1]), c(x.min, i[1])
+  )))
+}, x.min = -133, x.max = -115)
+reg.sf <- data.frame(County = names(reg.list), stringsAsFactors = FALSE) %>% 
+  st_sf(geometry = st_sfc(reg.list.sfg), crs = 4326, agr = "constant")
+```
+
+We can visulaize the regions defined by the values above
+
+```{r}
+rmap1 <- st_geometry(ne_states(country = "United States of America", returnclass = "sf"))
+rmap2 <- ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
+  filter(admin %in% c("Canada", "Mexico")) %>% 
+  st_geometry()
+rmap.base <- c(rmap1, rmap2)
+
+plot(
+  reg.sf, axes = T, pal = colorRamps::primary.colors(15), 
+  key.length = 1, key.width = lcm(5), key.pos = 4, reset = FALSE
+)
+plot(rmap.base, add = T, col = "tan")
+# plot(st_geometry(grid.5km.geom), add = TRUE, border = "grey", col = NA, lwd = 0.4)
+```
+
+## Determine grid IDs
+
+We determine the grid IDs for 1) the report lat/lon point and 2) the county in which the gear was set by intersecting the report point and gear set county, respectively, with the grid cells. Note that 2 of the report points were in Mexico, and thus do not have report grid IDs
+
+```{r, fig.width=5.2, fig.height=6}
+# Visualize and then get grid ID of report lat/lon
+plot(st_geometry(grid.5km.geom), axes = TRUE, border = "grey", col = NA, 
+     xlim = c(-130, -105), ylim = c(20, 50))
+plot(rmap.base, add = T, col = "tan", border = "black")
+plot(st_geometry(x.report.sf), add = T, pch = 19, col = "green", cex = 0.8)
+
+# Determine grid cell of report lat/lon point
+y <- st_intersection(x.report.sf, grid.5km.geom) %>% 
+  st_drop_geometry() %>% 
+  select(CaseID, report_GRID5KM_ID = GRID5KM_ID)
+
+# Determine grid cells in each county (stored as a list-column), 
+z <- st_intersection(reg.sf, grid.5km.geom)
+z.summ <- z %>% 
+  st_drop_geometry() %>% 
+  group_by(County) %>% 
+  summarise(GRID5KM_ID_county_list = list(sort(unique(GRID5KM_ID), decreasing = TRUE)))
+stopifnot(all(x$Gear_Set_County %in% z.summ$County))
+
+# Add report and county grid cell(s) to original entanglement data
+x.out <- x %>% 
+  left_join(y) %>% 
+  left_join(z.summ, by = c("Gear_Set_County" = "County"))
+stopifnot(nrow(x) == nrow(x.out))
+
+head(x.out)
+```
+
+Save the output as an RDATA file. This file cannot be written to a csv because of the list column (although this could be converted to a text string), and the `xlsx` package won't work on Sam's computer because of Java permission issues. Note this section is not run when knitting.
+
+```{r, eval=FALSE}
+# Code not run
+save(x.out, file = file.out)
+```
