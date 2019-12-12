@@ -21,12 +21,7 @@ library(readxl)
 library(rnaturalearth)
 library(sf)
 
-user <- switch(
-  Sys.info()["nodename"], 
-  "SWC-SWOODMAN-L" = "SMW"
-  # TODO: "Jameal nodename" = "JS"
-)
-
+source("User_script_local.R")
 if (user == "JS") {
   file.data.grid <- ""
   file.entanglements <- ""
