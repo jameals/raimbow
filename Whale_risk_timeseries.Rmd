@@ -102,7 +102,7 @@ Now we can generate the timeseries plots. We start with a single plot for all re
 ```{r}
 ### Prep
 regions.list <- list(
-  "USWC" = reg.uswc, WA = reg.wa, OR = reg.or, 
+  "USWC" = reg.uswc, "WA" = reg.wa, "OR" = reg.or, 
   "CA-N" = reg.ca.north, "CA-Cen" = reg.ca.central, 
   "CA-SCen" = reg.ca.southcentral, "CA-S" = reg.ca.south
 )
@@ -134,7 +134,7 @@ regions.filename <- c(
 )
 for (i in seq_along(regions.list)) {
   if (save.flag) png(paste0(path.plots, "Regions/", regions.filename[i], ".png"),
-      width = 6, height = 7, units = "in", res = 300)
+                     width = 6, height = 7, units = "in", res = 300)
   risksum_plot_3row(
     risk.nona, humpback.nona, fish.nona,
     df.key, regions.list[[i]], plot.main = regions.main[i], par.flag = TRUE
@@ -195,6 +195,39 @@ risksum_plot_allin1(
   area.flag = TRUE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr
 )
 if (save.flag) dev.off()
+
+
+# ### Output sum values to excel file
+# xyz.out <- data.frame(
+#   region = character(0), ym = character(0), risk_sum = character(0), 
+#   mn_abund_sum = character(0), vms_pings_sum = character(0), 
+#   stringsAsFactors = FALSE
+# )
+# 
+# for (i in seq_along(regions.list)) {
+#   x.summ <- risksum_summ(risk.nona, df.key, regions.list[[i]], "risk_sum")
+#   y.summ <- risksum_summ(humpback.nona, df.key, regions.list[[i]], "hump_sum")
+#   z.summ <- risksum_summ(fish.nona, df.key, regions.list[[i]], "fish_sum")
+#   stopifnot(identical(x.summ$ym, y.summ$ym), identical(x.summ$ym, z.summ$ym))
+#   xyz.curr <- data.frame(
+#     region = names(regions.list)[i], ym = x.summ$ym, 
+#     risk_sum = x.summ$risk_sum, mn_abund_sum = y.summ$hump_sum, 
+#     vms_pings_sum = z.summ$fish_sum, 
+#     stringsAsFactors = FALSE
+#   )
+#   xyz.out <- rbind(xyz.out, xyz.curr)
+#   rm(x.summ, y.summ, z.summ, xyz.curr)
+# }; rm(i)
+# write_csv(xyz.out, path = "../raimbow-local/Outputs/Whale_risk_timeseries.csv")
+# 
+# d1 <- xyz.out %>% 
+#   filter(region == "USWC")
+# d2 <- xyz.out %>% 
+#   filter(region != "USWC") %>% 
+#   group_by(ym) %>% 
+#   summarise(risk_sum = sum(risk_sum, na.rm = TRUE), 
+#             mn_abund_sum = sum(mn_abund_sum, na.rm = TRUE), 
+#             vms_pings_sum = sum(vms_pings_sum, na.rm = TRUE))
 ```
 
 ## Plot regions
