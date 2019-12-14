@@ -33,7 +33,7 @@ risksum_plot_3row <- function(x, y, z, df.key, reg.curr, plot.main, par.flag) {
 ### Filter by latitude and summarize data
 risksum_summ <- function(
   df.all, df.key, reg.curr, col.name, col.rm = 1:4, area.flag = FALSE, 
-  area.flag.print = FALSE, area.name = NULL)
+  area.flag2 = FALSE, area.flag.print = FALSE, area.name = NULL)
 {
   ### Inputs 
   # df.all:    data.frame; current df of values to filter and summarize
@@ -41,7 +41,11 @@ risksum_summ <- function(
   # reg.curr:  vector of 2 numbers; latitude boundaries of current region
   # col.name:  character; name of column of summarized data
   # col.rm:    column indices to remove from df.all before summarizing
-  # area.flag: logical; if true, print the area covered by non-NA 
+  # area.flag: logical; divide summed values by sum of areas for any cells in
+  #   timeseries with a non-NA value
+  # area.flag2: logical; divide summed values by sum of areas for cells
+  #   with non-NA values for that specific month
+  # area.flag.print: logical; if true, print the area covered by non-NA 
   #   cells in df.all
   
   stopifnot(
@@ -60,9 +64,16 @@ risksum_summ <- function(
     if (area.flag.print) 
       print(paste0(area.name, " - ", round(area.sum, 2), "km2"))
     
+  } else if (area.flag2) {
+    area2.func <- function(i, j) {i / sum(j[!is.na(i)])}
+    df.filt.area <- df.filt$area_km_lno
+    df.filt <- df.filt %>% 
+      select(-col.rm) %>% 
+      mutate_all(area2.func, j = df.filt.area)
   } else {
     df.filt <- select(df.filt, -col.rm)
   }
+  
   
   data.frame(
     ym_num = seq_len(nrow(df.key)), 
@@ -93,7 +104,7 @@ risksum_plot_individual <- function(
 ###############################################################################
 ### Helper plotting function 1
 risksum_plot_allin1_plot <- function(
-  obj.list, col.name, plot.main, list.col, thirdly.flag) 
+  obj.list, col.name, plot.main, list.col, thirdly.flag, ...) 
 {
   x.max.curr <- nrow(obj.list[[1]])
   y.max.curr <- max(sapply(obj.list, function(i) max(i[, col.name], na.rm = TRUE)))
@@ -102,7 +113,7 @@ risksum_plot_allin1_plot <- function(
   
   plot.new()
   plot.window(xlim = c(0, x.max.curr*1.15), ylim = c(0, 1.05*y.max.curr))
-  title(main = plot.main)
+  title(main = plot.main, ...)
   for (i in seq_along(obj.list)) {
     points(x = seq_len(x.max.curr), y = obj.list[[i]][, col.name], col = list.col[i], pch = 19)
     lines(x = seq_len(x.max.curr), y = obj.list[[i]][, col.name], col = list.col[i], lty = 1)
@@ -139,30 +150,34 @@ risksum_plot_allin1_plotlegend <- function(leg.txt, leg.col, thirdly.flag) {
 
 ### Plot sums for all regions on one plot
 risksum_plot_allin1 <- function(
-  x, y, z, df.key, reg.list, col.pal, plot.main.list, area.flag, par.flag, thirdly.flag) 
+  x, y, z, df.key, reg.list, col.pal, plot.main.list, area.flag, area.flag2, 
+  par.flag, thirdly.flag, x.ylab = NULL, y.ylab = NULL, z.ylab = NULL) 
 {
   
   x.list <- mapply(function(i, j) {
-    risksum_summ(x, df.key, i, "risk_sum", area.flag = area.flag, area.flag.print = area.flag, area.name = j)
+    risksum_summ(x, df.key, i, "risk_sum", area.flag = area.flag, area.flag2 = area.flag2, 
+                 area.flag.print = area.flag, area.name = j)
   }, i = reg.list, j = names(reg.list), SIMPLIFY = FALSE)
   y.list <- lapply(reg.list, function(i) {
-    risksum_summ(y, df.key, i, "humpback_sum", area.flag = area.flag, area.flag.print = FALSE)
+    risksum_summ(y, df.key, i, "humpback_sum", area.flag = area.flag, area.flag2 = area.flag2, 
+                 area.flag.print = FALSE)
   })
   z.list <- lapply(reg.list, function(i) {
-    risksum_summ(z, df.key, i, "fish_sum", area.flag = area.flag, area.flag.print = FALSE)
+    risksum_summ(z, df.key, i, "fish_sum", area.flag = area.flag, area.flag2 = area.flag2, 
+                 area.flag.print = FALSE)
   })
   
   
   if (par.flag) opar <- par(mfrow=c(3,1))
   list.col <- RColorBrewer::brewer.pal(length(reg.list), col.pal)
   
-  risksum_plot_allin1_plot(x.list, "risk_sum", plot.main.list[1], list.col, thirdly.flag)
+  risksum_plot_allin1_plot(x.list, "risk_sum", plot.main.list[1], list.col, thirdly.flag, ylab = x.ylab)
   risksum_plot_allin1_plotlegend(names(reg.list), list.col, thirdly.flag)
   
-  risksum_plot_allin1_plot(y.list, "humpback_sum", plot.main.list[2], list.col, thirdly.flag)
+  risksum_plot_allin1_plot(y.list, "humpback_sum", plot.main.list[2], list.col, thirdly.flag, ylab = y.ylab)
   risksum_plot_allin1_plotlegend(names(reg.list), list.col, thirdly.flag)
   
-  risksum_plot_allin1_plot(z.list, "fish_sum", plot.main.list[3], list.col, thirdly.flag)
+  risksum_plot_allin1_plot(z.list, "fish_sum", plot.main.list[3], list.col, thirdly.flag, ylab = z.ylab)
   risksum_plot_allin1_plotlegend(names(reg.list), list.col, thirdly.flag)
   
   if (par.flag) par(opar) #Reset graphical parameters, e.g. mfrow

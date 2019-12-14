@@ -178,24 +178,41 @@ regions.list2 <- list(
 )
 
 ### Make and save plots
+# Totals, i.e. summed values
 if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional.png"), 
                    width = 8, height = 10, units = "in", res = 300)
 risksum_plot_allin1(
   risk.nona, humpback.nona, fish.nona,
   df.key, regions.list2, col.pal = "Set1",
-  plot.main = c("Risk sum", "Humpback sum (abundance)", "Fishing sum (# VMS points)"),
-  area.flag = FALSE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr
+  plot.main = c("Risk", "Humpback whales", "Fishing"),
+  area.flag = FALSE, area.flag2 = FALSE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
+  x.ylab = "Whales * VMS pings", y.ylab = "Whales", z.ylab = "VMS pings"
 )
 if (save.flag) dev.off()
 
+# Densities, calculated using summed area of ANY cell with non-NA value across time period
 if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional_areanormalized.png"), 
                    width = 8, height = 10, units = "in", res = 300)
 risksum_plot_allin1(
   risk.nona, humpback.nona, fish.nona,
   df.key, regions.list2, col.pal = "Set1",
-  plot.main = c("Risk sum - area normalized", "Humpback sum (abundance) - area normalized",
-                "Fishing sum (# VMS points) - area normalized"),
-  area.flag = TRUE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr
+  plot.main = c("Risk - density", "Humpback whales - density", "Fishing - density"),
+  area.flag = TRUE, area.flag2 = FALSE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
+  x.ylab = "Whales * VMS pings / km2", y.ylab = "Whales / km2", z.ylab = "VMS pings / km2"
+)
+if (save.flag) dev.off()
+
+
+# Densities, using non-NA cell area sum for each month
+if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional_monthlydens.png"), 
+                   width = 8, height = 10, units = "in", res = 300)
+risksum_plot_allin1(
+  risk.nona, humpback.nona, fish.nona,
+  df.key, regions.list2, col.pal = "Set1",
+  plot.main = c("Risk - density (monthly area)", "Humpback whales - density (monthly area)", 
+                "Fishing - density (monthly area)"),
+  area.flag = FALSE, area.flag2 = TRUE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
+  x.ylab = "Whales * VMS pings / km2", y.ylab = "Whales / km2", z.ylab = "VMS pings / km2"
 )
 if (save.flag) dev.off()
 ```
