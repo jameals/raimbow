@@ -1,7 +1,7 @@
 ---
 title: "Whale risk time series"
 author: "Sam Woodman"
-date: "12/10/2019"
+date: "12/17/2019"
 output: html_document
 ---
 
@@ -11,20 +11,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This document summarizes and plots humpback whale risk of entanglement by region over time. It loads risk values generated in 'Whale_risk.Rmd', but then converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region.
+This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpack predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted
 
 ```{r, message=FALSE}
 rm(list = ls())
 
 library(dplyr)
+library(ggplot2)
+library(gridExtra)
 library(purrr)
 library(readr)
 library(sf)
+library(tidyr)
 
 source("Whale_risk_timeseries_funcs.R")
 ```
 
-Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file or displayed within the output.
+Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file
 
 ```{r}
 source("User_script_local.R")
@@ -35,7 +38,7 @@ if (user == "JS") {
   path.plots <- ""
   
 } else if (user == "SMW") {
-  save.flag <- FALSE
+  save.flag <- TRUE
   file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
   file.risk <- "../raimbow-local/RDATA_files/Whale_risk.Rdata"
   path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries/"
@@ -78,183 +81,183 @@ identical(risk.nona.any, fish.nona.any)
 risk.nona <- risk.total[risk.nona.any, ]
 humpback.nona <- humpback.abund[risk.nona.any, ]
 fish.nona <- fish.all[risk.nona.any, ]
+rm(risk.all, risk.total, humpback.abund, humpback.all, fish.all)
 ```
 
-## Plot risk timeseries by region
+## Data processing
 
-First, we generate vectors defining the regions over which we are going to sum data
+The first step is to make the whale, VMS, and risk data frames 'long', meaning there is one row for each grid cell for each time period
 
 ```{r}
-# Define regions; regions are processed as (min, max]
+h.df <- humpback.nona %>% 
+  gather(col_name, mn_abund, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10)), 
+         ym = paste(yr, sprintf("%02d", mon), sep = "-")) %>% 
+  select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, ym, yr, mon, mn_abund)
+
+f.df <- fish.nona %>% 
+  gather(col_name, vms_pings, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10))) %>% 
+  select(-col_name)
+
+r.df <- risk.nona %>% 
+  gather(col_name, risk_total, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 12, 15)), 
+         mon = as.numeric(substr(col_name, 17, 18))) %>% 
+  select(-col_name)
+
+# Sanity check
+col.same <- c("GRID5KM_ID", "LONGITUDE", "LATITUDE", "area_km_lno", "yr", "mon")
+stopifnot(
+  all.equal(h.df[, col.same], f.df[, col.same]), 
+  all.equal(h.df[, col.same], r.df[, col.same])
+)
+
+# 
+all.df <- h.df %>% 
+  left_join(f.df, by = col.same) %>% 
+  left_join(r.df, by = col.same)
+rm(humpback.nona, fish.nona, risk.nona)
+```
+
+Next, we determine the region of each grid cell
+
+```{r}
 reg.bound <- c(32.5, 34.4, 36.3, 38.76683, 42, 46.25, 50)
+reg.names <- c("CA-S", "CA-SCen", "CA-Cen", "CA-N", "OR", "WA")
+stopifnot(length(reg.names) == length(reg.bound) - 1)
 
-reg.uswc <- c(reg.bound[1], reg.bound[7])
-reg.wa <- c(reg.bound[6], reg.bound[7])
-reg.or <- c(reg.bound[5], reg.bound[6])
-reg.ca.north <- c(reg.bound[4], reg.bound[5])
-reg.ca.central <- c(reg.bound[3], reg.bound[4])
-reg.ca.southcentral <- c(reg.bound[2], reg.bound[3])
-reg.ca.south <- c(reg.bound[1], reg.bound[2])
+grid.region <- all.df %>% 
+  filter(!duplicated(GRID5KM_ID)) %>% 
+  arrange(GRID5KM_ID) %>% 
+  mutate(region.idx = findInterval(LATITUDE, reg.bound, left.open = TRUE), 
+         region = factor(reg.names[region.idx], levels = rev(reg.names))) %>% 
+  select(GRID5KM_ID, region)
 ```
 
-Now we can generate the timeseries plots. We start with a single plot for all regions combined
+We can visualize regions
 
-```{r}
-### Prep
-regions.list <- list(
-  "USWC" = reg.uswc, "WA" = reg.wa, "OR" = reg.or, 
-  "CA-N" = reg.ca.north, "CA-Cen" = reg.ca.central, 
-  "CA-SCen" = reg.ca.southcentral, "CA-S" = reg.ca.south
-)
-regions.main <- c(
-  "Whole coast", "Washington", "Oregon", "California - North", 
-  "California - Central", "California - South-Central", "California - South"
-)
-
-### Make and save individual, 3-panel plots for the whole US west coast
-if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_wholecoast.png"), 
-                   width = 6, height = 7, units = "in", res = 300)
-risksum_plot_3row(
-  risk.nona, humpback.nona, fish.nona,
-  df.key, reg.uswc, plot.main = "Whole coast", par.flag = TRUE
-)
-if (save.flag) dev.off()
-```
-
-Then we can make individual plots for each region. Note the below code is not run when knitting.
-
-```{r, eval=FALSE}
-# Code not run
-### Make and save individual, 3-panel plots for each region
-regions.filename <- c(
-  "Linear_humpback_risk_wholecoast.png", "Linear_humpback_risk_wa.png", 
-  "Linear_humpback_risk_or.png", "Linear_humpback_risk_ca-n.png", 
-  "Linear_humpback_risk_ca-cen.png", "Linear_humpback_risk_ca-scen.png", 
-  "Linear_humpback_risk_ca-s.png"
-)
-for (i in seq_along(regions.list)) {
-  if (save.flag) png(paste0(path.plots, "Regions/", regions.filename[i], ".png"),
-                     width = 6, height = 7, units = "in", res = 300)
-  risksum_plot_3row(
-    risk.nona, humpback.nona, fish.nona,
-    df.key, regions.list[[i]], plot.main = regions.main[i], par.flag = TRUE
-  )
-  if (save.flag) dev.off()
-}; rm(i)
-
-
-# ### Make and save one, tall plot/file for all regions
-# if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_all.png"), width = 6, height = 7*6, units = "in", res = 300)
-# par(mfrow = c(3 * 7, 1))
-# for (i in seq_along(regions.list)) {
-#   risksum_plot_3row(
-#     risk.nona, humpback.nona, fish.nona, 
-#     df.key, regions.list[[i]], plot.main = regions.main[i], par.flag = FALSE
-#   )
-# }; rm(i)
-# if (save.flag) dev.off()
-
-# # Used by Sam in Timeseries_exp.R
-# save.image("../raimbow-local/RDATA_files/Whale_risk_timeseries_partial.Rdata")
-```
-
-## Plot risk timeseries by region, part 2
-
-Next we want to plot color-coded, regional sums on a single plot for easier comparison and digestion. We plot both raw and area-normalized sums, as well as print areas of each region. The areas of each region are determined by summing `area_km_lno` for all grid cells with non-NA risk values in that region for any year-month.
-
-Regarding the area-normalized risk - the equation for calculating it is: the sum of the risk in a region, e.g. Oregon, divided by the area of cells in that region with non-NA risk values (i.e., cells with both humpback predictions and VMS data). This method is mostly for display purposes when comparing relative risk values in the time series plots. Area-normalized risk 'standardizes' the area over which the risk is summed, so a region doesn't have higher values on the time series plots simply because it had more area over which to sum risk. These area-normalized risk values should not be used in heat maps or anomaly analyses, for instance, but they are useful when comparing risk summed across regions.
-
-CA-South is not included in the plots because there is (virtually) no fishing there. To plot only data from CA, you can comment out the WA and OR lines in `regions.list2`
-
-```{r, fig.width=8, fig.height=10}
-### Flag for if thirdly VMS data is being used
-thirdly.flag.curr <- FALSE
-
-### Regions in which to sum values for plots
-regions.list2 <- list(
-  "WA" = reg.wa, "OR" = reg.or,
-  "CA-N" = reg.ca.north, "CA-Cen" = reg.ca.central, "CA-SCen" = reg.ca.southcentral
-  #"CA-S" = reg.ca.south
-)
-
-### Make and save plots
-# Totals, i.e. summed values
-if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional.png"), 
-                   width = 8, height = 10, units = "in", res = 300)
-risksum_plot_allin1(
-  risk.nona, humpback.nona, fish.nona,
-  df.key, regions.list2, col.pal = "Set1",
-  plot.main = c("Risk", "Humpback whales", "Fishing"),
-  area.flag = FALSE, area.flag2 = FALSE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
-  x.ylab = "Whales * VMS pings", y.ylab = "Whales", z.ylab = "VMS pings"
-)
-if (save.flag) dev.off()
-
-# Densities, calculated using summed area of ANY cell with non-NA value across time period
-if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional_areanormalized.png"), 
-                   width = 8, height = 10, units = "in", res = 300)
-risksum_plot_allin1(
-  risk.nona, humpback.nona, fish.nona,
-  df.key, regions.list2, col.pal = "Set1",
-  plot.main = c("Risk - density", "Humpback whales - density", "Fishing - density"),
-  area.flag = TRUE, area.flag2 = FALSE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
-  x.ylab = "Whales * VMS pings / km2", y.ylab = "Whales / km2", z.ylab = "VMS pings / km2"
-)
-if (save.flag) dev.off()
-
-
-# Densities, using non-NA cell area sum for each month
-if (save.flag) png(paste0(path.plots, "Linear_humpback_risk_regional_monthlydens.png"), 
-                   width = 8, height = 10, units = "in", res = 300)
-risksum_plot_allin1(
-  risk.nona, humpback.nona, fish.nona,
-  df.key, regions.list2, col.pal = "Set1",
-  plot.main = c("Risk - density (monthly area)", "Humpback whales - density (monthly area)", 
-                "Fishing - density (monthly area)"),
-  area.flag = FALSE, area.flag2 = TRUE, par.flag = TRUE, thirdly.flag = thirdly.flag.curr, 
-  x.ylab = "Whales * VMS pings / km2", y.ylab = "Whales / km2", z.ylab = "VMS pings / km2"
-)
-if (save.flag) dev.off()
-```
-
-## Plot regions
-
-Plot a map showing the regions, and assocaited areas, used in this time series analysis. 
-
-```{r, fig.height = 8, fig.width = 5}
-# Code not run
+```{r,fig.width=4, fig.height=6}
 library(rnaturalearth)
-rmap.base <- st_geometry(ne_states(country = "United States of America", returnclass = "sf"))
-rmap.base2 <- ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
-  filter(admin %in% c("Canada", "Mexico")) %>% 
-  st_geometry()
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")), 
+  ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
+    filter(admin %in% c("Canada", "Mexico")) %>% 
+    st_geometry()
+)
 
 load(file.landerased)
+grid.region.sf <- grid.region %>% 
+  mutate(region = factor(region, levels = reg.names)) %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf()
+plot(grid.region.sf["region"], main = "Region", axes = TRUE, border = NA, 
+     xaxt = "n", key.length = 1, key.width = lcm(3.2), reset = FALSE)
+sf::.degAxis(1, at = c(-126, -122, -118))
+plot(rmap.base, add = TRUE, col = "tan", border = "black")
+```
 
-grid.toplot <-risk.nona %>%
-  select(GRID5KM_ID) %>%
-  left_join(grid.5km.lno) %>%
-  st_as_sf() %>%
-  st_geometry()
+Next, we want to sum the values by region and time period. We also calculate the densities, using either the area of cells with non-NA values for 1) that specific month or 2) the whole time series. We remove region CA-S because of the lack of fishing (and thus risk) in that region
 
-reg.txt <- c(
-  "WA", "OR", "CA-N", "CA-Cen", "CA-SCen", "CA-S"
+```{r}
+all.df.summ <- all.df %>% 
+  left_join(grid.region, by = "GRID5KM_ID") %>% 
+  filter(region != "CA-S") %>% 
+  group_by(region, ym) %>% 
+  summarise(yr = unique(yr), 
+            mon = unique(mon), 
+            mn_sum_abund = sum(mn_abund, na.rm = TRUE), 
+            vms_sum_pings = sum(vms_pings, na.rm = TRUE), 
+            risk_sum_total = sum(risk_total, na.rm = TRUE), 
+            area_sum = sum(area_km_lno), 
+            area_sum_mon1 = sum(area_km_lno[!is.na(mn_abund)]), 
+            area_sum_mon2 = sum(area_km_lno[!is.na(risk_total)])) %>% 
+  ungroup() %>% 
+  mutate(mn_sum_dens = mn_sum_abund / area_sum, 
+         vms_sum_dens = vms_sum_pings / area_sum, 
+         risk_sum_dens = risk_sum_total / area_sum, 
+         mn_sum_dens_mon = mn_sum_abund / area_sum_mon1, 
+         vms_sum_dens_mon = vms_sum_pings / area_sum_mon2, 
+         risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
+  replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
+
+all.df.summ %>% 
+  filter(!duplicated(region)) %>% 
+  select(region, area_sum)
+```
+
+## Plot
+
+Now we can generate plots. First, total sum plots:
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  all.df.summ, risk_sum_total, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings"
 )
-reg.areas <- c("9,696", "15,554", "7,300", "9,736", "3,477", "431")
+p2 <- raimbow_ggplot(
+  all.df.summ, mn_sum_abund, plot.main = "Humpback whales", 
+  y.lab = "Whales"
+)
+p3 <- raimbow_ggplot(
+  all.df.summ, vms_sum_pings, plot.main = "Fishing", 
+  y.lab = "VMS pings"
+)
 
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 
-if (save.flag) png(paste0(path.plots, "Region_map.png"), height = 8, width = 5, units = "in", res = 300)
-plot(rmap.base, axes = TRUE, border = "black", col = "tan",
-     main = "Regions used for linear whale risk",
-     xlim = c(-135, -115), ylim = c(27, 51))
-plot(rmap.base2, add = TRUE, col = "tan", border = "black")
-plot(grid.toplot, add = TRUE, col = "purple", border = NA)
-abline(h = reg.bound, col = "red")
-for (i in 1:6) text(rev(reg.txt)[i], x = -135, y = reg.bound[i] + 0.5, pos = 4)
-legend("topright", legend = c("Region boundary", "Cells with non-NA risk"),
-       col = c("red", "purple"), lty = c(1, 0), pch = c(NA, 15), pt.cex = c(NA, 2))
-legend("bottomleft", legend = paste0(reg.txt, " - ", reg.areas, " km2"), col = NA,
-       title = "Area of cells with non-NA risk")
-graphics::box()
-if (save.flag) dev.off()
+if (save.flag) 
+  ggsave(filename = "Linear_humpback_risk_regional.png", p123, path = path.plots, 
+         height = 10, width = 10)
+```
+
+Next we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for the whole time series
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  all.df.summ, risk_sum_dens, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings / km2"
+)
+p2 <- raimbow_ggplot(
+  all.df.summ, mn_sum_dens, plot.main = "Humpback whales", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot(
+  all.df.summ, vms_sum_dens, plot.main = "Fishing", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag)
+  ggsave(filename = "Linear_humpback_risk_regional_areanorm.png", p123, path = path.plots, 
+         height = 10, width = 10)
+```
+
+Finally, we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for that specific month
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  all.df.summ, risk_sum_dens_mon, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings / km2"
+)
+p2 <- raimbow_ggplot(
+  all.df.summ, mn_sum_dens_mon, plot.main = "Humpback whales", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot(
+  all.df.summ, vms_sum_dens_mon, plot.main = "Fishing", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Linear_humpback_risk_regional_monthlydens.png", p123, path = path.plots, 
+         height = 10, width = 10)
 ```
