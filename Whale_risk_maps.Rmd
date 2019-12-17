@@ -165,7 +165,7 @@ rm(i)
 
 ## Save plots
 
-Generate and save a three panel plot, for each year-month, of humpback abundance, VMS pings, and whale risk. It is not run when knitting.
+Generate and save a three panel plot, for each year-month, of humpback abundance, VMS pings, and whale risk. By default, it is not run when knitting.
 
 ```{r, eval = FALSE}
 # Code not run
@@ -227,4 +227,22 @@ for (i in key.txt) {
   
   dev.off()
 }
+```
+
+If desired, one can make a gif of the heat maps using the following code. Note the code is not run when knitting, and was adapted from https://ryanpeek.github.io/2016-10-19-animated-gif_maps_in_R/
+
+```{r, eval=FALSE}
+# Code not run
+library(magick)
+library(purrr)
+
+plot.files <- list.files(path.plots, full.names = TRUE)
+plot.files[1]
+tail(plot.files, 1)
+
+plot.files %>%  #3.5 hours for 140 (continuous color scheme) images
+  purrr::map(image_read) %>% 
+  image_join() %>% 
+  image_animate(fps = 2) %>% 
+  image_write(paste0(path.plots, "Whale_risk.gif"))
 ```
