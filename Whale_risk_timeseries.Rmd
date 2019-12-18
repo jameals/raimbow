@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly change (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only 2009 - 2013 values.
 
+The whale risk files, e.g. 'Whale_risk.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk).
+
 Outstanding questions:
 
 * Should mean/sd be calculated using 2009-13 (full calendar year), or 2009-13 fishing seasons (excluding Nov and Dec 2013)?
@@ -32,7 +34,7 @@ library(tidyr)
 source("Whale_risk_timeseries_funcs.R")
 ```
 
-Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file
+Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
 
 ```{r}
 source("User_script_local.R")
