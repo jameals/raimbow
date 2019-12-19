@@ -2,7 +2,9 @@
 title: "Whale risk time series"
 author: "Sam Woodman"
 date: "12/18/2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -348,7 +350,7 @@ if (save.flag)
 
 ...and the z scores. Note that for both, we change 0 values in the denominator to 0.1 so as to avoid divide-by-zero errors. However, this value is arbitrary and this method could likely be improved.
 
-```{r}
+```{r, fig.width=10, fig.height=10}
 all.df.zscore <- all.df.summ %>% 
   select(region, ym, yr, mon) %>% 
   bind_cols((tmp.vals - tmp.mean) / replace(tmp.sd, tmp.sd == 0, 0.1)) #tmp.sd)
