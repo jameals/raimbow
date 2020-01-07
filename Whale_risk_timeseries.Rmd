@@ -13,21 +13,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly change (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only 2009 - 2013 values.
+This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
 
 The whale risk files, e.g. 'Whale_risk.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk).
 
 Outstanding questions:
 
-* Should mean/sd be calculated using 2009-13 (full calendar year), or 2009-13 fishing seasons (excluding Nov and Dec 2013)?
-* What to do when 2009-13 mean/sd is 0, but a later year has a non-0 value?
 
 ```{r, message=FALSE}
-rm(list = ls())
-
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(lubridate)
 library(purrr)
 library(readr)
 library(sf)
@@ -281,13 +278,13 @@ if (save.flag)
 
 ## Anomalies
 
-In addition to visualizing the actual risk, humpback, and fishing values, we want to examine the anomalies for these values, i.e. the difference of values in one year from the mean value. Specifically, we want to examine how values differ from the mean values from 'normal years' 2009 - 2013. We will evaluate these anomalies both by 1) dividing the value by the mean value and 2) using z-scores, i.e. (x - x_mean) / x_sd. 
+In addition to visualizing the actual risk, humpback, and fishing values, we want to examine the anomalies for these values, i.e. the difference of values in one year from the mean value. Specifically, we want to examine how values differ from the mean values from 'normal fishing seasons' (2009 - 2013). We will evaluate these anomalies through both 1) ratios, i.e. x / x_mean, 2) (additive) anomaly, i.e. x - x_mean, and 3) using z-scores, i.e. (x - x_mean) / x_sd. 
 
 First we calculate the mean and sd values:
 
 ```{r} 
 base.mean <- all.df.summ %>% 
-  filter(yr < 2014) %>% #, !((yr == 2013) & (mo %in% c(11, 12)))) %>%
+  filter(between(ymd(paste0(ym, "-01")), ymd("2009-11-01"), ymd("2013-10-31"))) %>%
   select(-ym, -yr) %>% 
   group_by(region, mon) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
@@ -295,7 +292,7 @@ base.mean <- all.df.summ %>%
   ungroup()
 
 base.sd <- all.df.summ %>% 
-  filter(yr < 2014) %>% #, !((yr == 2013) & (mo %in% c(11, 12)))) %>%
+  filter(between(ymd(paste0(ym, "-01")), ymd("2009-11-01"), ymd("2013-10-31"))) %>%
   select(-ym, -yr) %>% 
   group_by(region, mon) %>% 
   summarise_all(sd, na.rm = TRUE) %>% 
@@ -320,12 +317,41 @@ stopifnot(
 )
 ```
 
-Now we calculate the anomaly ('change') value...
+Now we calculate the ratio of each value to the mean, ...
+
+```{r, fig.width=10, fig.height=10}
+# TODO: 0 to 0.1 i
+all.df.anom <- all.df.summ %>% 
+  select(region, ym, yr, mon) %>% 
+  bind_cols(tmp.vals / tmp.mean) #replace(tmp.mean, tmp.mean == 0, 0.1))
+  
+
+p1 <- raimbow_ggplot(
+  all.df.anom, risk_sum_dens , plot.main = "Risk - ratios", 
+  y.lab = "Monthly ratio relative to 2009-13"
+)
+p2 <- raimbow_ggplot(
+  all.df.anom, mn_sum_dens , plot.main = "Humpback whales - ratios", 
+  y.lab = "Monthly ratio relative to 2009-13"
+)
+p3 <- raimbow_ggplot(
+  all.df.anom, vms_sum_dens , plot.main = "Fishing - ratios", 
+  y.lab = "Monthly ratio relative to 2009-13"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag)
+  ggsave(filename = "Anom_linear_humpback_risk_areanorm_ratio01_09-13.png", p123, path = path.plots,
+         height = 10, width = 10)
+```
+
+... the anomalies (x - x_mean), ...
 
 ```{r, fig.width=10, fig.height=10}
 all.df.anom <- all.df.summ %>% 
   select(region, ym, yr, mon) %>% 
-  bind_cols(tmp.vals / replace(tmp.mean, tmp.mean == 0, 0.1))
+  bind_cols(tmp.vals - tmp.mean) #replace(tmp.mean, tmp.mean == 0, 0.1))
   
 
 p1 <- raimbow_ggplot(
@@ -356,15 +382,15 @@ all.df.zscore <- all.df.summ %>%
   bind_cols((tmp.vals - tmp.mean) / replace(tmp.sd, tmp.sd == 0, 0.1)) #tmp.sd)
 
 p1 <- raimbow_ggplot(
-  all.df.zscore, risk_sum_dens , plot.main = "Risk - anomalies", 
+  all.df.zscore, risk_sum_dens , plot.main = "Risk - z-score", 
   y.lab = "Std dev from 2009-13 mean"
 )
 p2 <- raimbow_ggplot(
-  all.df.zscore, mn_sum_dens , plot.main = "Humpback whales - anomalies", 
+  all.df.zscore, mn_sum_dens , plot.main = "Humpback whales - z-score", 
   y.lab = "Std dev from 2009-13 mean"
 )
 p3 <- raimbow_ggplot(
-  all.df.zscore, vms_sum_dens , plot.main = "Fishing - anomalies", 
+  all.df.zscore, vms_sum_dens , plot.main = "Fishing - z-score", 
   y.lab = "Std dev from 2009-13 mean"
 )
 
