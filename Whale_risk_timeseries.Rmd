@@ -62,7 +62,7 @@ if (user == "JS") {
 Load humpback, fishing, and risk values, and convert humpback and risk densities to total values. 
 
 ```{r}
-load(file.risk)
+load(file.risk) # Created in Whale_risk.Rmd; Mn and risk values are densities
 
 mult.func <- function(x, y) {x * y}
 grid.area <- humpback.all %>% select(GRID5KM_ID, area_km_lno)
