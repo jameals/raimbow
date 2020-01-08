@@ -197,8 +197,7 @@ all.df.summ <- all.df %>%
          risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
   replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
 
-# if (save.flag) save(all.df, all.df.summ, 
-#                     file = paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
+# if (save.flag) save(all.df, all.df.summ, file = paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
 
 all.df.summ %>% 
   filter(!duplicated(region)) %>% 
