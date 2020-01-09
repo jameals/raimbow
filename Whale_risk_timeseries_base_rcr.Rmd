@@ -1,5 +1,5 @@
 ---
-title: "Whale risk time series baseline - first look"
+title: "Whale risk time series baseline - first look, region-calculated risk"
 author: "Sam Woodman"
 date: "1/8/2020"
 output: html_document
@@ -28,7 +28,6 @@ library(sf)
 library(tidyr)
 
 source("Whale_risk_timeseries_funcs.R")
-load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
 ```
 
 ## Region-calculated risk vs grid-cell-calculated risk
@@ -36,6 +35,7 @@ load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
 We first calculate the risk using the non-baseline values to compare the region-calculated risk with the grid-cell-calculated risk. Aka, what do time series plots look like when risk is calculated at a regional scale, e.g. Central CA risk = total Central CA Mn dens * total Central CA VMS pings.
 
 ```{r}
+load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
 all.df.exp <- all.df.summ %>% 
   mutate(risk_exp_dens = vms_sum_pings * mn_sum_dens, 
          risk_exp_total = risk_exp_dens * area_sum)
