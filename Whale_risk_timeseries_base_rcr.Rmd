@@ -18,14 +18,8 @@ As you'll see below, the patterns shown by the rcr risk are very similar to the 
 This analysis will need to be done with grid-cell-calculated risk, perhaps once confidential data is in-hand.?
 
 ```{r message=FALSE}
-library(dplyr)
-library(ggplot2)
 library(gridExtra)
-library(lubridate)
-library(purrr)
-library(readr)
-library(sf)
-library(tidyr)
+library(tidyverse)
 
 source("Whale_risk_timeseries_funcs.R")
 ```
@@ -90,7 +84,7 @@ In terms of data frame column names:
 ```{r}
 stopifnot(sum(is.na(all.df.summ)) == 0)
 
-x <- all.df.summ %>% 
+x.summ <- all.df.summ %>% 
   filter(yr < 2014, !(yr == 2013 & mon %in% c(11, 12))) %>% 
   group_by(region, mon) %>% 
   summarise(mn_sum_abund_base = mean(mn_sum_abund), 
@@ -105,19 +99,19 @@ x <- all.df.summ %>%
          risk_sum_dens_basef  = risk_sum_total_basef / area_sum)
 ```
 
-We can plot the baseline-whale risk density values, along with the baseline whale and non-baseline (i.e., all) fishing density values. Note that the y-axis limit of the whale plot was made to be identical to the non-baseline whale plot above. Also note that these are the total values rather than densities. However, note also that the y-axis scale between the risk panels on these two plots is quite different.
+We can plot the baseline-whale risk density values, along with the baseline whale and non-baseline (i.e., all) fishing density values. Note that the y-axis limit of the whale plot was made to be identical to the non-baseline whale plot above. Also note that these are densities rather than total values. However, note also that the y-axis scale of the risk panels on these two plots is different.
 
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
-  x, risk_sum_dens_basew, plot.main = "Risk - rcr - basew", 
+  x.summ, risk_sum_dens_basew, plot.main = "Risk - rcr - basew", 
   y.lab = "Whales (baseline) * VMS pings / km2"
 )
 p2 <- raimbow_ggplot(
-  x, mn_sum_dens_base, plot.main = "Humpback whales (baseline)", 
+  x.summ, mn_sum_dens_base, plot.main = "Humpback whales (baseline)", 
   y.lab = "Whales / km2"
-) + scale_y_continuous(limits = c(0, max(x$mn_sum_dens)))
+) + scale_y_continuous(limits = c(0, max(x.summ$mn_sum_dens)))
 p3 <- raimbow_ggplot(
-  x, vms_sum_dens, plot.main = "Fishing", 
+  x.summ, vms_sum_dens, plot.main = "Fishing", 
   y.lab = "VMS pings / km2"
 )
 
@@ -128,43 +122,43 @@ Next we can plot the baseline-fish risk values, along with the non-baseline whal
 
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
-  x, risk_sum_dens_basef, plot.main = "Risk - rcr - basef", 
+  x.summ, risk_sum_dens_basef, plot.main = "Risk - rcr - basef", 
   y.lab = "Whales * VMS pings (baseline) / km2"
 )
 p2 <- raimbow_ggplot(
-  x, mn_sum_dens, plot.main = "Humpback whales", 
+  x.summ, mn_sum_dens, plot.main = "Humpback whales", 
   y.lab = "Whales / km2"
 )
 p3 <- raimbow_ggplot(
-  x, vms_sum_dens_base, plot.main = "Fishing (baseline)", 
+  x.summ, vms_sum_dens_base, plot.main = "Fishing (baseline)", 
   y.lab = "VMS pings / km2"
-) + scale_y_continuous(limits = c(0, max(x$vms_sum_dens)))
+) + scale_y_continuous(limits = c(0, max(x.summ$vms_sum_dens)))
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 ```
 
 ## Plot 'baseline-whale' and 'baseline-fish' risk values with original risk values
 
-We can make plot 'baseline-whale' and 'baseline-fish' risk values with original risk values for direct comparison. Notes that the y-axis max is set as the same for all three panes in subsequent plots.
+We can make plot 'baseline-whale' and 'baseline-fish' risk values with original risk values for direct comparison. Notes that the y-axis max is set as the same for all three panels in each plot.
 
 We have the risk as total sums for each region...
 
 ```{r, fig.height=10, fig.width=10}
-p.max <- max(c(x$risk_exp_total, x$risk_sum_total_basew, x$risk_sum_total_basef))
+p.max <- max(c(x.summ$risk_exp_total, x.summ$risk_sum_total_basew, x.summ$risk_sum_total_basef))
 p1 <- raimbow_ggplot(
-  x, risk_exp_total, plot.main = "Risk - rcr", 
+  x.summ, risk_exp_total, plot.main = "Risk - rcr", 
   y.lab = "Whales * VMS pings"
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p2 <- raimbow_ggplot(
-  x, risk_sum_total_basew, plot.main = "Risk - rcr - basew", 
+  x.summ, risk_sum_total_basew, plot.main = "Risk - rcr - basew", 
   y.lab = "Whales (baseline) * VMS pings"
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p3 <- raimbow_ggplot(
-  x, risk_sum_total_basef, plot.main = "Risk - rcr - basef", 
+  x.summ, risk_sum_total_basef, plot.main = "Risk - rcr - basef", 
   y.lab = "Whales * VMS pings (baseline)"
 ) + 
   scale_y_continuous(limits = c(0, p.max))
@@ -175,21 +169,21 @@ p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 ... and we have the risk as density values for each region. 
 
 ```{r, fig.height=10, fig.width=10}
-p.max <- max(c(x$risk_exp_dens, x$risk_sum_dens_basew, x$risk_sum_dens_basef))
+p.max <- max(c(x.summ$risk_exp_dens, x.summ$risk_sum_dens_basew, x.summ$risk_sum_dens_basef))
 p1 <- raimbow_ggplot(
-  x, risk_exp_dens, plot.main = "Risk - rcr", 
+  x.summ, risk_exp_dens, plot.main = "Risk - rcr", 
   y.lab = "Whales * VMS pings / km2"
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p2 <- raimbow_ggplot(
-  x, risk_sum_dens_basew, plot.main = "Risk - rcr - basew", 
+  x.summ, risk_sum_dens_basew, plot.main = "Risk - rcr - basew", 
   y.lab = "Whales (baseline) * VMS pings / km2"
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p3 <- raimbow_ggplot(
-  x, risk_sum_dens_basef, plot.main = "Risk - rcr - basef", 
+  x.summ, risk_sum_dens_basef, plot.main = "Risk - rcr - basef", 
   y.lab = "Whales * VMS pings (baseline) / km2"
 ) + 
   scale_y_continuous(limits = c(0, p.max))

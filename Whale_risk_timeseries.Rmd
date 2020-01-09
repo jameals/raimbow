@@ -21,14 +21,10 @@ Outstanding questions:
 
 
 ```{r, message=FALSE}
-library(dplyr)
-library(ggplot2)
 library(gridExtra)
 library(lubridate)
-library(purrr)
-library(readr)
 library(sf)
-library(tidyr)
+library(tidyverse)
 
 source("Whale_risk_timeseries_funcs.R")
 ```

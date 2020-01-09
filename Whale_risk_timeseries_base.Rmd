@@ -1,0 +1,182 @@
+---
+title: "Whale risk time series baseline - grid-cell calculated risk"
+author: "Sam Woodman"
+date: "1/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Intro
+
+This document examines how risk would change if all humpback or fishing values were 'baseline' values, meaning the average of the values for the 2009-2010 to 2012-2013 fishing seasons, which are assumed to be the four 'normal' seasons in the time series. These risk values are referred to as baseline-### risk, with ### being either "whale" or "fish", depending on which baseline values were used. The baseline values are calculated on a grid-cell level, meaning that the whale/fishing values for the four 'baseline' seasons are averaged by grid cell. Risk is also calculated by grid cell, and then is summed across regions for the timeseries. Grid cells with `NA` fishing values are considered to have 0 fishing effort, and thus also have 0 risk.
+
+Note this analysis currently uses non-confidential fishing data.
+
+```{r message=FALSE}
+library(gridExtra)
+library(tidyverse)
+
+source("Whale_risk_timeseries_funcs.R")
+```
+
+## Derive baseline values
+
+Load the data from 'Whale_risk_timeseries.Rmd' and derive baseline values. The loaded data consists of:
+
+* `all.df`: Long data frame with data for grid cells with non-NA risk values (which also equates to non-NA fishing values) across all year-months (i.e. all pairs of years and months for the time series)
+* `all.df.summ`: Long data frame with data in `all.df` summarized by region and year-month
+
+In terms of data frame column names:
+
+* `base` refers to baseline, meaning these are the 'baseline' values
+* `basew` refers to risk values calculated using 'baseline' whale values
+* `basef` refers to risk values calculated using 'baseline' fishing values
+
+```{r}
+load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+stopifnot(all(table(filter(all.df, yr < 2014, !(yr == 2013 & mon %in% c(11, 12)))$ym) == 1990))
+
+# Don't calculate densities until after summing by region and year-month
+x <- all.df %>% 
+  filter(yr < 2014, !(yr == 2013 & mon %in% c(11, 12))) %>% 
+  replace_na(list(mn_abund = 0, vms_pings = 0, risk_total = 0)) %>% 
+  group_by(GRID5KM_ID, mon) %>% 
+  summarise(mn_abund_base = mean(mn_abund),
+            vms_pings_base = mean(vms_pings)) %>% 
+  ungroup() %>% 
+  right_join(all.df, by = c("GRID5KM_ID", "mon")) %>% #brings NAs back in
+  select(GRID5KM_ID, region, ym, yr, mon, LONGITUDE, LATITUDE, area_km_lno, 
+         mn_abund, vms_pings, risk_total, everything()) %>% 
+  mutate(risk_total_basew = mn_abund_base * vms_pings, 
+         risk_total_basef = mn_abund * vms_pings_base)
+```
+
+Now we can summarise (sum) the values by region
+
+```{r}
+# Sum by region
+x.summ <- x %>%
+  filter(region != "CA-S") %>%
+  group_by(region, ym) %>%
+  summarise(yr = unique(yr),
+            mon = unique(mon),
+            mn_sum_abund = sum(mn_abund, na.rm = TRUE),
+            vms_sum_pings = sum(vms_pings, na.rm = TRUE),
+            risk_sum_total = sum(risk_total, na.rm = TRUE),
+            area_sum = sum(area_km_lno),
+            mn_sum_abund_base = sum(mn_abund_base), 
+            vms_sum_pings_base = sum(vms_pings_base), 
+            risk_sum_total_basew = sum(risk_total_basew, na.rm = TRUE), 
+            risk_sum_total_basef = sum(risk_total_basef, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(mn_sum_dens = mn_sum_abund / area_sum,
+         vms_sum_dens = vms_sum_pings / area_sum,
+         risk_sum_dens = risk_sum_total / area_sum,
+         mn_sum_dens_base = mn_sum_abund_base / area_sum,
+         vms_sum_dens_base = vms_sum_pings_base / area_sum,
+         risk_sum_dens_basew = risk_sum_total_basew / area_sum,
+         risk_sum_dens_basef = risk_sum_total_basef / area_sum)
+
+# save(x, x.summ, file = "../raimbow-local/RDATA_files/Whale_risk_timeseries_base.Rdata"))
+ 
+x.summ %>%
+  filter(!duplicated(region)) %>%
+  select(region, area_sum)
+```
+
+## Plot 'baseline-whale' and 'baseline-fish' risk density values
+
+We can plot the baseline-whale risk density values, along with the baseline whale and non-baseline (i.e., all) fishing density values. Note that the y-axis limit of the whale plot was made to be identical to the non-baseline whale plot above. Also note that these are densities rather than total values. However, note also that the y-axis scale of the risk panels on these two plots is different.
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  x.summ, risk_sum_dens_basew, plot.main = "Risk - basew", 
+  y.lab = "Whales (baseline) * VMS pings / km2"
+)
+p2 <- raimbow_ggplot(
+  x.summ, mn_sum_dens_base, plot.main = "Humpback whales (baseline)", 
+  y.lab = "Whales / km2"
+) + scale_y_continuous(limits = c(0, max(x.summ$mn_sum_dens)))
+p3 <- raimbow_ggplot(
+  x.summ, vms_sum_dens, plot.main = "Fishing", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+Next we can plot the baseline-fish risk values, along with the non-baseline whale and baseline fishing values. Again, note that the y-axis limit of the fishing plot was made to be identical to the non-baseline fishing plot above. Also note that these are densities rather than total values.
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  x.summ, risk_sum_dens_basef, plot.main = "Risk - basef", 
+  y.lab = "Whales * VMS pings (baseline) / km2"
+)
+p2 <- raimbow_ggplot(
+  x.summ, mn_sum_dens, plot.main = "Humpback whales", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot(
+  x.summ, vms_sum_dens_base, plot.main = "Fishing (baseline)", 
+  y.lab = "VMS pings / km2"
+) + scale_y_continuous(limits = c(0, max(x.summ$vms_sum_dens)))
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+## Plot 'baseline-whale' and 'baseline-fish' risk values with original risk values
+
+We can make plot 'baseline-whale' and 'baseline-fish' risk values with original risk values for direct comparison. Notes that the y-axis max is set as the same for all three panels in each plot.
+
+We have the risk as total sums for each region...
+
+```{r, fig.height=10, fig.width=10}
+p.max <- max(c(x.summ$risk_sum_total, x.summ$risk_sum_total_basew, x.summ$risk_sum_total_basef))
+p1 <- raimbow_ggplot(
+  x.summ, risk_sum_total, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p2 <- raimbow_ggplot(
+  x.summ, risk_sum_total_basew, plot.main = "Risk - basew", 
+  y.lab = "Whales (baseline) * VMS pings"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p3 <- raimbow_ggplot(
+  x.summ, risk_sum_total_basef, plot.main = "Risk - basef", 
+  y.lab = "Whales * VMS pings (baseline)"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+```
+
+... and we have the risk as density values for each region. 
+
+```{r, fig.height=10, fig.width=10}
+p.max <- max(c(x.summ$risk_sum_dens, x.summ$risk_sum_dens_basew, x.summ$risk_sum_dens_basef))
+p1 <- raimbow_ggplot(
+  x.summ, risk_sum_dens, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings / km2"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p2 <- raimbow_ggplot(
+  x.summ, risk_sum_dens_basew, plot.main = "Risk - basew", 
+  y.lab = "Whales (baseline) * VMS pings / km2"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p3 <- raimbow_ggplot(
+  x.summ, risk_sum_dens_basef, plot.main = "Risk - basef", 
+  y.lab = "Whales * VMS pings (baseline) / km2"
+) + 
+  scale_y_continuous(limits = c(0, p.max))
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+```
