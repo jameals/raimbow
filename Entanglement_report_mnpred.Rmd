@@ -1,0 +1,155 @@
+---
+title: "Compare humpback predictions with entanglement reports"
+author: "Sam Woodman"
+date: "1/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This document examines the corresponding humpback predictions for each entanglement report. This includes 1) the value of the corresponding humpback prediction and 2) a map with a point representing the entanglement report. 
+
+```{r, message=FALSE}
+library(classInt)
+# library(lubridate)
+library(maps)
+library(RColorBrewer)
+library(readxl)
+library(tidyverse)
+library(sf)
+
+source("plot_raimbow.R")
+
+# flag1 = 1: Only used CA-DC, know-set records (Sheet 1). 
+# flag1 = 2: Use all humpack entanglement records, regardless of fishery (Sheet 2)
+flag1 <- 1
+```
+
+First we load and process the entanglement data and humpback predictions
+
+```{r}
+# Load Mn preds and convert to long form
+load("../raimbow-local/RDATA_files/Whale_risk.Rdata")
+rm(df.key, fish.all, risk.all)
+
+z <- humpback.all %>% 
+  gather(key = "col_name", value = "H_Abund", 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(Year = as.numeric(substr(col_name, 4, 7)), 
+         Month = as.numeric(substr(col_name, 9, 10)), 
+         Year_Month = paste(Year, sprintf("%02d", Month), sep = "_")) %>% 
+  select(GRID5KM_ID, #LONGITUDE, LATITUDE, area_km_lno, 
+         Year_Month, Year, Month, H_Abund)
+
+# z2 <- read_csv("../raimbow-local/Data/Humpback 3km models/Model1_PredictionGrids/WEAR3km_76_2005-01-01to2019-08-14_daily_dens.csv")
+
+
+# Load entanglement data
+x.orig <- if (flag1 == 1) {
+  read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx")
+} else if (flag1 == 2) {
+  read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 2)
+}
+x <- x.orig %>% 
+  filter(Common_Name %in% c("Humpback", "Humpback Whale"),
+         Year >= 2009) %>%
+  select(CaseID, Year, Month, Day, Report_Lat, Report_Long)
+```
+
+Load 5km grid, make `sf` objects of the Mn preds and entanglement data, and visualize entanglement report locations
+
+```{r, message=FALSE}
+grid.5km <- st_read("../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp") %>% 
+  select(GRID5KM_ID)
+
+humpback.sf <- humpback.all %>% 
+  left_join(grid.5km, by = "GRID5KM_ID") %>% 
+  select(starts_with("Mn_"), geometry) %>% 
+  st_as_sf(agr = "constant")
+
+x.sf <- x %>% 
+  st_as_sf(coords = c("Report_Long", "Report_Lat"), crs = 4326)
+
+plot(st_geometry(humpback.sf), axes = TRUE, main = "Confirmed CA-DC entanglement reports")
+plot(st_geometry(x.sf), add = TRUE, col = "red")
+```
+
+Determine grid cell ID of each entanglement
+
+```{r}
+x.sf.int <- x.sf %>% 
+  st_intersection(grid.5km) %>% 
+  left_join(z, by = c("Year", "Month", "GRID5KM_ID")) %>% 
+  filter(!is.na(H_Abund))
+
+summary(z$H_Abund)
+summary(x.sf.int$H_Abund)
+```
+
+## Plot maps of months with entanglement reports
+
+Prep - copied from 'Whale_risk_maps.Rmd'
+
+```{r}
+# Get/set break points and color palettes
+n.breakpts <- 5
+col.pal <- rev(brewer.pal(n.breakpts, "YlGnBu"))
+h.vals.all <- unlist(st_drop_geometry(humpback.sf))
+
+set.seed(42)
+h.br <- classIntervals(na.omit(h.vals.all), n.breakpts, style = "fisher", samp_prop = 0.01)$brks
+h.br[1] <- 0
+h.br[n.breakpts + 1] <- max(h.vals.all, na.rm = TRUE)
+
+# Get other objects as needed
+map.contours <- st_read("../raimbow-local/Data/West_coast_bathy/West_Coast_geo.shp")
+map.contours.100m <- map.contours %>% filter(Contour == -100) %>% st_geometry()
+map.contours.200m <- map.contours %>% filter(Contour == -200) %>% st_geometry()
+
+map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
+```
+
+Plot!
+
+```{r, fig.width=4, fig.height=7}
+path.plots <- if (flag1 == 1) {
+  "../raimbow-local/Plots/Entanglement_CADC_Mnpreds/"
+} else if (flag1 == 2) {
+  "../raimbow-local/Plots/Entanglement_allMn_Mnpreds/"
+}
+
+# i <- sort(unique(x.sf.int$Year_Month))[1]
+for(i in sort(unique(x.sf.int$Year_Month))) {
+  x.curr <- x.sf.int %>% filter(Year_Month == i)
+  
+  h.sf <- humpback.sf %>% select(contains(i))
+  if (ncol(h.sf) != 2) {
+    warning("No Mn predictions for year-month: ", i)
+    
+  } else {
+    png(paste0(path.plots, "Ent_mn_", i, ".png"), height = 7, width = 4, units = "in", res = 300)
+    
+    plot_raimbow(
+      h.sf, 1, NULL, map.base, 
+      map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
+      col.pal = col.pal, col.breaks = h.br, 
+      asp = 0, ylim = c(32, 48), xaxt = "n", 
+      main = paste("Humpback density", i)
+    )
+    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2, title = "Whales/km2")
+    legend.raimbow.bathy()
+    
+    plot(st_geometry(x.curr), add = TRUE, col = "red", cex = 1.5, lwd = 2)
+    legend(x = par("usr")[2], y = 43, legend = paste0("Entanglement, n=", nrow(x.curr)), 
+           xjust = 1, pch = 1, col = "red", pt.cex = 1.5)
+    
+    graphics::box()
+    
+    dev.off()
+  }
+}
+```
