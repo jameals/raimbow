@@ -2,7 +2,9 @@
 title: "Compare humpback predictions with entanglement reports"
 author: "Sam Woodman"
 date: "1/9/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document examines the corresponding humpback predictions for each entanglement report. This includes 1) the value of the corresponding humpback prediction and 2) a map with a point representing the entanglement report. 
 
-```{r, message=FALSE}
+```{r intro, message=FALSE}
 library(classInt)
 # library(lubridate)
 library(maps)
@@ -29,14 +31,14 @@ source("plot_raimbow.R")
 flag1 <- 2
 
 # Save plots to file
-flag.save <- TRUE
+flag.save <- FALSE
 ```
 
 First we load and process the entanglement data and humpback predictions. Because we are only working with entanglement records, we load all humpback entanglement records and create a column indicating if this was a CA Dungeness crab fishery entanglement with a known gear set location. 
 
 Also of note - currently we are using the Mn predictions overlaid on Blake's 5km grid, and only using entanglement records/predictions after November 2009. It may be good to do this analysis using the 3km predictions all the way back to 2005. 
 
-```{r}
+```{r load}
 # Load Mn preds and convert to long form
 load("../raimbow-local/RDATA_files/Whale_risk.Rdata")
 rm(df.key, fish.all, risk.all)
@@ -104,9 +106,12 @@ summary(x.sf.int$H_Abund)
 
 ## Plot maps of months with entanglement reports
 
-Prep - copied from 'Whale_risk_maps.Rmd'
+Prep work copied from 'Whale_risk_maps.Rmd'. Then plot!
 
-```{r}
+```{r map, fig.width=4, fig.height=7, eval=flag.save}
+# Code only run if flag.save is TRUE
+
+### Prep
 # Get/set break points and color palettes
 n.breakpts <- 5
 col.pal <- rev(brewer.pal(n.breakpts, "YlGnBu"))
@@ -123,11 +128,8 @@ map.contours.100m <- map.contours %>% filter(Contour == -100) %>% st_geometry()
 map.contours.200m <- map.contours %>% filter(Contour == -200) %>% st_geometry()
 
 map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
-```
 
-Plot!
 
-```{r, fig.width=4, fig.height=7}
 if (flag1 == 1) {
   path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_CADC_Mnpreds/"
   x.sf.int <- x.sf.int %>% filter(CA_DC_kgsl)
@@ -135,7 +137,8 @@ if (flag1 == 1) {
   path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_allMn_Mnpreds/"
 }
 
-# i <- sort(unique(x.sf.int$Year_Month))[1]
+
+### Make maps!
 for(i in sort(unique(x.sf.int$Year_Month))) {
   x.curr <- x.sf.int %>% filter(Year_Month == i)
   
@@ -144,8 +147,8 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
     warning("No Mn predictions for year-month: ", i)
     
   } else {
-    if (flag.save) png(paste0(path.plots, "Ent_Mn_", i, ".png"), height = 7, width = 4, 
-                       units = "in", res = 300)
+    png(paste0(path.plots, "Ent_Mn_", i, ".png"), height = 7, width = 4, 
+        units = "in", res = 300)
     
     plot_raimbow(
       h.sf, 1, NULL, map.base, 
@@ -163,26 +166,24 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
     
     graphics::box()
     
-    if (flag.save) dev.off()
+    dev.off()
   }
 }
 ```
 
 ## Compare Mn entanglement record with prediction value
 
-```{r}
+```{r threshold, fig.width=9}
 x.int <- x.sf.int %>% 
   st_drop_geometry() %>% 
   mutate(Year_Month = factor(Year_Month))
 
 x.int %>% 
-  ggplot(aes(Year_Month, H_Abund)) +
+  ggplot(aes(Year_Month, H_Abund, color = CA_DC_kgsl)) +
   geom_point() + 
-  scale_y_continuous(limits = c(0, 0.08)) + 
-  theme(plot.title = element_text(hjust = 0.5), 
-        axis.text.x = element_text(angle = 90, vjust = 0.4), 
-        legend.justification = "top")
-
-
-
+  scale_y_continuous(limits = c(0, 0.08)) +
+  ggtitle("Humpback prediction value for each humpback entanglement report") + 
+  ylab("Humpback density (whales / km2)") + 
+  guides(color = guide_legend(title = "CA-DC known gear set location")) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4))
 ```
