@@ -26,10 +26,15 @@ source("plot_raimbow.R")
 
 # flag1 = 1: Only used CA-DC, know-set records (Sheet 1). 
 # flag1 = 2: Use all humpack entanglement records, regardless of fishery (Sheet 2)
-flag1 <- 1
+flag1 <- 2
+
+# Save plots to file
+flag.save <- TRUE
 ```
 
-First we load and process the entanglement data and humpback predictions
+First we load and process the entanglement data and humpback predictions. Because we are only working with entanglement records, we load all humpback entanglement records and create a column indicating if this was a CA Dungeness crab fishery entanglement with a known gear set location. 
+
+Also of note - currently we are using the Mn predictions overlaid on Blake's 5km grid, and only using entanglement records/predictions after November 2009. It may be good to do this analysis using the 3km predictions all the way back to 2005. 
 
 ```{r}
 # Load Mn preds and convert to long form
@@ -48,16 +53,19 @@ z <- humpback.all %>%
 # z2 <- read_csv("../raimbow-local/Data/Humpback 3km models/Model1_PredictionGrids/WEAR3km_76_2005-01-01to2019-08-14_daily_dens.csv")
 
 
-# Load entanglement data
-x.orig <- if (flag1 == 1) {
-  read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx")
-} else if (flag1 == 2) {
-  read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 2)
-}
-x <- x.orig %>% 
+x.orig1 <- read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 1)
+x.orig2 <- read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 2) %>% 
+  mutate(CA_DC_kgsl = CaseID %in% x.orig1$CaseID)
+stopifnot(
+  sum(x.orig2$CA_DC_kgsl) == nrow(x.orig1), 
+  all(x.orig1$CaseID %in% x.orig2$CaseID)
+)
+
+# 'CA_DC_kgsl' means CA-DC entanglement with known gear set location
+x <- x.orig2 %>% 
   filter(Common_Name %in% c("Humpback", "Humpback Whale"),
-         Year >= 2009) %>%
-  select(CaseID, Year, Month, Day, Report_Lat, Report_Long)
+         Year >= 2010 | (Year == 2009 & Month >= 11)) %>%
+  select(CaseID, Year, Month, Day, Report_Lat, Report_Long, CA_DC_kgsl)
 ```
 
 Load 5km grid, make `sf` objects of the Mn preds and entanglement data, and visualize entanglement report locations
@@ -75,7 +83,10 @@ x.sf <- x %>%
   st_as_sf(coords = c("Report_Long", "Report_Lat"), crs = 4326)
 
 plot(st_geometry(humpback.sf), axes = TRUE, main = "Confirmed CA-DC entanglement reports")
-plot(st_geometry(x.sf), add = TRUE, col = "red")
+plot(st_geometry(filter(x.sf, !CA_DC_kgsl)), add = TRUE, col = "orange")
+plot(st_geometry(filter(x.sf, CA_DC_kgsl)), add = TRUE, col = "red")
+legend("topright", title = "Mn entanglement", legend = c("All fisheries", "CA-DC known-gear-set-location"), 
+       pch = 1, col = c("orange", "red"))
 ```
 
 Determine grid cell ID of each entanglement
@@ -84,7 +95,8 @@ Determine grid cell ID of each entanglement
 x.sf.int <- x.sf %>% 
   st_intersection(grid.5km) %>% 
   left_join(z, by = c("Year", "Month", "GRID5KM_ID")) %>% 
-  filter(!is.na(H_Abund))
+  filter(!is.na(H_Abund)) %>%
+  arrange(Year, Month)
 
 summary(z$H_Abund)
 summary(x.sf.int$H_Abund)
@@ -116,10 +128,11 @@ map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
 Plot!
 
 ```{r, fig.width=4, fig.height=7}
-path.plots <- if (flag1 == 1) {
-  "../raimbow-local/Plots/Entanglement_CADC_Mnpreds/"
+if (flag1 == 1) {
+  path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_CADC_Mnpreds/"
+  x.sf.int <- x.sf.int %>% filter(CA_DC_kgsl)
 } else if (flag1 == 2) {
-  "../raimbow-local/Plots/Entanglement_allMn_Mnpreds/"
+  path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_allMn_Mnpreds/"
 }
 
 # i <- sort(unique(x.sf.int$Year_Month))[1]
@@ -131,7 +144,8 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
     warning("No Mn predictions for year-month: ", i)
     
   } else {
-    png(paste0(path.plots, "Ent_mn_", i, ".png"), height = 7, width = 4, units = "in", res = 300)
+    if (flag.save) png(paste0(path.plots, "Ent_Mn_", i, ".png"), height = 7, width = 4, 
+                       units = "in", res = 300)
     
     plot_raimbow(
       h.sf, 1, NULL, map.base, 
@@ -149,7 +163,26 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
     
     graphics::box()
     
-    dev.off()
+    if (flag.save) dev.off()
   }
 }
+```
+
+## Compare Mn entanglement record with prediction value
+
+```{r}
+x.int <- x.sf.int %>% 
+  st_drop_geometry() %>% 
+  mutate(Year_Month = factor(Year_Month))
+
+x.int %>% 
+  ggplot(aes(Year_Month, H_Abund)) +
+  geom_point() + 
+  scale_y_continuous(limits = c(0, 0.08)) + 
+  theme(plot.title = element_text(hjust = 0.5), 
+        axis.text.x = element_text(angle = 90, vjust = 0.4), 
+        legend.justification = "top")
+
+
+
 ```
