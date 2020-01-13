@@ -176,14 +176,17 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
 ```{r threshold, fig.width=9}
 x.int <- x.sf.int %>% 
   st_drop_geometry() %>% 
-  mutate(Year_Month = factor(Year_Month))
+  mutate(Year_Month = factor(Year_Month), 
+         In_Season = factor(ifelse(between(Month, 3, 7), 19, 15), 
+                            labels = c("August-February", "March-July")))
 
 x.int %>% 
-  ggplot(aes(Year_Month, H_Abund, color = CA_DC_kgsl)) +
-  geom_point() + 
+  ggplot(aes(Year_Month, H_Abund, colour = CA_DC_kgsl, shape = In_Season)) +
+  geom_point(size = 3) + 
   scale_y_continuous(limits = c(0, 0.08)) +
   ggtitle("Humpback prediction value for each humpback entanglement report") + 
   ylab("Humpback density (whales / km2)") + 
-  guides(color = guide_legend(title = "CA-DC known gear set location")) + 
+  guides(color = guide_legend(title = "CA-DC known gear set location"), 
+         shape = guide_legend(title = "Report month")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4))
 ```
