@@ -42,3 +42,4 @@ rsconnect/
 maps_tmp*
 *exp*
 Whale_risk_timeseries_old/
+*_job.R
