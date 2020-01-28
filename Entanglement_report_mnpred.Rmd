@@ -3,8 +3,8 @@ title: "Compare humpback predictions with entanglement reports"
 author: "Sam Woodman"
 date: "1/9/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}

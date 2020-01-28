@@ -1,8 +1,10 @@
 ---
 title: "Entanglements"
 author: "Sam Woodman"
-date: "1/7/2020"
-output: html_document
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -50,7 +52,7 @@ Read in entanglement data, and select relevant columns. Then assign each entangl
 #   32.5
 # )
 
-# Monterey definitely has some are in CA-SCen too
+# Monterey definitely has some area in CA-SCen too
 reg.list <- list(
   "Del_Norte" = "CA-N", "Humboldt" = "CA-N", "Mendocino" = "CA-N", 
   "Sonoma" = "CA-Cen", "Marin" = "CA-Cen", "San_Francisco" = "CA-Cen",
@@ -105,7 +107,7 @@ ggplot(x, aes(x = ym, fill = region)) +
   geom_bar() + 
   geom_vline(xintercept = vert.lines, col = "black", lwd = 0.35) + 
   scale_fill_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
-  ggtitle("CA DC confirmed and known-set-location entanglements") +
+  ggtitle("CA DC confirmed and known-set-location entanglement reports") +
   xlab("Year_Month") +
   ylab("Entanglements") +
   scale_x_discrete(drop = FALSE, breaks = x.lab) +
