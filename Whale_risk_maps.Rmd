@@ -118,6 +118,10 @@ set.seed(42)
 r.br <- classIntervals(na.omit(r.vals.all), n.breakpts, style = "fisher")$brks
 r.br[1] <- 0
 r.br[n.breakpts + 1] <- ceiling(max(r.vals.all, na.rm = TRUE))
+
+print(h.br)
+print(f.br)
+print(r.br)
 ```
 
 ## Tester plots
