@@ -127,7 +127,7 @@ tm.obj <- tm_shape(rmap.base, bbox = st_bbox(x.sf)) +
             text.size = 2, title.size = 3) +
   # # Issue: graticules span the facet boxes, but the map does not..
   # tm_graticules(ticks = TRUE, lines = FALSE, n.y = 5, n.x = 5, labels.size = 1)
-  # tm_layout(panel.label.size = 2.3)
+  tm_layout(panel.label.size = 2.3)
 
 
 tm.obj
