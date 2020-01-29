@@ -97,7 +97,7 @@ x.sf <- x.meanall %>%
 
 Now we plot things
 
-```{r, fig.width=10, fig.height=16}
+```{r, fig.width=16, fig.height=9}
 ### Plot prep
 tmap_mode("plot")
 col.breaks <- c(0, 0.01, 0.02, 0.03, 0.05, 0.08)
@@ -112,23 +112,22 @@ rmap.base <- st_geometry(ne_states(country = "United States of America", returnc
 
 ### Plot
 x.toplot <- x.sf %>%
-  filter(!is.na(mn_avgdens), 
-         pixel %in% 30000:30500)
+  filter(!is.na(mn_avgdens)) #, year %in% c(2005:2007)) #, pixel %in% 30000:30500)
 
 tm.obj <- tm_shape(rmap.base, bbox = st_bbox(x.sf)) + 
-  tm_polygons() + 
+  tm_polygons() +
   tm_shape(x.toplot) + 
   tm_fill(col = "mn_avgdens", border.col = "transparent",
           style = "fixed", breaks = col.breaks, palette = col.pal, 
           colorNA = NULL, showNA = FALSE, 
           title = "Whales / km2", legend.reverse = TRUE) + 
-  tm_facets(by = "year", nrow = 3, ncol = 5, 
+  tm_facets(by = "year", nrow = 3, ncol = 5,
             free.coords = FALSE, free.scales = FALSE) +
   tm_legend(outside = TRUE, position = c("right", "center"), outside.size = 0.2,
             text.size = 2, title.size = 3) +
   # # Issue: graticules span the facet boxes, but the map does not..
-  # tm_graticules(ticks = TRUE, lines = FALSE, n.y = 5, n.x = 5, labels.size = 1) +
-  tm_layout(panel.label.size = 2.3)
+  # tm_graticules(ticks = TRUE, lines = FALSE, n.y = 5, n.x = 5, labels.size = 1)
+  # tm_layout(panel.label.size = 2.3)
 
 
 tm.obj
