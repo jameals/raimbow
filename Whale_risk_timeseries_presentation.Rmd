@@ -1,7 +1,7 @@
 ---
 title: "Humpback risk of entanglement - baseline analysis"
 author: "Sam Woodman"
-date: "1/30/2020"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
    powerpoint_presentation: default
    beamer_presentation: default

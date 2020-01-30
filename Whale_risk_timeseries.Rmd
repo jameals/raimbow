@@ -1,10 +1,10 @@
 ---
 title: "Whale risk time series"
 author: "Sam Woodman"
-date: "12/18/2019"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  html_document: default
-  pdf_document: default
+    html_document: default
+    pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -15,10 +15,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
 
-The whale risk files, e.g. 'Whale_risk.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk).
+The whale risk file, e.g. 'Whale_risk.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk). 
 
-Outstanding questions:
-
+This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
 ```{r, message=FALSE}
 library(gridExtra)
@@ -37,7 +36,9 @@ if (user == "JS") {
   save.flag <- FALSE
   file.landerased <- ""
   file.risk <- ""
+  
   path.plots <- ""
+  path.rdata <- ""
   
 } else if (user == "SMW") {
   save.flag <- FALSE
@@ -61,12 +62,12 @@ Load humpback, fishing, and risk values, and convert humpback and risk densities
 load(file.risk) # Created in Whale_risk.Rmd; Mn and risk values are densities
 
 mult.func <- function(x, y) {x * y}
-grid.area <- humpback.all %>% select(GRID5KM_ID, area_km_lno)
+grid.area <- humpback.all.dens %>% select(GRID5KM_ID, area_km_lno)
 
-humpback.abund <- humpback.all %>% 
+humpback.abund <- humpback.all.dens %>% 
   mutate_at(vars(starts_with("Mn_")), mult.func, y = grid.area$area_km_lno)
-# fish.all is already non-density values
-risk.total <- risk.all %>% 
+# fish.all.num is already non-density values
+risk.total <- risk.all.dens %>% 
   mutate_at(vars(starts_with("Mn_DC_risk_")), mult.func, y = grid.area$area_km_lno)
 ```
 
@@ -75,7 +76,7 @@ Next, we remove the rows with all NA risk values before plotting
 ```{r}
 ### Monthly
 risk.nona.any <- apply(select(risk.total, starts_with("Mn_DC_risk")), 1, function(i) any(!is.na(i))) 
-fish.nona.any <- apply(select(fish.all, starts_with("DC_")), 1, function(i) any(!is.na(i)))
+fish.nona.any <- apply(select(fish.all.num, starts_with("DC_")), 1, function(i) any(!is.na(i)))
 
 # Fishing data has smaller spatial footprint, and thus fish NAs should match risk NAs
 #   However, it shouldn't be a show-stopper if this isn't true
@@ -85,8 +86,8 @@ identical(risk.nona.any, fish.nona.any)
 #   but mostly for summing data only across cells that have risk
 risk.nona <- risk.total[risk.nona.any, ]
 humpback.nona <- humpback.abund[risk.nona.any, ]
-fish.nona <- fish.all[risk.nona.any, ]
-rm(risk.all, risk.total, humpback.abund, humpback.all, fish.all)
+fish.nona <- fish.all.num[risk.nona.any, ]
+rm(risk.all.dens, risk.total, humpback.abund, humpback.all.dens, fish.all.num)
 ```
 
 ## Data processing
@@ -275,6 +276,8 @@ if (save.flag)
 
 In addition to visualizing the actual risk, humpback, and fishing values, we want to examine the anomalies for these values, i.e. the difference of values in one year from the mean value. Specifically, we want to examine how values differ from the mean values from 'normal fishing seasons' (2009 - 2013). We will evaluate these anomalies through both 1) ratios, i.e. x / x_mean, 2) (additive) anomaly, i.e. x - x_mean, and 3) using z-scores, i.e. (x - x_mean) / x_sd. 
 
+Warning messages in these plots are for NA/0 values.
+
 First we calculate the mean and sd values:
 
 ```{r} 
@@ -319,7 +322,7 @@ Now we calculate the ratio of each value to the mean, ...
 all.df.anom <- all.df.summ %>% 
   select(region, ym, yr, mon) %>% 
   bind_cols(tmp.vals / tmp.mean) #replace(tmp.mean, tmp.mean == 0, 0.1))
-  
+
 
 p1 <- raimbow_ggplot(
   all.df.anom, risk_sum_dens , plot.main = "Risk - ratios", 
@@ -346,8 +349,8 @@ if (save.flag)
 ```{r, fig.width=10, fig.height=10}
 all.df.anom <- all.df.summ %>% 
   select(region, ym, yr, mon) %>% 
-  bind_cols(tmp.vals - tmp.mean) #replace(tmp.mean, tmp.mean == 0, 0.1))
-  
+  bind_cols(tmp.vals - tmp.mean)
+
 
 p1 <- raimbow_ggplot(
   all.df.anom, risk_sum_dens , plot.main = "Risk - anomalies", 
@@ -369,12 +372,15 @@ if (save.flag)
          height = 10, width = 10)
 ```
 
-...and the z scores. Note that for both, we change 0 values in the denominator to 0.1 so as to avoid divide-by-zero errors. However, this value is arbitrary and this method could likely be improved.
+...and the z scores. Note that we could change 0 values in the denominator to 0.1 so as to avoid divide-by-zero errors, but this is rather arbitrary and thus NA values are kept for the time being
 
 ```{r, fig.width=10, fig.height=10}
 all.df.zscore <- all.df.summ %>% 
   select(region, ym, yr, mon) %>% 
-  bind_cols((tmp.vals - tmp.mean) / replace(tmp.sd, tmp.sd == 0, 0.1)) #tmp.sd)
+  bind_cols((tmp.vals - tmp.mean) / tmp.sd) %>% #replace(tmp.sd, tmp.sd == 0, 0.1))
+  mutate(risk_sum_dens = ifelse(is.infinite(risk_sum_dens), NA, risk_sum_dens), 
+         mn_sum_dens = ifelse(is.infinite(mn_sum_dens), NA, mn_sum_dens), 
+         vms_sum_dens = ifelse(is.infinite(vms_sum_dens), NA, vms_sum_dens))
 
 p1 <- raimbow_ggplot(
   all.df.zscore, risk_sum_dens , plot.main = "Risk - z-score", 

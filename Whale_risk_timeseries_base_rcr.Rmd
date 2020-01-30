@@ -1,7 +1,7 @@
 ---
 title: "Whale risk time series baseline - first look, region-calculated risk"
 author: "Sam Woodman"
-date: "1/8/2020"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: html_document
 ---
 
@@ -15,7 +15,9 @@ This document is a first look at how risk would change if all humpback or fishin
 
 As you'll see below, the patterns shown by the rcr risk are very similar to the patterns seen in the plots from 'Whale_risk_timeseries.Rmd'. However, the rcr values will be much larger than the grid-cell-calculated risk, as the product of the sums is not the same as the sum of the products.
 
-This analysis will need to be done with grid-cell-calculated risk, perhaps once confidential data is in-hand.?
+This analysis is done with grid-cell-calculated risk in 'Whale_risk_timeseries_base.Rmd'.
+
+This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
 ```{r message=FALSE}
 library(gridExtra)

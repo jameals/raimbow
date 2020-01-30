@@ -1,7 +1,7 @@
 ---
 title: "Whale risk heat maps"
 author: "Sam Woodman"
-date: "12/5/2019"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: html_document
 ---
 
@@ -11,11 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This code was written to plot heat maps of simple, linear, whale risk. It uses the humpback abundances, VMS data, and risk values calculated (and saved) in the first half of 'Whale_risk_timeseries.R'. 
+This code was written to plot heat maps of linear humpback risk of entanglement. It uses the humpback, fishing, and risk values calculated (and saved) in 'Whale_risk.Rmd'. 
 
 ```{r, message=FALSE}
-rm(list = ls())
-
 library(classInt)
 library(dplyr)
 library(maps)
@@ -46,7 +44,7 @@ if (user == "JS") {
 
 ## Load and process data
 
-Now load humpback abundance, number of VMS pings, and risk values. Make these `sf` objects (`h.sf`, `f.sf`, and `r.sf`, respectively) by joining them with Blake's 5km grid, and convert the values to densities. Then we can examine the distribution of the values across all years and months.
+Now load the values. The saved values are humpback densities, number of VMS pings, and risk densities. Make these `sf` objects (`h.sf`, `f.sf`, and `r.sf`, respectively) by joining them with Blake's 5km grid, and convert all the values to densities (i.e. these `sf` objects will all contain densities). Then we can examine the distribution of the values across all years and months.
 
 ```{r}
 load(file.risk)
@@ -63,20 +61,20 @@ load(paste0(path.rdata, "Grid_5km_landerased.RDATA"))
 
 # Process humpback, VMS, and risk data, including converting fishing values to density
 div.func <- function(x, y) {x / y}
-grid.area <- fish.all$area_km_lno
+grid.area <- fish.all.num$area_km_lno
 
-h.sf <- humpback.all %>% 
+h.sf <- humpback.all.dens %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf(agr = "constant") %>% 
   select(starts_with("Mn_"))
 
-f.sf <- fish.all %>% 
+f.sf <- fish.all.num %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   mutate_at(vars(starts_with("DC_")), div.func, y = grid.area) %>%
   st_sf(agr = "constant") %>% 
   select(starts_with("DC_"))
 
-r.sf <- risk.all %>% 
+r.sf <- risk.all.dens %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf(agr = "constant") %>% 
   select(starts_with("Mn_DC_risk"))

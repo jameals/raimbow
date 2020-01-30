@@ -1,7 +1,7 @@
 ---
 title: "Whale risk time series baseline - grid-cell calculated risk"
 author: "Sam Woodman"
-date: "1/9/2020"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
   html_document: default
   pdf_document: default
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document examines how risk would change if all humpback or fishing values were 'baseline' values, meaning the average of the values for the 2009-2010 to 2012-2013 fishing seasons, which are assumed to be the four 'normal' seasons in the time series. These risk values are referred to as baseline-### risk, with ### being either "whale" or "fish", depending on which baseline values were used. The baseline values are calculated on a grid-cell level, meaning that the whale/fishing values for the four 'baseline' seasons are averaged by grid cell. Risk is also calculated by grid cell, and then is summed across regions for the timeseries. Grid cells with `NA` fishing values are considered to have 0 fishing effort, and thus also have 0 risk.
 
-Note this analysis currently uses non-confidential fishing data.
+This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
 ```{r message=FALSE}
 library(gridExtra)
