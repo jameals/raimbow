@@ -30,6 +30,7 @@ if (user == "JS") {
 } else if (user == "SMW") {
   file.ent <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
   path.rdata <- "../raimbow-local/RDATA_files/"
+  path.plots <- "../raimbow-local/Plots/Entanglementreport_timeseries/"
   
 } else {
   stop("User not recognized")
@@ -116,14 +117,15 @@ ggplot(x, aes(x = ym, fill = region)) +
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(angle = 90, vjust = 0.4),
         legend.justification = "top")
-```
 
+ggsave(paste0(path.plots, "Ent_report_timeseries.png"), height = 4, width = 10)
+```
 
 ## Compare entanglement reports with risk time series values
 
 Now we load the time series data, and plot histograms of the risk time series values (densities) by region. Then we can make the smae plots, but color-coded to indicate if there was an entanglement report during that year-month.
 
-```{r, fig.width=14}
+```{r, fig.width=14, fig.height=8}
 load(paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
 
 ### Add entanglement data to time series data
@@ -146,11 +148,12 @@ y <- x %>%
 
 # Plot histogram of time series risk values
 ggplot(all.df.summ, aes(x = risk_sum_dens)) +
-  geom_histogram(binwidth = 0.005) +
-  facet_grid(rows = vars(region)) + 
+  geom_histogram(binwidth = 0.01) +
+  facet_grid(cols = vars(region)) + 
   xlab("Risk") + 
   ggtitle("Risk time series")
 
+ggsave(paste0(path.plots, "Risk_hist_all.png"), height = 8, width = 14)
 
 
 # Plot histogram of time series risk values, color-coded by whether or not there was an entanglement
@@ -163,8 +166,7 @@ y %>%
   xlab("Risk") + 
   ggtitle("Risk time series with entanglement reports - original (actual) report timing")
 
-ggsave("../raimbow-local/Plots/Entanglementreport_timeseries/Risk_hist_orig.png", 
-       height = 8, width = 14)
+ggsave(paste0(path.plots, "Risk_hist_orig.png"), height = 8, width = 14)
 ```
 
 ## Compare entanglement reports with risk time series values - pt2
@@ -173,7 +175,7 @@ Now, we wish to take into account the fact that we do not know exactly when the 
 
 TODO: we also want to look at the sum of the risk values that occurred in that region within the lookback window, but not sure yet how to make a meaningful plot.
 
-```{r, fig.width=14}
+```{r, fig.width=14, fig.height=8}
 # Set size of lookback window
 # lookback.mons <- 3
 
@@ -228,10 +230,7 @@ for (lookback.mons in 0:12) {
   
   
   # Save plot
-  plot.path <- paste0(
-    "../raimbow-local/Plots/Entanglementreport_timeseries/Risk_hist_lookback_", 
-    lookback.mons, "mons.png"
-  )
-  ggsave(plot.path, gg2, height = 8, width = 14)
+  file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
+  ggsave(file.plot, gg2, height = 8, width = 14)
 }
 ```
