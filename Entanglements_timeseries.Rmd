@@ -3,8 +3,8 @@ title: "Entanglements"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,27 +13,28 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Goal: Examine monthly risk histograms relative to entanglement report locations.
-
-
+Goal: Examine monthly risk histograms relative to entanglement report locations. Use lookback window to account for the uncertainty in when the actual entanglement occurred.
 
 ```{r, message=FALSE}
-
-library(dplyr)
-library(ggplot2)
+library(gridExtra)
+library(lubridate)
 library(readxl)
-library(tibble)
+library(tidyverse)
 
+source("Whale_risk_timeseries_funcs.R")
 source("User_script_local.R")
+
 if (user == "JS") {
   file.ent
   
 } else if (user == "SMW") {
   file.ent <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
+  path.rdata <- "../raimbow-local/RDATA_files/"
   
 } else {
   stop("User not recognized")
 }
+
 ```
 
 ## Data import and processing
@@ -85,7 +86,8 @@ x <- x.orig %>%
   left_join(county.reg, by = c("Gear_Set_County" = "county")) %>% 
   mutate(Gear_Set_County = as.factor(Gear_Set_County), 
          region = factor(region, levels = c("WA", "OR", "CA-N", "CA-Cen", "CA-SCen")), 
-         ym = factor(paste(Year, sprintf("%02d", Month), sep = "_"), levels = ym.levels$ym)) %>% 
+         ym = factor(paste(Year, sprintf("%02d", Month), sep = "_"), levels = ym.levels$ym), 
+         ym_date = parse_date_time(ym, "ym")) %>% 
   filter(!is.na(ym))
 
 
@@ -95,7 +97,7 @@ x <- x.orig %>%
 #   group_by(ym)
 ```
 
-Make some histograms of...
+Make time series of the entanglement reports
 
 ```{r, fig.height=4, fig.width=10}
 x.max <- length(levels(x$ym))
@@ -116,3 +118,120 @@ ggplot(x, aes(x = ym, fill = region)) +
         legend.justification = "top")
 ```
 
+
+## Compare entanglement reports with risk time series values
+
+Now we load the time series data, and plot histograms of the risk time series values (densities) by region. Then we can make the smae plots, but color-coded to indicate if there was an entanglement report during that year-month.
+
+```{r, fig.width=14}
+load(paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
+
+### Add entanglement data to time series data
+all.df.summ.join <- all.df.summ %>% 
+  mutate(ym = sub("-", "_", ym), 
+         region = factor(region, levels = levels(x$region))) %>% 
+  select(ym, region, risk_sum_dens)
+
+y <- x %>% 
+  group_by(ym, region) %>%
+  summarise(e_count = n()) %>%
+  ungroup() %>% 
+  right_join(all.df.summ.join, by = c("ym", "region")) %>%
+  replace_na(list(e_count = 0)) %>%
+  mutate(e_count_fac = factor(e_count), 
+         e_count_any = e_count > 0, 
+         ym = factor(ym), 
+         region = factor(region, levels(x$region)))
+
+
+# Plot histogram of time series risk values
+ggplot(all.df.summ, aes(x = risk_sum_dens)) +
+  geom_histogram(binwidth = 0.005) +
+  facet_grid(rows = vars(region)) + 
+  xlab("Risk") + 
+  ggtitle("Risk time series")
+
+
+
+# Plot histogram of time series risk values, color-coded by whether or not there was an entanglement
+y %>% 
+  filter(region %in% c("CA-N", "CA-Cen", "CA-SCen")) %>%
+  ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
+  geom_histogram(binwidth = 0.01, position = "stack") +
+  facet_grid(cols = vars(region)) + 
+  guides(fill = guide_legend(title = "Entanglement count")) + 
+  xlab("Risk") + 
+  ggtitle("Risk time series with entanglement reports - original (actual) report timing")
+
+ggsave("../raimbow-local/Plots/Entanglementreport_timeseries/Risk_hist_orig.png", 
+       height = 8, width = 14)
+```
+
+## Compare entanglement reports with risk time series values - pt2
+
+Now, we wish to take into account the fact that we do not know exactly when the entanglement occurred. To do this, we use a 'lookback window', meaning we look back at the maximum risk value that occurred in that region within the past 1 month, 2 months, etc. 
+
+TODO: we also want to look at the sum of the risk values that occurred in that region within the lookback window, but not sure yet how to make a meaningful plot.
+
+```{r, fig.width=14}
+# Set size of lookback window
+# lookback.mons <- 3
+
+# Loop through possible lookback windows
+for (lookback.mons in 0:12) {
+  # Prep entanglement records - add idx column
+  x.pre <- x %>% 
+    select(region, ym_date) %>% 
+    mutate(idx = seq_along(ym_date))
+  
+  # Get all ym values in lookback window, determine which ym value has max 
+  x2 <- lapply(0:lookback.mons, function(i) {
+    x.pre %>% 
+      mutate(ym_date_curr = ym_date %m-% months(i), 
+             ym_curr = sub("-", "_", substr(as.character(ym_date_curr), 1, 7)))
+  }) %>% 
+    bind_rows() %>% 
+    select(region, ym = ym_curr, idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region")) %>% 
+    group_by(idx) %>% 
+    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
+              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
+              ym_max = ym[which.max(risk_sum_dens)]) %>% 
+    ungroup() %>% 
+    right_join(x.pre, by = "idx") %>% 
+    select(idx, ym = ym_max, region, r_max, r_sum)
+  
+  # Summarise entanglement count by max ym
+  y2 <- x2 %>% 
+    group_by(ym, region) %>%
+    summarise(e_count = n()) %>%
+    ungroup() %>% 
+    right_join(all.df.summ.join, by = c("ym", "region")) %>%
+    replace_na(list(e_count = 0)) %>%
+    mutate(e_count_fac = factor(e_count, levels = 0:8), 
+           e_count_any = e_count > 0, 
+           ym = factor(ym), 
+           region = factor(region, levels(x$region)))
+  
+  # Plot
+  gg2 <- y2 %>% 
+    filter(region %in% c("CA-N", "CA-Cen", "CA-SCen")) %>%
+    ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
+    geom_histogram(binwidth = 0.01, position = "stack") +
+    facet_grid(cols = vars(region)) + 
+    # guides(fill = guide_legend(title = "Entanglement count")) + 
+    scale_fill_discrete(drop = FALSE, name = "Entanglement count") + 
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    xlab("Risk") + 
+    ggtitle(paste("Risk time series with entanglement reports -", lookback.mons, 
+                  "month lookback window, max value within window"))
+  
+  
+  # Save plot
+  plot.path <- paste0(
+    "../raimbow-local/Plots/Entanglementreport_timeseries/Risk_hist_lookback_", 
+    lookback.mons, "mons.png"
+  )
+  ggsave(plot.path, gg2, height = 8, width = 14)
+}
+```
