@@ -59,7 +59,7 @@ x <- all.df %>%
 Now we can summarise (sum) the values by region
 
 ```{r}
-# Sum by region
+# Summarize (sum) by region
 x.summ <- x %>%
   filter(region != "CA-S") %>%
   group_by(region, ym) %>%
@@ -82,7 +82,7 @@ x.summ <- x %>%
          risk_sum_dens_basew = risk_sum_total_basew / area_sum,
          risk_sum_dens_basef = risk_sum_total_basef / area_sum)
 
-# save(x, x.summ, file = "../raimbow-local/RDATA_files/Whale_risk_timeseries_base.Rdata"))
+# save(x, x.summ, file = "../raimbow-local/RDATA_files/Whale_risk_timeseries_base.Rdata")
  
 x.summ %>%
   filter(!duplicated(region)) %>%
