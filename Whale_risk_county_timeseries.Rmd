@@ -1,0 +1,319 @@
+---
+title: "Whale risk time series - county"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+    html_document: default
+    pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+README: This document is the same as 'Whale_risk_timeseries.Rmd', except using counties for regions and removing the anomaly section.
+
+This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and converts the humpback and risk densities to absolute values (abundance and abundance * VMS measure, respectively) in order to sum values by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
+
+The whale risk file, e.g. 'Whale_risk.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk). 
+
+This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
+
+```{r, message=FALSE}
+library(gridExtra)
+library(lubridate)
+library(sf)
+library(tidyverse)
+
+source("Whale_risk_timeseries_funcs.R")
+fig.h <- 14
+```
+
+Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
+
+```{r}
+source("User_script_local.R")
+if (user == "JS") {
+  save.flag <- FALSE
+  file.landerased <- ""
+  file.risk <- ""
+  
+  path.plots <- ""
+  path.rdata <- ""
+  
+} else if (user == "SMW") {
+  save.flag <- FALSE
+  file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+  file.risk <- "../raimbow-local/RDATA_files/Whale_risk.Rdata"
+  
+  path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries/"
+  path.rdata <- "../raimbow-local/RDATA_files/"
+  
+  
+} else {
+  stop("User not recognized")
+}
+```
+
+## Prep
+
+Load humpback, fishing, and risk values, and convert humpback and risk densities to total values. 
+
+```{r}
+load(file.risk) # Created in Whale_risk.Rmd; Mn and risk values are densities
+
+mult.func <- function(x, y) {x * y}
+grid.area <- humpback.all.dens %>% select(GRID5KM_ID, area_km_lno)
+
+humpback.abund <- humpback.all.dens %>% 
+  mutate_at(vars(starts_with("Mn_")), mult.func, y = grid.area$area_km_lno)
+# fish.all.num is already non-density values
+risk.total <- risk.all.dens %>% 
+  mutate_at(vars(starts_with("Mn_DC_risk_")), mult.func, y = grid.area$area_km_lno)
+```
+
+Next, we remove the rows with all NA risk values before plotting
+
+```{r}
+### Monthly
+risk.nona.any <- apply(select(risk.total, starts_with("Mn_DC_risk")), 1, function(i) any(!is.na(i))) 
+fish.nona.any <- apply(select(fish.all.num, starts_with("DC_")), 1, function(i) any(!is.na(i)))
+
+# Fishing data has smaller spatial footprint, and thus fish NAs should match risk NAs
+#   However, it shouldn't be a show-stopper if this isn't true
+identical(risk.nona.any, fish.nona.any)
+
+# Will do all plotting with nona data frames for ease of computation, 
+#   but mostly for summing data only across cells that have risk
+risk.nona <- risk.total[risk.nona.any, ]
+humpback.nona <- humpback.abund[risk.nona.any, ]
+fish.nona <- fish.all.num[risk.nona.any, ]
+rm(risk.all.dens, risk.total, humpback.abund, humpback.all.dens, fish.all.num)
+```
+
+## Data processing
+
+The first step is to make the whale, VMS, and risk data frames 'long', meaning there is one row for each grid cell for each time period
+
+```{r}
+h.df <- humpback.nona %>% 
+  gather(col_name, mn_abund, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10)), 
+         ym = paste(yr, sprintf("%02d", mon), sep = "-")) %>% 
+  select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, ym, yr, mon, mn_abund)
+
+f.df <- fish.nona %>% 
+  gather(col_name, vms_pings, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10))) %>% 
+  select(-col_name)
+
+r.df <- risk.nona %>% 
+  gather(col_name, risk_total, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 12, 15)), 
+         mon = as.numeric(substr(col_name, 17, 18))) %>% 
+  select(-col_name)
+
+# Sanity check
+col.same <- c("GRID5KM_ID", "LONGITUDE", "LATITUDE", "area_km_lno", "yr", "mon")
+stopifnot(
+  all.equal(h.df[, col.same], f.df[, col.same]), 
+  all.equal(h.df[, col.same], r.df[, col.same])
+)
+
+# 
+all.df <- h.df %>% 
+  left_join(f.df, by = col.same) %>% 
+  left_join(r.df, by = col.same)
+rm(humpback.nona, fish.nona, risk.nona)
+```
+
+Next, we determine the region of each grid cell. In this document, region is county-level for CA counties!
+
+```{r}
+# From Entanglement_gridID.Rmd
+reg.bound <- c(
+  42, 41.5, 40, 38.83, 38.3, 
+  37.8, 37.7, 37.1, 36.83, 35.8, 
+  35, 34.375, 34, 33.75, 33.35, 
+  32.5
+)
+
+reg.list <- list(
+  "Del_Norte"       = c(reg.bound[1], reg.bound[2]), 
+  "Humboldt"        = c(reg.bound[2], reg.bound[3]), 
+  "Mendocino"       = c(reg.bound[3], reg.bound[4]), 
+  "Sonoma"          = c(reg.bound[4], reg.bound[5]), 
+  "Marin"           = c(reg.bound[5], reg.bound[6]), 
+  "San_Francisco"   = c(reg.bound[6], reg.bound[7]), 
+  "San_Mateo"       = c(reg.bound[7], reg.bound[8]), 
+  "Santa_Cruz"      = c(reg.bound[8], reg.bound[9]), 
+  "Monterey"        = c(reg.bound[9], reg.bound[10]), 
+  "San_Luis_Obispo" = c(reg.bound[10], reg.bound[11]), 
+  "Santa_Barbara"   = c(reg.bound[11], reg.bound[12]), 
+  "Ventura"         = c(reg.bound[12], reg.bound[13]), 
+  "Los_Angeles"     = c(reg.bound[13], reg.bound[14]), 
+  "Orange"          = c(reg.bound[14], reg.bound[15]), 
+  "San_Diego"       = c(reg.bound[15], reg.bound[16])
+)
+
+reg.names <- names(reg.list)
+
+# Add in WA and OR
+reg.bound <- rev(c(50, 46.25, reg.bound))
+reg.names <- rev(c("WA", "OR", reg.names))
+stopifnot(length(reg.bound) == length(reg.names) + 1)
+
+grid.region <- all.df %>%
+  filter(!duplicated(GRID5KM_ID)) %>%
+  arrange(GRID5KM_ID) %>%
+  mutate(region.idx = findInterval(LATITUDE, reg.bound, left.open = TRUE),
+         region = factor(reg.names[region.idx], levels = rev(reg.names))) %>%
+  select(GRID5KM_ID, region)
+```
+
+```{r}
+# reg.bound <- c(32.5, 34.4, 36.3, 38.76683, 42, 46.25, 50)
+# reg.names <- c("CA-S", "CA-SCen", "CA-Cen", "CA-N", "OR", "WA")
+# stopifnot(length(reg.names) == length(reg.bound) - 1)
+# 
+# grid.region <- all.df %>%
+#   filter(!duplicated(GRID5KM_ID)) %>%
+#   arrange(GRID5KM_ID) %>%
+#   mutate(region.idx = findInterval(LATITUDE, reg.bound, left.open = TRUE),
+#          region = factor(reg.names[region.idx], levels = rev(reg.names))) %>%
+#   select(GRID5KM_ID, region)
+```
+
+We can visualize regions
+
+```{r,fig.width=4, fig.height=6}
+library(rnaturalearth)
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")), 
+  ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
+    filter(admin %in% c("Canada", "Mexico")) %>% 
+    st_geometry()
+)
+
+load(file.landerased)
+grid.region.sf <- grid.region %>% 
+  mutate(region = factor(region, levels = reg.names)) %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf()
+plot(grid.region.sf["region"], main = "Region", axes = TRUE, border = NA, 
+     xaxt = "n", key.length = 1, key.width = lcm(3.2), reset = FALSE)
+sf::.degAxis(1, at = c(-126, -122, -118))
+plot(rmap.base, add = TRUE, col = "tan", border = "black")
+```
+
+We want to sum the values by region and time period. We also calculate the densities, using either the area of cells with non-NA values for 1) that specific month or 2) the whole time series. We remove region CA-S because of the lack of fishing (and thus risk) in that region
+
+```{r}
+all.df <- all.df %>% 
+  left_join(grid.region, by = "GRID5KM_ID") %>% 
+  filter(!(region %in% c("Ventura", "Los_Angeles", "Orange", "San_Diego")))
+
+all.df.summ <- all.df %>% 
+  filter(region != "CA-S") %>% 
+  group_by(region, ym) %>% 
+  summarise(yr = unique(yr), 
+            mon = unique(mon), 
+            mn_sum_abund = sum(mn_abund, na.rm = TRUE), 
+            vms_sum_pings = sum(vms_pings, na.rm = TRUE), 
+            risk_sum_total = sum(risk_total, na.rm = TRUE), 
+            area_sum = sum(area_km_lno), 
+            area_sum_mon1 = sum(area_km_lno[!is.na(mn_abund)]), 
+            area_sum_mon2 = sum(area_km_lno[!is.na(risk_total)])) %>% 
+  ungroup() %>% 
+  mutate(mn_sum_dens = mn_sum_abund / area_sum, 
+         vms_sum_dens = vms_sum_pings / area_sum, 
+         risk_sum_dens = risk_sum_total / area_sum, 
+         mn_sum_dens_mon = mn_sum_abund / area_sum_mon1, 
+         vms_sum_dens_mon = vms_sum_pings / area_sum_mon2, 
+         risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
+  replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
+
+# if (save.flag) save(all.df, all.df.summ, file = paste0(path.rdata, "Whale_risk_county_timeseries.Rdata"))
+
+all.df.summ %>% 
+  filter(!duplicated(region)) %>% 
+  select(region, area_sum)
+```
+
+## Plot
+
+Once we have done all ofthe above data processing, we can generate plots. First, total sum plots:
+
+```{r, fig.height=fig.h, fig.width=10}
+p1 <- raimbow_ggplot_region(
+  all.df.summ, risk_sum_total, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings"
+)
+p2 <- raimbow_ggplot_region(
+  all.df.summ, mn_sum_abund, plot.main = "Humpback whales", 
+  y.lab = "Whales"
+)
+p3 <- raimbow_ggplot_region(
+  all.df.summ, vms_sum_pings, plot.main = "Fishing", 
+  y.lab = "VMS pings"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Linear_humpback_risk_regional.png", p123, path = path.plots, 
+         height = 10, width = 10)
+```
+
+Next we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for the whole time series
+
+```{r, fig.height=fig.h, fig.width=10}
+p1 <- raimbow_ggplot_region(
+  all.df.summ, risk_sum_dens, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings / km2"
+)
+p2 <- raimbow_ggplot_region(
+  all.df.summ, mn_sum_dens, plot.main = "Humpback whales", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot_region(
+  all.df.summ, vms_sum_dens, plot.main = "Fishing", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag)
+  ggsave(filename = "Linear_humpback_risk_regional_areanorm.png", p123, path = path.plots, 
+         height = 10, width = 10)
+```
+
+Finally, we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for that specific month
+
+```{r, fig.height=fig.h, fig.width=10}
+p1 <- raimbow_ggplot_region(
+  all.df.summ, risk_sum_dens_mon, plot.main = "Risk", 
+  y.lab = "Whales * VMS pings / km2"
+)
+p2 <- raimbow_ggplot_region(
+  all.df.summ, mn_sum_dens_mon, plot.main = "Humpback whales", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot_region(
+  all.df.summ, vms_sum_dens_mon, plot.main = "Fishing", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Linear_humpback_risk_regional_monthlydens.png", p123, path = path.plots, 
+         height = 10, width = 10)
+```
