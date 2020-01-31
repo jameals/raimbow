@@ -30,7 +30,7 @@ if (user == "JS") {
 } else if (user == "SMW") {
   file.ent <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
   path.rdata <- "../raimbow-local/RDATA_files/"
-  path.plots <- "../raimbow-local/Plots/Entanglementreport_timeseries/"
+  path.plots <- "../raimbow-local/Plots/Entanglements_timeseries/"
   
 } else {
   stop("User not recognized")
@@ -232,4 +232,39 @@ for (lookback.mons in 0:12) {
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
   ggsave(file.plot, gg2, height = 8, width = 14)
 }
+```
+
+Experimental: for each (some?) lookback window, how far back is the max risk?
+
+```{r}
+x.out <- x.orig %>% 
+  left_join(select(x, CaseID, region), by = "CaseID")
+
+for(lookback.mons in seq(0, 12, by = 3)) {
+  # Prep entanglement records - add idx column
+  x.pre <- x %>% 
+    mutate(idx = seq_along(ym_date))
+  
+  # Get all ym values in lookback window, determine which ym value has max 
+  x2 <- lapply(0:lookback.mons, function(i) {
+    x.pre %>% 
+      mutate(ym_date_curr = ym_date %m-% months(i), 
+             ym_curr = substr(as.character(ym_date_curr), 1, 7))
+  }) %>% 
+    bind_rows() %>% 
+    select(region, ym = ym_curr, idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region")) %>% 
+    group_by(idx) %>% 
+    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
+              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
+              ym_max = ym[which.max(risk_sum_dens)]) %>% 
+    ungroup() %>% 
+    right_join(x.pre, by = "idx") %>% 
+    select(CaseID, ym_max) %>% 
+    set_names("CaseID", paste0("ym_max", lookback.mons))
+  
+  x.out <- left_join(x.out, x2, by = "CaseID")
+}
+
+write.csv(x.out, file = paste0(path.plots, "Ent_ymmax.csv"), row.names = FALSE)
 ```
