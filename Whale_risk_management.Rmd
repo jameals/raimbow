@@ -1,0 +1,117 @@
+---
+title: "Humpback risk - management scenarios"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The goal of this document is to examine the change in risk under different management scenarios, e.g. early or late season closures.
+
+```{r prep, message = FALSE}
+library(tidyverse)
+
+load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+```
+
+To do this, we first must summarize the original risk (i.e., with no management scenarios) by region and fishing season
+
+```{r orig}
+x <- all.df.summ %>% 
+  arrange(yr, mon, region) %>% 
+  mutate(fish_season = cumsum(mon == 11 & region == "WA")) %>% 
+  select(region, ym, yr, mon, fish_season, everything()) %>% 
+  arrange(region, yr, mon)
+
+x.orig <- x %>% 
+  group_by(region, fish_season) %>% 
+  summarise(yr = min(yr), 
+            risk_total_season = sum(risk_sum_total), 
+            risk_dens_season = sum(risk_sum_dens)) %>% 
+  ungroup()
+
+head(x.orig)
+```
+
+## Late season closure, e.g. CA-CBD settlement
+
+This scenario is meant to test how risk would have changed if the CA-CBD settlement, closing the DC fishery April 15, had been in place beginning in 2009. Because we are working with monthly-summarized data, we will consider the fishery to be open through April.
+
+```{r late}
+x.late <- x %>% 
+  filter(mon %in% c(11, 12, 1:4)) %>% 
+  group_by(region, fish_season) %>% 
+  summarise(risk_total_season = sum(risk_sum_total), 
+            risk_dens_season = sum(risk_sum_dens)) %>% 
+  ungroup() %>% 
+  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
+         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+
+ggplot(x.late, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
+  geom_point() + 
+  geom_path() + 
+  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  ggtitle("Percentage of risk remaining with closing DC fishery May 1") + 
+  xlab("Fishing season start year") + 
+  ylab("Percentage") + 
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
+                     labels = unique(x.orig$yr))
+```
+
+The only fishing season in which this closure had a strong impact on regions in which most confirmed entanglements have happened is 2015-16, when the fishery was closed unitl March and thus 
+
+## Early season closure, e.g. 2019-20 fishing season
+
+Opening fishery Dec 1
+
+```{r early1}
+x.early1 <- x %>% 
+  filter(mon %in% c(12, 1:10)) %>% 
+  group_by(region, fish_season) %>% 
+  summarise(risk_total_season = sum(risk_sum_total), 
+            risk_dens_season = sum(risk_sum_dens)) %>% 
+  ungroup() %>% 
+  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
+         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+
+ggplot(x.early1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
+  geom_point() + 
+  geom_path() + 
+  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  ggtitle("Percentage of risk remaining with opening DC fishery Dec 1") + 
+  xlab("Fishing season start year") + 
+  ylab("Percentage") + 
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
+                     labels = unique(x.orig$yr))
+```
+
+Opening fishery Jan 1
+
+```{r early2}
+x.early2 <- x %>% 
+  filter(mon %in% c(1:10)) %>% 
+  group_by(region, fish_season) %>% 
+  summarise(risk_total_season = sum(risk_sum_total), 
+            risk_dens_season = sum(risk_sum_dens)) %>% 
+  ungroup() %>% 
+  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
+         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+
+ggplot(x.early2, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
+  geom_point() + 
+  geom_path() + 
+  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  ggtitle("Percentage of risk remaining with opening DC fishery Jan 1") + 
+  xlab("Fishing season start year") + 
+  ylab("Percentage") + 
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
+                     labels = unique(x.orig$yr))
+```
