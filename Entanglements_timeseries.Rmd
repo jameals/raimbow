@@ -267,4 +267,10 @@ for(lookback.mons in seq(0, 12, by = 3)) {
 }
 
 write.csv(x.out, file = paste0(path.plots, "Ent_ymmax.csv"), row.names = FALSE)
+
+table(x.out$ym_max0, as.character(x.out$region))
+table(x.out$ym_max3, as.character(x.out$region))
+table(x.out$ym_max6, as.character(x.out$region))
+table(x.out$ym_max9, as.character(x.out$region))
+table(x.out$ym_max12, as.character(x.out$region))
 ```
