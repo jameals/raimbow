@@ -252,7 +252,7 @@ for (lookback.mons in 0:12) {
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
   ggsave(file.plot, gg2)
   
-  print(gg2)
+  # print(gg2)
 }
 ```
 

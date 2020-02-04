@@ -1,5 +1,5 @@
 ---
-title: "Entanglements v2"
+title: "Entanglements"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
@@ -38,7 +38,7 @@ if (user == "JS") {
 }
 
 # Options: "ca-" for CA- regions, or "county" for county-level
-reg.flag <- "county"
+reg.flag <- "ca-"
 hist.width <- 0.05
 ```
 
@@ -260,7 +260,7 @@ for (lookback.mons in 0:12) {
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
   ggsave(file.plot, gg2)
   
-  print(gg2)
+  # print(gg2)
 }
 ```
 
