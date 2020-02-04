@@ -1,5 +1,5 @@
 ---
-title: "Humpback risk - management scenarios"
+title: "Humpback risk - management scenarios - county"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
@@ -18,7 +18,7 @@ The goal of this document is to examine the change in risk under different manag
 ```{r prep, message = FALSE}
 library(tidyverse)
 
-load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+load("../raimbow-local/RDATA_files/Whale_risk_county_timeseries.Rdata")
 
 flag.save <- TRUE
 path.plots <- "../raimbow-local/Plots/Management/"
@@ -27,7 +27,11 @@ path.plots <- "../raimbow-local/Plots/Management/"
 To do this, we first must summarize the original risk (i.e., with no management scenarios) by region and fishing season
 
 ```{r orig}
+county.rm <- c("Ventura", "Los_Angeles", "Orange", "San_Diego")
+county.levels <- levels(all.df.summ$region)[!(levels(all.df.summ$region) %in% county.rm)]
+
 x <- all.df.summ %>% 
+  mutate(region = factor(region, levels = county.levels)) %>% 
   arrange(yr, mon, region) %>% 
   mutate(fish_season = cumsum(mon == 11 & region == "WA")) %>% 
   select(region, ym, yr, mon, fish_season, everything()) %>% 
@@ -60,7 +64,7 @@ x.late <- x %>%
 ggplot(x.late, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
   geom_point() + 
   geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  # scale_colour_brewer(palette = "Set1", name = "Region") + 
   ggtitle("Percentage of risk remaining with closing DC fishery May 1") + 
   xlab("Fishing season start year") + 
   ylab("Percentage") + 
@@ -68,7 +72,7 @@ ggplot(x.late, aes(fish_season, risk_dens_ratio, colour = region, group = region
   scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
                      labels = unique(x.orig$yr))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "county_Mn_DC_close05.png"))
 ```
 
 The only fishing season in which this closure had a strong impact on regions in which most confirmed entanglements have happened is 2015-16, when the fishery was closed unitl March and thus 
@@ -90,7 +94,7 @@ x.early1 <- x %>%
 ggplot(x.early1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
   geom_point() + 
   geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  # scale_colour_brewer(palette = "Set1", name = "Region") + 
   ggtitle("Percentage of risk remaining with opening DC fishery Dec 1") + 
   xlab("Fishing season start year") + 
   ylab("Percentage") + 
@@ -98,7 +102,7 @@ ggplot(x.early1, aes(fish_season, risk_dens_ratio, colour = region, group = regi
   scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
                      labels = unique(x.orig$yr))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "county_Mn_DC_open12.png"))
 ```
 
 Opening fishery Jan 1
@@ -116,7 +120,7 @@ x.early2 <- x %>%
 ggplot(x.early2, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
   geom_point() + 
   geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
+  # scale_colour_brewer(palette = "Set1", name = "Region") + 
   ggtitle("Percentage of risk remaining with opening DC fishery Jan 1") + 
   xlab("Fishing season start year") + 
   ylab("Percentage") + 
@@ -124,5 +128,5 @@ ggplot(x.early2, aes(fish_season, risk_dens_ratio, colour = region, group = regi
   scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
                      labels = unique(x.orig$yr))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "county_Mn_DC_open01.png"))
 ```
