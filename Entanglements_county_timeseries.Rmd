@@ -39,6 +39,7 @@ if (user == "JS") {
 }
 
 load(paste0(path.rdata, "Whale_risk_county_timeseries.Rdata"))
+hist.width <- 0.05
 ```
 
 ## Data import and processing
@@ -152,7 +153,7 @@ y <- x %>%
 
 # Plot histogram of time series risk values
 ggplot(all.df.summ, aes(x = risk_sum_dens)) +
-  geom_histogram(binwidth = 0.01) +
+  geom_histogram(binwidth = hist.width, boundary = 0) +
   # facet_grid(cols = vars(region)) + 
   facet_wrap(facets = vars(region), nrow = 3) +
   xlab("Risk") + 
@@ -165,7 +166,7 @@ ggsave(paste0(path.plots, "Risk_hist_all.png"), height = 12, width = 14)
 y %>% 
   filter(!(region %in% c("WA", "OR"))) %>%
   ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
-  geom_histogram(binwidth = 0.01, position = "stack") +
+  geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
   # facet_grid(cols = vars(region)) +
   facet_wrap(facets = vars(region), nrow = 3) +
   guides(fill = guide_legend(title = "Entanglement count")) + 
@@ -225,7 +226,7 @@ for (lookback.mons in 0:12) {
   gg2 <- y2 %>% 
     filter(region %in% sort(unique(as.character(x2$region)))) %>%
     ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
-    geom_histogram(binwidth = 0.01, position = "stack") +
+    geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
     facet_wrap(facets = vars(region), nrow = 2) +
     # facet_grid(cols = vars(region)) + 
     # guides(fill = guide_legend(title = "Entanglement count")) + 
@@ -238,7 +239,7 @@ for (lookback.mons in 0:12) {
   
   # Save plot
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
-  # ggsave(file.plot, gg2, height = 12, width = 14)
+  ggsave(file.plot, gg2, height = 12, width = 14)
   
   print(gg2)
 }
