@@ -13,8 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-README: This document is the same as 'Entanglements_timeseries.Rmd', except using counties for regions.
-
 Goal: Examine monthly risk histograms relative to entanglement report locations. Use lookback window to account for the uncertainty in when the actual entanglement occurred.
 
 ```{r, message=FALSE}
@@ -32,13 +30,12 @@ if (user == "JS") {
 } else if (user == "SMW") {
   file.ent <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
   path.rdata <- "../raimbow-local/RDATA_files/"
-  path.plots <- "../raimbow-local/Plots/Entanglements_county_timeseries/"
+  path.plots <- "../raimbow-local/Plots/Entanglements_timeseries/"
   
 } else {
   stop("User not recognized")
 }
 
-load(paste0(path.rdata, "Whale_risk_county_timeseries.Rdata"))
 hist.width <- 0.05
 ```
 
@@ -59,19 +56,19 @@ Read in entanglement data, and select relevant columns. Then assign each entangl
 # )
 
 # Monterey definitely has some area in CA-SCen too
-# reg.list <- list(
-#   "Del_Norte" = "CA-N", "Humboldt" = "CA-N", "Mendocino" = "CA-N",
-#   "Sonoma" = "CA-Cen", "Marin" = "CA-Cen", "San_Francisco" = "CA-Cen",
-#   "San_Mateo" = "CA-Cen", "Santa_Cruz" = "CA-Cen", "Monterey" = "CA-Cen",
-#   "San_Luis_Obispo" = "CA-SCen", "Santa_Barbara" = "CA-SCen",
-#   "Ventura" = "CA-S", "Los_Angeles" = "CA-S", "Orange" = "CA-S",
-#   "San_Diego" = "CA-S"
-# )
-# 
-# county.reg <- data.frame(region = t(as.data.frame(reg.list)),
-#                          stringsAsFactors = FALSE) %>%
-#   rownames_to_column(var = "county") %>%
-#   mutate(county = gsub("_", " ", county, ))
+reg.list <- list(
+  "Del_Norte" = "CA-N", "Humboldt" = "CA-N", "Mendocino" = "CA-N", 
+  "Sonoma" = "CA-Cen", "Marin" = "CA-Cen", "San_Francisco" = "CA-Cen",
+  "San_Mateo" = "CA-Cen", "Santa_Cruz" = "CA-Cen", "Monterey" = "CA-Cen", 
+  "San_Luis_Obispo" = "CA-SCen", "Santa_Barbara" = "CA-SCen", 
+  "Ventura" = "CA-S", "Los_Angeles" = "CA-S", "Orange" = "CA-S", 
+  "San_Diego" = "CA-S"
+)
+
+county.reg <- data.frame(region = t(as.data.frame(reg.list)), 
+                         stringsAsFactors = FALSE) %>% 
+  rownames_to_column(var = "county") %>% 
+  mutate(county = gsub("_", " ", county, ))
 
 
 ### Get year-month factor levels
@@ -85,19 +82,16 @@ ym.levels <- tibble(
 ### Read in and process entanglement data
 x.orig <- read_xlsx(file.ent)
 
-county.no <- c("Ventura", "Los_Angeles", "Orange", "San_Diego")
-county.levels <- levels(all.df.summ$region)[!(levels(all.df.summ$region) %in% county.no)]
-
 x <- x.orig %>% 
   select(CaseID, Year, Month, Report_Lat, Report_Long, Report_County, 
          Gear_Set_County, Gear_Set_Location_State, Timing) %>% 
-  mutate(region = gsub(" ", "_", Gear_Set_County)) %>% 
-  # left_join(county.reg, by = "county") %>% 
-  mutate(region = factor(region, levels = county.levels), 
-         # region = factor(region, levels = c("WA", "OR", "CA-N", "CA-Cen", "CA-SCen")), 
+  left_join(county.reg, by = c("Gear_Set_County" = "county")) %>% 
+  mutate(Gear_Set_County = as.factor(Gear_Set_County), 
+         region = factor(region, levels = c("WA", "OR", "CA-N", "CA-Cen", "CA-SCen")), 
          ym = factor(paste(Year, sprintf("%02d", Month), sep = "-"), levels = ym.levels$ym), 
          ym_date = parse_date_time(ym, "ym")) %>% 
   filter(!is.na(ym))
+
 
 
 # x.summ <- x %>% 
@@ -116,7 +110,7 @@ vert.lines <- seq(0.5, to = x.max, by = 12)
 ggplot(x, aes(x = ym, fill = region)) + 
   geom_bar() + 
   geom_vline(xintercept = vert.lines, col = "black", lwd = 0.35) + 
-  scale_fill_discrete(name = "region", drop = FALSE) + 
+  scale_fill_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
   ggtitle("CA DC confirmed and known-set-location entanglement reports") +
   xlab("Year-Month") +
   ylab("Entanglements") +
@@ -130,27 +124,27 @@ ggsave(paste0(path.plots, "Ent_report_timeseries.png"), height = 4, width = 10)
 
 ## Compare entanglement reports with risk time series values
 
-Now we load the time series data, and plot histograms of the risk time series values (densities) by county. 
+Now we load the time series data, and plot histograms of the risk time series values (monthly densities) by region.
 
-```{r, fig.width=14, fig.height=12}
+```{r, fig.width=14, fig.height=8}
+load(paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
+
 # Plot histogram of time series risk values
 ggplot(all.df.summ, aes(x = risk_sum_dens)) +
   geom_histogram(binwidth = hist.width, boundary = 0) +
-  # facet_grid(cols = vars(region)) + 
-  facet_wrap(facets = vars(region), nrow = 3) +
+  facet_grid(cols = vars(region)) + 
   xlab("Risk") + 
   ggtitle("Risk time series")
 
-ggsave(paste0(path.plots, "Risk_hist_all.png"), height = 12, width = 14)
+ggsave(paste0(path.plots, "Risk_hist_all.png"), height = 8, width = 14)
 ```
 
 Next we determine the number of entanglements reported in each year-month, i.e. the corresponding risk value for each entanglement. Then we can make the same plots, but color-coded to indicate how many entanglement reports occurred during that year-month.
 
-```{r, fig.width=14, fig.height=12}
+```{r, fig.width=14, fig.height=8}
 ### Add entanglement data to time series data
 all.df.summ.join <- all.df.summ %>% 
-  mutate(region = factor(region, levels = levels(x$region)), 
-         ym = factor(ym)) %>%
+  mutate(region = factor(region, levels = levels(x$region))) %>% 
   select(ym, region, risk_sum_dens)
 
 y <- x %>% 
@@ -167,16 +161,15 @@ y <- x %>%
 
 # Plot histogram of time series risk values, color-coded by whether or not there was an entanglement
 y %>% 
-  filter(!(region %in% c("WA", "OR"))) %>%
+  filter(region %in% c("CA-N", "CA-Cen", "CA-SCen")) %>%
   ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
   geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
-  # facet_grid(cols = vars(region)) +
-  facet_wrap(facets = vars(region), nrow = 3) +
+  facet_grid(cols = vars(region)) + 
   guides(fill = guide_legend(title = "Entanglement count")) + 
   xlab("Risk") + 
   ggtitle("Risk time series with entanglement reports - original (actual) report timing")
 
-ggsave(paste0(path.plots, "Risk_hist_orig.png"), height = 12, width = 14)
+ggsave(paste0(path.plots, "Risk_hist_orig.png"), height = 8, width = 14)
 ```
 
 ## Compare entanglement reports with risk time series values - pt2
@@ -185,7 +178,7 @@ Now, we wish to take into account the fact that we do not know exactly when the 
 
 TODO: we also want to look at the sum of the risk values that occurred in that region within the lookback window, but not sure yet how to make a meaningful plot.
 
-```{r, fig.width=14, fig.height=12}
+```{r, fig.width=14, fig.height=8}
 # Set size of lookback window
 # lookback.mons <- 3
 
@@ -220,18 +213,17 @@ for (lookback.mons in 0:12) {
     ungroup() %>% 
     right_join(all.df.summ.join, by = c("ym", "region")) %>%
     replace_na(list(e_count = 0)) %>%
-    mutate(e_count_fac = factor(e_count, levels = 0:5), 
+    mutate(e_count_fac = factor(e_count, levels = 0:8), 
            e_count_any = e_count > 0, 
            ym = factor(ym), 
            region = factor(region, levels(x$region)))
   
   # Plot
   gg2 <- y2 %>% 
-    filter(region %in% sort(unique(as.character(x2$region)))) %>%
+    filter(region %in% c("CA-N", "CA-Cen", "CA-SCen")) %>%
     ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
     geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
-    facet_wrap(facets = vars(region), nrow = 2) +
-    # facet_grid(cols = vars(region)) + 
+    facet_grid(cols = vars(region)) + 
     # guides(fill = guide_legend(title = "Entanglement count")) + 
     scale_fill_discrete(drop = FALSE, name = "Entanglement count") + 
     scale_y_continuous(breaks = seq(0, 100, by = 5)) +
@@ -242,7 +234,7 @@ for (lookback.mons in 0:12) {
   
   # Save plot
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
-  ggsave(file.plot, gg2, height = 12, width = 14)
+  ggsave(file.plot, gg2, height = 8, width = 14)
   
   print(gg2)
 }
@@ -251,23 +243,8 @@ for (lookback.mons in 0:12) {
 Experimental: for each (some?) lookback window, how far back is the max risk?
 
 ```{r}
-reg.list <- list(
-  "Del_Norte" = "CA-N", "Humboldt" = "CA-N", "Mendocino" = "CA-N",
-  "Sonoma" = "CA-Cen", "Marin" = "CA-Cen", "San_Francisco" = "CA-Cen",
-  "San_Mateo" = "CA-Cen", "Santa_Cruz" = "CA-Cen", "Monterey" = "CA-Cen",
-  "San_Luis_Obispo" = "CA-SCen", "Santa_Barbara" = "CA-SCen",
-  "Ventura" = "CA-S", "Los_Angeles" = "CA-S", "Orange" = "CA-S",
-  "San_Diego" = "CA-S"
-)
-
-county.reg <- data.frame(region = t(as.data.frame(reg.list)),
-                         stringsAsFactors = FALSE) %>%
-  rownames_to_column(var = "county") %>%
-  mutate(county = gsub("_", " ", county, ))
-
 x.out <- x.orig %>% 
-  left_join(select(x, CaseID, region), by = "CaseID") %>% 
-  left_join(county.reg, by = c("Gear_Set_County" = "county"))
+  left_join(select(x, CaseID, region), by = "CaseID")
 
 for(lookback.mons in seq(0, 12, by = 3)) {
   # Prep entanglement records - add idx column
@@ -297,9 +274,9 @@ for(lookback.mons in seq(0, 12, by = 3)) {
 
 write.csv(x.out, file = paste0(path.plots, "Ent_ymmax.csv"), row.names = FALSE)
 
-table(x.out$ym_max0, as.character(x.out$region.x))
-table(x.out$ym_max3, as.character(x.out$region.x))
-table(x.out$ym_max6, as.character(x.out$region.x))
-table(x.out$ym_max9, as.character(x.out$region.x))
-table(x.out$ym_max12, as.character(x.out$region.x))
+table(x.out$ym_max0, as.character(x.out$region))
+table(x.out$ym_max3, as.character(x.out$region))
+table(x.out$ym_max6, as.character(x.out$region))
+table(x.out$ym_max9, as.character(x.out$region))
+table(x.out$ym_max12, as.character(x.out$region))
 ```
