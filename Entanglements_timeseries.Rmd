@@ -39,7 +39,7 @@ if (user == "JS") {
 
 # Options: "ca-" for CA- regions, or "county" for county-level
 reg.flag <- "ca-"
-hist.width <- 0.1
+hist.width <- 0.05
 ```
 
 ## Data import and processing
