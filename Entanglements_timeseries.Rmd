@@ -1,5 +1,5 @@
 ---
-title: "Entanglements"
+title: "Entanglements - risk value"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Goal: Examine monthly risk histograms relative to entanglement report locations. Use lookback window to account for the uncertainty in when the actual entanglement occurred.
+Goal: Examine monthly risk histograms relative to risk for entanglement reports, using lookback window to account for the uncertainty in when the actual entanglement occurred.
 
 ```{r, message=FALSE}
 library(gridExtra)
@@ -39,7 +39,7 @@ if (user == "JS") {
 
 # Options: "ca-" for CA- regions, or "county" for county-level
 reg.flag <- "ca-"
-hist.width <- 0.05
+hist.width <- 0.1
 ```
 
 ## Data import and processing
@@ -70,7 +70,7 @@ if (reg.flag == "ca-") {
   load(paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
   path.plots <- path.plots1
   fig.h <- 8
-  e.count.level <- 0:8
+  y.max.ent <- 15
   
   reg.list <- list(
     "Del_Norte" = "CA-N", "Humboldt" = "CA-N", "Mendocino" = "CA-N", 
@@ -94,8 +94,8 @@ if (reg.flag == "ca-") {
   # County-level regions
   load(paste0(path.rdata, "Whale_risk_county_timeseries.Rdata"))
   path.plots <- path.plots2
-  fig.h <- 12
-  e.count.level <- 0:5
+  fig.h <- 10
+  y.max.ent <- 10
   
   county.no <- c("Ventura", "Los_Angeles", "Orange", "San_Diego")
   reg.levels <- levels(all.df.summ$region)[!(levels(all.df.summ$region) %in% county.no)]
@@ -163,7 +163,7 @@ facet.nrow <- case_when(reg.flag == "ca-" ~ 1, reg.flag == "county" ~ 3)
 ggplot(all.df.summ, aes(x = risk_sum_dens)) +
   geom_histogram(binwidth = hist.width, boundary = 0) + 
   facet_wrap(facets = vars(region), nrow = facet.nrow) +
-  xlab("Risk") + 
+  xlab("Risk (whales*VMS pings / km2)") + 
   ggtitle("Risk time series")
 
 ggsave(paste0(path.plots, "Risk_hist_all.png"))
@@ -172,26 +172,33 @@ ggsave(paste0(path.plots, "Risk_hist_all.png"))
 Next we determine the corresponding risk value for each entanglement report, treating year-months in which no entanglements were reported as zero entanglement reports. Then we can make the same plots, but color-coded to indicate if there was an entanglement report during that year-month.
 
 ```{r, fig.width=14, fig.height=fig.h}
-y <- x %>% 
-  group_by(ym, region) %>%
-  summarise(e_count = n()) %>%
-  ungroup() %>% 
-  right_join(all.df.summ.join, by = c("ym", "region")) %>%
-  replace_na(list(e_count = 0)) %>%
-  mutate(e_count_fac = factor(e_count), 
-         e_count_any = e_count > 0, 
+x.join <- x %>% 
+  select(ym, region, CaseID) %>% 
+  left_join(all.df.summ.join, by = c("ym", "region"))
+
+# Contains all risk values and all risk-entanglement report pairs, separately
+y <- all.df.summ.join %>% 
+  mutate(CaseID = NA) %>% 
+  bind_rows(x.join) %>% 
+  mutate(e_logical = factor(ifelse(is.na(CaseID), "All", "Entanglements")), 
          ym = factor(ym), 
-         region = factor(region, levels(x$region)))
+         region = factor(region, levels(x$region))) %>% 
+  arrange(region, ym)
 
 # Plot histogram of time series risk values, color-coded by whether or not there was an entanglement
 y %>% 
   filter(region %in% reg.plot) %>%
-  ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
-  geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
-  facet_wrap(facets = vars(region), nrow = facet.nrow) +
-  guides(fill = guide_legend(title = "Entanglement")) + 
-  xlab("Risk") + 
-  ggtitle("Risk time series with entanglement reports - original (actual) report timing")
+  mutate(y_max = ifelse(e_logical == "All", 90, y.max.ent)) %>% 
+  ggplot(aes(x = risk_sum_dens)) + #, fill = e_logical
+  geom_histogram(binwidth = hist.width, position = "dodge", boundary = 0) +
+  facet_grid(cols = vars(region), rows = vars(e_logical), 
+             scales = "free_y", space = "free_y") +
+  geom_blank(aes(y = y_max)) + 
+  # facet_wrap(facets = vars(region), nrow = facet.nrow) +
+  scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+  guides(fill = guide_legend(title = "Risk values")) + 
+  xlab("Risk (whales*VMS pings / km2)") + 
+  ggtitle("Regional (monthly) risk - all risk values vs risk values for entanglement reports - original (actual) report timing")
 
 ggsave(paste0(path.plots, "Risk_hist_orig.png"))
 ```
@@ -232,27 +239,33 @@ for (lookback.mons in 0:12) {
     select(ent_idx, ym = ym_max, region, r_max, r_sum)
   
   # Summarise entanglement count by max ym
-  y2 <- x2 %>% 
-    group_by(ym, region) %>%
-    summarise(e_count = n()) %>%
-    ungroup() %>% 
-    right_join(all.df.summ.join, by = c("ym", "region")) %>%
-    replace_na(list(e_count = 0)) %>%
-    mutate(e_count_fac = factor(e_count, levels = e.count.level), 
-           e_count_any = e_count > 0, 
+  x2.join <- x2 %>% 
+    select(ym, region, ent_idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region"))
+  
+  y2 <- all.df.summ.join %>% 
+    mutate(ent_idx = NA) %>% 
+    bind_rows(x2.join) %>% 
+    mutate(e_logical = factor(ifelse(is.na(ent_idx), "All", "Entanglements")), 
            ym = factor(ym), 
-           region = factor(region, levels(x$region)))
+           region = factor(region, levels(x$region))) %>% 
+    arrange(region, ym)
   
   # Plot
   gg2 <- y2 %>% 
     filter(region %in% reg.plot) %>%
-    ggplot(aes(x = risk_sum_dens, fill = e_count_fac)) + 
-    geom_histogram(binwidth = hist.width, position = "stack", boundary = 0) +
-    facet_wrap(facets = vars(region), nrow = facet.nrow2) +
-    scale_fill_discrete(drop = FALSE, name = "Entanglement") + 
+    mutate(y_max = ifelse(e_logical == "All", 90, 15)) %>% 
+    ggplot(aes(x = risk_sum_dens)) + #, fill = e_logical)) + 
+    geom_histogram(binwidth = hist.width, position = "dodge", boundary = 0) +
+    facet_grid(cols = vars(region), rows = vars(e_logical), 
+               scales = "free_y", space = "free_y") +
+    # facet_wrap(facets = vars(region), nrow = facet.nrow2) +
+    geom_blank(aes(y = y_max)) + 
+    scale_fill_discrete(drop = FALSE, name = "Risk values") + 
     scale_y_continuous(breaks = seq(0, 100, by = 5)) +
-    xlab("Risk") + 
-    ggtitle(paste("Risk time series with entanglement reports -", lookback.mons, 
+    xlab("Risk (whales*VMS pings / km2)") + 
+    ggtitle(paste("Regional (monthly) risk - all risk values vs risk values for entanglement reports - ", 
+                  lookback.mons, 
                   "month lookback window, max value within window"))
   
   
