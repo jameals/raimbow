@@ -1,0 +1,102 @@
+---
+title: "quick script for owen"
+author: "Jameal Samhouri"
+date: "1/14/2020"
+output: html_document
+---
+
+### Prep for running code
+Clear workspace
+```{r, echo=FALSE}
+rm(list=ls())
+```
+<br>
+
+Install packages
+```{r, echo=FALSE}
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+library(sf)
+library(data.table)
+library(wesanderson)
+library(viridis)
+```
+
+
+Plots of whales and DCRB fishing over last 10 years
+```{r}
+root.dir <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/Samhouri et al. whales risk/"
+load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
+
+plot.filepath2 <- paste0(root.dir,"Figures/Whales and fishing plots/")
+# df's of interest: risk.df.annually.byCAregion, risk.df.annually.byCAregion.bySeason, risk.df.annually.byAllBIAs, risk.df.annually.byAllBIAs.bySeason
+
+# Humpbacks
+# status quo, consider relationship between whales and DCRB pings in winter and spring by region
+png(paste0(plot.filepath2, "sum_H_Avg_Abund_sum_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_Num_DCRB_VMS_pings", 
+            whaleRisk_col = "sum_H_Avg_Abund", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab VMS pings", 
+            yaxis_lab = "Predicted abundance of humpback whales") #\n (monthly mean number per 5km grid cell)
+dev.off()
+
+# status quo, consider relationship between whale risk and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "sum_H_Avg_Abund_sum_dollars_DCRB_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_dollars_DCRB", 
+            whaleRisk_col = "sum_H_Avg_Abund", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue ($)", #\n (monthly mean per 5km grid cell)
+            yaxis_lab = "Predicted abundance of humpback whales")
+dev.off()
+
+# Blues
+# status quo, consider relationship between whales and DCRB pings in winter and spring by region
+png(paste0(plot.filepath2, "mean_Blue_occurrence_sum_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_Num_DCRB_VMS_pings", 
+            whaleRisk_col = "mean_Blue_occurrence", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab VMS pings", #\n (monthly mean per 5km grid cell)
+            yaxis_lab = "Predicted occurrence of blue whales")#\n (monthly mean per 5km grid cell)
+dev.off()
+
+# status quo, consider relationship between whale risk and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "mean_Blue_occurrence_sum_dollars_DCRB_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_dollars_DCRB", 
+            whaleRisk_col = "mean_Blue_occurrence", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue ($)", 
+            yaxis_lab = "Predicted occurrence of blue whales")
+dev.off()
+
+# status quo, consider relationship between DCRB pings and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "mean_dollars_DCRB_mean_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "mean_dollars_DCRB", 
+            whaleRisk_col = "mean_Num_DCRB_VMS_pings", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue\n (monthly mean per 5km grid cell)", 
+            yaxis_lab = "Dungeness crab pings\n (monthly mean number per 5km grid cell)")
+dev.off()
+
+```
+<br>
