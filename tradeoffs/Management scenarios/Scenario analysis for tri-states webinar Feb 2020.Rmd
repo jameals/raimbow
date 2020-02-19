@@ -1,0 +1,122 @@
+---
+title: "Scenario analysis for tri-states webinar"
+author: "Jameal Samhouri"
+date: "2/18/2020"
+output: html_document
+---
+
+The focus of this analysis is to understand how alternative management scenarios, applied retrospectively during the years 2009-2018, may have affected risk of entanglement for blue and humpback whales, and risk to the Dungeness crab (DCRB) fishery in terms of lost revenue.
+
+This code relies on VMS locations of DCRB boats in CA from 2009-18, each of which has been assigned a predicted occurrence of blue whales (based on Abrahms et al. 2019) and predicted density of humpback whales (based on Forney et al. in prep Model 1). 
+
+Note that for DCRB fishing data, 2009 is truncated to Nov/Dec 2009 (and) before april 1 in 2009 refers to Nov-Dec 2009), which are actually part of the 2009-2010 crab season. Similarly, 2018 is truncated to Jan-Jul 2018, the 2017-18 crab season.
+
+Dependencies:
+create_Rdata.Rmd, VMS_extracted_metrics.R, Match processed VMS data to fish ticket landings and revenue.Rmd, Make confidential data summarized by grid cell 2009-18.Rmd: these files create a df that represents DCRB fishing activity in CA (filtered by depth and speed), joined to various grids and to Abrahms et al blwh predictions
+
+get_humpback_predictions.R: generates monthly summaries of humpback whale densities predicted by Forney et al in prep Model 1, and produces an output file entitled "Humpback whale abundance monthly abundance predictions 2009-2018.csv"
+
+Simple early closure scenario analysis.Rmd: generates Scenario_Analysis_Data_2009_2018.RData, which contains full.df, the data frame we start with below.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Prep for running code
+Clear workspace
+```{r, echo=FALSE}
+rm(list=ls())
+```
+<br>
+
+Install packages
+```{r, echo=FALSE}
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+library(sf)
+library(data.table)
+library(wesanderson)
+library(viridis)
+library(here)
+library(ggerr)
+```
+<br>
+
+### Read in data and pull out initial data frame
+```{r}
+load("~/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Scenario_Analysis_Data_2009_2018.RData")
+
+View(full.df)
+
+dat <- full.df # %>% filter(year %in% c(2012,2013)) %>% 
+  select(crab.year,year,month,Region,GRID5KM_ID,Num_DCRB_VMS_pings,H_Avg_Abund)
+
+```
+<br>
+
+### Set up data frames for scenarios (9 total) 
+
+Spatial:
+Statewide
+cenCA only
+all BIAs
+
+Temporal: months for closures
+Early closure --> months 4,5,6,7
+Two-week delay in opening --> 11
+Six-week delay in opening --> 11, 12
+
+
+Add new columns for each of the temporal scenarios. 
+```{r}
+
+
+
+```
+<br>
+
+### Make calculations
+Total pings, total number of grid cells, ping density, mean whale abundance, and risk metrics
+
+```{r}
+
+
+
+```
+<br>
+
+
+### Create df for each scenario (9 total)
+
+Spatial:
+Statewide
+cenCA only
+all BIAs
+
+Temporal: months for closures
+Early closure --> months 4,5,6,7
+Two-week delay in opening --> 11
+Six-week delay in opening --> 11, 12
+
+Include new variables relative risk and relative revenue reduction
+Glue together into tradeoff df
+```{r}
+
+
+
+```
+<br>
+
+Make tradeoff plots
+```{r}
+
+
+
+```
+<br>
+

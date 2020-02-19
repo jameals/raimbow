@@ -1,0 +1,2329 @@
+---
+title: "Simple early closure scenario analysis"
+author: "Jameal Samhouri"
+date: "3/28/2019"
+updated: "02/13/2020"
+output: html_document
+---
+
+NOTE: can start at line 1169
+
+This code relies on VMS locations of DCRB boats in CA from 2009-18, each of which has been assigned a predicted occurrence of blue whales (based on Abrahms et al. 2019) and predicted density of humpback whales (based on Forney et al. in prep Model 1). Note that for DCRB fishing data, 2009 is truncated to Nov/Dec 2009 (and) before april 1 in 2009 refers to Nov-Dec 2009), which are actually part of the 2009-2010 crab season. Similarly, 2018 is truncated to Jan-Jul 2018, the 2017-18 crab season.
+
+Dependencies:
+create_Rdata.Rmd, VMS_extracted_metrics.R, Match processed VMS data to fish ticket landings and revenue.Rmd, Make confidential data summarized by grid cell 2009-18.Rmd: these files create a df that represents DCRB fishing activity in CA (filtered by depth and speed), joined to various grids and to Abrahms et al blwh predictions
+
+get_humpback_predictions.R: generates monthly summaries of humpback whale densities predicted by Forney et al in prep Model 1, and produces an output file entitled "Humpback whale abundance monthly abundance predictions 2009-2018.csv"
+
+With these data, it performs the following analytical steps:
+
+1) Read data, data checks and filters. Can skip and load .Rdata instead.
+
+2) Calculate (a) whale risk (W) as W=VB before and after April 1, and (b) economic impacts of closure as total revenue after April 1, and make associated data frames to allow comparison in vs out of BIAs, CenCA and NorCA, CA-wide. Can skip and load .Rdata instead.
+
+If for any individual fish ticket there is a VMS location in multiple grid cells, assign pounds/$ for that fish ticket in proportion to number of VMS locations in that grid cell for that trip. This assumption should be examined at a later date.
+
+3) Make time series and tradeoff plots:
+Time series plots:
+- comparison of whale risk in vs out of BIAs, CenCA and NorCA ()
+- comparison of economic impacts of closures in vs out of BIAs, CenCA and NorCA.
+
+Not yet implemented:
+- Calculate area fished in CenCA relative to all of CA and in BIAs relative to CenCA, NorCA, and all of CA.
+- comparison of impacts on small/large vessels
+- Maps:
+    All for each year, and average, at monthly time steps, and for pre vs post April 1.
+    All include polygons delineating CenCA vs NorCA and BIAs for humpbacks and blues.
+    Comparison of 
+      - humpback whale risk
+      - blue whale risk
+      - economic impacts ($, pounds, and VMS locations). plot as an anomaly from the average across all grid cells?
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/") # the root directory for all work in this .Rmd
+
+```
+
+### Prep for running code
+Clear workspace
+```{r, echo=FALSE}
+rm(list=ls())
+```
+<br>
+
+Install packages
+```{r, echo=FALSE}
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+library(sf)
+library(data.table)
+library(wesanderson)
+library(viridis)
+library(here)
+library(ggerr)
+```
+<br>
+
+
+### Read in the data and prepare it for analysis.
+
+1) Read in data, do checks and filters
+Create Objects / Data Frames
+```{r}
+root.dir <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/"
+
+## directory where VMS data that has been matched to fish tickets, vessel lengths, blwh predictions, and includes regional identifiers (CDFW offshore, etc)
+orig_dir = "/Output_Data/"
+
+## calendar years
+years <- c(2009:2018)
+
+state_agency_code <- "C"
+state <- "CA"
+target <- "DCRB"
+ports <- c("CCA", "ERA", "BGA","BDA", "SFA", "MRA", "MNA")
+region_north <- c(1040, 1041, 1042)
+
+## vessel size distinguishing large from small
+vessel_size_category_break <- 40
+```
+<br>
+
+
+Read in VMS data set that has been matched to blue whale predicted occurrence and fish ticket lbs and $ for DCRB and CA (state and agency code), for Nov 2009-Jul 2018 only. Drop duplicates. Create df for all vessels rather than split by size category.
+```{r}
+
+dcrb_ca_vms_tix_orig <- read.csv(paste0(root.dir,orig_dir,"Confidential VMS data summarized by 5km grid cell 2009-18 CA only.csv"))
+# num geolocations
+dim(dcrb_ca_vms_tix_orig)
+head(dcrb_ca_vms_tix_orig)
+
+# are there duplicate records?
+anyDuplicated(dcrb_ca_vms_tix_orig) # no
+
+# if no, use line below
+dcrb_ca_vms_tix <- dcrb_ca_vms_tix_orig
+# if yes, drop duplicates
+#dcrb_ca_vms_tix <- dcrb_ca_vms_tix_orig[-which(duplicated(dcrb_ca_vms_tix_orig)),]
+#dim(dcrb_ca_vms_tix)
+
+# truncate to Nov 2009 to Jul 2018
+dcrb_ca_vms_tix <- dcrb_ca_vms_tix[-which(
+  dcrb_ca_vms_tix$year_mo == "2009_01" |
+    dcrb_ca_vms_tix$year_mo == "2009_02" |
+    dcrb_ca_vms_tix$year_mo == "2009_03" |
+    dcrb_ca_vms_tix$year_mo == "2009_04" |
+    dcrb_ca_vms_tix$year_mo == "2009_05" |
+    dcrb_ca_vms_tix$year_mo == "2009_06" |
+    dcrb_ca_vms_tix$year_mo == "2009_07" |
+    dcrb_ca_vms_tix$year_mo == "2009_08" |
+    dcrb_ca_vms_tix$year_mo == "2009_09" |
+    dcrb_ca_vms_tix$year_mo == "2009_10" |
+    dcrb_ca_vms_tix$year_mo == "2018_08" |
+    dcrb_ca_vms_tix$year_mo == "2018_09" |
+    dcrb_ca_vms_tix$year_mo == "2018_10" |
+    dcrb_ca_vms_tix$year_mo == "2018_11" |
+    dcrb_ca_vms_tix$year_mo == "2018_12"
+),]
+
+
+# sum DCRB related information across small and large vessels for now
+# dcrb_ca_vms_tix_all_vessels <- dcrb_ca_vms_tix_by_vessel_size %>%
+#   group_by(year, BIA_mn_noNAs, BIA_bm_noNAs,GRID5KM_ID,year_mo,B_or_A_April1,Region) %>%
+#   summarise(
+#     lbs_DCRB = sum(lbs_DCRB),
+#     dollars_DCRB = sum(dollars_DCRB),
+#     Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings),
+#     Num_DCRB_Vessels = sum(Num_DCRB_Vessels),
+#     Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels),
+#     Blue_occurrence = mean(Blue_occurrence)
+#   )
+
+# check that the all_vessels df is actually the sum of the by_vessel_size df  
+# dcrb_ca_vms_tix_all_vessels[which(dcrb_ca_vms_tix_all_vessels$GRID5KM_ID == 49690 & dcrb_ca_vms_tix_all_vessels$year_mo == "2009_11"),]
+# dcrb_ca_vms_tix_by_vessel_size[which(dcrb_ca_vms_tix_by_vessel_size$GRID5KM_ID == 49690 & dcrb_ca_vms_tix_by_vessel_size$year_mo == "2009_11"),]
+
+```
+
+Read in humpback data set that has been matched to 5km grid, Nov 2009 - Jul 2018.
+```{r}
+humpback.sum.long <- read.csv(paste0(root.dir,orig_dir,"Humpback whale abundance monthly abundance predictions 2009-2018.csv"))
+
+#unique(humpback.sum.long$Year_Month)
+
+```
+<br>
+
+Join dcrb_ca_vms_tix and humpback data frames.
+```{r}
+class(dcrb_ca_vms_tix$year_mo)
+#dcrb_ca_vms_tix$year_mo_character <- as.character(dcrb_ca_vms_tix_all_vessels$year_mo)
+class(humpback.sum.long$Year_Month)
+#humpback.sum.long$Year_Month_factor <- as.factor(humpback.sum.long$Year_Month)
+
+dcrb_ca_vms_tix$grid_year_mo <- as.character(paste0(dcrb_ca_vms_tix$GRID5KM_ID,"_",dcrb_ca_vms_tix$year_mo))
+humpback.sum.long$grid_year_mo <- as.character(paste0(humpback.sum.long$GRID5KM_ID,"_",humpback.sum.long$Year_Month)) 
+
+full.df <- dcrb_ca_vms_tix %>%
+  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID","grid_year_mo" = "grid_year_mo"))
+
+head(full.df)
+
+# note there are a handful of grid cells that do not overlap with the humpback predictions but do overlap with the VMS and blwh stuff: 74073, 67482, 73415
+
+# reorder columns
+full.df <- full.df %>%
+  select(grid_year_mo, GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, year, year_mo, Year_Month, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs, lbs_DCRB, dollars_DCRB, Num_DCRB_VMS_pings, Num_DCRB_Vessels, Num_Unique_DCRB_Vessels, Blue_occurrence, H_Avg_Abund) # Vessel_Size,
+head(full.df)
+
+# working on problem where there are many NAs for Blue_occurrence. Traced it back to vms_int_reg_2009-2018_blue_whales.RDS. Blue_occurrence (BLWH_value) can have a value and an NA for the same REC_ID, same day, 1 hour apart. Probably in port points
+
+# get rid of extraneous factor levels
+str(full.df)
+full.df <- droplevels(full.df)
+
+# make sure grid cell ID and BIAs are factors
+full.df$GRID5KM_ID <- as.factor(as.character(full.df$GRID5KM_ID))
+full.df$BIA_mn_noNAs <- as.factor(as.character(full.df$BIA_mn_noNAs))
+full.df$BIA_bm_noNAs <- as.factor(as.character(full.df$BIA_bm_noNAs))
+
+# add column for crab year
+full.df$month <- as.numeric(substr(full.df$year_mo, 6,7))
+
+# add column for crab year
+full.df$crab.year <- ifelse(
+  full.df$month >= 11, paste0(full.df$year,"-",1+full.df$year), paste0(full.df$year - 1,"-",full.df$year)
+)
+
+```
+
+
+2) Calculate whale risk (W) as W=VB, where V is VMS pings and B is whale prediction, and economic impacts of closure as total revenue. 
+Get to business making the risk data frames
+```{r}
+names(full.df)
+glimpse(full.df)
+
+# Start with finest grain summary df. 
+# sum of DCRB vessels, $, lbs, VMS pings (separated by small and large vessels) and average whale density/occurrence in each 5 km grid cell for each year_mo period
+
+# make some per vessel metrics
+# calculate whale risk as product of fishing activity and whale density/occurrence
+# takes ~2min on Jameal's macbook
+start.time <- Sys.time()
+risk.df.monthly <- full.df %>%
+  group_by(grid_year_mo, GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, year, year_mo, Year_Month, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs) %>% 
+   mutate(
+    lbs_DCRB_per_vessel = ifelse(lbs_DCRB==0 | Num_DCRB_Vessels == 0, 0, lbs_DCRB/Num_DCRB_Vessels),
+    dollars_DCRB_per_vessel = ifelse(dollars_DCRB==0 | Num_DCRB_Vessels==0, 0, dollars_DCRB/Num_DCRB_Vessels)
+  ) %>%
+  group_by(grid_year_mo, GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, year, year_mo, Year_Month, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs) %>% 
+  mutate(
+    #Hump_risk_lbs = ifelse(is.na(Hump_density)==TRUE,0,Hump_density*lbs_DCRB),
+  #Hump_risk_dollars = ifelse(is.na(Hump_density)==TRUE,0,Hump_density*dollars_DCRB),
+  Hump_risk_pings = ifelse(is.na(H_Avg_Abund)==TRUE,NA,H_Avg_Abund*Num_DCRB_VMS_pings), # this is the summed VMS pings for a month multiplied by the avg hump abundance in that month
+  #Hump_risk_vessels = ifelse(is.na(Hump_density)==TRUE,0,Hump_density*Num_DCRB_Vessels),
+  #Hump_risk_lbs_per_vessel = ifelse(is.na(Hump_density)==TRUE,0,Hump_density*lbs_DCRB_per_vessel),
+   #Hump_risk_dollars_per_vessel = ifelse(is.na(Hump_density)==TRUE,0,Hump_density*dollars_DCRB_per_vessel),
+    
+  #Blue_risk_lbs = ifelse(is.na(Blue_occurrence)==TRUE,0,Blue_occurrence*lbs_DCRB),
+  #Blue_risk_dollars = ifelse(is.na(Blue_occurrence)==TRUE,0,Blue_occurrence*dollars_DCRB),
+  Blue_risk_pings = ifelse(is.na(Blue_occurrence)==TRUE,NA,Blue_occurrence*Num_DCRB_VMS_pings),
+  #Blue_risk_vessels = ifelse(is.na(Blue_occurrence)==TRUE,0,Blue_occurrence*Num_DCRB_Vessels),
+    #Blue_risk_lbs_per_vessel = ifelse(is.na(Blue_occurrence)==TRUE,0,Blue_occurrence*lbs_DCRB_per_vessel),
+   #Blue_risk_dollars_per_vessel = ifelse(is.na(Blue_occurrence)==TRUE,0,Blue_occurrence*dollars_DCRB_per_vessel)
+         )
+Sys.time() - start.time
+glimpse(risk.df.monthly)
+
+# turn month into a factor
+risk.df.monthly$month <- as.factor(as.character(substr(risk.df.monthly$year_mo, 6,7)))
+
+risk.df.monthly <- risk.df.monthly %>%
+  mutate(BIA_bm_or_mn = ifelse(BIA_bm_noNAs !=0 | BIA_mn_noNAs != 0, "Inside BIA","Outside BIA")) 
+
+write.csv(risk.df.monthly, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk for 2009-2018 averaged for each year and month across 5km grid cells.csv"), row.names=FALSE)
+
+
+```
+<br>
+
+Make some data frames, summarized for different temporal periods.
+For each 5km grid cell, calculate whale risk and fishery impacts for:
+- each year_month (risk.df.monthly),
+- monthly avg across 2009-2018 (risk.df.mean_by_month_2009_2018),
+- seasonal avg before and after Apr 1 for each year across 2009-2018 (risk.df.mean_by_year_prepostApr_2009_2018), 
+- avg for each year 2009-2018 (risk.df.annually),
+- seasonal average for entire period before and after Apr 1 across 2009-2018 (risk.df.mean_prepostApr_2009_2018),
+- average for entire period 2009-2018 (risk.df.2009_2018)
+```{r}
+
+# Note that I did not use complete() for before and after Apr 1, so if fishing does not occur in an area in a before/after period it will show up in the df as NA
+
+
+# monthly avg across 2009-2018 (risk.df.mean_by_month_2009_2018),eg what is avg risk to whales in june across this 10 yr period
+
+names(risk.df.monthly)
+risk.df.mean_by_month_2009_2018 <- risk.df.monthly %>%
+  group_by(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, month, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>%
+  summarise(
+    mean_H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE), # H_Avg_Abund is the mean across each year_mo and grid cell. 
+    sd_H_Avg_Abund = sd(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    sd_Blue_occurrence = sd(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(lbs_DCRB,na.rm=TRUE), # lbs_DCRB is the sum across each year_mo. taking the average should be the same as summing, as we only have one grid cell per year_mo
+    mean_dollars_DCRB = mean(dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.mean_by_month_2009_2018)
+
+write.csv(risk.df.mean_by_month_2009_2018, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk for 2009-2018 averaged for each month across 5km grid cells.csv"), row.names=FALSE)
+
+
+
+# seasonal avg before and after Apr 1 for each year across 2009-2018 (risk.df.mean_by_year_prepostApr_2009_2018), eg what is avg risk to whales pre vs post Apr each year across this 10 yr period
+
+names(risk.df.monthly)
+risk.df.mean_by_year_prepostApr_2009_2018 <- risk.df.monthly %>%
+  group_by(year, crab.year, GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>%
+  summarise(
+    mean_H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE), # H_Avg_Abund is the mean across each year_mo and grid cell. 
+    sd_H_Avg_Abund = sd(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    sd_Blue_occurrence = sd(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(lbs_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(Num_DCRB_VMS_pings,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018)
+
+write.csv(risk.df.mean_by_year_prepostApr_2009_2018, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk for 2009-2018 averaged and summed for each year before and after April across 5km grid cells.csv"), row.names=FALSE)
+
+
+
+# avg for each year 2009-2018 (risk.df.annually),
+
+names(risk.df.monthly)
+risk.df.annually <- risk.df.monthly %>%
+  group_by(year, GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>%
+  summarise(
+    mean_H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(lbs_DCRB,na.rm=TRUE),
+    sum_lbs_DCRB = sum(lbs_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(dollars_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(Num_DCRB_VMS_pings,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.annually)
+
+write.csv(risk.df.annually, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk for 2009-2018 averaged and summed for each year across 5km grid cells.csv"), row.names=FALSE)
+
+
+
+# seasonal average for entire period before and after Apr 1 across 2009-2018 (risk.df.mean_prepostApr_2009_2018)
+# note that before april 1 in 2009 refers to Nov-Dec 2009, which are actually part of the 2009-2010 crab season
+
+names(risk.df.monthly)
+risk.df.mean_prepostApr_2009_2018 <- risk.df.monthly %>%
+  group_by(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, B_or_A_April1, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>%
+  summarise(
+    mean_H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(lbs_DCRB,na.rm=TRUE),
+    sum_lbs_DCRB = sum(lbs_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(dollars_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(Num_DCRB_VMS_pings,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.mean_prepostApr_2009_2018)
+
+write.csv(risk.df.mean_prepostApr_2009_2018, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk for 2009-2018 summed and averaged for before and after April across 5km grid cells.csv"), row.names=FALSE)
+
+# plot(risk.df.mean_prepostApr_2009_2018$H_Avg_Abund[which(risk.df.mean_prepostApr_2009_2018$B_or_A_April1 == "April 1 and After")],
+#      risk.df.mean_prepostApr_2009_2018$mean_Num_DCRB_VMS_pings[which(risk.df.mean_prepostApr_2009_2018$B_or_A_April1 == "April 1 and After")]
+# )
+
+
+# average for entire period 2009-2018 (risk.df.2009_2018)
+
+names(risk.df.monthly)
+risk.df.2009_2018 <- risk.df.monthly %>%
+  group_by(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>%
+  summarise(
+    mean_H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(lbs_DCRB,na.rm=TRUE),
+    sum_lbs_DCRB = sum(lbs_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(dollars_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(Num_DCRB_VMS_pings,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.2009_2018)
+
+write.csv(risk.df.2009_2018, paste0(root.dir,orig_dir,"Whale and Dungeness crab fishery risk summed and averaged for 2009-2018 across 5km grid cells.csv"), row.names=FALSE)
+
+
+
+
+```
+<br>
+
+Make data frames for time series of fishing activity, whales, whale risk, DCRB lbs, DCRB revenue, DCRB vessels, with the following specifications:
+
+Spatial domains of interest: CA, CenCA/NorCA, Hump BIAs, Blue BIAs, all BIAs. 
+- Save these for later: Hump annual upper quartile, Blue annual upper quartile, CDFW Regions
+
+Mgmt scenarios here: https://docs.google.com/spreadsheets/d/12yUHfzy-3gUG_aU0d2rgfaRaGMyc6MffJdriRME4Olg/edit?pli=1#gid=490384528
+
+- each year_month (risk.df.monthly),
+- monthly avg across 2009-2018 (risk.df.mean_by_month_2009_2018),
+- seasonal avg before and after Apr 1 for each year across 2009-2018 (risk.df.mean_by_year_prepostApr_2009_2018), 
+- avg for each year 2009-2018 (risk.df.annually),
+- seasonal average for entire period before and after Apr 1 across 2009-2018 (risk.df.mean_prepostApr_2009_2018),
+- average for entire period 2009-2018 (risk.df.2009_2018)
+
+Sum over 5km grid cells to get total risk for humps, total DCRB lbs, $, activity. also get num.grid.cells. can't sum prob of occurrence for blues. can get uncertainty estimates (stdev)
+```{r}
+
+# start by reading .csv's here or loading .RData workspace
+
+# simplest thing to start with: time series in cenCA vs norCA and in and out of BIAs for each year and then for winter vs sprin/summer. use risk.df.annually
+# note that estimates of temporal variability were lost in earlier steps.
+# note that sums have to be taken prior to means when using summarise()
+
+# make df for cenCA vs norCA
+# best to drop 2009 because it only includes Nov-Dec
+# for 2018, i am including it but note that it reflects DCRB activity Jan-Jul but whale predictions for the entire year (Jan-Dec)
+risk.df.annually.byCAregion <- risk.df.annually %>%
+  group_by(year, Region) %>% 
+  summarise(
+    num_5km_grid_cells = n(),
+    sum_H_Avg_Abund = sum(mean_H_Avg_Abund, na.rm=TRUE),
+    mean_H_Avg_Abund = mean(mean_H_Avg_Abund, na.rm=TRUE),
+    sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
+    #mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    sd_mean_Hump_risk_pings = sd(mean_Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
+    sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    #mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    sd_mean_Blue_risk_pings = sd(mean_Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    
+    mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+  ) %>%
+  filter(year != 2009)
+glimpse(risk.df.annually.byCAregion)
+
+# make df for cenCA vs norCA by season
+risk.df.annually.byCAregion.bySeason <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  group_by(crab.year, B_or_A_April1, Region) %>% 
+  summarise(
+    num_5km_grid_cells = n(),
+    sum_H_Avg_Abund = sum(mean_H_Avg_Abund, na.rm=TRUE),
+    mean_H_Avg_Abund = mean(mean_H_Avg_Abund, na.rm=TRUE),
+    sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
+    #mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    sd_mean_Hump_risk_pings = sd(mean_Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
+    sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    #mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    sd_mean_Blue_risk_pings = sd(mean_Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    
+    mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+glimpse(risk.df.annually.byCAregion.bySeason)
+
+# make df for in and out of BIAs
+# best to drop 2009 because it only includes Nov-Dec
+# for 2018, i am including it but note that it reflects DCRB activity Jan-Jul but whale predictions for the entire year (Jan-Dec)
+risk.df.annually.byAllBIAs <- risk.df.annually %>%
+  group_by(year, BIA_bm_or_mn) %>% 
+  summarise(
+    num_5km_grid_cells = n(),
+    sum_H_Avg_Abund = sum(mean_H_Avg_Abund, na.rm=TRUE),
+    mean_H_Avg_Abund = mean(mean_H_Avg_Abund, na.rm=TRUE),
+    sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
+    #mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    sd_mean_Hump_risk_pings = sd(mean_Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
+    sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    #mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    sd_mean_Blue_risk_pings = sd(mean_Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    
+    mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+  ) %>%
+  filter(year != 2009)
+glimpse(risk.df.annually.byAllBIAs)
+
+# make df for in and out of BIAs by season
+risk.df.annually.byAllBIAs.bySeason <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  group_by(crab.year, B_or_A_April1, BIA_bm_or_mn) %>% 
+  summarise(
+    num_5km_grid_cells = n(),
+    sum_H_Avg_Abund = sum(mean_H_Avg_Abund, na.rm=TRUE),
+    mean_H_Avg_Abund = mean(mean_H_Avg_Abund, na.rm=TRUE),
+    sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
+    #mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    sd_mean_Hump_risk_pings = sd(mean_Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
+    sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    #mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    sd_mean_Blue_risk_pings = sd(mean_Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    
+    mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+  )
+
+risk.df.annually.byAllBIAs.bySeason$BIA_bm_or_mn <- factor(risk.df.annually.byAllBIAs.bySeason$BIA_bm_or_mn)
+
+glimpse(risk.df.annually.byAllBIAs.bySeason)
+
+# save a bunch of df's as .RData
+
+rm(list=setdiff(ls(),c(
+  'root.dir',
+  'full.df',
+  'risk.df.monthly',
+  'risk.df.mean_by_month_2009_2018',
+  'risk.df.mean_by_year_prepostApr_2009_2018', 
+  'risk.df.annually',
+  'risk.df.mean_prepostApr_2009_2018',
+  'risk.df.2009_2018',
+  'risk.df.annually.byCAregion', 
+  'risk.df.annually.byCAregion.bySeason', 
+  'risk.df.annually.byAllBIAs', 
+  'risk.df.annually.byAllBIAs.bySeason')
+  )
+  )
+
+save.image(file=paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
+
+
+```
+<br>
+
+3) Make some plots
+
+Plotting function for time series
+```{r}
+# can start here
+root.dir <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/"
+orig_dir = "/Output_Data/"
+
+load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
+
+# https://stackoverflow.com/questions/5106782/use-of-ggplot-within-another-function-in-r
+p_function <- function(
+  df, time_col, response_var, time_var, region_var, yaxis_lab) #
+{
+  p_tmp <- ggplot(
+  df, #df
+  aes_string(
+    x=time_col,
+    y=response_var,
+    colour=region_var#,
+    #shape=grouping_var
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(aes_string(shape=region_var), size=4) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_line(aes_string(linetype=time_var)) + # aes_string(linetype=grouping_var)# aes_string(x=time_col,y=response_var,colour=grouping_var) aes_string(group = grouping_var)) + #aes_string(group=interaction(grouping_var, shape_var))
+    #geom_vline(xintercept = as.numeric(c(as.Date("2016-04-01"),as.Date("2016-08-01"),as.Date("2017-04-01"),as.Date("2017-08-01"),as.Date("2018-04-01"),as.Date("2018-08-01"))), linetype="dashed") +
+  scale_colour_viridis(option="D", discrete=TRUE, begin=0.2, end=0.8)+
+  # scale_colour_manual(values=wes_palette(n=6,name="FantasticFox1", type = "continuous"))+
+  ylab(yaxis_lab) +
+  xlab("") +
+  #scale_x_date(date_breaks = "2 months")+
+  #scale_x_continuous() +
+  #scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),labels = trans_format("log10", math_format(10^.x))) +
+  #ggtitle("Monthly Dungeness Crab Fishing Activity\nin CDFW Large Blocks") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_tmp
+}
+
+```
+<br>
+
+```{r}
+
+plot.filepath <- paste0(root.dir,"Figures/Management scenarios/")
+
+# make plotting year column for seasonal df's
+risk.df.annually.byCAregion.bySeason$plotting.year <- as.numeric(substr(risk.df.annually.byCAregion.bySeason$crab.year,6,9))
+risk.df.annually.byAllBIAs.bySeason$plotting.year <- as.numeric(substr(risk.df.annually.byAllBIAs.bySeason$crab.year,6,9))
+
+# make plotting column for region-season and BIA-season
+risk.df.annually.byCAregion.bySeason <- 
+  risk.df.annually.byCAregion.bySeason %>%
+  mutate(
+    Region.Season = paste0(Region," ", B_or_A_April1)
+  )
+
+risk.df.annually.byAllBIAs.bySeason <- 
+  risk.df.annually.byAllBIAs.bySeason %>%
+  mutate(
+    BIA.Season = paste0(BIA_bm_or_mn," ", B_or_A_April1)
+  )
+
+
+# simplest thing to start with: time series in cenCA vs norCA and in and out of BIAs for each year. use risk.df.annually
+# df's of interest: risk.df.annually.byCAregion, risk.df.annually.byCAregion.bySeason, risk.df.annually.byAllBIAs, risk.df.annually.byAllBIAs.bySeason
+
+# function asks for: df name, x axis and y axis column name, grouping name
+
+# Humpbacks
+# annually, by norCA vs cenCA
+png(paste0(plot.filepath, "Summed_humpback_abundance_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion, 
+           time_col="year", 
+           response_var="sum_H_Avg_Abund", 
+           time_var = NULL,
+           region_var="Region", 
+           yaxis_lab="Predicted abundance of humpback whales" #,shape_var="Region"
+)
+dev.off()
+
+# annually and seasonally, bynorCA vs cenCA
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "Summed_humpback_abundance_CA_cenCA_v_norCA_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion.bySeason, #[which(risk.df.annually.byCAregion.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_H_Avg_Abund", 
+           time_var="B_or_A_April1", 
+           region_var = "Region",
+           yaxis_lab="Predicted abundance of humpback whales") #,shape_var="B_or_A_April1" # \n (mean number per 5km grid cell)
+dev.off()
+
+# annually, in and out of BIAs
+png(paste0(plot.filepath, "Summed_humpback_abundance_CA_BIA_bm_or_mn_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs, 
+           time_col="year", 
+           response_var="sum_H_Avg_Abund", 
+           time_var=NULL,
+           region_var = "BIA_bm_or_mn",
+           yaxis_lab="Predicted abundance of humpback whales") #,shape_var="BIA_bm_or_mn"
+dev.off()
+
+# annually and seasonally, in and out of BIAs
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "Summed_humpback_abundance_CA_BIA_bm_or_mn_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs.bySeason, #[which(risk.df.annually.byAllBIAs.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_H_Avg_Abund", 
+           time_var = "B_or_A_April1",
+           region_var="BIA_bm_or_mn",
+           yaxis_lab="Predicted abundance of humpback whales") #shape_var="B_or_A_April1",
+dev.off()
+
+# Blues
+# annually, by norCA vs cenCA
+png(paste0(plot.filepath, "Blue_occurrence_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion, 
+           time_col="year", 
+           response_var="mean_Blue_occurrence", 
+           time_var = NULL,
+           region_var="Region", 
+           yaxis_lab="Predicted occurrence of blue whales") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, bynorCA vs cenCA
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "Blue_occurrence_CA_cenCA_v_norCA_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion.bySeason, #[which(risk.df.annually.byCAregion.bySeason$B_or_A_April1 == "April 1 and After"),]
+           time_col="plotting.year", 
+           response_var="mean_Blue_occurrence", 
+           time_var = "B_or_A_April1",
+           region_var="Region",
+           yaxis_lab="Predicted occurrence of blue whales") #,shape_var="B_or_A_April1"
+dev.off()
+
+# annually, in and out of BIAs
+png(paste0(plot.filepath, "Blue_occurrence_CA_BIA_bm_or_mn_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs, 
+           time_col="year", 
+           response_var="mean_Blue_occurrence", 
+           time_var = NULL,
+           region_var="BIA_bm_or_mn", 
+           yaxis_lab="Predicted occurrence of blue whales") #,shape_var="BIA_bm_or_mn"
+dev.off()
+
+# annually and seasonally, in and out of BIAs
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "Blue_occurrence_CA_BIA_bm_or_mn_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs.bySeason,#[which(risk.df.annually.byAllBIAs.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="mean_Blue_occurrence", 
+           time_var = "B_or_A_April1",
+           region_var="BIA_bm_or_mn",
+           yaxis_lab="Predicted occurrence of blue whales") #shape_var="B_or_A_April1",
+dev.off()
+
+# Fishing $
+# annually, by norCA vs cenCA
+png(paste0(plot.filepath, "sum_dollars_DCRB_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion, 
+           time_col="year", 
+           response_var="sum_dollars_DCRB", 
+           time_var = NULL,
+           region_var="Region", 
+           yaxis_lab="Dungeness crab revenue ($)") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, bynorCA vs cenCA
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_dollars_DCRB_CA_cenCA_v_norCA_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion.bySeason,#[which(risk.df.annually.byCAregion.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_dollars_DCRB", 
+           time_var = "B_or_A_April1",
+           region_var="Region",
+           yaxis_lab="Dungeness crab revenue ($)") #,shape_var="B_or_A_April1"
+dev.off()
+
+# annually, in and out of BIAs
+png(paste0(plot.filepath, "sum_dollars_DCRB_CA_BIA_bm_or_mn_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs, 
+           time_col="year", 
+           response_var="sum_dollars_DCRB", 
+           time_var = NULL,
+           region_var="BIA_bm_or_mn", 
+           yaxis_lab="Dungeness crab revenue ($)") #,shape_var="BIA_bm_or_mn"
+dev.off()
+
+# annually and seasonally, in and out of BIAs
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_dollars_DCRB_CA_BIA_bm_or_mn_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs.bySeason, #[which(risk.df.annually.byAllBIAs.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_dollars_DCRB", 
+           time_var = "B_or_A_April1",
+           region_var="BIA_bm_or_mn",
+           yaxis_lab="Dungeness crab revenue ($)") #shape_var="B_or_A_April1",
+dev.off()
+
+# Humpback risk
+# annually, by norCA vs cenCA
+png(paste0(plot.filepath, "sum_Hump_risk_pings_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion, 
+           time_col="year", 
+           response_var="sum_Hump_risk_pings", 
+           time_var = NULL,
+           region_var="Region", 
+           yaxis_lab="Risk to humpback whales\n (sum [humpback * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, bynorCA vs cenCA
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_Hump_risk_pings_DCRB_CA_cenCA_v_norCA_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion.bySeason, #[which(risk.df.annually.byCAregion.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_Hump_risk_pings", 
+           time_var = "B_or_A_April1",
+           region_var="Region", 
+           yaxis_lab="Risk to humpback whales\n (sum [humpback * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually, in and out of BIAs
+png(paste0(plot.filepath, "sum_Hump_risk_pings_CA_BIA_bm_or_mn_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs, 
+           time_col="year", 
+           response_var="sum_Hump_risk_pings", 
+           time_var = NULL,
+           region_var="BIA_bm_or_mn", 
+           yaxis_lab="Risk to humpback whales\n (sum [humpback * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, in and out of BIAs
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_Hump_risk_pings_CA_BIA_bm_or_mn_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs.bySeason,#[which(risk.df.annually.byAllBIAs.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_Hump_risk_pings", 
+           time_var = "B_or_A_April1",
+           region_var="BIA_bm_or_mn", 
+           yaxis_lab="Risk to humpback whales\n (sum [humpback * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# Blue risk
+# annually, by norCA vs cenCA
+png(paste0(plot.filepath, "sum_Blue_risk_pings_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion, 
+           time_col="year", 
+           response_var="sum_Blue_risk_pings", 
+           time_var = NULL,
+           region_var="Region",
+           yaxis_lab="Risk to blue whales\n (sum [blue * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, bynorCA vs cenCA
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_Blue_risk_pings_DCRB_CA_cenCA_v_norCA_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byCAregion.bySeason,#[which(risk.df.annually.byCAregion.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_Blue_risk_pings", 
+           time_var = "B_or_A_April1",
+           region_var="Region", 
+           yaxis_lab="Risk to blue whales\n (sum [blue * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually, in and out of BIAs
+png(paste0(plot.filepath, "sum_Blue_risk_pings_CA_BIA_bm_or_mn_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs, 
+           time_col="year", 
+           response_var="sum_Blue_risk_pings", 
+           time_var = NULL,
+           region_var="BIA_bm_or_mn",
+           yaxis_lab="Risk to blue whales\n (sum [blue * VMS pings])") #,shape_var="Region"
+dev.off()
+
+# annually and seasonally, in and out of BIAs
+# note that in this case year refers to Nov-Dec of previous year and Jan-July of labelled year
+png(paste0(plot.filepath, "sum_Blue_risk_pings_CA_BIA_bm_or_mn_2009-18_B_or_A_April1.png"), width = 10, height = 8, units = "in", res = 300)
+p_function(df=risk.df.annually.byAllBIAs.bySeason,#[which(risk.df.annually.byAllBIAs.bySeason$B_or_A_April1 == "April 1 and After"),] 
+           time_col="plotting.year", 
+           response_var="sum_Blue_risk_pings", 
+           time_var = "B_or_A_April1",
+           region_var="BIA_bm_or_mn", 
+           yaxis_lab="Risk to blue whales\n (sum [blue * VMS pings])") #,shape_var="Region"
+dev.off()
+
+
+
+
+# define annual quartiles for each whale sp
+# risk.df.monthly <- risk.df.monthly %>% 
+#   group_by(year) %>%
+#   mutate(
+#     Hump_quartile = ntile(H_Avg_Abund, 4),
+#     Blue_quartile = ntile(Blue_occurrence,4)
+#   )
+
+```
+<br>
+
+Tradeoff plots
+
+Plotting function
+```{r}
+
+p_function1 <- function(
+  df, fishing_col, whaleRisk_col, label_col, region_var, time_var, xaxis_lab, yaxis_lab
+  ) #
+{
+  p_tmp <- ggplot(
+  df, #df
+  aes_string(
+    x=fishing_col,
+    y=whaleRisk_col,
+    label=label_col
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_text_repel() + 
+  facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
+  scale_x_continuous(trans = "log10") +  
+  ylab(yaxis_lab) +
+  xlab(paste0("log10"," ", xaxis_lab)) +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_tmp
+}
+
+# code for debugging function commented out below
+# p_function1 <- 
+#   ggplot(risk.df.annually.byCAregion.bySeason,
+#          aes(
+#            x = mean_dollars_DCRB,
+#            y = mean_Hump_risk_pings,
+#            label = crab.year
+#          )
+#   ) +
+#   geom_point() +
+#   geom_text_repel() +
+#   facet_wrap(B_or_A_April1~Region,nrow=2) +
+#   scale_x_continuous(trans = "log10") +
+#   theme_classic() +
+#   theme(#legend.title = element_blank(),
+#         title = element_text(size = 26),
+#         #legend.text = "none",
+#         #legend.position = "none",
+#         axis.text.x = element_text(size = 18),
+#         axis.text.y = element_text(size = 18),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=18))
+# p_function1
+
+```
+<br>
+
+Plots of whales and DCRB fishing over last 10 years
+```{r}
+plot.filepath2 <- paste0(root.dir,"Figures/Whales and fishing plots/")
+# df's of interest: risk.df.annually.byCAregion, risk.df.annually.byCAregion.bySeason, risk.df.annually.byAllBIAs, risk.df.annually.byAllBIAs.bySeason
+
+# Humpbacks
+# status quo, consider relationship between whales and DCRB pings in winter and spring by region
+png(paste0(plot.filepath2, "sum_H_Avg_Abund_sum_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_Num_DCRB_VMS_pings", 
+            whaleRisk_col = "sum_H_Avg_Abund", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab VMS pings", 
+            yaxis_lab = "Predicted abundance of humpback whales") #\n (monthly mean number per 5km grid cell)
+dev.off()
+
+# status quo, consider relationship between whale risk and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "sum_H_Avg_Abund_sum_dollars_DCRB_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_dollars_DCRB", 
+            whaleRisk_col = "sum_H_Avg_Abund", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue ($)", #\n (monthly mean per 5km grid cell)
+            yaxis_lab = "Predicted abundance of humpback whales")
+dev.off()
+
+# Blues
+# status quo, consider relationship between whales and DCRB pings in winter and spring by region
+png(paste0(plot.filepath2, "mean_Blue_occurrence_sum_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_Num_DCRB_VMS_pings", 
+            whaleRisk_col = "mean_Blue_occurrence", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab VMS pings", #\n (monthly mean per 5km grid cell)
+            yaxis_lab = "Predicted occurrence of blue whales")#\n (monthly mean per 5km grid cell)
+dev.off()
+
+# status quo, consider relationship between whale risk and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "mean_Blue_occurrence_sum_dollars_DCRB_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "sum_dollars_DCRB", 
+            whaleRisk_col = "mean_Blue_occurrence", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue ($)", 
+            yaxis_lab = "Predicted occurrence of blue whales")
+dev.off()
+
+# status quo, consider relationship between DCRB pings and DCRB $ in winter and spring by region
+png(paste0(plot.filepath2, "mean_dollars_DCRB_mean_Num_DCRB_VMS_pings_B_or_A_April1_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_function1(df = risk.df.annually.byCAregion.bySeason, 
+            fishing_col = "mean_dollars_DCRB", 
+            whaleRisk_col = "mean_Num_DCRB_VMS_pings", 
+            label_col = "crab.year", 
+            region_var = "Region", 
+            time_var = "B_or_A_April1", 
+            xaxis_lab = "Dungeness crab revenue\n (monthly mean per 5km grid cell)", 
+            yaxis_lab = "Dungeness crab pings\n (monthly mean number per 5km grid cell)")
+dev.off()
+
+```
+<br>
+
+Make tradeoff data frames
+```{r}
+# make df. Year, Scenario, hump risk, blue risk, DCRB $
+# scenarios: sq, CA, cenCA, BIAs
+
+glimpse(risk.df.annually.byCAregion.bySeason)
+
+save.image(file=paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
+
+root.dir <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/"
+load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
+
+#pick up here to change response variables to relative reduction
+# if max $ is X, then for each year we want $ in that year relative to max, and scaled to a %
+# if max risk is Y, then for relative risk we want max risk to be zero and complete closure to be 100% reduction
+
+# make CA spring df, including values relative to max observed
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018)
+
+
+##################################
+# chunk below used for 12/20/19 #
+
+# risk.df.mean_by_year_prepostApr_2009_2018_CAwide <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+#   filter(B_or_A_April1 == "April 1 and After") %>%
+#   group_by(crab.year) %>%
+#   summarise(
+#     num_5km_grid_cells = n(),
+#     sum_H_Avg_Abund = sum(mean_H_Avg_Abund, na.rm=TRUE),
+#     mean_H_Avg_Abund = mean(mean_H_Avg_Abund, na.rm=TRUE),
+#     sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
+#     #mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+#     sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+#     sd_mean_Hump_risk_pings = sd(mean_Hump_risk_pings,na.rm=TRUE),
+#     # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+#     # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+#     # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+#     # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+#     
+#     mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
+#     sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+#     # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+#     # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+#     #mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+#     sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+#     sd_mean_Blue_risk_pings = sd(mean_Blue_risk_pings,na.rm=TRUE),
+#     # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+#     # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+#     # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+#     
+#     sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+#     mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+#     sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+#     sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+#     mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+#     sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+#     sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+#     mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+#     sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+#     
+#     mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+#     Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+#     mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+#     mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+#     
+#   ) %>%
+#   ungroup() %>%
+#   mutate(
+#     max_sum_Hump_risk_pings = max(sum_Hump_risk_pings, na.rm=TRUE),
+#     max_sum_Blue_risk_pings = max(sum_Blue_risk_pings, na.rm=TRUE),
+#     max_sum_dollars_DCRB = max(sum_dollars_DCRB, na.rm=TRUE)
+#   ) %>%
+#   ungroup() %>%
+#   mutate(
+#     relative_Hump_risk_pings = 100 *  (1 - (sum_Hump_risk_pings/max_sum_Hump_risk_pings )),
+#     relative_Blue_risk_pings = 100 * (1 - (sum_Blue_risk_pings/max_sum_Blue_risk_pings )),
+#     relative_dollars_DCRB = 100* (sum_dollars_DCRB/max_sum_dollars_DCRB),
+#    ) %>%
+#   # select(crab.year, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+#   mutate(
+#     Scenario = "Status quo"
+#   )
+# 
+# glimpse(risk.df.mean_by_year_prepostApr_2009_2018_CAwide)
+
+# # make Spring df, figure out max risk and $ across years, and relative reduction
+# relative.risk.df.annually.byCAregion.Spring <- risk.df.annually.byCAregion.bySeason %>%
+#   filter(B_or_A_April1 == "April 1 and After") %>%
+#   group_by(Region) %>%
+#   # mutate(
+#   #   max_mean_Hump_risk_pings = max(mean_Hump_risk_pings, na.rm=TRUE),
+#   #   max_mean_Blue_risk_pings = max(mean_Blue_risk_pings, na.rm=TRUE),
+#   #   max_mean_dollars_DCRB = max(mean_dollars_DCRB, na.rm=TRUE)
+#   # ) %>%
+#   # ungroup() %>%
+#   mutate(
+#     relative_Hump_risk_pings = 100 *  (1 -(sum_Hump_risk_pings/unique(risk.df.mean_by_year_prepostApr_2009_2018_CAwide$max_sum_Hump_risk_pings ))),
+#     relative_Blue_risk_pings = 100 * (1 - ( sum_Blue_risk_pings/unique(risk.df.mean_by_year_prepostApr_2009_2018_CAwide$max_sum_Blue_risk_pings ))),
+#     relative_dollars_DCRB = 100* (sum_dollars_DCRB/unique(risk.df.mean_by_year_prepostApr_2009_2018_CAwide$max_sum_dollars_DCRB)) ) %>%
+#   # select(crab.year, Region, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+#   mutate(
+#     Scenario = "Regional spring closure"
+#   )
+# 
+# glimpse(relative.risk.df.annually.byCAregion.Spring)
+# 
+# # # make df for CA-wide risk status quo
+# # relative.risk.df.annually.CAwide.Spring <- relative.risk.df.annually.byCAregion.Spring %>%
+# #   group_by(crab.year, Scenario) %>%
+# #   summarise(
+# #     relative_Hump_risk_pings = sum(relative_Hump_risk_pings, na.rm=TRUE),
+# #     relative_Blue_risk_pings = sum(relative_Blue_risk_pings, na.rm=TRUE),
+# #     relative_dollars_DCRB = sum(relative_dollars_DCRB, na.rm=TRUE)
+# #   )
+# 
+# # make df for CA-wide risk cenCA closed
+# relative.risk.df.annually.cenCAclosed.Spring <- relative.risk.df.annually.byCAregion.Spring %>%
+#   filter(Region != "CenCA") %>%
+#   select(-Region) %>%
+#   ungroup() %>%
+#   # group_by(crab.year, Scenario) %>%
+#   # summarise(
+#   #   relative_Hump_risk_pings = sum(relative_Hump_risk_pings, na.rm=TRUE),
+#   #   relative_Blue_risk_pings = sum(relative_Blue_risk_pings, na.rm=TRUE),
+#   #   relative_dollars_DCRB = sum(relative_dollars_DCRB, na.rm=TRUE)
+#   # ) %>%
+#   # ungroup() %>%
+#   select(-Scenario) %>%
+#   mutate(
+#     Scenario = "Central CA Spring Closure"
+#   ) %>%
+#   select(crab.year, Scenario, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB)
+# 
+# glimpse(relative.risk.df.annually.cenCAclosed.Spring)
+# 
+# df.tradeoff <- risk.df.mean_by_year_prepostApr_2009_2018_CAwide %>%
+#   select(crab.year, Scenario, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+#   bind_rows(
+#     relative.risk.df.annually.cenCAclosed.Spring
+# )
+
+############################
+
+
+## revised approach 012420
+# calculate relative risk reduction to whales and relative revenue reduction to DCRB
+# all relative metrics are relative to the year under consideration if both winter and spring DCRB season were open
+
+# compare status quo to CAwide closure in spring
+risk.df.mean_by_year_prepostApr_2009_2018_CAwide <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  #filter(B_or_A_April1 == "April 1 and After") %>%
+  group_by(crab.year, B_or_A_April1) %>%
+  summarise(
+    num_5km_grid_cells = n(),
+    
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    #sd_sum_Hump_risk_pings = sd(sum_Hump_risk_pings,na.rm=TRUE),
+
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    #sd_sum_Blue_risk_pings = sd(sum_Blue_risk_pings,na.rm=TRUE),
+   
+    # sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    # mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    # sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    # mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    # sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    # sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+
+    # mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    # Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    # mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    # mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+
+  ) %>%
+  ungroup() %>%
+  group_by(crab.year) %>%
+  # mutate(
+  #   max_sum_Hump_risk_pings = max(sum_Hump_risk_pings, na.rm=TRUE),
+  #   max_sum_Blue_risk_pings = max(sum_Blue_risk_pings, na.rm=TRUE),
+  #   max_sum_dollars_DCRB = max(sum_dollars_DCRB, na.rm=TRUE)
+  # ) %>%
+  # ungroup() %>%
+  summarise(
+    relative_Hump_risk_pings = 100 *  (1 - (
+      sum_Hump_risk_pings[B_or_A_April1 == "Before April 1"] /
+        ( sum_Hump_risk_pings[B_or_A_April1 == "Before April 1"] + sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After"] )
+      )),
+    relative_Blue_risk_pings = 100 * (1 - (
+      sum_Blue_risk_pings[B_or_A_April1 == "Before April 1"] /
+        ( sum_Blue_risk_pings[B_or_A_April1 == "Before April 1"] + sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After"] )
+      )),
+    relative_dollars_DCRB = 100* (sum_dollars_DCRB[B_or_A_April1 == "Before April 1"] / 
+                                    ( sum_dollars_DCRB[B_or_A_April1 == "Before April 1"] + sum_dollars_DCRB[B_or_A_April1 == "April 1 and After"])) ,
+   ) %>%
+  # select(crab.year, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+  mutate(
+    Scenario = "CAwide"
+  )
+
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018_CAwide)
+
+# compare status quo to cenCA closure in spring
+risk.df.mean_by_year_prepostApr_2009_2018_cenCA <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  #filter(B_or_A_April1 == "April 1 and After") %>%
+  group_by(crab.year, B_or_A_April1, Region) %>%
+  summarise(
+    num_5km_grid_cells = n(),
+    
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    #sd_sum_Hump_risk_pings = sd(sum_Hump_risk_pings,na.rm=TRUE),
+
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    #sd_sum_Blue_risk_pings = sd(sum_Blue_risk_pings,na.rm=TRUE),
+   
+    # sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    # mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    # sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    # mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    # sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    # sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+
+    # mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    # Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    # mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    # mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+
+  ) %>%
+  ungroup() %>%
+  group_by(crab.year) %>%
+  # mutate(
+  #   max_sum_Hump_risk_pings = max(sum_Hump_risk_pings, na.rm=TRUE),
+  #   max_sum_Blue_risk_pings = max(sum_Blue_risk_pings, na.rm=TRUE),
+  #   max_sum_dollars_DCRB = max(sum_dollars_DCRB, na.rm=TRUE)
+  # ) %>%
+  # ungroup() %>%
+  summarise(
+    relative_Hump_risk_pings = 100 *  (1 - (
+      ( sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] ) /
+      ( sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "CenCA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] )
+      )),
+    
+    relative_Blue_risk_pings = 100 *  (1 - (
+      ( sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] ) /
+      ( sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "CenCA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] )
+      )),
+    
+    relative_dollars_DCRB = 100 *
+      ( sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] ) /
+      ( sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & Region == "CenCA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & Region == "CenCA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & Region == "NorCA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & Region == "NorCA"] )
+   ) %>%
+  # select(crab.year, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+  mutate(
+    Scenario = "cenCA"
+  )
+
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018_cenCA)
+
+# compare status quo to BIA closure in spring
+risk.df.mean_by_year_prepostApr_2009_2018_BIAs <- risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  #filter(B_or_A_April1 == "April 1 and After") %>%
+  group_by(crab.year, B_or_A_April1, BIA_bm_or_mn) %>%
+  summarise(
+    num_5km_grid_cells = n(),
+    
+    sum_Hump_risk_pings = sum(sum_Hump_risk_pings,na.rm=TRUE),
+    #sd_sum_Hump_risk_pings = sd(sum_Hump_risk_pings,na.rm=TRUE),
+
+    sum_Blue_risk_pings = sum(sum_Blue_risk_pings,na.rm=TRUE),
+    #sd_sum_Blue_risk_pings = sd(sum_Blue_risk_pings,na.rm=TRUE),
+   
+    # sum_lbs_DCRB = sum(sum_lbs_DCRB,na.rm=TRUE),
+    # mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    # sd_mean_lbs_DCRB = sd(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(sum_dollars_DCRB,na.rm=TRUE),
+    # mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    # sd_dollars_DCRB = sd(mean_dollars_DCRB,na.rm=TRUE),
+    # sum_Num_DCRB_VMS_pings = sum(sum_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    # sd_Num_DCRB_VMS_pings = sd(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+
+    # mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    # Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    # mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    # mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+
+  ) %>%
+  ungroup() %>%
+  group_by(crab.year) %>%
+  # mutate(
+  #   max_sum_Hump_risk_pings = max(sum_Hump_risk_pings, na.rm=TRUE),
+  #   max_sum_Blue_risk_pings = max(sum_Blue_risk_pings, na.rm=TRUE),
+  #   max_sum_dollars_DCRB = max(sum_dollars_DCRB, na.rm=TRUE)
+  # ) %>%
+  # ungroup() %>%
+  summarise(
+    relative_Hump_risk_pings = 100 *  (1 - (
+      ( sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] ) /
+      ( sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_Hump_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] )
+      )),
+    
+    relative_Blue_risk_pings = 100 *  (1 - (
+      ( sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] ) /
+      ( sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_Blue_risk_pings[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] )
+      )),
+    
+    relative_dollars_DCRB = 100 *
+      ( sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] ) /
+      ( sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Inside BIA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "Before April 1" & BIA_bm_or_mn == "Outside BIA"] +
+          sum_dollars_DCRB[B_or_A_April1 == "April 1 and After" & BIA_bm_or_mn == "Outside BIA"] )
+   ) %>%
+  # select(crab.year, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+  mutate(
+    Scenario = "allBIAs"
+  )
+
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018_BIAs)
+```
+
+Make tradeoff plot
+```{r}
+
+df.tradeoff <- risk.df.mean_by_year_prepostApr_2009_2018_CAwide %>%
+  select(crab.year, Scenario, relative_Hump_risk_pings, relative_Blue_risk_pings, relative_dollars_DCRB) %>%
+  bind_rows(
+    risk.df.mean_by_year_prepostApr_2009_2018_cenCA,
+    risk.df.mean_by_year_prepostApr_2009_2018_BIAs
+) %>%
+  mutate(
+    Scenario_long = c(
+      rep("California-wide Spring Closure",dim(risk.df.mean_by_year_prepostApr_2009_2018_CAwide)[1]),
+      rep("Central California  Spring Closure",dim(risk.df.mean_by_year_prepostApr_2009_2018_cenCA)[1]),
+      rep("Blue and Humpback BIA  Spring Closure",dim(risk.df.mean_by_year_prepostApr_2009_2018_CAwide)[1])
+  )
+  )
+
+df.tradeoff.annualmeans <- df.tradeoff %>%
+  group_by(Scenario, Scenario_long) %>%
+  summarise(relative_Hump_risk_pings = mean(relative_Hump_risk_pings),
+            relative_Blue_risk_pings = mean(relative_Blue_risk_pings),
+            relative_dollars_DCRB = mean(relative_dollars_DCRB)
+  )
+
+png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Hump_risk_pings_2009-18_annualmeans.png"), width = 10, height = 8, units = "in", res = 300)
+p_0_h <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Hump_risk_pings,
+    #label=crab.year,
+    colour=Scenario_long
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to humpbacks") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  guides(color = guide_legend("Scenario"),  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18)
+        )
+p_0_h
+dev.off()
+
+png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Blue_risk_pings_2009-18_annualmeans.png"), width = 10, height = 8, units = "in", res = 300)
+p_0_b <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Blue_risk_pings,
+    #label=crab.year,
+    colour=Scenario_long
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to blues") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  guides(color = guide_legend("Scenario"),  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18)
+        )
+p_0_b
+dev.off()
+
+png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Hump_risk_pings_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_1 <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Hump_risk_pings,
+    label=crab.year,
+    colour=Scenario_long
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_text_repel() + 
+  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
+  #scale_x_continuous(trans = "log10") +  
+  ylab("Relative reduction in risk to humpbacks") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_1
+dev.off()
+
+png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Blue_risk_pings_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_2 <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Blue_risk_pings,
+    label=crab.year,
+    colour=Scenario_long
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_text_repel() + 
+  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
+  #scale_x_continuous(trans = "log10") +  
+  ylab("Relative reduction in risk to blues") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_2
+dev.off()
+
+
+
+### chunk below was for 122019 ###
+
+###################################
+
+# think more baout how i am calculating risk reduction. 
+# can blue whale risk be negative? bl wh risk can be neg because the max CA-wide risk under sq maybe be lower than the risk just in norCA under a cenCA spring closure, b/c bl wh occurrene, DCRB fishing, or both were higher in norCA
+
+# went back and changed risk and DCRB metrics to sums across 5km grid cells for regions, BIAs
+# may want to make a separate figure for 2015-16, which is clearly an outlier. make new max column for max except 2015-16
+
+# gut check about revenue. yes, DCRB $ were super low in spring 2016 NorCA whether we sum or average. probably better to sum 
+View(full.df %>% group_by(crab.year, Region, B_or_A_April1) %>% summarise (sum_dollars_DCRB = sum(dollars_DCRB , na.rm=TRUE)))
+View(full.df %>% group_by(crab.year, Region, B_or_A_April1) %>% summarise (mean_dollars_DCRB = mean(dollars_DCRB , na.rm=TRUE)))
+
+png(paste0(plot.filepath, "relative_dollars_DCRB_relative_Hump_risk_pings_sq_cenCAspringclosure_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_1 <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Hump_risk_pings,
+    label=crab.year,
+    colour=Scenario
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_text_repel() + 
+  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
+  #scale_x_continuous(trans = "log10") +  
+  ylab("Relative reduction in risk to humpbacks") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_1
+dev.off()
+
+png(paste0(plot.filepath, "relative_dollars_DCRB_relative_Blue_risk_pings_sq_cenCAspringclosure_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+p_2 <- ggplot(
+  df.tradeoff, #df
+  aes(
+    x=relative_dollars_DCRB,
+    y=relative_Blue_risk_pings,
+    label=crab.year,
+    colour=Scenario
+    )
+  ) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
+  geom_text_repel() + 
+  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
+  #scale_x_continuous(trans = "log10") +  
+  ylab("Relative reduction in risk to blues") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  theme_classic() +
+  theme(
+        title = element_text(size = 26),
+        axis.text.x = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=18))
+p_2
+dev.off()
+
+####
+####
+
+###################################
+
+### stopped here 122019
+# need to edit code below
+
+####
+###
+
+
+
+glimpse(risk.df.mean_by_year_prepostApr_2009_2018)
+
+risk.df.mean_by_year_prepostApr_2009_2018.sq.tradeoff <-
+  #as.data.frame(
+    risk.df.mean_by_year_prepostApr_2009_2018 %>%
+  group_by(year, B_or_A_April1) %>%
+  summarise(
+    H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE),
+    # mean_Hump_risk_lbs = mean(Hump_risk_lbs,na.rm=TRUE),
+    # mean_Hump_risk_dollars = mean(Hump_risk_dollars,na.rm=TRUE),
+    mean_Hump_risk_pings = mean(mean_Hump_risk_pings,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_vessels = mean(Hump_risk_vessels,na.rm=TRUE),
+    # mean_Hump_risk_lbs_per_vessel = mean(Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Hump_risk_dollars_per_vessel = mean(Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_Blue_occurrence = mean(Blue_occurrence, na.rm=TRUE),
+    # mean_Blue_risk_lbs = mean(Blue_risk_lbs,na.rm=TRUE),
+    # mean_Blue_risk_dollars = mean(Blue_risk_dollars,na.rm=TRUE),
+    mean_Blue_risk_pings = mean(mean_Blue_risk_pings,na.rm=TRUE),
+    # mean_Blue_risk_vessels = mean(Blue_risk_vessels,na.rm=TRUE),
+    # mean_Blue_risk_lbs_per_vessel = mean(Blue_risk_lbs_per_vessel,na.rm=TRUE),
+    # mean_Blue_risk_dollars_per_vessel = mean(Blue_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    mean_lbs_DCRB = mean(mean_lbs_DCRB,na.rm=TRUE),
+    mean_dollars_DCRB = mean(mean_dollars_DCRB,na.rm=TRUE),
+    mean_Num_DCRB_VMS_pings = mean(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    mean_Num_DCRB_Vessels = mean(mean_Num_DCRB_Vessels,na.rm=TRUE),
+    Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels, na.rm=TRUE),
+    mean_lbs_DCRB_per_vessel = mean(mean_lbs_DCRB_per_vessel,na.rm=TRUE),
+    mean_dollars_DCRB_per_vessel = mean(mean_dollars_DCRB_per_vessel,na.rm=TRUE)
+  ) %>%
+  ungroup() %>%
+  filter(B_or_A_April1 == "April 1 and After") %>%
+  select(year, mean_Hump_risk_pings, mean_Blue_risk_pings, mean_dollars_DCRB) %>%
+  mutate(
+    Scenario = "Status quo"
+  )
+#  )
+# something weird, 2009 is missing for April 1 and After
+
+glimpse(risk.df.annually.byCAregion)
+
+risk.df.annually.byCAregion.tradeoff <- risk.df.annually.byCAregion %>%
+  filter(Region == "CenCA") %>%
+  select(year, mean_Hump_risk_pings, mean_Blue_risk_pings, mean_dollars_DCRB) %>%
+  mutate(
+    Scenario = "Spring closure Central CA"
+  )
+
+glimpse(risk.df.annually.byAllBIAs)
+risk.df.annually.byAllBIAs.tradeoff <- risk.df.annually.byAllBIAs %>%
+  filter(BIA_bm_or_mn == "Outside BIA") %>%
+  select(year, mean_Hump_risk_pings, mean_Blue_risk_pings, mean_dollars_DCRB) %>%
+  mutate(
+    Scenario = "Spring closure BIAs"
+  )
+
+tradeoff.df <- rbind(risk.df.annually.byCAregion.tradeoff,
+                     risk.df.annually.byAllBIAs.tradeoff)
+tradeoff.df <- rbind(tradeoff.df,
+                     risk.df.mean_by_year_prepostApr_2009_2018.sq.tradeoff)
+
+
+### old stuff below here
+
+hump_tradeoff_plot_lg <- ggplot(tradeoff_df_hump_plot[tradeoff_df_hump_plot, aes(x=Hump_percent_risk_reduction, y=DCRB_dollars_percent_of_max, label=Scenario)) +
+  geom_point()+
+  geom_step()+
+  geom_text_repel(nudge_y=-0.5)+
+  xlab("Percent reduction in risk to Humpback whales")+
+  ylab("Percent reduction in revenue to fishery")+
+  ggtitle("Marine Spatial Planning Scenario Analysis\nfor Dungeness Crab Fishery in California")+
+  #facet_wrap(~Vessel_Size_ForPlot,scales="free")+
+  theme_classic()
+hump_tradeoff_plot_lg
+
+#Consider tradeoffs
+
+
+# Start with humps
+# Need df with risk for BIA closure, regional closure, statewide closure
+names(risk_df_2016_2017_average_VesselSize_5km)
+#with(risk_df_2016_2017_average_VesselSize_5km,table(BIA_mn_noNAs,GRID5KM_ID))
+
+# columns will be risk averaged for only out of BIAs/cenCA, fishery impacts for only in BIAs/cenCA
+
+# sum hump risk and total DCRB $ if fishery open after Apr 1 across all 5km grid cells, by vessel size
+hump_no_closure <- risk_df_2016_2017_average_VesselSize_5km %>%
+  group_by(Vessel_Size) %>%
+  filter(B_or_A_April1 == "April 1 and After") %>%
+  summarise(
+    # mean_Hump_risk_dollars = mean(mean_Hump_risk_dollars,na.rm=TRUE),
+    #   sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)  
+    sum_Hump_risk_dollars = sum(mean_Hump_risk_dollars,na.rm=TRUE),
+    sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)
+             ) %>%
+  mutate(
+    Spatial_domain = c(rep("All",2))
+  ) %>%
+  dplyr::select(Vessel_Size,Spatial_domain,sum_Hump_risk_dollars,sum_dollars_DCRB)
+
+# mean hump risk and total DCRB $ April 1 and after for all 5km grid cells, by vessel size. can subtract this from df above to evaluate scenario if fishery closed in BIAs only
+hump_BIA_closure <- risk_df_2016_2017_average_VesselSize_5km %>%
+  mutate(
+      Spatial_domain = ifelse(BIA_mn_noNAs == 0, "Outside BIA","Inside BIA")
+    ) %>%
+  filter(
+      B_or_A_April1 == "April 1 and After"
+  ) %>%
+  group_by(Vessel_Size, Spatial_domain) %>%
+  summarise(
+      # mean_Hump_risk_dollars = mean(mean_Hump_risk_dollars,na.rm=TRUE),
+      # sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)  
+    sum_Hump_risk_dollars = sum(mean_Hump_risk_dollars,na.rm=TRUE),
+    sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)
+             ) 
+
+hump_BIA_closure <- hump_BIA_closure[-which(is.na(hump_BIA_closure$Spatial_domain)==TRUE),]
+
+# mean hump risk and total DCRB $ April 1 and after for all 5km grid cells, by vessel size. can subtract this from df above to evaluate scenario if fishery closed in cenCA only
+hump_Region_closure <- risk_df_2016_2017_average_VesselSize_5km %>%
+  mutate(
+      Spatial_domain = ifelse(Region == "CenCA", "CenCA","NorCA")
+    ) %>%
+  filter(
+      B_or_A_April1 == "April 1 and After"
+  ) %>%
+  group_by(Vessel_Size, Spatial_domain) %>%
+  summarise(
+      # mean_Hump_risk_dollars = mean(mean_Hump_risk_dollars,na.rm=TRUE),
+      # sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)  
+    sum_Hump_risk_dollars = sum(mean_Hump_risk_dollars,na.rm=TRUE),
+    sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE)
+             ) 
+
+hump_Region_closure <- hump_Region_closure[-which(is.na(hump_Region_closure$Spatial_domain)==TRUE),]
+
+hump_no_closure$Scenario <- c(rep("No Closure",2))
+names(hump_no_closure)
+
+hump_BIA_closure$Scenario <- c(rep("BIA Closure",4))
+names(hump_BIA_closure)
+
+hump_Region_closure$Scenario <- c(rep("Regional Closure",4))
+names(hump_Region_closure)
+
+# make df for tradeoff plots
+tradeoff_df_hump <- hump_no_closure %>%
+  full_join(hump_BIA_closure) %>%
+  full_join(hump_Region_closure)
+
+# columns Scenario, Vessel_Size, mean_Hump_risk_dollars, sum_dollars_DCRB
+
+# No Closure: Vessel_Size, 0% risk reduction, 100% DCRB dollars
+# Full Closure: Vessel_Size, 100% risk reduction, 0% DCRB dollars
+# BIA Closure: Vessel_Size, risk reduction (risk with no closure compared to risk outside BIAs with BIA closure), DCRB dollars (dollars with no closure compared to dollars outside BIAs with BIA closure)
+# Regional Closure: Vessel_Size, risk reduction (risk with no closure compared to risk in NorCA with Regional closure), DCRB dollars (dollars with no closure compared to dollars in NorCA with Regional closure)
+
+BIA_closure_hump_risk <- 
+  100 * (1- (tradeoff_df_hump[c(4,6),'sum_Hump_risk_dollars'] / tradeoff_df_hump[1:2,'sum_Hump_risk_dollars']))
+names(BIA_closure_hump_risk) <- "Hump_percent_risk_reduction"
+
+BIA_closure_dollars_DCRB <- 
+  100 * (tradeoff_df_hump[c(4,6),'sum_dollars_DCRB'] / tradeoff_df_hump[1:2,'sum_dollars_DCRB'] )        
+names(BIA_closure_dollars_DCRB) <- "DCRB_dollars_percent_of_max"
+
+Regional_closure_hump_risk <- 
+  100 * (1- (tradeoff_df_hump[c(8,10),'sum_Hump_risk_dollars'] / tradeoff_df_hump[1:2,'sum_Hump_risk_dollars']))
+names(Regional_closure_hump_risk) <- "Hump_percent_risk_reduction"
+
+Regional_closure_dollars_DCRB <- 
+  100 * (tradeoff_df_hump[c(8,10),'sum_dollars_DCRB'] / tradeoff_df_hump[1:2,'sum_dollars_DCRB'] )        
+names(Regional_closure_dollars_DCRB) <- "DCRB_dollars_percent_of_max"
+                    
+tradeoff_df_hump_plot <- tradeoff_df_hump[1:2,c(1,3:5)]
+tradeoff_df_hump_plot[,2:3] <- cbind(c(0,0),c(100,100))
+names(tradeoff_df_hump_plot)[2:3] <- c("Hump_percent_risk_reduction",
+                                       "DCRB_dollars_percent_of_max")
+
+full_closure <- data.frame(
+  cbind(tradeoff_df_hump_plot[1:2,'Vessel_Size'],
+    c(100,100),
+    c(0,0),
+    c(rep("Full Closure",2))
+    )
+)
+names(full_closure) <- names(tradeoff_df_hump_plot)
+  
+tradeoff_df_hump_plot <- rbind(
+  tradeoff_df_hump_plot,
+  full_closure
+)
+
+tradeoff_df_hump_plot <- rbind(
+  tradeoff_df_hump_plot,
+  c(tradeoff_df_hump_plot[1:2,'Vessel_Size'],
+    as.vector(BIA_closure_hump_risk),
+    as.vector(BIA_closure_dollars_DCRB),
+    tradeoff_df_hump[c(4,6),'Scenario']
+    )
+)
+
+tradeoff_df_hump_plot <- rbind(
+  tradeoff_df_hump_plot,
+  c(tradeoff_df_hump_plot[1:2,'Vessel_Size'],
+    as.vector(Regional_closure_hump_risk),
+    as.vector(Regional_closure_dollars_DCRB),
+    tradeoff_df_hump[c(8,10),'Scenario']
+    )
+)
+
+
+# tradeoff_df_hump_sm <- cbind(
+#   hump_no_closure[which(hump_no_closure$Vessel_Size == "<45 ft"),],
+#       hump_BIA_closure[
+#         which(hump_BIA_closure$Vessel_Size == "<45 ft" &
+#           hump_BIA_closure$Spatial_domain == "Outside BIA"),
+#       c('mean_Hump_risk_dollars','Scenario')], # sm vessel, hump risk outside
+#       hump_BIA_closure[
+#         which(hump_BIA_closure$Vessel_Size == "<45 ft" &
+#           hump_BIA_closure$Spatial_domain == "Inside BIA"),c('sum_dollars_DCRB','Scenario')] # sm vessel, DCRB impact inside
+#       )
+# 
+# tradeoff_df_hump_lg <- cbind(
+#   hump_no_closure[which(hump_no_closure$Vessel_Size == ">=45 ft"),],
+#       hump_BIA_closure[
+#         which(hump_BIA_closure$Vessel_Size == ">=45 ft" &
+#           hump_BIA_closure$Spatial_domain == "Outside BIA"),
+#       c('mean_Hump_risk_dollars','Scenario')], # lg vessel, hump risk outside
+#       hump_BIA_closure[
+#         which(hump_BIA_closure$Vessel_Size == ">=45 ft" &
+#           hump_BIA_closure$Spatial_domain == "Inside BIA"),c('sum_dollars_DCRB','Scenario')] # lg vessel, DCRB impact inside
+#       )
+# 
+# tradeoff_df_hump <- rbind(tradeoff_df_hump_sm,tradeoff_df_hump_lg)
+
+
+
+# Plot of tradeoffs between humpback whale risk and fishery impacts.  
+# x axis percent risk reduction to whales (full will be 100, no will be 0)
+# y axis percent of max DCRB $ (full will be 0, no will be 100)
+
+tradeoff_df_hump_plot$Vessel_Size_ForPlot <- ifelse(
+  tradeoff_df_hump_plot$Vessel_Size == "<45 ft", "Small Vessels", "Large Vessels"
+)
+
+hump_tradeoff_plot <- ggplot(tradeoff_df_hump_plot, aes(x=Hump_percent_risk_reduction, y=DCRB_dollars_percent_of_max, label=Scenario)) +
+  geom_point()+
+  geom_step()+
+  geom_text_repel(nudge_y=-0.5)+
+  xlab("Percent reduction in risk to Humpback whales")+
+  ylab("Percent reduction in revenue to fishery")+
+  ggtitle("Marine Spatial Planning Scenario Analysis\nfor Dungeness Crab Fishery in California")+
+  facet_wrap(~Vessel_Size_ForPlot,scales="free")+
+  theme_classic()
+hump_tradeoff_plot
+ggsave("Figures/Tradeoff Figure for Humpbacks based on 2016-17 data.pdf",width=20, height=10)
+
+hump_tradeoff_plot_lg <- ggplot(tradeoff_df_hump_plot[which(tradeoff_df_hump_plot$Vessel_Size_ForPlot=="Large Vessels"),], aes(x=Hump_percent_risk_reduction, y=DCRB_dollars_percent_of_max, label=Scenario)) +
+  geom_point()+
+  geom_step()+
+  geom_text_repel(nudge_y=-0.5)+
+  xlab("Percent reduction in risk to Humpback whales")+
+  ylab("Percent reduction in revenue to fishery")+
+  ggtitle("Marine Spatial Planning Scenario Analysis\nfor Dungeness Crab Fishery in California")+
+  #facet_wrap(~Vessel_Size_ForPlot,scales="free")+
+  theme_classic()
+hump_tradeoff_plot_lg
+ggsave("Figures/Tradeoff Figure for Humpbacks and large vessels based on 2016-17 data.pdf")
+
+
+
+```
+<br>
+
+
+6) Make some plots comparing regional differences in risk
+Start with simple comparisons in and out of BIAs
+```{r}
+names(risk_df_2016_2017_average_VesselSize_5km)
+
+# need to fix in and out of BIA statement for humps, ensure that plot has x axis of in vs out of BIA (drop NAs), compared for before and after Apr 1, separately for sm and lg vessels.
+
+# Focus on humpbacks, Start with in and out of BIAs
+risk_df_2016_2017_sum_VesselSize_humpBIAs <- risk_df_2016_2017_average_VesselSize_5km %>%
+  group_by(B_or_A_April1, BIA_mn_noNAs, Vessel_Size) %>%
+  summarise(
+    sum_Hump_risk_lbs = sum(mean_Hump_risk_lbs,na.rm=TRUE),
+    sum_Hump_risk_dollars = sum(mean_Hump_risk_dollars,na.rm=TRUE),
+    sum_Hump_risk_pings = sum(mean_Hump_risk_pings,na.rm=TRUE),
+    sum_Hump_risk_vessels = sum(mean_Hump_risk_vessels,na.rm=TRUE),
+    sum_Hump_risk_lbs_per_vessel = sum(mean_Hump_risk_lbs_per_vessel,na.rm=TRUE),
+    sum_Hump_risk_dollars_per_vessel = sum(mean_Hump_risk_dollars_per_vessel,na.rm=TRUE),
+    
+    sum_lbs_DCRB = sum(mean_lbs_DCRB,na.rm=TRUE),
+    sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE),
+    sum_Num_DCRB_VMS_pings = sum(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+    sum_Num_DCRB_Vessels = sum(mean_Num_DCRB_Vessels,na.rm=TRUE)
+  ) %>%
+    mutate(BIA_identifier = ifelse(
+    BIA_mn_noNAs == 0, "Outside BIA","Inside BIA"
+             )
+      )
+head(risk_df_2016_2017_sum_VesselSize_humpBIAs)
+
+risk_df_2016_2017_sum_VesselSize_humpBIAs_melt <- melt(risk_df_2016_2017_sum_VesselSize_humpBIAs, id.vars=c("B_or_A_April1", "BIA_mn_noNAs","BIA_identifier", "Vessel_Size"))
+
+# drop NAs for BIA column
+risk_df_2016_2017_sum_VesselSize_humpBIAs_melt <- risk_df_2016_2017_sum_VesselSize_humpBIAs_melt[-which(is.na(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt$BIA_identifier)),]
+
+# Comparison of whale risk and fishery activity before and after April 1
+
+#risk_df_2016_2017_sum_VesselSize_BIAs_melt[which(risk_df_2016_2017_sum_VesselSize_BIAs_melt$Vessel_Size == "<45 ft" & risk_df_2016_2017_sum_VesselSize_BIAs_melt$variable == "sum_Hump_risk_lbs"),]
+
+winter_v_spring_BIAs_hump_plot <- ggplot(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt) +
+  geom_col(aes(x=BIA_identifier, y=value, group = rev(factor(B_or_A_April1)), fill= B_or_A_April1), position = position_dodge2()) +
+  facet_wrap(Vessel_Size~variable,scales="free")+
+  theme_classic()
+winter_v_spring_BIAs_hump_plot
+ggsave("Figures/Comparison of humpback risk and fishery impacts before and after April 1 based on 2016-17 data.pdf",width=20, height=10)
+  
+risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only <- risk_df_2016_2017_sum_VesselSize_humpBIAs_melt %>%
+  filter(
+    B_or_A_April1 == "April 1 and After"
+    ) %>%
+  filter(
+    variable == "sum_Hump_risk_dollars" | variable == "sum_dollars_DCRB"
+  )
+
+
+spring_BIAs_hump_DCRB_dollars_plot <- ggplot(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only) +
+  geom_col(aes(x=BIA_identifier, y=value, fill= BIA_identifier)) +
+  facet_wrap(~Vessel_Size*variable,scales="free")+
+  theme_classic()+
+  theme(
+    legend.position = "none"
+  )
+spring_BIAs_hump_DCRB_dollars_plot
+ggsave("Figures/Comparison of humpback risk and fishery impacts (dollars only) after April 1 based on 2016-17 data.pdf")
+
+# large vessels only, DCRB $ hump risk
+spring_BIAs_hump_DCRB_dollars_risk_plot <- ggplot(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only[which(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only$variable == "sum_Hump_risk_dollars" & risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only$Vessel_Size == ">=45 ft"),]) +
+  geom_col(aes(x=BIA_identifier, y=value, fill= BIA_identifier)) +
+  xlab("")+
+  ylab("Risk to humpback whales")+
+  #facet_wrap(~Vessel_Size*variable,scales="free")+
+  theme_classic()+
+  theme(
+    legend.position = "none"
+  )
+spring_BIAs_hump_DCRB_dollars_risk_plot
+ggsave("Figures/Humpback risk (DCRB dollars only) after April 1 based on 2016-17 data.pdf", width=6, height=4)
+
+# large vessels only, DCRB dollars
+spring_BIAs_DCRB_dollars_plot <- ggplot(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only[which(risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only$variable == "sum_dollars_DCRB" & risk_df_2016_2017_sum_VesselSize_humpBIAs_melt_hump_DCRB_dollars_only$Vessel_Size == ">=45 ft"),]) +
+  geom_col(aes(x=BIA_identifier, y=value/100000, fill= BIA_identifier)) +
+  xlab("")+
+  ylab("Dungeness crab revenue\n(Dollars x100,000")+
+  #facet_wrap(~Vessel_Size*variable,scales="free")+
+  theme_classic()+
+  theme(
+    legend.position = "none"
+  )
+spring_BIAs_DCRB_dollars_plot
+ggsave("Figures/DCRB dollars only after April 1 based on 2016-17 data.pdf", width=6, height=4)
+
+
+# Start with in and out of BIAs
+# risk_df_2016_2017_sum_VesselSize_BIAs <- risk_df_2016_2017_average_VesselSize_5km %>%
+#   group_by(B_or_A_April1, BIA_mn_noNAs, BIA_bm_noNAs, Vessel_Size) %>%
+#   summarise(
+#     sum_Hump_risk_lbs = sum(mean_Hump_risk_lbs,na.rm=TRUE),
+#     sum_Hump_risk_dollars = sum(mean_Hump_risk_dollars,na.rm=TRUE),
+#     sum_Hump_risk_pings = sum(mean_Hump_risk_pings,na.rm=TRUE),
+#     sum_Hump_risk_vessels = sum(mean_Hump_risk_vessels,na.rm=TRUE),
+#     
+#     sum_Blue_risk_lbs = sum(mean_Blue_risk_lbs,na.rm=TRUE),
+#     sum_Blue_risk_dollars = sum(mean_Blue_risk_dollars,na.rm=TRUE),
+#     sum_Blue_risk_pings = sum(mean_Blue_risk_pings,na.rm=TRUE),
+#     sum_Blue_risk_vessels = sum(mean_Blue_risk_vessels,na.rm=TRUE),
+#     
+#     sum_lbs_DCRB = sum(mean_lbs_DCRB,na.rm=TRUE),
+#     sum_dollars_DCRB = sum(mean_dollars_DCRB,na.rm=TRUE),
+#     sum_Num_DCRB_VMS_pings = sum(mean_Num_DCRB_VMS_pings,na.rm=TRUE),
+#     sum_Num_DCRB_Vessels = sum(mean_Num_DCRB_Vessels,na.rm=TRUE)
+#   )
+# head(risk_df_2016_2017_sum_VesselSize_BIAs)
+
+# risk_df_2016_2017_sum_VesselSize_BIAs_melt <- melt(risk_df_2016_2017_sum_VesselSize_BIAs, id.vars=c("B_or_A_April1", "BIA_mn_noNAs", "BIA_bm_noNAs", "Vessel_Size"))
+
+# prep for humpback BIA analysis
+# risk_df_2016_2017_sum_VesselSize_BIAs_melt_hump <-
+#   risk_df_2016_2017_sum_VesselSize_BIAs_melt %>%
+#   filter(
+#     variable == "sum_Hump_risk_lbs" |
+#     variable == "sum_Hump_risk_dollars" |
+#       variable == "sum_Hump_risk_pings" |
+#       variable == "sum_Hump_risk_vessels" 
+#   ) %>%
+#   filter(
+#     BIA_identifier == ""
+#   ) %>%
+#   mutate(BIA_identifier = ifelse(
+#     BIA_mn_noNAs == 0, "Outside BIA","Inside BIA"
+#              )
+#       )
+
+# mutate(BIA_identifier = ifelse(
+#     BIA_mn_noNAs == 0 & BIA_bm_noNAs == 0, "Outside BIA",
+#     ifelse(BIA_mn_noNAs == 1 & BIA_bm_noNAs == 0, "Inside Humpback BIA",
+#            ifelse(BIA_mn_noNAs == 0 & BIA_bm_noNAs == 1, "Inside Blue BIA", "Inside Humpback and Blue BIA"
+#              )
+#       )
+#     )
+
+
+
+
+```
+<br>
+
+
+
+### GRAVEYARD
+
+1) Data checks and filters
+
+[May want to add DCRB year designations at a later point]
+```{r}
+
+# check depths
+range(full.df$NGDC_M)
+length(which(dcrb_ca_vms_tix$NGDC_M < -150))
+table(dcrb_ca_vms_tix$DEPTH_CATM)
+
+# check CA only. need to drop agency_code == O
+table(dcrb_ca_vms_tix$STATE)
+table(dcrb_ca_vms_tix$agency_code)
+with(dcrb_ca_vms_tix, table(agency_code, STATE))
+
+# check DCRB only
+table(dcrb_ca_vms_tix$TARGET)
+        
+# check CDFW offshore regions. create column for NorCA vs CenCA, NorCA is Mendocino County north (regions 1040, 1041, 1042), cenCA (1035, 1036, 1037, 1038). exclude -999. 
+table(dcrb_ca_vms_tix$CA_OFFSHOR)
+with(dcrb_ca_vms_tix, table(CA_OFFSHOR,port_group_code)) # CA_OFFSHOR not the same as using port_groups, as VMS records landed in 1 port do not necessarily come from the CA_OFFSHOR region adjacent to that port
+
+# note that a single GRID5KM_ID can be assigned to multiple CA_OFFSHOR regions
+dcrb_ca_vms_tix[which(dcrb_ca_vms_tix$GRID5KM_ID== 63522)[1:20],'CA_OFFSHOR']
+
+# check speeds
+range(dcrb_ca_vms_tix$AVG_SPDCAL)
+length(which(dcrb_ca_vms_tix$AVG_SPDCAL <0)) #1391
+length(which(dcrb_ca_vms_tix$AVG_SPDCAL >4.11556)) #1626
+
+# determine how many fish tickets in each port
+with(dcrb_ca_vms_tix,table(port_group_code)) # using ports above we will only lose 46 rows for SBA
+
+# check vessel lengths
+range(dcrb_ca_vms_tix$FINAL_LENGTH)
+
+# check num vessels
+length(unique(dcrb_ca_vms_tix$DOCNUM))
+
+vessel_length_plot_agency_code <- ggplot(dcrb_ca_vms_tix, aes(x=FINAL_LENGTH, fill=agency_code))+
+  geom_density(alpha=.3, adjust=2) +
+  ylab("Number of vessels") +
+  xlab("Vessel length (ft)") +
+  ggtitle("California Dungeness Crab Fishing Vessels\n(2016-2018)") +
+  theme_classic() +
+    theme(legend.position = "none")
+vessel_length_plot_agency_code
+
+vessel_length_plot_state <- ggplot(dcrb_ca_vms_tix, aes(x=FINAL_LENGTH, fill=STATE))+
+  geom_density(alpha=.3, adjust=2) +
+  ylab("Number of vessels") +
+  xlab("Vessel length (ft)") +
+  ggtitle("California Dungeness Crab Fishing Vessels\n(2016-2018)") +
+  theme_classic() +
+    theme(legend.position = "none")
+vessel_length_plot_state
+
+# subset the data based on above queries
+dcrb_ca_vms_tix_analysis <- dcrb_ca_vms_tix %>%
+filter(agency_code == state_agency_code & STATE == state) %>%
+ filter(CA_OFFSHOR != -999) %>%
+  filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
+  filter(AVG_SPDCAL <= 4.11556 & AVG_SPDCAL >= 0) %>%
+  filter(port_group_code %in% ports) %>%
+  mutate(Region = ifelse(CA_OFFSHOR %in% region_north,
+                         "NorCA","CenCA"),
+         Vessel_Size = ifelse(FINAL_LENGTH >=vessel_size_category_break, ">=45 ft","<45 ft"),
+         B_or_A_April1= ifelse(month %in% c("November", "December", "January", "February", "March"), "Before April 1", "April 1 and After")
+  )
+
+# fix the date
+dcrb_ca_vms_tix_analysis$PST_DATE <- parse_date_time(dcrb_ca_vms_tix_analysis$PST_DATE, orders =c("ymd","mdy"), tz="America/Los_Angeles")
+
+```
+<br>
+
+Join data above to BIA lookup tables
+```{r}
+
+# read in BIA lookup table
+bia_lookup <- read.csv("Input_Data/BIAs/Grid5km_BIA_overlap.csv", header=TRUE)
+head(bia_lookup)
+
+length(unique(bia_lookup$GRID5KM_ID))
+length(which(bia_lookup$BIA_mn+bia_lookup$BIA_bm == 0))
+length(which(bia_lookup$BIA_mn+bia_lookup$BIA_bm == 1))
+length(which(bia_lookup$BIA_mn+bia_lookup$BIA_bm == 2))
+
+length(unique(dcrb_ca_vms_tix_analysis$GRID5KM_ID))
+
+# how many GRID5KM_ID are in dcrb_ca_vms_tix_analysis and bia_lookup
+length(
+  intersect(
+  unique(dcrb_ca_vms_tix_analysis$GRID5KM_ID), unique(bia_lookup$GRID5KM_ID)
+        )
+)
+
+# there are way fewer GRID5KM_ID in the DCRB VMS data than in the BIA data, and way less in both than overall. This means that not all whale BIAs will be represented when we jon the df's, and that the values for BIA_mn and BIA_mn can be NA, which is equivalent to 0
+
+### Humpback sci name: Megaptera novaeangliae, hence the 'mn' abbreviation
+### Blue sci name: Balaenoptera musculus, hence the 'bm' abbreviation
+
+bia_lookup_forjoin <- bia_lookup %>%
+  select(GRID5KM_ID, BIA_mn, BIA_bm)
+
+dcrb_ca_vms_tix_analysis_BIAs <- dcrb_ca_vms_tix_analysis %>%
+  left_join(bia_lookup_forjoin)
+head(dcrb_ca_vms_tix_analysis_BIAs)
+
+# check how many NAs
+length(which(is.na(dcrb_ca_vms_tix_analysis_BIAs$BIA_mn)==TRUE)) # 43833
+length(which(dcrb_ca_vms_tix_analysis_BIAs$BIA_mn==1)) # 49828
+length(which(dcrb_ca_vms_tix_analysis_BIAs$BIA_mn==0)) # 2081
+
+length(which(is.na(dcrb_ca_vms_tix_analysis_BIAs$BIA_bm)==TRUE)) # 43833
+length(which(dcrb_ca_vms_tix_analysis_BIAs$BIA_bm==1)) # 30624
+length(which(dcrb_ca_vms_tix_analysis_BIAs$BIA_bm==0)) # 21285
+
+dcrb_ca_vms_tix_analysis_BIAs$BIA_mn_noNAs <- ifelse(is.na(dcrb_ca_vms_tix_analysis_BIAs$BIA_mn)==TRUE,0,dcrb_ca_vms_tix_analysis_BIAs$BIA_mn)
+
+dcrb_ca_vms_tix_analysis_BIAs$BIA_bm_noNAs <- ifelse(is.na(dcrb_ca_vms_tix_analysis_BIAs$BIA_bm)==TRUE,0,dcrb_ca_vms_tix_analysis_BIAs$BIA_bm)
+
+```
+<br>
+
+2) Summarize cumulative number of VMS locations (V), pounds landed, and dollars in revenue; mean blue whale occurrence probability (B); and, mean humpback density (H) in each 5x5km grid cell on a bi-weekly and monthly basis averaged across 2009-18 and for each year individually.
+
+NOTE THAT THIS DF IS INSUFFICIENT ON ITS OWN FOR MAPPING ALL BLUE AND HUMP PREDICTED DENSITIES AND BIAs, BUT SHOULD BE INCLUSIVE OF ALL DCRB FISHING LOCATIONS
+
+Start with a bit more data processing, including determinng what proportion of landed lbs and $ should go to which 5km grid cell (for trips that cross multiple grid cells)
+```{r}
+names(full.df)
+glimpse(full.df)
+
+# # define 2 week period
+# #dcrb_ca_vms_tix_analysis_BIAs$PST_DATE <- parse_date_time(dcrb_ca_vms_tix_analysis_BIAs$PST_DATE, orders =c("ymd","mdy"), tz="America/Los_Angeles")
+# dcrb_ca_vms_tix_analysis_BIAs$YEAR_2WEEK <- round_date(dcrb_ca_vms_tix_analysis_BIAs$PST_DATE, "14 day")
+
+# get rid of extraneous factor levels
+str(full.df)
+full.df <- droplevels(full.df)
+
+# make sure grid cell ID and Vessel_Size are factors
+full.df$GRID5KM_ID <- as.factor(as.character(full.df$GRID5KM_ID))
+# full.df$Vessel_Size <- as.factor(as.character(full.df$Vessel_Size))
+# full.df$B_or_A_April1 <-
+#   as.factor(as.character(full.df$B_or_A_April1))
+#full.df$YEAR_2WEEKf <- as.factor(as.character(full.df$YEAR_2WEEK))
+
+# ASSIGN LBS AND $ BASED ON PROPORTION OF VMS LOCATIONS RELATED TO EACH FISH TICKET IN EACH 5KM GRID CELL
+# total records per trip (total number of VMS records associated with each fish ticket)
+VMSrecords_per_trip <- full.df %>%
+  group_by(REC_ID) %>%
+  summarise(trip_VMSrecords = n()) %>%
+  filter(trip_VMSrecords > 1)
+# add to fish ticket / vms data, make columns vessels, lbs, and $ per VMS location 
+dcrb_ca_vms_tix_analysis_BIAs_TripInfo <- left_join(VMSrecords_per_trip, dcrb_ca_vms_tix_analysis_BIAs, by="REC_ID") %>%
+  mutate(
+    lbs_DCRB_per_location = DCRB..lbs./trip_VMSrecords,
+    dollars_DCRB_per_location = DCRB.revenue/trip_VMSrecords,
+    Num_DCRB_Vessels_per_location = 1/trip_VMSrecords
+  )
+head(dcrb_ca_vms_tix_analysis_BIAs_TripInfo)
+# find proportion records per GRID5KM, then multiply by dcrb lbs or $ from that trip
+# dcrb_ca_vms_tix_analysis_BIAs_TripInfo2 <- dcrb_ca_vms_tix_analysis_BIAs_TripInfo %>%
+#   group_by(REC_ID, GRID5KM_ID, trip_VMSrecords, DCRB..lbs., TARGET.revenue) %>%
+#   summarise(
+#     n_records = n(), 
+#     prop_trip = n_records/trip_VMSrecords[1], 
+#     pounds_for_grid = TARGET..lbs.[1]*prop_trip,
+#     dollars_for_grid = TARGET.revenue[1]*prop_trip
+#     )
+
+```
+<br>
