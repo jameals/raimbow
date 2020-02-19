@@ -23,7 +23,12 @@ load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
 # source("Whale_risk_mgt_funcs.R")
 
 flag.save <- TRUE
-path.plots <- "../raimbow-local/Plots/Management/"
+wa.inc <- FALSE
+path.plots <- if (wa.inc) {
+  "../raimbow-local/Plots/Management/"
+} else {
+  "../raimbow-local/Plots/Management_noWA/"
+}
 ```
 
 To do this, we first must summarize the original risk (i.e., with no management scenarios) by region and fishing season
@@ -59,8 +64,8 @@ Functions used throughout this document
 
 ```{r funcs}
 # Sum risk after filtering for desired months
-mng_risk_sum <- function(x1, x2, mon.keep) {
-  x1 %>% 
+mng_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
+  tmp <- x1 %>% 
     filter(mon %in% mon.keep) %>% 
     group_by(region, fish_season) %>% 
     summarise(risk_total_season = sum(risk_sum_total), 
@@ -70,6 +75,12 @@ mng_risk_sum <- function(x1, x2, mon.keep) {
            risk_dens_ratio = risk_dens_season / x2$risk_dens_season, 
            risk_total_diff = risk_total_season - x2$risk_total_season, 
            risk_dens_diff = risk_dens_season - x2$risk_dens_season)
+  
+  if (wa.flag) {
+    tmp
+  } else {
+    filter(tmp, region != "WA")
+  }
 }
 
 # Plot of percentage of risk remaining for the season after applying scenario
@@ -77,7 +88,7 @@ mng_plot_perc <- function(x1, x2, x.title, x.xlab, x.ylab) {
   ggplot(x1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
     geom_point() + 
     geom_path() + 
-    scale_colour_brewer(palette = "Set1", name = "Region") + 
+    scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
     ggtitle(x.title) + 
     xlab(x.xlab) + 
     ylab(x.ylab) + 
@@ -92,7 +103,7 @@ mng_plot_diff <- function(x1, x2, x.title, x.xlab, x.ylab) {
   ggplot(x1, aes(fish_season, risk_dens_diff, colour = region, group = region)) + 
     geom_point() + 
     geom_path() + 
-    scale_colour_brewer(palette = "Set1", name = "Region") + 
+    scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
     ggtitle(x.title) + 
     xlab(x.xlab) + 
     ylab(x.ylab) + 
@@ -115,7 +126,7 @@ mng_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
   
   ggplot(x.new, aes(fish_season, !!v1, fill = orig)) +
     geom_col(position = "dodge") +
-    facet_wrap(facets = vars(region), nrow = 2) +
+    facet_wrap(facets = vars(region), nrow = 2, drop = TRUE) +
     guides(fill = guide_legend(title = "Scenario")) +
     ggtitle(x.title) +
     xlab(xlab.all) +
@@ -126,19 +137,15 @@ mng_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
 }
 
 # Plot of summed risk for the year without management scenario, and with orig value as dot above
-mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab) {
+mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab, wa.flag = TRUE) {
   v1 <- enquo(v1)
   
-  x.new <- bind_rows(
-    x2 %>% select(region, fish_season, risk_total_season, risk_dens_season), 
-    x1 %>% select(region, fish_season, risk_total_season, risk_dens_season)
-  ) %>% 
-    mutate(orig = factor(c(rep("Original", nrow(x.orig)), rep("Closure", nrow(x.late)))))
+  if (!wa.flag) x2 <- x2 %>% filter(region != "WA")
   
   ggplot() +
     geom_col(data = x1, aes(fish_season, !!v1, fill = "mng")) +
-    geom_point(data = x.orig, aes(fish_season, !!v1, colour = "orig")) + 
-    facet_wrap(facets = vars(region), nrow = 2) +
+    geom_point(data = x2, aes(fish_season, !!v1, colour = "orig")) + 
+    facet_wrap(facets = vars(region), nrow = 2, drop = TRUE) +
     scale_fill_manual(name = "Risk", 
                       values = c('mng' = hue_pal()(1)), 
                       labels = "Management") + 
@@ -159,22 +166,22 @@ mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab) {
 This scenario is meant to test how risk would have changed if the CA-CBD settlement, closing the DC fishery April 15, had been in place beginning in 2009. Because we are working with monthly-summarized data, we will consider the fishery to be open through April.
 
 ```{r late}
-x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:4))
+x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:4), wa.flag = wa.inc)
 
-### Line plot(s)
-mng_plot_perc(
-  x.late, x.orig, 
-  x.title = "Percentage of risk remaining with closing DC fishery May 1", 
-  x.xlab = xlab.all, x.ylab = "Percentage"
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
-
-mng_plot_diff(
-  x.late, x.orig, 
-  x.title = "Difference in risk for fishing season with closing DC fishery May 1", 
-  x.xlab = xlab.all, x.ylab = ylab.dens
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
+# ### Line plot(s)
+# mng_plot_perc(
+#   x.late, x.orig, 
+#   x.title = "Percentage of risk remaining with closing DC fishery May 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+# 
+# mng_plot_diff(
+#   x.late, x.orig, 
+#   x.title = "Difference in risk for fishing season with closing DC fishery May 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
 
 
 ### Bar plot(s)
@@ -192,13 +199,13 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
 
 mng_plot_bardot(
   x.late, x.orig, risk_dens_season, 
-  "Summed risk (density) - closing DC fishery May 1", ylab.dens
+  "Summed risk (density) - closing DC fishery May 1", ylab.dens, wa.flag = wa.inc
 )
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_dens.png"))
 
 mng_plot_bardot(
   x.late, x.orig, risk_total_season, 
-  "Summed risk (total) - closing DC fishery May 1", ylab.total
+  "Summed risk (total) - closing DC fishery May 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.png"))
 ```
@@ -206,22 +213,22 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.
 Close April 1
 
 ```{r late2}
-x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:3))
+x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:3), wa.flag = wa.inc)
 
-### Line plot(s)
-mng_plot_perc(
-  x.late, x.orig, 
-  x.title = "Percentage of risk remaining with closing DC fishery April 1", 
-  x.xlab = xlab.all, x.ylab = "Percentage"
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04.png"))
-
-mng_plot_diff(
-  x.late, x.orig, 
-  x.title = "Difference in risk for fishing season with closing DC fishery April 1", 
-  x.xlab = xlab.all, x.ylab = ylab.dens
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_diff.png"))
+# ### Line plot(s)
+# mng_plot_perc(
+#   x.late, x.orig, 
+#   x.title = "Percentage of risk remaining with closing DC fishery April 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04.png"))
+# 
+# mng_plot_diff(
+#   x.late, x.orig, 
+#   x.title = "Difference in risk for fishing season with closing DC fishery April 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_diff.png"))
 
 
 ### Bar plot(s)
@@ -239,13 +246,13 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_diff.png"))
 
 mng_plot_bardot(
   x.late, x.orig, risk_dens_season, 
-  "Summed risk (density) - closing DC fishery April 1", ylab.dens
+  "Summed risk (density) - closing DC fishery April 1", ylab.dens, wa.flag = wa.inc
 )
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_dens.png"))
 
 mng_plot_bardot(
   x.late, x.orig, risk_total_season, 
-  "Summed risk (total) - closing DC fishery April 1", ylab.total
+  "Summed risk (total) - closing DC fishery April 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_total.png"))
 ```
@@ -257,22 +264,22 @@ The only fishing season in which this closure had a strong impact on regions in 
 Opening fishery Dec 1
 
 ```{r early1}
-x.early1 <- mng_risk_sum(x, x.orig, c(12, 1:10))
+x.early1 <- mng_risk_sum(x, x.orig, c(12, 1:10), wa.flag = wa.inc)
 
-### Line plots
-mng_plot_perc(
-  x.early1, x.orig, 
-  x.title = "Percentage of risk remaining with opening DC fishery Dec 1", 
-  x.xlab = xlab.all, x.ylab = "Percentage"
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
-
-mng_plot_diff(
-  x.early1, x.orig, 
-  x.title = "Difference in risk for fishing season with opening DC fishery Dec 1", 
-  x.xlab = xlab.all, x.ylab = ylab.dens
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
+# ### Line plots
+# mng_plot_perc(
+#   x.early1, x.orig, 
+#   x.title = "Percentage of risk remaining with opening DC fishery Dec 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+# 
+# mng_plot_diff(
+#   x.early1, x.orig, 
+#   x.title = "Difference in risk for fishing season with opening DC fishery Dec 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
 
 
 ### Bar plot(s)
@@ -290,13 +297,13 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
 
 mng_plot_bardot(
   x.early1, x.orig, risk_dens_season, 
-  "Summed risk (density) - opening DC fishery Dec 1", ylab.dens
+  "Summed risk (density) - opening DC fishery Dec 1", ylab.dens, wa.flag = wa.inc
 )
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_dens.png"))
 
 mng_plot_bardot(
   x.early1, x.orig, risk_total_season, 
-  "Summed risk (total) - opening DC fishery Dec 1", ylab.total
+  "Summed risk (total) - opening DC fishery Dec 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.png"))
 ```
@@ -304,22 +311,22 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.p
 Opening fishery Jan 1
 
 ```{r early2}
-x.early2 <- mng_risk_sum(x, x.orig, c(1:10))
+x.early2 <- mng_risk_sum(x, x.orig, c(1:10), wa.flag = wa.inc)
 
-### Line plots
-mng_plot_perc(
-  x.early2, x.orig, 
-  x.title = "Percentage of risk remaining with opening DC fishery Jan 1", 
-  x.xlab = xlab.all, x.ylab = "Percentage"
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01.png"))
-
-mng_plot_diff(
-  x.early2, x.orig, 
-  x.title = "Difference in risk for fishing season with opening DC fishery Jan 1", 
-  x.xlab = xlab.all, x.ylab = ylab.dens
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_diff.png"))
+# ### Line plots
+# mng_plot_perc(
+#   x.early2, x.orig, 
+#   x.title = "Percentage of risk remaining with opening DC fishery Jan 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01.png"))
+# 
+# mng_plot_diff(
+#   x.early2, x.orig, 
+#   x.title = "Difference in risk for fishing season with opening DC fishery Jan 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_diff.png"))
 
 
 ### Bar plot(s)
@@ -337,13 +344,13 @@ if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_diff.png"))
 
 mng_plot_bardot(
   x.early2, x.orig, risk_dens_season, 
-  "Summed risk (density) - opening DC fishery Jan 1", ylab.dens
+  "Summed risk (density) - opening DC fishery Jan 1", ylab.dens, wa.flag = wa.inc
 )
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot.png"))
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_dens.png"))
 
 mng_plot_bardot(
   x.early2, x.orig, risk_total_season, 
-  "Summed risk (total) - opening DC fishery Jan 1", ylab.total
+  "Summed risk (total) - opening DC fishery Jan 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_total.png"))
 ```

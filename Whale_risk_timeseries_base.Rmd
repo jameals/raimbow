@@ -22,6 +22,9 @@ library(gridExtra)
 library(tidyverse)
 
 source("Whale_risk_timeseries_funcs.R")
+
+path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+save.flag <- TRUE
 ```
 
 ## Derive baseline values
@@ -39,7 +42,9 @@ In terms of data frame column names:
 
 ```{r}
 load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
-stopifnot(all(table(filter(all.df, yr < 2014, !(yr == 2013 & mon %in% c(11, 12)))$ym) == 1990))
+### 1971 b/c of removed CA-S data
+# stopifnot(all(table(filter(all.df, yr < 2014, !(yr == 2013 & mon %in% c(11, 12)))$ym) == 1990))
+stopifnot(all(table(filter(all.df, yr < 2014, !(yr == 2013 & mon %in% c(11, 12)))$ym) == 1971))
 
 # Don't calculate densities until after summing by region and year-month
 x <- all.df %>% 
@@ -96,7 +101,7 @@ We can plot the baseline-whale risk density values, along with the baseline whal
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
   x.summ, risk_sum_dens_basew, plot.main = "Risk - basew", 
-  y.lab = "Whales (baseline) * VMS pings / km2"
+  y.lab = "Whales (baseline) * VMS pings / km2", wa.flag = FALSE
 )
 p2 <- raimbow_ggplot(
   x.summ, mn_sum_dens_base, plot.main = "Humpback whales (baseline)", 
@@ -104,10 +109,13 @@ p2 <- raimbow_ggplot(
 ) + scale_y_continuous(limits = c(0, max(x.summ$mn_sum_dens)))
 p3 <- raimbow_ggplot(
   x.summ, vms_sum_dens, plot.main = "Fishing", 
-  y.lab = "VMS pings / km2"
+  y.lab = "VMS pings / km2", wa.flag = FALSE
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Basew_humpback_risk.png", p123, path = path.plots)
 ```
 
 Next we can plot the baseline-fish risk values, along with the non-baseline whale and baseline fishing values. Again, note that the y-axis limit of the fishing plot was made to be identical to the non-baseline fishing plot above. Also note that these are densities rather than total values.
@@ -127,6 +135,9 @@ p3 <- raimbow_ggplot(
 ) + scale_y_continuous(limits = c(0, max(x.summ$vms_sum_dens)))
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Basef_humpback_risk.png", p123, path = path.plots)
 ```
 
 ## Plot 'baseline-whale' and 'baseline-fish' risk values with original risk values
@@ -156,6 +167,9 @@ p3 <- raimbow_ggplot(
   scale_y_continuous(limits = c(0, p.max))
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Base_humpback_risk_total.png", p123, path = path.plots)
 ```
 
 ... and we have the risk as density values for each region. 
@@ -181,4 +195,9 @@ p3 <- raimbow_ggplot(
   scale_y_continuous(limits = c(0, p.max))
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Base_humpback_risk_dens.png", p123, path = path.plots)
 ```
+
+## TODO - some type of anomaly?

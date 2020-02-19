@@ -1,6 +1,6 @@
 ---
 title: "Humpback risk of entanglement - baseline analysis"
-author: "Sam Woodman"
+author: ""
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
    powerpoint_presentation: default
@@ -26,7 +26,7 @@ p.max <- max(c(x.summ$risk_sum_dens, x.summ$risk_sum_dens_basew, x.summ$risk_sum
 
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_dens, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2"
+  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
 )
 p2 <- raimbow_ggplot(
   all.df.summ, mn_sum_dens, plot.main = "Humpback whales", 
@@ -34,7 +34,7 @@ p2 <- raimbow_ggplot(
 )
 p3 <- raimbow_ggplot(
   all.df.summ, vms_sum_dens, plot.main = "Fishing", 
-  y.lab = "VMS pings / km2"
+  y.lab = "VMS pings / km2", wa.flag = FALSE
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -74,12 +74,12 @@ grid.arrange(p1, p2, nrow = 2)
 ```{r, fig.width=10, fig.height=7}
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_dens, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2"
+  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 p2 <- raimbow_ggplot(
   x.summ, risk_sum_dens_basew, plot.main = "Risk - baseline humpback", 
-  y.lab = "Whales (baseline) * VMS pings / km2"
+  y.lab = "Whales (baseline) * VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
@@ -91,11 +91,11 @@ grid.arrange(p1, p2, nrow = 2)
 ```{r, fig.width=10, fig.height=7}
 p1 <- raimbow_ggplot(
   all.df.summ, vms_sum_dens, plot.main = "Fishing", 
-  y.lab = "VMS pings / km2"
+  y.lab = "VMS pings / km2", wa.flag = FALSE
 )
 p2 <- raimbow_ggplot(
   x.summ, vms_sum_dens_base, plot.main = "Fishing (baseline)", 
-  y.lab = "VMS pings / km2"
+  y.lab = "VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, max(x.summ$vms_sum_dens)))
 
@@ -107,12 +107,12 @@ grid.arrange(p1, p2, nrow = 2)
 ```{r, fig.width=10, fig.height=7}
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_dens, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2"
+  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 p2 <- raimbow_ggplot(
   x.summ, risk_sum_dens_basef, plot.main = "Risk - baseline fishing", 
-  y.lab = "Whales * VMS pings (baseline) / km2"
+  y.lab = "Whales * VMS pings (baseline) / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
@@ -125,19 +125,19 @@ grid.arrange(p1, p2, nrow = 2)
 # p.max <- max(c(x.summ$risk_sum_dens, x.summ$risk_sum_dens_basew, x.summ$risk_sum_dens_basef))
 p1 <- raimbow_ggplot(
   x.summ, risk_sum_dens, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2"
+  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p2 <- raimbow_ggplot(
   x.summ, risk_sum_dens_basew, plot.main = "Risk - baseline humpback", 
-  y.lab = "Whales (baseline) * VMS pings / km2"
+  y.lab = "Whales (baseline) * VMS pings / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
 p3 <- raimbow_ggplot(
   x.summ, risk_sum_dens_basef, plot.main = "Risk - baseline fishing", 
-  y.lab = "Whales * VMS pings (baseline) / km2"
+  y.lab = "Whales * VMS pings (baseline) / km2", wa.flag = FALSE
 ) + 
   scale_y_continuous(limits = c(0, p.max))
 
