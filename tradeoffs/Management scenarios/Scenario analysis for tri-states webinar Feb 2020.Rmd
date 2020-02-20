@@ -52,14 +52,16 @@ library(ggerr)
 load("~/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Scenario_Analysis_Data_2009_2018.RData")
 
 View(full.df)
+names(full.df)
 
-dat <- full.df # %>% filter(year %in% c(2012,2013)) %>% 
-  select(crab.year,year,month,Region,GRID5KM_ID,Num_DCRB_VMS_pings,H_Avg_Abund)
+dat <- full.df  %>% #filter(year %in% c(2012,2013)) %>% 
+  dplyr::select(crab.year,year,month,GRID5KM_ID,Region,BIA_mn_noNAs,BIA_bm_noNAs,dollars_DCRB,Num_DCRB_VMS_pings,Blue_occurrence,H_Avg_Abund)
 
 ```
 <br>
 
-### Set up data frames for scenarios (9 total) 
+
+### Create df for each scenario (15 total + status quo) 
 
 Spatial:
 Statewide
@@ -67,23 +69,44 @@ cenCA only
 all BIAs
 
 Temporal: months for closures
+One-month delay in opening --> 11,12
+Two-month delay in opening --> 11, 12
 Early closure --> months 4,5,6,7
-Two-week delay in opening --> 11
-Six-week delay in opening --> 11, 12
 
 
-Add new columns for each of the temporal scenarios. 
 ```{r}
 
-
-
-```
-<br>
+# Make sure that there is a record for all grid cells for all months, and fill in missing ping values with zeroes. this is necessary because we need to "look back" (use lags) in the next step
 
 ### Make calculations
-Total pings, total number of grid cells, ping density, mean whale abundance, and risk metrics
+# Total dollars_DCRB, total pings, total number of grid cells, ping density, mean whale abundance, and risk metrics
 
-```{r}
+df <- dat
+scenario_name <- "1_Month_Delay"
+spatial_domain <- "Region"
+scenario_lag <- 0
+
+# doesn't output df the way i want
+scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario_name) {
+  #df.tmp <- paste0(scenario_name,"_dat")
+  enquo_spatial_domain <- enquo(spatial_domain) # https://dplyr.tidyverse.org/articles/programming.html
+  df %>%
+    group_by(!!enquo_spatial_domain) %>%
+    summarise(npings=sum(Num_DCRB_VMS_pings,na.rm=TRUE))
+}
+scenario_summary_function(dat,"Region",0,"1_Month_Delay")
+    
+    complete(nesting(!!enquo_spatial_domain,GRID5KM_ID),crab.year,month=1:12,fill=list(dollars_DCRB=0, Num_DCRB_VMS_pings=0)) %>% 
+    # lag number of pings by 1 month to simulate redistribution
+  group_by(GRID5KM_ID) %>% 
+  arrange(year,month) %>% 
+  mutate(
+    npings_scenario=lag(Num_DCRB_VMS_pings,scenario_lag),
+    dollars_scenario=lag(dollars_DCRB,scenario_lag)
+    ) %>%
+  
+  
+}
 
 
 
@@ -91,23 +114,17 @@ Total pings, total number of grid cells, ping density, mean whale abundance, and
 <br>
 
 
-### Create df for each scenario (9 total)
 
-Spatial:
-Statewide
-cenCA only
-all BIAs
-
-Temporal: months for closures
-Early closure --> months 4,5,6,7
-Two-week delay in opening --> 11
-Six-week delay in opening --> 11, 12
 
 Include new variables relative risk and relative revenue reduction
 Glue together into tradeoff df
 ```{r}
 
+# Match months of the year to months of the crab season (starting in November)
+month_of_season_match <- tibble(month=c(1:7,11,12),month_of_season=c(3:9,1:2))
 
+dat.setup <- dat %>% 
+  left_join(month_of_season_match) 
 
 ```
 <br>
