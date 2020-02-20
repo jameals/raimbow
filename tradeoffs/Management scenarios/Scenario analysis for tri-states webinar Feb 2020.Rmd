@@ -96,6 +96,7 @@ scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario
 }
 scenario_summary_function(dat,"Region",0,"1_Month_Delay")
     
+# return to chunk below once i get lines 90-97 working
     complete(nesting(!!enquo_spatial_domain,GRID5KM_ID),crab.year,month=1:12,fill=list(dollars_DCRB=0, Num_DCRB_VMS_pings=0)) %>% 
     # lag number of pings by 1 month to simulate redistribution
   group_by(GRID5KM_ID) %>% 
@@ -108,6 +109,7 @@ scenario_summary_function(dat,"Region",0,"1_Month_Delay")
   
 }
 
+##### end of chunk i need to revisit
 
 
 ```
