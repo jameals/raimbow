@@ -2,7 +2,13 @@
 
 ###############################################################################
 # Generate ggplot2 time series plot
-raimbow_ggplot <- function(obj.df, y, plot.main = NULL, y.lab = NULL) {
+raimbow_ggplot <- function(obj.df, y, plot.main = NULL, y.lab = NULL, 
+                           wa.flag = TRUE) {
+  ### Inputs
+  # obj.df: summary of risk, etc, by month and region
+  # y: unquoted name of value to be plotted
+  # wa.flag: logical indicating whether WA values should be plotted
+  
   y <- enquo(y)
   # x <- enquo(x)
   # region <- enquo(region)
@@ -13,6 +19,10 @@ raimbow_ggplot <- function(obj.df, y, plot.main = NULL, y.lab = NULL) {
   x.lab <- sort(unique(obj.df$ym))[x.lab.idx]
   vert.lines <- seq(0.5, to = x.max, by = 12)
   
+  if (!wa.flag) {
+    obj.df <- filter(obj.df, region != "WA")
+  }
+  
   obj.df %>% 
     mutate(DC_season = factor(1)) %>%
     ggplot(aes(ym, !!y, colour = region, group = region, linetype = DC_season)) + 
@@ -20,7 +30,7 @@ raimbow_ggplot <- function(obj.df, y, plot.main = NULL, y.lab = NULL) {
     geom_path() + 
     geom_vline(xintercept = vert.lines, col = "black", lwd = 0.35) +
     
-    scale_colour_brewer(palette = "Set1", name = "Region") +
+    scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) +
     guides(linetype = guide_legend(title = "DC season", label = FALSE, 
                                    override.aes = list(colour = "black"))) + 
     

@@ -9,9 +9,13 @@ This repository contains code for calculating, evaluating, and visualizing whale
 
 <!-- section break -->
 ### Analysis files (markdown files)
-* Entanglements_timeseries.Rmd: Plot time series of CA DC confirmed, known-set-location entanglements. Also examine corresponding risk values, including with lookback window.
+* Entanglement_gridID.Rmd: Determine grid cell values, for report location and gear set county, for CA DC humpback entanglements with known gear set/time.
 
-* Entanglement_gridID.Rmd: Determine grid cell values, for report location and gear set county, for CA DC humpback entanglements with known gear set/time
+* Entanglement_report_mnpred.Rmd: Compare entnglement report locations with humpback predictions for Karin.
+
+* Entanglements_risk.Rmd: Examine relationship between risk values and entanglement reports, including using lookback window.
+
+* Mn_multipanel_prey_compare.Rmd: Creating a multipanel of Mn predictions for Karin to compare with multipanel prey plots from Santora et al 2020. 
 
 * Whale_risk.Rmd: Calculates (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure. This file then saves the humpback (density), fishing (total sum), and risk (density) values as an RDATA file for use in subsequent files.
 
@@ -19,9 +23,9 @@ This repository contains code for calculating, evaluating, and visualizing whale
 
 * Whale_risk_timeseries_base.Rmd: A look at how risk would change if all humpback or fishing values were 'baseline' values, meaning the average of the values for the 2009-2010 to 2012-2013 fishing seasons.
 
-* Whale_risk_timeseries_base_line_local_rcr.R: A first look (i.e. region-calculated risk) at how risk would change if all humpback or fishing values were 'baseline' values, meaning the average of the values for the 2009-2010 to 2012-2013 fishing seasons.
-
 * Whale_risk_maps.Rmd: Generates heat maps of data saved in Whale_risk.Rmd.
+
+*_county_: Analyses (described above) but using CA counties instead of CA regions.
 
 <!-- section break -->
 ### Analysis files (other)
@@ -29,14 +33,12 @@ This repository contains code for calculating, evaluating, and visualizing whale
 
 * VMS_nonconfidential_duplicates.R: Identify duplicate rows in CA-only, non-confidential data
 
-* Whale_risk_timeseries_orig.R: Original document for computing and summarizing time series of humpback risk of entanglement. This file used to be named 'Whale_risk_monthly_summ'.
-
 <!-- section break -->
 ### Helper files
 * plot_raimbow.R: Functions for plotting objects (specifically maps); functions fairly specific to raimbow analyses
 
 * User_script_local.R: Script for determining whom is running the code (user info used to set appropriate file paths); sourced in relevant files
 
-* Whale_risk_timeseries_funcs.R: Helper plotting functions for Whale_risk_timeseries file(s)
+* Whale_risk_timeseries_funcs.R: Functions for creating time series plots.
 
 * whalepreds_aggregate: Summarize whale predictions by specified time interval. Do not edit; any edits should be done in [the whale-model-prep repository](https://github.com/smwoodman/whale-model-prep) and copied over

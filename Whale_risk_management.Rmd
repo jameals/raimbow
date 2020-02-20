@@ -16,12 +16,19 @@ knitr::opts_chunk$set(echo = TRUE)
 The goal of this document is to examine the change in risk under different management scenarios, e.g. early or late season closures.
 
 ```{r prep, message = FALSE}
+library(scales)
 library(tidyverse)
 
 load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+# source("Whale_risk_mgt_funcs.R")
 
 flag.save <- TRUE
-path.plots <- "../raimbow-local/Plots/Management/"
+wa.inc <- FALSE
+path.plots <- if (wa.inc) {
+  "../raimbow-local/Plots/Management/"
+} else {
+  "../raimbow-local/Plots/Management_noWA/"
+}
 ```
 
 To do this, we first must summarize the original risk (i.e., with no management scenarios) by region and fishing season
@@ -43,32 +50,211 @@ x.orig <- x %>%
 head(x.orig)
 ```
 
+## Make function(s) and assign vals
+
+Objects used throughout
+
+```{r}
+xlab.all   <- "Fishing season start year (November of start year to October of next year)"
+ylab.dens  <- "Risk (whales*VMS pings / km2)"
+ylab.total <- "Risk (whlaes*VMS pings)"
+```
+
+Functions used throughout this document
+
+```{r funcs}
+# Sum risk after filtering for desired months
+mng_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
+  tmp <- x1 %>% 
+    filter(mon %in% mon.keep) %>% 
+    group_by(region, fish_season) %>% 
+    summarise(risk_total_season = sum(risk_sum_total), 
+              risk_dens_season = sum(risk_sum_dens)) %>% 
+    ungroup() %>% 
+    mutate(risk_total_ratio = risk_total_season / x2$risk_total_season, 
+           risk_dens_ratio = risk_dens_season / x2$risk_dens_season, 
+           risk_total_diff = risk_total_season - x2$risk_total_season, 
+           risk_dens_diff = risk_dens_season - x2$risk_dens_season)
+  
+  if (wa.flag) {
+    tmp
+  } else {
+    filter(tmp, region != "WA")
+  }
+}
+
+# Plot of percentage of risk remaining for the season after applying scenario
+mng_plot_perc <- function(x1, x2, x.title, x.xlab, x.ylab) {
+  ggplot(x1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
+    geom_point() + 
+    geom_path() + 
+    scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
+    ggtitle(x.title) + 
+    xlab(x.xlab) + 
+    ylab(x.ylab) + 
+    coord_cartesian(ylim = c(0, 1)) +
+    scale_x_continuous(breaks = seq_along(unique(x2$fish_season)), 
+                       labels = unique(x2$yr))
+}
+
+
+# Plot of risk removed by management scenario
+mng_plot_diff <- function(x1, x2, x.title, x.xlab, x.ylab) {
+  ggplot(x1, aes(fish_season, risk_dens_diff, colour = region, group = region)) + 
+    geom_point() + 
+    geom_path() + 
+    scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) + 
+    ggtitle(x.title) + 
+    xlab(x.xlab) + 
+    ylab(x.ylab) + 
+    coord_cartesian(ylim = c(-1, 0)) +
+    scale_x_continuous(breaks = seq_along(unique(x2$fish_season)), 
+                       labels = unique(x2$yr))
+}
+
+
+# Plot of summed risk density for the year with and without management scenario
+mng_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
+  v1 <- enquo(v1)
+  
+  x.new <- bind_rows(
+    x2 %>% select(region, fish_season, risk_total_season, risk_dens_season), 
+    x1 %>% select(region, fish_season, risk_total_season, risk_dens_season)
+  ) %>% 
+    mutate(orig = factor(c(rep("Original", nrow(x.orig)), rep("Closure", nrow(x.late)))))
+  
+  
+  ggplot(x.new, aes(fish_season, !!v1, fill = orig)) +
+    geom_col(position = "dodge") +
+    facet_wrap(facets = vars(region), nrow = 2, drop = TRUE) +
+    guides(fill = guide_legend(title = "Scenario")) +
+    ggtitle(x.title) +
+    xlab(xlab.all) +
+    ylab(x.ylab) +
+    scale_x_continuous(breaks = seq_along(unique(x2$fish_season)),
+                       labels = unique(x2$yr)) + 
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.4))
+}
+
+# Plot of summed risk for the year without management scenario, and with orig value as dot above
+mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab, wa.flag = TRUE) {
+  v1 <- enquo(v1)
+  
+  if (!wa.flag) x2 <- x2 %>% filter(region != "WA")
+  
+  ggplot() +
+    geom_col(data = x1, aes(fish_season, !!v1, fill = "mng")) +
+    geom_point(data = x2, aes(fish_season, !!v1, colour = "orig")) + 
+    facet_wrap(facets = vars(region), nrow = 2, drop = TRUE) +
+    scale_fill_manual(name = "Risk", 
+                      values = c('mng' = hue_pal()(1)), 
+                      labels = "Management") + 
+    scale_color_manual(name = "", 
+                       values = c('orig' = 'black'), 
+                       labels = "Original") + 
+    ggtitle(x.title) +
+    xlab(xlab.all) +
+    ylab(x.ylab) +
+    scale_x_continuous(breaks = seq_along(unique(x2$fish_season)),
+                       labels = unique(x2$yr)) + 
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.4))
+}
+```
+
 ## Late season closure, e.g. CA-CBD settlement
 
 This scenario is meant to test how risk would have changed if the CA-CBD settlement, closing the DC fishery April 15, had been in place beginning in 2009. Because we are working with monthly-summarized data, we will consider the fishery to be open through April.
 
 ```{r late}
-x.late <- x %>% 
-  filter(mon %in% c(11, 12, 1:4)) %>% 
-  group_by(region, fish_season) %>% 
-  summarise(risk_total_season = sum(risk_sum_total), 
-            risk_dens_season = sum(risk_sum_dens)) %>% 
-  ungroup() %>% 
-  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
-         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:4), wa.flag = wa.inc)
 
-ggplot(x.late, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
-  geom_point() + 
-  geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
-  ggtitle("Percentage of risk remaining with closing DC fishery May 1") + 
-  xlab("Fishing season start year") + 
-  ylab("Percentage") + 
-  coord_cartesian(ylim = c(0, 1)) +
-  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
-                     labels = unique(x.orig$yr))
+# ### Line plot(s)
+# mng_plot_perc(
+#   x.late, x.orig, 
+#   x.title = "Percentage of risk remaining with closing DC fishery May 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+# 
+# mng_plot_diff(
+#   x.late, x.orig, 
+#   x.title = "Difference in risk for fishing season with closing DC fishery May 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+
+### Bar plot(s)
+# mng_plot_bar(
+#   x.late, x.orig, risk_dens_season, 
+#   "Summed risk (density) - closing DC fishery May 1", ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar.png"))
+# 
+# mng_plot_bar(
+#   x.late, x.orig, risk_total_season, 
+#   "Summed risk (total) - closing DC fishery May 1", ylab.total
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar_total.png"))
+
+mng_plot_bardot(
+  x.late, x.orig, risk_dens_season, 
+  "Summed risk (density) - closing DC fishery May 1", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.late, x.orig, risk_total_season, 
+  "Summed risk (total) - closing DC fishery May 1", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.png"))
+```
+
+Close April 1
+
+```{r late2}
+x.late <- mng_risk_sum(x, x.orig, c(11, 12, 1:3), wa.flag = wa.inc)
+
+# ### Line plot(s)
+# mng_plot_perc(
+#   x.late, x.orig, 
+#   x.title = "Percentage of risk remaining with closing DC fishery April 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04.png"))
+# 
+# mng_plot_diff(
+#   x.late, x.orig, 
+#   x.title = "Difference in risk for fishing season with closing DC fishery April 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_diff.png"))
+
+
+### Bar plot(s)
+# mng_plot_bar(
+#   x.late, x.orig, risk_dens_season, 
+#   "Summed risk (density) - closing DC fishery April 1", ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bar.png"))
+# 
+# mng_plot_bar(
+#   x.late, x.orig, risk_total_season, 
+#   "Summed risk (total) - closing DC fishery April 1", ylab.total
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bar_total.png"))
+
+mng_plot_bardot(
+  x.late, x.orig, risk_dens_season, 
+  "Summed risk (density) - closing DC fishery April 1", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.late, x.orig, risk_total_season, 
+  "Summed risk (total) - closing DC fishery April 1", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_total.png"))
 ```
 
 The only fishing season in which this closure had a strong impact on regions in which most confirmed entanglements have happened is 2015-16, when the fishery was closed unitl March and thus 
@@ -78,51 +264,93 @@ The only fishing season in which this closure had a strong impact on regions in 
 Opening fishery Dec 1
 
 ```{r early1}
-x.early1 <- x %>% 
-  filter(mon %in% c(12, 1:10)) %>% 
-  group_by(region, fish_season) %>% 
-  summarise(risk_total_season = sum(risk_sum_total), 
-            risk_dens_season = sum(risk_sum_dens)) %>% 
-  ungroup() %>% 
-  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
-         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+x.early1 <- mng_risk_sum(x, x.orig, c(12, 1:10), wa.flag = wa.inc)
 
-ggplot(x.early1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
-  geom_point() + 
-  geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
-  ggtitle("Percentage of risk remaining with opening DC fishery Dec 1") + 
-  xlab("Fishing season start year") + 
-  ylab("Percentage") + 
-  coord_cartesian(ylim = c(0, 1)) +
-  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
-                     labels = unique(x.orig$yr))
+# ### Line plots
+# mng_plot_perc(
+#   x.early1, x.orig, 
+#   x.title = "Percentage of risk remaining with opening DC fishery Dec 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+# 
+# mng_plot_diff(
+#   x.early1, x.orig, 
+#   x.title = "Difference in risk for fishing season with opening DC fishery Dec 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+
+### Bar plot(s)
+# mng_plot_bar(
+#   x.early1, x.orig, risk_dens_season, 
+#   "Summed risk (density) - opening DC fishery Dec 1", ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar.png"))
+# 
+# mng_plot_bar(
+#   x.early1, x.orig, risk_total_season, 
+#   "Summed risk (total) - opening DC fishery Dec 1", ylab.total
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar_total.png"))
+
+mng_plot_bardot(
+  x.early1, x.orig, risk_dens_season, 
+  "Summed risk (density) - opening DC fishery Dec 1", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.early1, x.orig, risk_total_season, 
+  "Summed risk (total) - opening DC fishery Dec 1", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.png"))
 ```
 
 Opening fishery Jan 1
 
 ```{r early2}
-x.early2 <- x %>% 
-  filter(mon %in% c(1:10)) %>% 
-  group_by(region, fish_season) %>% 
-  summarise(risk_total_season = sum(risk_sum_total), 
-            risk_dens_season = sum(risk_sum_dens)) %>% 
-  ungroup() %>% 
-  mutate(risk_total_ratio = risk_total_season / x.orig$risk_total_season, 
-         risk_dens_ratio = risk_dens_season / x.orig$risk_dens_season)
+x.early2 <- mng_risk_sum(x, x.orig, c(1:10), wa.flag = wa.inc)
 
-ggplot(x.early2, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
-  geom_point() + 
-  geom_path() + 
-  scale_colour_brewer(palette = "Set1", name = "Region") + 
-  ggtitle("Percentage of risk remaining with opening DC fishery Jan 1") + 
-  xlab("Fishing season start year") + 
-  ylab("Percentage") + 
-  coord_cartesian(ylim = c(0, 1)) +
-  scale_x_continuous(breaks = seq_along(unique(x.orig$fish_season)), 
-                     labels = unique(x.orig$yr))
+# ### Line plots
+# mng_plot_perc(
+#   x.early2, x.orig, 
+#   x.title = "Percentage of risk remaining with opening DC fishery Jan 1", 
+#   x.xlab = xlab.all, x.ylab = "Percentage"
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01.png"))
+# 
+# mng_plot_diff(
+#   x.early2, x.orig, 
+#   x.title = "Difference in risk for fishing season with opening DC fishery Jan 1", 
+#   x.xlab = xlab.all, x.ylab = ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_diff.png"))
 
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01.png"))
+
+### Bar plot(s)
+# mng_plot_bar(
+#   x.early2, x.orig, risk_dens_season, 
+#   "Summed risk (density) - opening DC fishery Jan 1", ylab.dens
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bar.png"))
+# 
+# mng_plot_bar(
+#   x.early2, x.orig, risk_total_season, 
+#   "Summed risk (total) - opening DC fishery Jan 1", ylab.total
+# )
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bar_total.png"))
+
+mng_plot_bardot(
+  x.early2, x.orig, risk_dens_season, 
+  "Summed risk (density) - opening DC fishery Jan 1", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.early2, x.orig, risk_total_season, 
+  "Summed risk (total) - opening DC fishery Jan 1", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_total.png"))
 ```
