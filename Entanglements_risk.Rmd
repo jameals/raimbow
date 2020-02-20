@@ -157,6 +157,8 @@ all.df.summ.join <- all.df.summ %>%
   mutate(region = factor(region, levels = levels(x$region))) %>% 
   select(ym, region, risk_sum_dens)
 
+save(x, all.df.summ.join, file = paste0(path.rdata, "Ent_risk.RDATA"))
+
 
 # Plot histogram of time series risk values
 facet.nrow <- case_when(reg.flag == "ca-" ~ 1, reg.flag == "county" ~ 3)

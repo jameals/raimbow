@@ -13,7 +13,7 @@ This repository contains code for calculating, evaluating, and visualizing whale
 
 * Entanglement_report_mnpred.Rmd: Compare entnglement report locations with humpback predictions for Karin.
 
-* Entanglements_timeseries.Rmd: Examine relationship between risk values and entanglement reports, including using lookback window.
+* Entanglements_risk.Rmd: Examine relationship between risk values and entanglement reports, including using lookback window.
 
 * Mn_multipanel_prey_compare.Rmd: Creating a multipanel of Mn predictions for Karin to compare with multipanel prey plots from Santora et al 2020. 
 
