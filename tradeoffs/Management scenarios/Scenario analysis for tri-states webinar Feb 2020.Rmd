@@ -76,57 +76,101 @@ Early closure --> months 4,5,6,7
 
 ```{r}
 
-# Make sure that there is a record for all grid cells for all months, and fill in missing ping values with zeroes. this is necessary because we need to "look back" (use lags) in the next step
+# Set up tibble to match months of the year to months of the crab season (starting in November)
+month_of_season_match <- tibble(month=c(1:7,11,12),month_of_season=c(3:9,1:2))
 
-### Make calculations
-# Total dollars_DCRB, total pings, total number of grid cells, ping density, mean whale abundance, and risk metrics
-
-df <- dat
-scenario_name <- "1_Month_Delay"
-spatial_domain <- "Region"
-scenario_lag <- 0
-
-# doesn't output df the way i want
-scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario_name) {
-  #df.tmp <- paste0(scenario_name,"_dat")
-  enquo_spatial_domain <- enquo(spatial_domain) # https://dplyr.tidyverse.org/articles/programming.html
-  df %>%
-    group_by(!!enquo_spatial_domain) %>%
-    summarise(npings=sum(Num_DCRB_VMS_pings,na.rm=TRUE))
-}
-scenario_summary_function(dat,"Region",0,"1_Month_Delay")
+# function to return scenario specific data frames
+#https://tidyeval.tidyverse.org/sec-up-to-speed.html#quote-and-unquote
+scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario_df_name) {
+  
+  sym_spatial_domain <- sym(spatial_domain)
+  
+  out <- df %>%
     
-# return to chunk below once i get lines 90-97 working
-    complete(nesting(!!enquo_spatial_domain,GRID5KM_ID),crab.year,month=1:12,fill=list(dollars_DCRB=0, Num_DCRB_VMS_pings=0)) %>% 
-    # lag number of pings by 1 month to simulate redistribution
-  group_by(GRID5KM_ID) %>% 
-  arrange(year,month) %>% 
-  mutate(
-    npings_scenario=lag(Num_DCRB_VMS_pings,scenario_lag),
-    dollars_scenario=lag(dollars_DCRB,scenario_lag)
-    ) %>%
+    # Make sure that there is a record for all grid cells for all months, and fill in missing ping values with zeroes. this is necessary because we need to "look back" (use lags) in the next step
+    complete(nesting(!!sym_spatial_domain,GRID5KM_ID,crab.year),month=1:12,fill=list(dollars_DCRB=0, Num_DCRB_VMS_pings=0)) %>%
+    ungroup() %>% 
+    
+    left_join(month_of_season_match,by='month') %>% 
+    
+    # lag number of pings by scenario_lag to simulate redistribution
+    group_by(GRID5KM_ID,crab.year) %>% 
+    mutate(
+      npings_scenario=lag(Num_DCRB_VMS_pings,scenario_lag,order_by=month_of_season),
+      dollars_scenario=lag(dollars_DCRB,scenario_lag,order_by=month_of_season)
+      ) %>% 
+    # removes all of the empty rows that were created during complete
+    filter_at(vars(dollars_DCRB,Num_DCRB_VMS_pings,npings_scenario,dollars_scenario),any_vars(.>0))
   
-  
+assign(scenario_df_name,out,envir=.GlobalEnv)
+
 }
 
-##### end of chunk i need to revisit
+# uncomment 4 lines below to interact with function above
+# df <- dat
+# scenario_df_name <- "One_Month_Delay_dat"
+# spatial_domain <- "Region"
+# scenario_lag <- 0
+
+scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
+glimpse(One_Month_Delay_dat)
+
+# make table of scenarios
+spatial_scenarios <- c(
+  "statewide",
+  "cenCA_only",
+  "all_BIAs"
+)
+
+temporal_scenarios <- c(
+  "One_Month_Delay",
+  "Two_Month_Delay",
+  "Early closure",
+  "One_Month_Delay_And_Early_Closure",
+  "Two_Month_Delay_And_Early_Closure"
+) 
+  
+#months for closures
+# One-month delay in opening --> 11,12
+# Two-month delay in opening --> 11, 12
+# Early closure --> months 4,5,6,7
+
+scenario_table <- expand.grid(
+  "spatial" = spatial_scenarios,
+  "temporal" = temporal_scenarios
+)
+
+scenario_table <- add_row(scenario_table,
+                          spatial="Status_Quo",
+                          temporal="Status_Quo"
+                          )
+
+# this doesn't quite work
+saveRDS(scenario_table, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table.RDS"
+  )
+)
+
+load("scenario_table.RDS")
+
+```
+<br>
+
+### Make calculations and create tradeoff df
+
+Total dollars_DCRB, total pings, total number of grid cells, ping density, mean whale abundance, and risk metrics
+```{r}
 
 
 ```
 <br>
 
-
-
-
 Include new variables relative risk and relative revenue reduction
 Glue together into tradeoff df
 ```{r}
 
-# Match months of the year to months of the crab season (starting in November)
-month_of_season_match <- tibble(month=c(1:7,11,12),month_of_season=c(3:9,1:2))
-
-dat.setup <- dat %>% 
-  left_join(month_of_season_match) 
 
 ```
 <br>
