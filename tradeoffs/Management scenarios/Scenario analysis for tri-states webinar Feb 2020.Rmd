@@ -112,8 +112,9 @@ assign(scenario_df_name,out,envir=.GlobalEnv)
 # spatial_domain <- "Region"
 # scenario_lag <- 0
 
-scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
-glimpse(One_Month_Delay_dat)
+# try function on 1 scenario
+# scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
+# glimpse(One_Month_Delay_dat)
 
 # make table of scenarios
 spatial_scenarios <- c(
@@ -153,7 +154,24 @@ saveRDS(scenario_table, here::here(
   )
 )
 
-load("scenario_table.RDS")
+# scenario_table <- readRDS(here::here(
+#   "tradeoffs",
+#   "Management scenarios",
+#   "scenario_table.RDS"
+#   )
+# )
+
+# for loop to create scenario df's
+
+start.time <- Sys.time()
+for(i in 1:nrow(df)) {
+  
+  # pick up here. need if_else to translate scenario table values for spatial to , eg, "", "Region", BIAs and lag = 0,1,2, April1orAfter, etc
+  scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
+  
+  print(paste("made df for scenario",i))
+}
+Sys.time() - start.time
 
 ```
 <br>
