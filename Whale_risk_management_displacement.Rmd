@@ -1,0 +1,182 @@
+---
+title: "Humpback risk - management scenarios with simple effort displacement"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The goal of this document is to examine the change in risk under different management scenarios, e.g. early or late season closures, while accounting for effort displacement. For this document, we will take the total amount of effort affected by the closure, and redistribute it to the adjoining (open) month while aligning the redistributed effort with the distribution in said open month. For instance, for a delayed opening where the fishery opens in December, the fishing effort for November would be added to the December effort, distributed proportionally to the December effort. This is intended to represent a 'worst case' for the whales with regards to the effect of the management scenario.
+
+```{r prep, message = FALSE}
+library(scales)
+library(tidyverse)
+
+
+load("../raimbow-local/RDATA_files/Whale_risk.Rdata")
+load("../raimbow-local/RDATA_files/Grid_region.RDATA")
+load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+
+source("Whale_risk_mgt_funcs.R")
+
+flag.save <- TRUE
+wa.inc <- FALSE
+path.plots <- if (wa.inc) {
+  "../raimbow-local/Plots/Management_disp/Disp_"
+} else {
+  "../raimbow-local/Plots/Management_disp_noWA/Disp_"
+}
+```
+
+## Prep
+
+Calculate `x.orig`: risk values with no management scenarios. Also set 'global' plotting objects
+
+```{r}
+x.orig <- all.df.summ %>% 
+  arrange(yr, mon, region) %>% 
+  mutate(fish_season = cumsum(mon == 11 & region == "WA")) %>% 
+  select(region, ym, yr, mon, fish_season, everything()) %>% 
+  arrange(region, yr, mon) %>% 
+  group_by(region, fish_season) %>% 
+  summarise(yr = min(yr), 
+            risk_total_season = sum(risk_sum_total), 
+            risk_dens_season = sum(risk_sum_dens)) %>% 
+  ungroup()
+
+xlab.all   <- "Fishing season start year (November of start year to October of next year)"
+ylab.dens  <- "Risk (whales*VMS pings / km2)"
+ylab.total <- "Risk (whlaes*VMS pings)"
+```
+
+Now we use the raw humpback densities and VMS pings prep data frame that we will use for this management scenario + displacement analysis
+
+```{r}
+# Convert 'raw' data (mn and vms values) to long data
+long.mn <- humpback.all.dens %>% 
+  pivot_longer(cols = starts_with("Mn_2"), 
+               names_to = "col_name", values_to = "mn_dens") %>% 
+  mutate(ym = substr(col_name, 4, 10), 
+         yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10)))
+
+long.vms <- fish.all.num %>% 
+  pivot_longer(cols = starts_with("DC_2"), 
+               names_to = "col_name", values_to = "vms_pings") %>% 
+  filter(!is.na(vms_pings)) %>% 
+  mutate(ym = substr(col_name, 4, 10), 
+         yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10)))
+
+# Join Mn and fishing and add fishing season
+fishing.season.key <- df.key %>% 
+  select(yr = year, mon = month) %>% 
+  arrange(yr, mon) %>% 
+  mutate(mon = as.numeric(mon), 
+         fish_season = cumsum(mon == 11))
+
+long.join <- left_join(long.mn, long.vms, 
+                       by = c("GRID5KM_ID", "LONGITUDE", "LATITUDE", "area_km_lno", "ym", "yr", "mon")) %>% 
+  left_join(fishing.season.key, by = c("yr", "mon")) %>% 
+  mutate(risk_dens = mn_dens * vms_pings)
+
+
+
+# Add region, determine which grid cells to keep, and clean up
+grid.any.nona <- sort(unique(long.join$GRID5KM_ID[!is.na(long.join$risk_dens)]))
+
+x <- long.join %>% 
+  filter(GRID5KM_ID %in% grid.any.nona) %>% 
+  left_join(grid.region, by = "GRID5KM_ID") %>% 
+  filter(region != "CA-S") %>% 
+  mutate(region = factor(region, levels = c("WA", "OR", "CA-N", "CA-Cen", "CA-SCen"))) %>% 
+  select(GRID5KM_ID, region, area_km_lno, fish_season, ym, yr, mon, mn_dens, vms_pings) %>% 
+  replace_na(list(vms_pings = 0))
+
+grid.region.summ <- grid.region %>% group_by(region) %>% summarise(count = n())
+```
+
+## Late season closure, e.g. CA-CBD settlement
+
+This scenario is meant to test how risk would have changed if the CA-CBD settlement, closing the DC fishery April 15, had been in place beginning in 2009. Because we are working with monthly-summarized data, we will consider the fishery to be open through April.
+
+```{r late}
+x.close05.disp <- mng_disp(x, 5:10, 5, grid.region.summ, wa.flag = wa.inc)
+
+mng_plot_bardot(
+  x.close05.disp, x.orig, risk_dens_season, 
+  "Summed risk (density) - closing DC fishery May 1 - with displacement", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.close05.disp, x.orig, risk_total_season, 
+  "Summed risk (total) - closing DC fishery May 1 - with displacement", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.png"))
+```
+
+Close April 1
+
+```{r late2}
+x.close04.disp <- mng_disp(x, 5:10, 4, grid.region.summ, wa.flag = wa.inc)
+
+mng_plot_bardot(
+  x.close04.disp, x.orig, risk_dens_season, 
+  "Summed risk (density) - closing DC fishery April 1 - with displacement", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.close04.disp, x.orig, risk_total_season, 
+  "Summed risk (total) - closing DC fishery April 1 - with displacement", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_total.png"))
+```
+
+The only fishing season in which this closure had a strong impact on regions in which most confirmed entanglements have happened is 2015-16, when the fishery was closed unitl March and thus 
+
+## Early season closure, e.g. 2019-20 fishing season
+
+Opening fishery Dec 1
+
+```{r early1}
+x.open12.disp <- mng_disp(x, 11, 12, grid.region.summ, wa.flag = wa.inc)
+
+mng_plot_bardot(
+  x.open12.disp, x.orig, risk_dens_season, 
+  "Summed risk (density) - opening DC fishery Dec 1 - with displacement", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.open12.disp, x.orig, risk_total_season, 
+  "Summed risk (total) - opening DC fishery Dec 1 - with displacement", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.png"))
+```
+
+Opening season Jan 1
+
+```{r}
+x.open01.disp <- mng_disp(x, c(11, 12), 1, grid.region.summ, wa.flag = wa.inc)
+
+mng_plot_bardot(
+  x.open01.disp, x.orig, risk_dens_season, 
+  "Summed risk (density) - opening DC fishery Jan 1 - with displacement", ylab.dens, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_dens.png"))
+
+mng_plot_bardot(
+  x.open01.disp, x.orig, risk_total_season, 
+  "Summed risk (total) - opening DC fishery Jan 1 - with displacement", ylab.total, wa.flag = wa.inc
+)
+if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_total.png"))
+```
