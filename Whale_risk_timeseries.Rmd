@@ -34,6 +34,7 @@ Set file paths depending on user. The user should also specifies `save.flag`, i.
 source("User_script_local.R")
 if (user == "JS") {
   save.flag <- FALSE
+  wa.inc <- TRUE
   file.landerased <- ""
   file.risk <- ""
   
@@ -41,13 +42,17 @@ if (user == "JS") {
   path.rdata <- ""
   
 } else if (user == "SMW") {
-  save.flag <- FALSE
+  save.flag <- TRUE
+  wa.inc <- FALSE
   file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
   file.risk <- "../raimbow-local/RDATA_files/Whale_risk.Rdata"
   
-  path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
-  # path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries/"
   path.rdata <- "../raimbow-local/RDATA_files/"
+  path.plots <- if (wa.inc) {
+    "../raimbow-local/Plots/Whale_risk_timeseries/"
+  } else {
+    "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+  }
   
   
 } else {
@@ -212,7 +217,7 @@ Once we have done all ofthe above data processing, we can generate plots. First,
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_total, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings", wa.flag = FALSE
+  y.lab = "Whales * VMS pings", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.summ, mn_sum_abund, plot.main = "Humpback whales", 
@@ -220,7 +225,7 @@ p2 <- raimbow_ggplot(
 )
 p3 <- raimbow_ggplot(
   all.df.summ, vms_sum_pings, plot.main = "Fishing", 
-  y.lab = "VMS pings", wa.flag = FALSE
+  y.lab = "VMS pings", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -235,7 +240,7 @@ Next we plot the risk, humpback, and fishing densities, calculated using the are
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_dens, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
+  y.lab = "Whales * VMS pings / km2", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.summ, mn_sum_dens, plot.main = "Humpback whales", 
@@ -243,7 +248,7 @@ p2 <- raimbow_ggplot(
 )
 p3 <- raimbow_ggplot(
   all.df.summ, vms_sum_dens, plot.main = "Fishing", 
-  y.lab = "VMS pings / km2", wa.flag = FALSE
+  y.lab = "VMS pings / km2", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -258,7 +263,7 @@ Finally, we plot the risk, humpback, and fishing densities, calculated using the
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
   all.df.summ, risk_sum_dens_mon, plot.main = "Risk", 
-  y.lab = "Whales * VMS pings / km2", wa.flag = FALSE
+  y.lab = "Whales * VMS pings / km2", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.summ, mn_sum_dens_mon, plot.main = "Humpback whales", 
@@ -266,7 +271,7 @@ p2 <- raimbow_ggplot(
 )
 p3 <- raimbow_ggplot(
   all.df.summ, vms_sum_dens_mon, plot.main = "Fishing", 
-  y.lab = "VMS pings / km2", wa.flag = FALSE
+  y.lab = "VMS pings / km2", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -330,15 +335,15 @@ all.df.anom <- all.df.summ %>%
 
 p1 <- raimbow_ggplot(
   all.df.anom, risk_sum_dens , plot.main = "Risk - ratios", 
-  y.lab = "Monthly ratio relative to 2009-13", wa.flag = FALSE
+  y.lab = "Monthly ratio relative to 2009-13", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.anom, mn_sum_dens , plot.main = "Humpback whales - ratios", 
-  y.lab = "Monthly ratio relative to 2009-13"
+  y.lab = "Monthly ratio relative to 2009-13", wa.flag = TRUE
 )
 p3 <- raimbow_ggplot(
   all.df.anom, vms_sum_dens , plot.main = "Fishing - ratios", 
-  y.lab = "Monthly ratio relative to 2009-13", wa.flag = FALSE
+  y.lab = "Monthly ratio relative to 2009-13", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -358,15 +363,15 @@ all.df.anom <- all.df.summ %>%
 
 p1 <- raimbow_ggplot(
   all.df.anom, risk_sum_dens , plot.main = "Risk - anomalies", 
-  y.lab = "Monthly anomaly relative to 2009-13", wa.flag = FALSE
+  y.lab = "Monthly anomaly relative to 2009-13", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.anom, mn_sum_dens , plot.main = "Humpback whales - anomalies", 
-  y.lab = "Monthly anomaly relative to 2009-13"
+  y.lab = "Monthly anomaly relative to 2009-13", wa.flag = TRUE
 )
 p3 <- raimbow_ggplot(
   all.df.anom, vms_sum_dens , plot.main = "Fishing - anomalies", 
-  y.lab = "Monthly anomaly relative to 2009-13", wa.flag = FALSE
+  y.lab = "Monthly anomaly relative to 2009-13", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
@@ -388,7 +393,7 @@ all.df.zscore <- all.df.summ %>%
 
 p1 <- raimbow_ggplot(
   all.df.zscore, risk_sum_dens , plot.main = "Risk - z-score", 
-  y.lab = "Std dev from 2009-13 mean", wa.flag = FALSE
+  y.lab = "Std dev from 2009-13 mean", wa.flag = wa.inc
 )
 p2 <- raimbow_ggplot(
   all.df.zscore, mn_sum_dens , plot.main = "Humpback whales - z-score", 
@@ -396,7 +401,7 @@ p2 <- raimbow_ggplot(
 )
 p3 <- raimbow_ggplot(
   all.df.zscore, vms_sum_dens , plot.main = "Fishing - z-score", 
-  y.lab = "Std dev from 2009-13 mean", wa.flag = FALSE
+  y.lab = "Std dev from 2009-13 mean", wa.flag = wa.inc
 )
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)

@@ -1,5 +1,5 @@
 ---
-title: "Whale risk time series baseline - grid-cell calculated risk"
+title: "Whale risk time series - baseline risk"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
@@ -15,6 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document examines how risk would change if all humpback or fishing values were 'baseline' values, meaning the average of the values for the 2009-2010 to 2012-2013 fishing seasons, which are assumed to be the four 'normal' seasons in the time series. These risk values are referred to as baseline-### risk, with ### being either "whale" or "fish", depending on which baseline values were used. The baseline values are calculated on a grid-cell level, meaning that the whale/fishing values for the four 'baseline' seasons are averaged by grid cell. Risk is also calculated by grid cell, and then is summed across regions for the timeseries. Grid cells with `NA` fishing values are considered to have 0 fishing effort, and thus also have 0 risk.
 
+The second half of the document generates plots of the anomalies by subtracting the baseline values from the 'actual' values. 
+
 This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
 ```{r message=FALSE}
@@ -23,8 +25,14 @@ library(tidyverse)
 
 source("Whale_risk_timeseries_funcs.R")
 
-path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+wa.inc <- TRUE #Currently this does nothing as functions do not set wa.flag
 save.flag <- TRUE
+
+path.plots <- if (wa.inc) {
+  "../raimbow-local/Plots/Whale_risk_timeseries/"
+} else {
+  "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+}
 ```
 
 ## Derive baseline values
@@ -58,7 +66,8 @@ x <- all.df %>%
   select(GRID5KM_ID, region, ym, yr, mon, LONGITUDE, LATITUDE, area_km_lno, 
          mn_abund, vms_pings, risk_total, everything()) %>% 
   mutate(risk_total_basew = mn_abund_base * vms_pings, 
-         risk_total_basef = mn_abund * vms_pings_base)
+         risk_total_basef = mn_abund * vms_pings_base, 
+         risk_total_basefw = mn_abund_base * vms_pings_base)
 ```
 
 Now we can summarise (sum) the values by region
@@ -77,7 +86,8 @@ x.summ <- x %>%
             mn_sum_abund_base = sum(mn_abund_base), 
             vms_sum_pings_base = sum(vms_pings_base), 
             risk_sum_total_basew = sum(risk_total_basew, na.rm = TRUE), 
-            risk_sum_total_basef = sum(risk_total_basef, na.rm = TRUE)) %>%
+            risk_sum_total_basef = sum(risk_total_basef, na.rm = TRUE), 
+            risk_sum_total_basefw = sum(risk_total_basefw, na.rm = TRUE)) %>%
   ungroup() %>%
   mutate(mn_sum_dens = mn_sum_abund / area_sum,
          vms_sum_dens = vms_sum_pings / area_sum,
@@ -85,10 +95,11 @@ x.summ <- x %>%
          mn_sum_dens_base = mn_sum_abund_base / area_sum,
          vms_sum_dens_base = vms_sum_pings_base / area_sum,
          risk_sum_dens_basew = risk_sum_total_basew / area_sum,
-         risk_sum_dens_basef = risk_sum_total_basef / area_sum)
+         risk_sum_dens_basef = risk_sum_total_basef / area_sum,
+         risk_sum_dens_basefw = risk_sum_total_basefw / area_sum)
 
 # save(x, x.summ, file = "../raimbow-local/RDATA_files/Whale_risk_timeseries_base.Rdata")
- 
+
 x.summ %>%
   filter(!duplicated(region)) %>%
   select(region, area_sum)
@@ -200,4 +211,86 @@ if (save.flag)
   ggsave(filename = "Base_humpback_risk_dens.png", p123, path = path.plots)
 ```
 
-## TODO - some type of anomaly?
+## Exp - what is risk like when using baseline whale and fishing values?
+
+```{r, fig.height=10, fig.width=10}
+p1 <- raimbow_ggplot(
+  x.summ, risk_sum_dens_basefw, plot.main = "Risk - basefw", 
+  y.lab = "Whales * VMS pings (baseline) / km2"
+) + scale_y_continuous(limits = c(0, max(x.summ$risk_sum_dens)))
+p2 <- raimbow_ggplot(
+  x.summ, mn_sum_dens_base, plot.main = "Humpback whales (baseline)", 
+  y.lab = "Whales / km2"
+) + scale_y_continuous(limits = c(0, max(x.summ$mn_sum_dens)))
+p3 <- raimbow_ggplot(
+  x.summ, vms_sum_dens_base, plot.main = "Fishing (baseline)", 
+  y.lab = "VMS pings / km2"
+) + scale_y_continuous(limits = c(0, max(x.summ$vms_sum_dens)))
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Basefw_humpback_risk.png", p123, path = path.plots)
+```
+
+## Anomaly plots
+
+First we will calculate and plot anomalies by subtracting the baseline values from the 'actual' values
+
+```{r, fig.width=10, fig.height=10}
+x.anom <- x.summ %>% 
+  mutate(risk_anom_dens_fw = risk_sum_dens - risk_sum_dens_basefw, 
+         risk_anom_dens_w = risk_sum_dens - risk_sum_dens_basew, 
+         risk_anom_dens_f = risk_sum_dens - risk_sum_dens_basef, 
+         mn_anom_dens = mn_sum_dens - mn_sum_dens_base, 
+         vms_anom_dens = vms_sum_dens - vms_sum_dens_base) %>% 
+  select(region, ym, yr, mon, area_sum, contains("_anom_"))
+
+
+p1 <- raimbow_ggplot(
+  x.anom, risk_anom_dens_fw, plot.main = "Risk anomaly - actual minus basefw", 
+  y.lab = "Whales * VMS pings / km2"
+)
+p2 <- raimbow_ggplot(
+  x.anom, mn_anom_dens, plot.main = "Humpback whales anomaly - actual minus base", 
+  y.lab = "Whales / km2"
+)
+p3 <- raimbow_ggplot(
+  x.anom, vms_anom_dens, plot.main = "Fishing anomaly - actual minus base", 
+  y.lab = "VMS pings / km2"
+)
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Base_Anom_humpback_risk_dens.png", p123, path = path.plots)
+```
+
+Now we do the same with only the risk values and using basefw, basef, and basew
+
+```{r, fig.width=10, fig.height=10}
+p.min <- min(c(x.anom$risk_anom_dens_fw, x.anom$risk_anom_dens_w, x.anom$risk_anom_dens_f))
+p.max <- max(c(x.anom$risk_anom_dens_fw, x.anom$risk_anom_dens_w, x.anom$risk_anom_dens_f))
+p1 <- raimbow_ggplot(
+  x.anom, risk_anom_dens_fw, plot.main = "Risk anomaly - actual minus basefw", 
+  y.lab = "Whales * VMS pings / km2"
+) + 
+  scale_y_continuous(limits = c(p.min, p.max))
+
+p2 <- raimbow_ggplot(
+  x.anom, risk_anom_dens_w, plot.main = "Risk anomaly - actual minus basew", 
+  y.lab = "Whales * VMS pings / km2"
+) + 
+  scale_y_continuous(limits = c(p.min, p.max))
+
+p3 <- raimbow_ggplot(
+  x.anom, risk_anom_dens_f, plot.main = "Risk anomaly - actual minus basef", 
+  y.lab = "Whales * VMS pings / km2"
+) + 
+  scale_y_continuous(limits = c(p.min, p.max))
+
+p123 <- grid.arrange(p1, p2, p3, nrow = 3)
+
+if (save.flag) 
+  ggsave(filename = "Base_Anom_humpback_risk_dens_all.png", p123, path = path.plots)
+```
