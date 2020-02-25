@@ -1,5 +1,5 @@
 ---
-title: "Entanglements - risk value"
+title: "Relating entanglement reports to risk"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
@@ -28,6 +28,7 @@ if (user == "JS") {
   file.ent
   
 } else if (user == "SMW") {
+  flag.save <- FALSE
   file.ent <- "../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
   path.rdata <- "../raimbow-local/RDATA_files/"
   path.plots1 <- "../raimbow-local/Plots/Entanglements_risk/Entanglements_timeseries/"
@@ -143,7 +144,7 @@ gg0 + ggtitle("CA DC confirmed and known-set-location entanglement reports") +
         axis.text.x = element_text(angle = 90, vjust = 0.4),
         legend.justification = "top")
 
-ggsave(paste0(path.plots, "Ent_report_timeseries.png"))
+if (flag.save) ggsave(paste0(path.plots, "Ent_report_timeseries.png"))
 ```
 
 ## Compare entanglement reports with risk time series values
@@ -157,7 +158,7 @@ all.df.summ.join <- all.df.summ %>%
   mutate(region = factor(region, levels = levels(x$region))) %>% 
   select(ym, region, risk_sum_dens)
 
-save(x, all.df.summ.join, file = paste0(path.rdata, "Ent_risk.RDATA"))
+# if (flag.save) save(x, all.df.summ.join, file = paste0(path.rdata, "Ent_risk.RDATA"))
 
 
 # Plot histogram of time series risk values
@@ -168,7 +169,7 @@ ggplot(all.df.summ, aes(x = risk_sum_dens)) +
   xlab("Risk (whales*VMS pings / km2)") + 
   ggtitle("Risk time series")
 
-ggsave(paste0(path.plots, "Risk_hist_all.png"))
+if (flag.save) ggsave(paste0(path.plots, "Risk_hist_all.png"))
 ```
 
 Next we determine the corresponding risk value for each entanglement report, treating year-months in which no entanglements were reported as zero entanglement reports. Then we can make the same plots, but color-coded to indicate if there was an entanglement report during that year-month.
@@ -202,7 +203,7 @@ y %>%
   xlab("Risk (whales*VMS pings / km2)") + 
   ggtitle("Regional (monthly) risk - all risk values vs risk values for entanglement reports - original (actual) report timing")
 
-ggsave(paste0(path.plots, "Risk_hist_orig.png"))
+if (flag.save) ggsave(paste0(path.plots, "Risk_hist_orig.png"))
 ```
 
 ## Compare entanglement reports with risk time series values - pt2
@@ -210,6 +211,120 @@ ggsave(paste0(path.plots, "Risk_hist_orig.png"))
 Now, we wish to take into account the fact that we do not know exactly when the entanglement occurred. To do this, we use a 'lookback window', meaning we look back at the maximum risk value that occurred in that region within the past 1 month, 2 months, etc. 
 
 TODO: we also want to look at the sum of the risk values that occurred in that region within the lookback window, but not sure yet how to make a meaningful plot.
+
+```{r, fig.width=14, fig.height=fig.h}
+# Set size of lookback window
+# lookback.mons <- 3
+facet.nrow2 <- case_when(reg.flag == "ca-" ~ 1, reg.flag == "county" ~ 2)
+
+# Loop through possible lookback windows
+for (lookback.mons in 0:12) {
+  # Prep entanglement records - add idx column
+  x.pre <- x %>% 
+    select(region, ym_date) %>% 
+    mutate(ent_idx = seq_along(ym_date))
+  
+  # Get all ym values in lookback window, determine which ym value has max 
+  x2 <- lapply(0:lookback.mons, function(i) {
+    x.pre %>% 
+      mutate(ym_date_curr = ym_date %m-% months(i), 
+             ym_curr = substr(as.character(ym_date_curr), 1, 7))
+  }) %>% 
+    bind_rows() %>% 
+    select(region, ym = ym_curr, ent_idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region")) %>% 
+    group_by(ent_idx) %>% 
+    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
+              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
+              r_min = min(risk_sum_dens, na.rm = TRUE), 
+              ym_max = ym[which.max(risk_sum_dens)]) %>% 
+    ungroup() %>% 
+    right_join(x.pre, by = "ent_idx") %>% 
+    select(ent_idx, ym = ym_max, region, r_max, r_sum, r_min)
+  
+  # Summarise entanglement count by max ym
+  x2.join <- x2 %>% 
+    select(ym, region, ent_idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region"))
+  
+  y2 <- all.df.summ.join %>% 
+    mutate(ent_idx = NA) %>% 
+    bind_rows(x2.join) %>% 
+    mutate(e_logical = factor(ifelse(is.na(ent_idx), "All", "Entanglements")), 
+           ym = factor(ym), 
+           region = factor(region, levels(x$region))) %>% 
+    arrange(region, ym)
+  
+  # Plot
+  gg2 <- y2 %>% 
+    filter(region %in% reg.plot) %>%
+    mutate(y_max = ifelse(e_logical == "All", 90, 15)) %>% 
+    ggplot(aes(x = risk_sum_dens)) + #, fill = e_logical)) + 
+    geom_histogram(binwidth = hist.width, position = "dodge", boundary = 0) +
+    facet_grid(cols = vars(region), rows = vars(e_logical), 
+               scales = "free_y", space = "free_y") +
+    # facet_wrap(facets = vars(region), nrow = facet.nrow2) +
+    geom_blank(aes(y = y_max)) + 
+    scale_fill_discrete(drop = FALSE, name = "Risk values") + 
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    xlab("Risk (whales*VMS pings / km2)") + 
+    ggtitle(paste("Regional (monthly) risk - all risk values vs risk values for entanglement reports - ", 
+                  lookback.mons, 
+                  "month lookback window, max value within window"))
+  
+  
+  # Save plot
+  file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
+  if (flag.save) ggsave(file.plot, gg2)
+  
+  # print(gg2)
+  rm(x.pre, x2, x2.join, y2, gg2)
+}
+```
+
+Experimental: for each (some?) lookback window, how far back is the max risk?
+
+```{r}
+x.out <- x.orig %>% 
+  left_join(select(x, CaseID, region), by = "CaseID")
+
+for(lookback.mons in seq(0, 12, by = 3)) {
+  # Prep entanglement records - add ent_idx column
+  x.pre <- x %>% 
+    mutate(ent_idx = seq_along(ym_date))
+  
+  # Get all ym values in lookback window, determine which ym value has max 
+  x2 <- lapply(0:lookback.mons, function(i) {
+    x.pre %>% 
+      mutate(ym_date_curr = ym_date %m-% months(i), 
+             ym_curr = substr(as.character(ym_date_curr), 1, 7))
+  }) %>% 
+    bind_rows() %>% 
+    select(region, ym = ym_curr, ent_idx) %>% 
+    left_join(all.df.summ.join, by = c("ym", "region")) %>% 
+    group_by(ent_idx) %>% 
+    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
+              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
+              ym_max = ym[which.max(risk_sum_dens)]) %>% 
+    ungroup() %>% 
+    right_join(x.pre, by = "ent_idx") %>% 
+    select(CaseID, ym_max) %>% 
+    set_names("CaseID", paste0("ym_max", lookback.mons))
+  
+  x.out <- left_join(x.out, x2, by = "CaseID")
+  rm(x.pre, x2)
+}
+
+if (flag.save) write.csv(x.out, file = paste0(path.plots, "Ent_ymmax.csv"), row.names = FALSE)
+
+table(x.out$ym_max0, as.character(x.out$region))
+table(x.out$ym_max3, as.character(x.out$region))
+table(x.out$ym_max6, as.character(x.out$region))
+table(x.out$ym_max9, as.character(x.out$region))
+table(x.out$ym_max12, as.character(x.out$region))
+```
+
+## Cumulative risk within lookback window
 
 ```{r, fig.width=14, fig.height=fig.h}
 # Set size of lookback window
@@ -273,49 +388,8 @@ for (lookback.mons in 0:12) {
   
   # Save plot
   file.plot <- paste0(path.plots, "Risk_hist_lookback_", lookback.mons, "mons.png")
-  ggsave(file.plot, gg2)
+  if (flag.save) ggsave(file.plot, gg2)
   
   # print(gg2)
 }
-```
-
-Experimental: for each (some?) lookback window, how far back is the max risk?
-
-```{r}
-x.out <- x.orig %>% 
-  left_join(select(x, CaseID, region), by = "CaseID")
-
-for(lookback.mons in seq(0, 12, by = 3)) {
-  # Prep entanglement records - add ent_idx column
-  x.pre <- x %>% 
-    mutate(ent_idx = seq_along(ym_date))
-  
-  # Get all ym values in lookback window, determine which ym value has max 
-  x2 <- lapply(0:lookback.mons, function(i) {
-    x.pre %>% 
-      mutate(ym_date_curr = ym_date %m-% months(i), 
-             ym_curr = substr(as.character(ym_date_curr), 1, 7))
-  }) %>% 
-    bind_rows() %>% 
-    select(region, ym = ym_curr, ent_idx) %>% 
-    left_join(all.df.summ.join, by = c("ym", "region")) %>% 
-    group_by(ent_idx) %>% 
-    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
-              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
-              ym_max = ym[which.max(risk_sum_dens)]) %>% 
-    ungroup() %>% 
-    right_join(x.pre, by = "ent_idx") %>% 
-    select(CaseID, ym_max) %>% 
-    set_names("CaseID", paste0("ym_max", lookback.mons))
-  
-  x.out <- left_join(x.out, x2, by = "CaseID")
-}
-
-write.csv(x.out, file = paste0(path.plots, "Ent_ymmax.csv"), row.names = FALSE)
-
-table(x.out$ym_max0, as.character(x.out$region))
-table(x.out$ym_max3, as.character(x.out$region))
-table(x.out$ym_max6, as.character(x.out$region))
-table(x.out$ym_max9, as.character(x.out$region))
-table(x.out$ym_max12, as.character(x.out$region))
 ```

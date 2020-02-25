@@ -145,6 +145,8 @@ grid.region <- all.df %>%
   mutate(region.idx = findInterval(LATITUDE, reg.bound, left.open = TRUE), 
          region = factor(reg.names[region.idx], levels = rev(reg.names))) %>% 
   select(GRID5KM_ID, region)
+
+# save(reg.bound, reg.names, grid.region, file = paste0(path.rdata, "Grid_region.RDATA"))
 ```
 
 We can visualize regions
@@ -163,7 +165,7 @@ grid.region.sf <- grid.region %>%
   mutate(region = factor(region, levels = reg.names)) %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf()
-plot(grid.region.sf["region"], main = "Region", axes = TRUE, border = NA, 
+plot(grid.region.sf["region"], main = "Regions", axes = TRUE, border = NA, 
      xaxt = "n", key.length = 1, key.width = lcm(3.2), reset = FALSE)
 sf::.degAxis(1, at = c(-126, -122, -118))
 plot(rmap.base, add = TRUE, col = "tan", border = "black")
