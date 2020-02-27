@@ -35,17 +35,19 @@ if (user == "JS") {
   path.save <- ""
   
 } else if (user == "SMW") {
+  flag.save <- FALSE
+  
   # file.data.mnpreds <- paste0(rmd.path.local, "Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv")
   file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv"
   file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 
                      "Non-confidential VMS data summarized by 5km grid cell 2009-18 All 3 states.csv")
-  file.vms.all <- paste0("../raimbow-local/Data/CAdata/", 
-                     "Confidential VMS data summarized by 5km grid cell 2009-18 CA only.csv")
+  file.vms.all <- paste0("../raimbow-local/Data/fishDataCA/", 
+                         "Confidential VMS data summarized by 5km grid cell 2009-18 CA only.csv")
   file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
   
   path.save <- "../raimbow-local/RDATA_files/"
-
+  
 } else {
   stop("User not recognized")
 }
@@ -144,7 +146,7 @@ fish.summ.noncon <- read_csv(file.vms) %>%
             VMS_sum = sum(VMS_metric, na.rm = TRUE)) %>%
   ungroup() %>%
   mutate(confid_and_num = confid_any & (VMS_sum > 0)) %>%
-  select(year, year_mo, GRID5KM_ID, #confid_any, confid_and_num, 
+  select(year, year_mo, GRID5KM_ID, confid_any, confid_and_num, 
          VMS_sum)
 
 ### Read and process confidential (all) data - currently CA
@@ -158,11 +160,27 @@ fish.summ.all <- read_csv(file.vms.all) %>%
   ungroup() %>%
   select(year, year_mo, GRID5KM_ID, VMS_sum)
 
+# ##### 
+# d.sf <- fish.summ.noncon %>% 
+#   # select(-confid_any, -confid_and_num) %>%
+#   filter(!(GRID5KM_ID %in% fish.summ.all$GRID5KM_ID)) %>% 
+#   bind_rows(mutate(fish.summ.all, confid_any = FALSE, confid_and_num= FALSE)) %>% 
+#   group_by(GRID5KM_ID) %>% 
+#   summarise(summ_confid_any = any(confid_any), 
+#             summ_confid_and_num = any(confid_and_num)) %>% 
+#   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+#   st_sf(agr = "constant")
+# # plot(select(d.sf, 2, 3), axes = TRUE, border = NA)
+# plot(d.sf[2], axes = TRUE, border = NA)
+# plot(d.sf[3], axes = TRUE, border = NA)
+# #####
+
 ### Join confidential and non-confidential data
 # This needs to be a data frame with 1) the grid ID (GRID5KM_ID) in the
 #   first column, and 2) all subsequent columns being the monthly sums of 
 #   the fishing data with names paste0("DC_", year_mo)
 fish.summ <- fish.summ.noncon %>% 
+  select(-confid_any, -confid_and_num) %>% 
   filter(!(GRID5KM_ID %in% fish.summ.all$GRID5KM_ID)) %>% 
   bind_rows(fish.summ.all) %>%
   select(year_mo, GRID5KM_ID, VMS_sum) %>%
@@ -231,19 +249,92 @@ for (i in 1: nrow(df.key)) {
 }; rm(i, name.idx)
 ```
 
-Finally, we save the key, humpback densities, fishing values, and risk values for use in other scripts. 
+Now we can save the key, humpback densities, fishing values, and risk values for use in other scripts. 
 
-Note this code is not run when knitting.
-
-```{r, eval=FALSE}
+```{r}
 # Code not run
 # Save files for Whale_risk_maps
 risk.all.dens <- risk.all
 fish.all.num <- fish.all
 humpback.all.dens <- humpback.all
 
-save(
-  df.key, risk.all.dens, fish.all.num, humpback.all.dens,
-  file = paste0(path.save, "Whale_risk.Rdata")
+# Convert humpback and risk values to abundance and total, respectively
+mult.func <- function(x, y) {x * y}
+grid.area <- humpback.all.dens %>% select(GRID5KM_ID, area_km_lno)
+
+humpback.abund <- humpback.all.dens %>% 
+  mutate_at(vars(starts_with("Mn_")), mult.func, y = grid.area$area_km_lno)
+fish.pings <- fish.all.num
+risk.total <- risk.all.dens %>% 
+  mutate_at(vars(starts_with("Mn_DC_risk_")), mult.func, y = grid.area$area_km_lno)
+
+if (flag.save) {
+  save(
+    df.key, humpback.abund, fish.pings, risk.total,
+    file = paste0(path.save, "Whale_risk.Rdata")
+  )
+}
+```
+
+## Prep data frames for time series analyses
+
+For time series analyses, we need long data frames that of the humpback abundance, VMS pings, and total risk (whales * VMS pings). We also remove the rows with all NA risk values - time series plots much have these removed.
+
+```{r}
+### Monthly
+risk.nona.any <- apply(select(risk.total, starts_with("Mn_DC_risk")), 1, function(i) any(!is.na(i))) 
+fish.nona.any <- apply(select(fish.all.num, starts_with("DC_")), 1, function(i) any(!is.na(i)))
+
+# Fishing data has smaller spatial footprint, and thus fish NAs should match risk NAs
+#   However, it shouldn't be a show-stopper if this isn't true
+identical(risk.nona.any, fish.nona.any)
+
+# Will do all plotting with nona data frames for ease of computation, 
+#   but mostly for summing data only across cells that have risk
+risk.nona <- risk.total[risk.nona.any, ]
+humpback.nona <- humpback.abund[risk.nona.any, ]
+fish.nona <- fish.all.num[risk.nona.any, ]
+```
+
+## Data processing
+
+The first step is to make the whale, VMS, and risk data frames 'long', meaning there is one row for each grid cell for each time period
+
+```{r}
+h.df <- humpback.nona %>% 
+  gather(col_name, mn_abund, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10)), 
+         ym = paste(yr, sprintf("%02d", mon), sep = "-")) %>% 
+  select(GRID5KM_ID, LONGITUDE, LATITUDE, area_km_lno, ym, yr, mon, mn_abund)
+
+f.df <- fish.nona %>% 
+  gather(col_name, vms_pings, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 4, 7)), 
+         mon = as.numeric(substr(col_name, 9, 10))) %>% 
+  select(-col_name)
+
+r.df <- risk.nona %>% 
+  gather(col_name, risk_total, 
+         -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
+  mutate(yr = as.numeric(substr(col_name, 12, 15)), 
+         mon = as.numeric(substr(col_name, 17, 18))) %>% 
+  select(-col_name)
+
+# Sanity check
+col.same <- c("GRID5KM_ID", "LONGITUDE", "LATITUDE", "area_km_lno", "yr", "mon")
+stopifnot(
+  all.equal(h.df[, col.same], f.df[, col.same]), 
+  all.equal(h.df[, col.same], r.df[, col.same])
 )
+
+# 
+all.df <- h.df %>% 
+  left_join(f.df, by = col.same) %>% 
+  left_join(r.df, by = col.same)
+
+
+if (flag.save) save(all.df, file = paste0(path.save, "Whale_risk_long_nona.Rdata"))
 ```
