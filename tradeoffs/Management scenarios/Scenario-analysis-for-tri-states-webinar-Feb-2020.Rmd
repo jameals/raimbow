@@ -55,8 +55,7 @@ View(full.df)
 names(full.df)
 
 dat <- full.df  %>% #filter(year %in% c(2012,2013)) %>% 
-  dplyr::select(crab.year,year,month,GRID5KM_ID,Region,BIA_mn_noNAs,BIA_bm_noNAs,dollars_DCRB,lbs_DCRB,Num_DCRB_VMS_pings,Blue_occurrence,H_Avg_Abund) %>%
-  mutate(BIA_bm_or_mn = ifelse(BIA_bm_noNAs !=0 | BIA_mn_noNAs != 0, "Inside BIA","Outside BIA")) 
+  dplyr::select(crab.year,year,month,GRID5KM_ID,Region,BIA_mn_noNAs,BIA_bm_noNAs,dollars_DCRB,Num_DCRB_VMS_pings,Blue_occurrence,H_Avg_Abund)
 
 ```
 <br>
@@ -81,9 +80,6 @@ Early closure --> months 4,5,6,7
 month_of_season_match <- tibble(month=c(1:7,11,12),month_of_season=c(3:9,1:2))
 
 # function to return scenario specific data frames
-
-# 022520: need to consider having 1 function to introduce temporal lags, 1 for spatial lags,  1 for summarizing each scenario, 1 for making tradeoff df, others for making plots
-
 #https://tidyeval.tidyverse.org/sec-up-to-speed.html#quote-and-unquote
 scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario_df_name) {
   
@@ -101,43 +97,32 @@ scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario
     group_by(GRID5KM_ID,crab.year) %>% 
     mutate(
       npings_scenario=lag(Num_DCRB_VMS_pings,scenario_lag,order_by=month_of_season),
-      dollars_scenario=lag(dollars_DCRB,scenario_lag,order_by=month_of_season),
-      lbs_scenario=lag(lbs_DCRB,scenario_lag,order_by=month_of_season),
+      dollars_scenario=lag(dollars_DCRB,scenario_lag,order_by=month_of_season)
       ) %>% 
     # removes all of the empty rows that were created during complete
-    filter_at(vars(lbs_DCRB,dollars_DCRB,Num_DCRB_VMS_pings,npings_scenario,dollars_scenario,lbs_scenario),any_vars(.>0)) %>%
-    # remove any effort in nov or dec
+    filter_at(vars(dollars_DCRB,Num_DCRB_VMS_pings,npings_scenario,dollars_scenario),any_vars(.>0)) %>%
+    # remove any effort in nov
   mutate(npings_scenario=ifelse(scenario_lag == 1 & month==11,0,npings_scenario),
-         dollars_scenario=ifelse(scenario_lag == 1 & month==11,0,dollars_scenario),
-         lbs_scenario=ifelse(scenario_lag == 1 & month==11,0,lbs_scenario),
+         npings_scenario=ifelse(scenario_lag == 1 & month==11,0,dollars_scenario),
          npings_scenario=ifelse(scenario_lag == 2 & month%in% c(11,12),0,npings_scenario),
-         dollars_scenario=ifelse(scenario_lag == 2 & month%in% c(11,12),0,dollars_scenario),
-         lbs_scenario=ifelse(scenario_lag == 2 & month%in% c(11,12),0,lbs_scenario)
+         dollars_scenario=ifelse(scenario_lag == 2 & month%in% c(11,12),0,dollars_scenario)
          ) %>% 
-  filter(!is.na(npings_scenario),!is.na(dollars_scenario),!is.na(lbs_scenario)) %>% 
+  filter(!is.na(npings_scenario),!is.na(dollars_scenario)) %>% 
   ungroup() %>% 
   group_by(!!sym_spatial_domain,year,month) %>% 
   summarise(totpings=sum(npings_scenario,na.rm=T),
             n_cells=n_distinct(GRID5KM_ID,na.rm = T),
             ping_density=totpings/n_cells,
-            totdollars=sum(dollars_scenario,na.rm=T),
-            totlbs=sum(lbs_scenario,na.rm=T),
-            
-            # mean and sd humpback abundance (could do sum or max?)
-            mean_H_Avg_Abund=mean(H_Avg_Abund,na.rm=T),
-            sd_H_Avg_Abund = sd(mean_H_Avg_Abund, na.rm=TRUE),
-            
-            # mean and sd blue occurrence (could do sum or max?)
-            mean_Blue_occurrence = mean(mean_Blue_occurrence, na.rm=TRUE),
-            sd_mean_Blue_occurrence = sd(mean_Blue_occurrence, na.rm=TRUE),
+            # mean humpback abundance (could do sum or max?)
+            humpback=mean(H_Avg_Abund,na.rm=T),
             
             # risk as mean abundance times total pings divided by number of grid cells
             risk=sum(npings_scenario*H_Avg_Abund,na.rm=T)/n_cells
             ) %>% 
   ungroup() %>% 
-  mutate(scenario=scenario_df_name) # substr(scenario_df_name,1,nchar(scenario_df_name)-4) # -4 removes "_dat" 
+  mutate(scenario="1 Month Delay")
   
-assign(paste(scenario_df_name,"_dat",sep="_"),out,envir=.GlobalEnv)
+assign(scenario_df_name,out,envir=.GlobalEnv)
 
 }
 
@@ -145,7 +130,7 @@ assign(paste(scenario_df_name,"_dat",sep="_"),out,envir=.GlobalEnv)
 # df <- dat
 # scenario_df_name <- "One_Month_Delay_dat"
 # spatial_domain <- "Region"
-# scenario_lag <- 1
+# scenario_lag <- 0
 
 # try function on 1 scenario
 # scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
@@ -180,32 +165,21 @@ scenario_table <- add_row(scenario_table,
                           spatial="Status_Quo",
                           temporal="Status_Quo"
                           )
-# add columns for scenario_df_name, spatial_domain, scenario_lag
-scenario_table <- scenario_table %>%
-  mutate(
-    scenario_df_name = paste(spatial,temporal,sep="_"),
-    spatial_domain = ifelse(spatial == "cenCA_only", "Region",
-                            ifelse(spatial == "all_BIAs", "BIA_bm_or_mn","")
-                            ),
-    scenario_lag = ifelse(temporal == "One_Month_Delay" | temporal == "One_Month_Delay_And_Early_Closure", 1,
-                            ifelse(temporal == "Two_Month_Delay" | temporal == "Two_Month_Delay_And_Early_Closure", 2,0)
-                            )
-  )
 
-
-write_rds(scenario_table, here::here(
+# this doesn't quite work
+saveRDS(scenario_table, here::here(
   "tradeoffs",
   "Management scenarios",
   "scenario_table.RDS"
   )
 )
 
-scenario_table <- read_rds(here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-  )
-)
+# scenario_table <- readRDS(here::here(
+#   "tradeoffs",
+#   "Management scenarios",
+#   "scenario_table.RDS"
+#   )
+# )
 
 # for loop to create scenario df's
 
@@ -214,7 +188,9 @@ for(i in 1:nrow(scenario_table)) {
   
   # pick up here. need if_else to translate scenario table values for spatial to , eg, "", "Region", BIAs and lag = 0,1,2, April1orAfter, etc
   
-  scenario_summary_function(dat,scenario_table$spatial_domain[i],scenario_table$scenario_lag[i],scenario_table$scenario_df_name[i])
+  if(scenario_table$spatial[i] == )
+  
+  scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
   
   print(paste("made df for scenario",i))
 }
