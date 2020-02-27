@@ -47,15 +47,20 @@ mn.close <- d.key %>%
   left_join(grid.5km.lno) %>% 
   st_sf(agr = "constant")
 
+write_csv(mn.close, path = "../raimbow-local/Outputs/Mn_preds_ngb5km.csv")
+
 
 ###############################################################################
-# Overlaid predictions
+###############################################################################
+# Ngb
+mn.closeread_csv(mn.close, path = "../raimbow-local/Outputs/Mn_preds_ngb5km.csv")
+
+# Overlaid
 mn.overlaid <- read_csv("../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv") %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf(agr = "constant")
 
 
-###############################################################################
 # Comparisons
 sum(!(mn.overlaid$GRID5KM_ID %in% mn.close$GRID5KM_ID))
 sum(!(mn.close$GRID5KM_ID %in% mn.overlaid$GRID5KM_ID))
