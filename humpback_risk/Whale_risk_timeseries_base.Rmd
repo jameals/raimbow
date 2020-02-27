@@ -3,8 +3,8 @@ title: "Whale risk time series - baseline risk"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}

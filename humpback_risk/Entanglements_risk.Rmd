@@ -326,21 +326,27 @@ table(x.out$ym_max12, as.character(x.out$region))
 
 ## Cumulative risk within lookback window
 
+Calculate sum of risk values in lookback window instead of max of risk values in lookback window. This also involves summing the risk values in the lookback window for all of the time series values.
+
 ```{r, fig.width=14, fig.height=fig.h}
 # Set size of lookback window
 # lookback.mons <- 3
-facet.nrow2 <- case_when(reg.flag == "ca-" ~ 1, reg.flag == "county" ~ 2)
+#set above: # facet.nrow2 <- case_when(reg.flag == "ca-" ~ 1, reg.flag == "county" ~ 2) 
+z <- y
 
 # Loop through possible lookback windows
 for (lookback.mons in 0:12) {
-  # Prep entanglement records - add idx column
-  x.pre <- x %>% 
-    select(region, ym_date) %>% 
-    mutate(ent_idx = seq_along(ym_date))
   
-  # Get all ym values in lookback window, determine which ym value has max 
-  x2 <- lapply(0:lookback.mons, function(i) {
-    x.pre %>% 
+  # Prep stuff - add idx column
+  z.pre <- z %>% 
+    mutate(ym_date = parse_date_time(ym, "ym"), 
+           ent_idx = seq_along(ym_date)) %>% 
+    select(region, ym, ym_date, ent_idx)
+  
+  # Get all ym values in lookback window, sum values
+  z2 <- lapply(0:lookback.mons, function(i) {
+    z.pre %>% 
+      select(-ym) %>% 
       mutate(ym_date_curr = ym_date %m-% months(i), 
              ym_curr = substr(as.character(ym_date_curr), 1, 7))
   }) %>% 
@@ -348,15 +354,15 @@ for (lookback.mons in 0:12) {
     select(region, ym = ym_curr, ent_idx) %>% 
     left_join(all.df.summ.join, by = c("ym", "region")) %>% 
     group_by(ent_idx) %>% 
-    summarise(r_max = max(risk_sum_dens, na.rm = TRUE), 
-              r_sum = sum(risk_sum_dens, na.rm = TRUE), 
+    summarise(r_sum = sum(risk_sum_dens, na.rm = TRUE), 
               ym_max = ym[which.max(risk_sum_dens)]) %>% 
     ungroup() %>% 
-    right_join(x.pre, by = "ent_idx") %>% 
-    select(ent_idx, ym = ym_max, region, r_max, r_sum)
+    right_join(z.pre, by = "ent_idx") %>% 
+    select(ent_idx, ym, region, r_sum)
   
   # Summarise entanglement count by max ym
-  x2.join <- x2 %>% 
+  # TODO: plot sum, not ind dens
+  z2.join <- z2 %>% 
     select(ym, region, ent_idx) %>% 
     left_join(all.df.summ.join, by = c("ym", "region"))
   
