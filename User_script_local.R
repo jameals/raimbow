@@ -8,6 +8,15 @@
 #   1) Run Sys.info()["nodename"]
 #   2) Add nodename and initials below
 
+user <- switch(
+  Sys.info()["nodename"],
+  "SWC-SWOODMAN-L" = "SMW"
+  # "Jameal nodename" = "JS"
+)
+
+
+
+
 # if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") {
 #   user <- "SMW"
 #   rmd.path.local <- "../../raimbow-local/"
@@ -22,8 +31,3 @@
 # }
 
 
-user <- switch(
-  Sys.info()["nodename"],
-  "SWC-SWOODMAN-L" = "SMW"
-  # "Jameal nodename" = "JS"
-)
