@@ -1,6 +1,20 @@
 # 022720
 # i will replace this with interpolated data processed through Owen's pipeline, that includes blwh predictions matched to the 5km grid using a nearest neighbor function
 
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+library(sf)
+library(data.table)
+library(wesanderson)
+library(viridis)
+library(here)
+#library(ggerr)
+
 # load RDS
 dcrb_ca_vms_tix_analysis <- readRDS("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_blue_whales_grids.RDS")
 head(dcrb_ca_vms_tix_analysis)

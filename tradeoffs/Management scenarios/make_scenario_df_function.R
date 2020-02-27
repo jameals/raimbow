@@ -1,6 +1,20 @@
 # 022720
 # Dependencies: run prep_data_for_scenario_df_function.R first
 
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+library(sf)
+library(data.table)
+library(wesanderson)
+library(viridis)
+library(here)
+#library(ggerr)
+
 con_df_weekly_years_5km_CA <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_blue_humpback_whales_grids.RDS")
 
 # add column to df for spring_summer v winter
