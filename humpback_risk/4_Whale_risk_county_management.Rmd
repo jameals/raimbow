@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -53,6 +54,10 @@ head(x.orig)
 Functions used throughout this document
 
 ```{r funcs}
+# TODO: Use "funcs..." instead
+
+
+
 # Sum risk after filtering for desired months
 mng_risk_sum <- function(x1, x2, mon.keep) {
   x1 %>%

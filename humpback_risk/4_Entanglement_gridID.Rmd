@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction

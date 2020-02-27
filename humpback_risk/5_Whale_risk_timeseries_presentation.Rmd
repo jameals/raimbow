@@ -9,10 +9,13 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
+```
 
+```{r}
 library(gridExtra)
 library(tidyverse)
-source("Whale_risk_timeseries_funcs.R")
+source("humpback_risk/funcs_whale_risk_timeseries.R")
 
 load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
 load("../raimbow-local/RDATA_files/Whale_risk_timeseries_base.Rdata")
@@ -21,6 +24,7 @@ p.max <- max(c(x.summ$risk_sum_dens, x.summ$risk_sum_dens_basew, x.summ$risk_sum
 ```
 
 ## Humpback risk of entanglement
+
 ```{r, fig.height=10, fig.width=10}
 # <!-- Risk of entanglement is calculated as product of predicted humpback abundance and number of (non-confidential) VMS pings in a 5km grid cell. -->
 

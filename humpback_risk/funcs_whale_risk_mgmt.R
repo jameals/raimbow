@@ -1,6 +1,6 @@
 ###############################################################################
 # Sum risk after filtering for desired months
-mng_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
+mgmt_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
   tmp <- x1 %>% 
     filter(mon %in% mon.keep) %>% 
     group_by(region, fish_season) %>% 
@@ -20,7 +20,7 @@ mng_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
 }
 
 # Plot of percentage of risk remaining for the season after applying scenario
-mng_plot_perc <- function(x1, x2, x.title, x.xlab, x.ylab) {
+mgmt_plot_perc <- function(x1, x2, x.title, x.xlab, x.ylab) {
   ggplot(x1, aes(fish_season, risk_dens_ratio, colour = region, group = region)) + 
     geom_point() + 
     geom_path() + 
@@ -35,7 +35,7 @@ mng_plot_perc <- function(x1, x2, x.title, x.xlab, x.ylab) {
 
 
 # Plot of risk removed by management scenario
-mng_plot_diff <- function(x1, x2, x.title, x.xlab, x.ylab) {
+mgmt_plot_diff <- function(x1, x2, x.title, x.xlab, x.ylab) {
   ggplot(x1, aes(fish_season, risk_dens_diff, colour = region, group = region)) + 
     geom_point() + 
     geom_path() + 
@@ -50,7 +50,7 @@ mng_plot_diff <- function(x1, x2, x.title, x.xlab, x.ylab) {
 
 
 # Plot of summed risk density for the year with and without management scenario
-mng_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
+mgmt_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
   v1 <- enquo(v1)
   
   x.new <- bind_rows(
@@ -73,17 +73,17 @@ mng_plot_bar <- function(x1, x2, v1, x.title, x.ylab) {
 }
 
 # Plot of summed risk for the year without management scenario, and with orig value as dot above
-mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab, wa.flag = TRUE) {
+mgmt_plot_bardot <- function(x1, x2, v1, x.title, x.ylab, wa.flag = TRUE) {
   v1 <- enquo(v1)
   
   if (!wa.flag) x2 <- x2 %>% filter(region != "WA")
   
   ggplot() +
-    geom_col(data = x1, aes(fish_season, !!v1, fill = "mng")) +
+    geom_col(data = x1, aes(fish_season, !!v1, fill = "mgmt")) +
     geom_point(data = x2, aes(fish_season, !!v1, colour = "orig")) + 
     facet_wrap(facets = vars(region), nrow = 2, drop = TRUE) +
     scale_fill_manual(name = "Risk", 
-                      values = c('mng' = hue_pal()(1)), 
+                      values = c('mgmt' = hue_pal()(1)), 
                       labels = "Management") + 
     scale_color_manual(name = "", 
                        values = c('orig' = 'black'), 
@@ -99,7 +99,7 @@ mng_plot_bardot <- function(x1, x2, v1, x.title, x.ylab, wa.flag = TRUE) {
 
 ###############################################################################
 # Function for 
-mng_disp <- function(x, mon.cut, mon.dist, grid.region.summ, wa.flag = TRUE) {
+mgmt_disp <- function(x, mon.cut, mon.dist, grid.region.summ, wa.flag = TRUE) {
   # Area of each region
   reg.areas <- x %>% 
     filter(!duplicated(GRID5KM_ID)) %>% 

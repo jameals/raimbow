@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -21,8 +22,8 @@ library(lubridate)
 library(readxl)
 library(tidyverse)
 
-source("Whale_risk_timeseries_funcs.R")
 source("User_script_local.R")
+source("humpback_risk/funcs_whale_risk_timeseries.R")
 
 if (user == "JS") {
   file.ent

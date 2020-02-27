@@ -8,8 +8,22 @@
 #   1) Run Sys.info()["nodename"]
 #   2) Add nodename and initials below
 
+# if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") {
+#   user <- "SMW"
+#   rmd.path.local <- "../../raimbow-local/"
+#   rmd.path.top <- "../"
+#   rmd.path.mn.repo <- "../humpback_risk/"
+#   
+# } else if (Sys.info()["nodename"] == "Jameal nodename- todo") {
+#   # TODO
+#   
+# } else {
+#   stop("User not recognized - please update 'User_script_local.R' file")
+# }
+
+
 user <- switch(
-  Sys.info()["nodename"], 
+  Sys.info()["nodename"],
   "SWC-SWOODMAN-L" = "SMW"
   # "Jameal nodename" = "JS"
 )

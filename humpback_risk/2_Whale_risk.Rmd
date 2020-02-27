@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -16,14 +17,9 @@ The code in this document calculates (humpback) whale risk of entanglement for e
 Currently, this document uses non-confidential VMS data for Oregon and Washington, and confidential (i.e. all) data for California.
 
 ```{r, message=FALSE}
-library(dplyr)
 library(lubridate)
-library(purrr)
-library(readr)
 library(sf)
-library(tidyr)
-
-source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
+library(tidyverse)
 ```
 
 Set file paths depending on user.
@@ -39,6 +35,7 @@ if (user == "JS") {
   path.save <- ""
   
 } else if (user == "SMW") {
+  # file.data.mnpreds <- paste0(rmd.path.local, "Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv")
   file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv"
   file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 

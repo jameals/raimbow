@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -25,7 +26,7 @@ library(lubridate)
 library(sf)
 library(tidyverse)
 
-source("Whale_risk_timeseries_funcs.R")
+source("humpback_risk/funcs_whale_risk_timeseries.R")
 ```
 
 Set file paths depending on user. The user should also specifies `save.flag`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
