@@ -39,10 +39,10 @@ rsconnect/
 *.html
 
 # Sam things
+Whale_risk_timeseries_old/
+Ent_old/
 maps_tmp*
 *exp*
-Whale_risk_timeseries_old/
 *_job.R
-/*.pptx
-/*.pdf
-Ent_old/
+*.pptx
+*.pdf
