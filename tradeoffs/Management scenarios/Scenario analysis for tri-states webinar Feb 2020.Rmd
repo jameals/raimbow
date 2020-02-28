@@ -61,8 +61,7 @@ dat <- full.df  %>% #filter(year %in% c(2012,2013)) %>%
 ```
 <br>
 
-
-### Create df for each scenario (15 total + status quo) 
+### Make table of scenarios
 
 Spatial:
 Statewide
@@ -70,9 +69,64 @@ cenCA only
 all BIAs
 
 Temporal: months for closures
-One-month delay in opening --> 11,12
-Two-month delay in opening --> 11, 12
+Marine life delay in opening --> to Dec 15
 Early closure --> months 4,5,6,7
+
+```{r}
+
+# make table of scenarios
+spatial_scenarios <- c(
+  "statewide",
+  "cenCA_only",
+  "all_BIAs"
+)
+
+temporal_scenarios <- c(
+  "Marine_Life_Delay",
+  "Early closure",
+  "Marine_Life_Delay_And_Early_Closure"
+) 
+  
+scenario_table <- expand.grid(
+  "spatial" = spatial_scenarios,
+  "temporal" = temporal_scenarios
+)
+
+scenario_table <- add_row(scenario_table,
+                          spatial="Status_Quo",
+                          temporal="Status_Quo"
+                          )
+# add columns for scenario_df_name, spatial_domain, scenario_lag
+scenario_table <- scenario_table %>%
+  mutate(
+    scenario_df_name = paste(spatial,temporal,sep="_"),
+    spatial_domain = ifelse(spatial == "cenCA_only", "Region",
+                            ifelse(spatial == "all_BIAs", "BIA_bm_or_mn","")
+                            ),
+    scenario_lag = ifelse(temporal == "One_Month_Delay" | temporal == "One_Month_Delay_And_Early_Closure", 1,
+                            ifelse(temporal == "Two_Month_Delay" | temporal == "Two_Month_Delay_And_Early_Closure", 2,0)
+                            )
+  )
+
+
+write_rds(scenario_table, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table.RDS"
+  )
+)
+
+scenario_table <- read_rds(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table.RDS"
+  )
+)
+
+```
+<br>
+
+### Create df for each scenario (11 total + status quo) 
 
 
 ```{r}
@@ -150,62 +204,6 @@ assign(paste(scenario_df_name,"_dat",sep="_"),out,envir=.GlobalEnv)
 # try function on 1 scenario
 # scenario_summary_function(dat,"Region",0,"One_Month_Delay_dat")
 # glimpse(One_Month_Delay_dat)
-
-# make table of scenarios
-spatial_scenarios <- c(
-  "statewide",
-  "cenCA_only",
-  "all_BIAs"
-)
-
-temporal_scenarios <- c(
-  "One_Month_Delay",
-  "Two_Month_Delay",
-  "Early closure",
-  "One_Month_Delay_And_Early_Closure",
-  "Two_Month_Delay_And_Early_Closure"
-) 
-  
-#months for closures
-# One-month delay in opening --> 11,12
-# Two-month delay in opening --> 11, 12
-# Early closure --> months 4,5,6,7
-
-scenario_table <- expand.grid(
-  "spatial" = spatial_scenarios,
-  "temporal" = temporal_scenarios
-)
-
-scenario_table <- add_row(scenario_table,
-                          spatial="Status_Quo",
-                          temporal="Status_Quo"
-                          )
-# add columns for scenario_df_name, spatial_domain, scenario_lag
-scenario_table <- scenario_table %>%
-  mutate(
-    scenario_df_name = paste(spatial,temporal,sep="_"),
-    spatial_domain = ifelse(spatial == "cenCA_only", "Region",
-                            ifelse(spatial == "all_BIAs", "BIA_bm_or_mn","")
-                            ),
-    scenario_lag = ifelse(temporal == "One_Month_Delay" | temporal == "One_Month_Delay_And_Early_Closure", 1,
-                            ifelse(temporal == "Two_Month_Delay" | temporal == "Two_Month_Delay_And_Early_Closure", 2,0)
-                            )
-  )
-
-
-write_rds(scenario_table, here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-  )
-)
-
-scenario_table <- read_rds(here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-  )
-)
 
 # for loop to create scenario df's
 
