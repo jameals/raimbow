@@ -107,6 +107,7 @@ glimpse(BLWH_5km_year_mo)
 
 #length(which(is.na(BLWH_5km_year_mo$Blue_occurrence_mean) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0
 
+# check to see if the blue whale grid cells and the VMS grid cells line up
 length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$GRID5KM_ID == FALSE))
 length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$GRID5KM_ID == TRUE))
 
@@ -115,6 +116,8 @@ humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processe
 head(humpback.sum.long)
 humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
 humpback.sum.long$Year_Month <- as.character(humpback.sum.long$Year_Month)
+
+# check to see if the blue whale grid cells and the VMS grid cells line up
 
 ### at long last, make the df we want
 
@@ -133,16 +136,15 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
   left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))
 Sys.time() - start.time
 
+# check to see whether whale values are mostly NAs
 length(which(is.na(con_df_weekly_years_5km_CA$Blue_occurrence_mean)==TRUE))/dim(con_df_weekly_years_5km_CA)[1]
 length(which(is.na(con_df_weekly_years_5km_CA$H_Avg_Abund)==TRUE))/dim(con_df_weekly_years_5km_CA)[1]
 
 
-
 con_df_weekly_years_5km_CA <- droplevels(con_df_weekly_years_5km_CA)
-head(as.data.frame(con_df_weekly_years_5km_CA))
 
 write_rds(con_df_weekly_years_5km_CA, 
-          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_blue_humpback_whales_grids.RDS")
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2019_fishtix_blue_humpback_whales_grids.RDS")
 
 
 
