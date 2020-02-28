@@ -75,21 +75,9 @@ dcrb_ca_vms_tix_analysis <- dcrb_ca_vms_tix_analysis %>%
   )
 
 # add column for crab year
-full.df$crab.year <- ifelse(
-  full.df$month >= 11, paste0(full.df$year,"-",1+full.df$year), paste0(full.df$year - 1,"-",full.df$year)
+dcrb_ca_vms_tix_analysis$crab.year <- ifelse(
+  dcrb_ca_vms_tix_analysis$month >= 11, paste0(dcrb_ca_vms_tix_analysis$year,"-",1+dcrb_ca_vms_tix_analysis$year), paste0(dcrb_ca_vms_tix_analysis$year - 1,"-",dcrb_ca_vms_tix_analysis$year)
 )
-
-# grab humpback data
-humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
-
-# Join dcrb_ca_vms_tix and humpback data frames.
-dcrb_ca_vms_tix_analysis$grid_year_mo <- as.character(paste0(dcrb_ca_vms_tix_analysis$GRID5KM_ID,"_",dcrb_ca_vms_tix_analysis$year_mo))
-humpback.sum.long$grid_year_mo <- as.character(paste0(humpback.sum.long$GRID5KM_ID,"_",humpback.sum.long$Year_Month)) 
-
-dcrb_ca_vms_tix_analysis <- dcrb_ca_vms_tix_analysis %>%
-  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID","grid_year_mo" = "grid_year_mo"))
-
-dcrb_ca_vms_tix_analysis <- droplevels(dcrb_ca_vms_tix_analysis)
 
 # make sure grid cell ID and Vessel_Size are factors
 dcrb_ca_vms_tix_analysis$GRID5KM_ID <- as.factor(as.character(dcrb_ca_vms_tix_analysis$GRID5KM_ID))
@@ -123,6 +111,22 @@ BLWH_5km_year_mo <- dcrb_ca_vms_tix_analysis_TripInfo %>%
 glimpse(BLWH_5km_year_mo)
 length(which(is.na(BLWH_5km_year_mo$Blue_occurrence) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0.03
 
+write_rds(BLWH_5km_year_mo, 
+          "~/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/BLWH_5km_year_mo_2009_2018.RDS")
+
+# grab humpback data
+humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
+
+# Join dcrb_ca_vms_tix and humpback data frames.
+dcrb_ca_vms_tix_analysis$grid_year_mo <- as.character(paste0(dcrb_ca_vms_tix_analysis$GRID5KM_ID,"_",dcrb_ca_vms_tix_analysis$year_mo))
+humpback.sum.long$grid_year_mo <- as.character(paste0(humpback.sum.long$GRID5KM_ID,"_",humpback.sum.long$Year_Month)) 
+
+# dcrb_ca_vms_tix_analysis <- dcrb_ca_vms_tix_analysis %>%
+#   left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID","grid_year_mo" = "grid_year_mo"))
+# 
+# dcrb_ca_vms_tix_analysis <- droplevels(dcrb_ca_vms_tix_analysis)
+
+
 ### at long last, make the df we want
 glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
 names(dcrb_ca_vms_tix_analysis_TripInfo)
@@ -138,12 +142,13 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     dollars_DCRB =sum(dollars_DCRB_per_location),
     Num_DCRB_VMS_pings = n(),
     Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_location),
-    Num_Unique_DCRB_Vessels = length(unique(as.factor(DOCNUM))),
-    H_Avg_Abund = mean(H_Avg_Abund, na.rm=TRUE)
+    Num_Unique_DCRB_Vessels = length(unique(as.factor(DOCNUM)))
   ) %>%
   ungroup() %>%
-  left_join(BLWH_5km_year_mo)
+  left_join(BLWH_5km_year_mo) %>%
+  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID","grid_year_mo" = "grid_year_mo"))
 Sys.time() - start.time
+con_df_weekly_years_5km_CA <- droplevels(con_df_weekly_years_5km_CA)
 head(as.data.frame(con_df_weekly_years_5km_CA))
 
 write_rds(con_df_weekly_years_5km_CA, 
