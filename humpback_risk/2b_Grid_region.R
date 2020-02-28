@@ -1,6 +1,5 @@
 ### Define and save regions used in other parts of humpback_risk
-# Yes the numbering is a little backwards in that this uses a file from 
-#   "2_Whale_risk.Rmd"; whoopsie
+# Uses a file from "2_Whale_risk.Rmd", hence the 2b
 
 # These regions are visualized in "3_Whale_risk_timeseries.Rmd" and 
 #   "3_Whale_risk_county_timeseries.Rmd"

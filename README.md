@@ -26,7 +26,11 @@ Note that these files are numbered according to files dependencies. For instance
 <!-- section break -->
 #### Analysis files (markdown files)
 
-* 2_Whale_risk.Rmd: Calculates (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure. This file then saves the humpback (density), fishing (total sum), and risk (density) values as an RDATA file for use in subsequent files.
+* 1_Whale_preds_overlay5km.R: Overlay 3km Mn predictions onto 5km grid
+
+* 2_Whale_risk.Rmd: Process and aggregate humpback and fishing data (should this be split into separate files?), and then calculate (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure. This file then saves the humpback (abundance), fishing (total sum - VMS pings), and risk (total) values as an RDATA file for use in subsequent files.
+
+* 2b_Grid_region.R: Get region (both large and county) for each 5km grid cell ID
 
 * 3_Entanglement_report_mnpred.Rmd: Compare entnglement report locations with humpback predictions for Karin.
 
@@ -47,6 +51,8 @@ Note that these files are numbered according to files dependencies. For instance
 * 5_Whale_risk_timeseries_presentation.Rmd: Starting point of JVR presentation on Mn risk assessment for TriState call
 
 * \_county_: Analyses (described above) but using CA counties instead of CA regions
+
+* ngb_: Comparing overlaying Mn predictions onto 5km grid with resample onto 5km grid using nearest neighbors approach
 
 <!-- section break -->
 #### Analysis files (other)
