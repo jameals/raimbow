@@ -1,19 +1,169 @@
-# 022720
-# i will replace this with interpolated data processed through Owen's pipeline, that includes blwh predictions matched to the 5km grid using a nearest neighbor function
+# 022820
 
-library(foreign)
+#library(foreign)
 library(lubridate)
 library(tidyverse)
-library(reshape2)
-library(scales)
-library(zoo)
-library(ggrepel)
-library(sf)
+# library(reshape2)
+# library(scales)
+# library(zoo)
+# library(ggrepel)
+# library(sf)
 library(data.table)
-library(wesanderson)
-library(viridis)
-library(here)
+# library(wesanderson)
+# library(viridis)
+# library(here)
 #library(ggerr)
+
+# load RDS
+dcrb_vms_tix_analysis <- readRDS("~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd.RDS")
+glimpse(dcrb_vms_tix_analysis)
+
+# check out the data a bit. also see "Make confidential data summarized...Rmd"
+with(dcrb_vms_tix_analysis, table(agency_code, STATE))
+
+#####################################################
+# filter the data using the control variables below
+# years <- seq(2009,2019,1)
+
+state_agency_code <- "C"
+state <- "CA"
+target_rev <- "DCRB"
+target_lbs <- "DCRB"
+region_north <- c(1040, 1041, 1042)
+vessel_size_category_break <- 40
+winter_months <- c("November", "December", "January", "February", "March")
+crab_months <- c(1:7,11:12)
+
+# note there is also a filter below for removal_type to focus on commercial landings
+#ports <- c("CCA", "ERA", "BGA","BDA", "SFA", "MRA", "MNA")
+#region_south <- c(1035, 1036, 1037, 1038)
+#####################################################
+
+# subset the data based on above queries. CA only
+dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
+  filter(agency_code == state_agency_code & STATE == state) %>%
+  filter(TARGET_rev == target_rev | TARGET_lbs == target_lbs) %>%
+  filter(removal_type_name == "COMMERCIAL (NON-EFP)" | removal_type_name == "COMMERCIAL(DIRECT SALES)" |
+           removal_type_name == "UNKNOWN") %>%
+  filter(CA_OFFSHOR != -999) %>%
+  filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
+  filter(avg_speed_recalc <= 4.11556 & avg_speed_recalc >= 0) %>%
+  #filter(is.na(in_port) == TRUE) %>% # only removes ~4000 records
+  #filter(port_group_code %in% ports) %>%
+  mutate(# GRID5KM_ID = as.character(GRID5KM_ID),
+         Region = ifelse(CA_OFFSHOR %in% region_north,
+                         "NorCA","CenCA"),
+         BIA_mn_noNAs = ifelse(is.na(BIA_mn)==TRUE,0,BIA_mn),
+         BIA_bm_noNAs = ifelse(is.na(BIA_bm)==TRUE,0,BIA_bm),
+         year = lubridate::year(westcoastdate_notime),
+         year_month = paste0(lubridate::year(westcoastdate_notime),"_", lubridate::month(westcoastdate_notime)),
+         month = lubridate::month(westcoastdate_notime, label=TRUE, abbr = FALSE),
+         month_as_numeric = month(westcoastdate_notime),
+         week_of_year = week(westcoastdate_notime),
+         season = as.character(ifelse(month %in% winter_months, "Winter", "Spring-Summer")),
+         crab_year = ifelse(
+           month_as_numeric >= 11, paste0(year,"_",1+year), paste0(year - 1,"_",year)
+         ),
+         BIA_bm_or_mn = ifelse(BIA_bm_noNAs !=0 | BIA_mn_noNAs != 0, "Inside BIA","Outside BIA")#,
+  ) %>%
+  filter(westcoastdate_notime >= as.Date("2009-11-01") & westcoastdate_notime <= as.Date("2019-08-01")) %>%
+  filter(month_as_numeric %in% crab_months) %>%
+  dplyr::select(
+    Rec_ID, VMS_RECNO, drvid,
+    westcoastdate_notime, year, crab_year, year_month, month, month_as_numeric, week_of_year, season,
+    GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, pacfin_port_code, port_group_code, DEPTH_CATM, NGDC_M,
+    TARGET_lbs, TARGET_rev, DCRB_lbs, DCRB_revenue
+    )
+
+glimpse(dcrb_ca_vms_tix_analysis)
+
+  #        Vessel_Size = as.character(ifelse(FINAL_LENGTH >= vessel_size_category_break, paste0(">=",vessel_size_category_break, " ft"),paste0("<",vessel_size_category_break, " ft"))),
+  #        
+  # )
+
+### create new columns that apportion pings/lbs/$ from each fish ticket based on proportion of pings related to each ticket in each grid cell
+
+# total records per trip (total number of VMS records associated with each fish ticket)
+VMSrecords_per_trip <- dcrb_ca_vms_tix_analysis %>%
+  group_by(Rec_ID) %>%
+  summarise(trip_VMSrecords = n()) #%>%
+  #filter(trip_VMSrecords > 1)
+# add to fish ticket / vms data, make columns vessels, lbs, and $ per VMS location. note that columns with "...." in them, like ""TARGET...." reflect revenue 
+dcrb_ca_vms_tix_analysis_TripInfo <- left_join(VMSrecords_per_trip, dcrb_ca_vms_tix_analysis, by="Rec_ID") %>%
+  mutate(
+    DCRB_lbs_per_VMSlocation = DCRB_lbs/trip_VMSrecords,
+    DCRB_rev_per_VMSlocation = DCRB_revenue/trip_VMSrecords,
+    Num_DCRB_Vessels_per_VMSlocation = 1/trip_VMSrecords
+  )
+glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
+
+### grab whale data
+
+# blue whales
+BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_vms_cells_only.RDS")
+#BLWH_5km_year_mo$GRID5KM_ID <- as.character(BLWH_5km_year_mo$GRID5KM_ID)
+BLWH_5km_year_mo$year_mo <- as.character(BLWH_5km_year_mo$year_mo)
+glimpse(BLWH_5km_year_mo)
+
+#length(which(is.na(BLWH_5km_year_mo$Blue_occurrence_mean) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0
+
+# check to see if the blue whale grid cells and the VMS grid cells line up
+length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$GRID5KM_ID == FALSE))
+length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$GRID5KM_ID == TRUE))
+
+# humpbacks
+humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
+head(humpback.sum.long)
+humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
+humpback.sum.long$Year_Month <- as.character(humpback.sum.long$Year_Month)
+
+# check to see if the blue whale grid cells and the VMS grid cells line up
+
+### at long last, make the df we want
+
+start.time <- Sys.time()
+con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year,    GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup() %>%
+  left_join(BLWH_5km_year_mo, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="year_mo")) %>%
+  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))
+Sys.time() - start.time
+
+# check to see whether whale values are mostly NAs
+length(which(is.na(con_df_weekly_years_5km_CA$Blue_occurrence_mean)==TRUE))/dim(con_df_weekly_years_5km_CA)[1]
+length(which(is.na(con_df_weekly_years_5km_CA$H_Avg_Abund)==TRUE))/dim(con_df_weekly_years_5km_CA)[1]
+
+
+con_df_weekly_years_5km_CA <- droplevels(con_df_weekly_years_5km_CA)
+
+write_rds(con_df_weekly_years_5km_CA, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2019_fishtix_blue_humpback_whales_grids.RDS")
+
+
+
+
+
+
+
+
+
+
+
+
+####################################
+####################################
+####################################
+
+# i replaced the code below with interpolated data processed through Owen's pipeline, and matched to blwh predictions matched to the 5km grid using a nearest neighbor function
+
+# 022720
 
 # load RDS
 dcrb_ca_vms_tix_analysis <- readRDS("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_blue_whales_grids.RDS")
