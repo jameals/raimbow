@@ -43,18 +43,28 @@ d.key <- data.frame(
 ) %>% 
   filter(!is.na(base_idx))
 
-mn.close <- d.key %>% 
+mn.close.sf <- d.key %>% 
   left_join(st_drop_geometry(mn.preds), by = c("base_idx")) %>% 
   left_join(grid.5km.lno) %>% 
   st_sf(agr = "constant")
+
+mn.close <- mn.close.sf %>% 
+  st_drop_geometry() %>% 
+  select(GRID5KM_ID, starts_with("Mn_X76")) %>% 
+  purrr::set_names(c("GRID5KM_ID", gsub("[.]", "_", paste0("H_", substr(names(.)[-1], 15, 22)))))
 
 write_csv(mn.close, path = "../raimbow-local/Outputs/Mn_preds_ngb5km.csv")
 
 
 ###############################################################################
 ###############################################################################
+library(tidyverse)
+library(sf)
+load("../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA")
 # Ngb
-mn.closeread_csv(mn.close, path = "../raimbow-local/Outputs/Mn_preds_ngb5km.csv")
+mn.close <- read_csv("../raimbow-local/Outputs/Mn_preds_ngb5km.csv") %>% 
+  left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
+  st_sf(agr = "constant")
 
 # Overlaid
 mn.overlaid <- read_csv("../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv") %>% 
