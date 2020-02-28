@@ -33,8 +33,8 @@ region_north <- c(1040, 1041, 1042)
 vessel_size_category_break <- 40
 winter_months <- c("November", "December", "January", "February", "March")
 crab_months <- c(1:7,11:12)
+removal_types <- c("COMMERCIAL (NON-EFP)", "COMMERCIAL(DIRECT SALES)", "UNKNOWN")
 
-# note there is also a filter below for removal_type to focus on commercial landings
 #ports <- c("CCA", "ERA", "BGA","BDA", "SFA", "MRA", "MNA")
 #region_south <- c(1035, 1036, 1037, 1038)
 #####################################################
@@ -43,14 +43,13 @@ crab_months <- c(1:7,11:12)
 dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
   filter(agency_code == state_agency_code & STATE == state) %>%
   filter(TARGET_rev == target_rev | TARGET_lbs == target_lbs) %>%
-  filter(removal_type_name == "COMMERCIAL (NON-EFP)" | removal_type_name == "COMMERCIAL(DIRECT SALES)" |
-           removal_type_name == "UNKNOWN") %>%
+  filter(removal_type_name %in% removal_types) %>%
   filter(CA_OFFSHOR != -999) %>%
   filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
   filter(avg_speed_recalc <= 4.11556 & avg_speed_recalc >= 0) %>%
   #filter(is.na(in_port) == TRUE) %>% # only removes ~4000 records
   #filter(port_group_code %in% ports) %>%
-  mutate(# GRID5KM_ID = as.character(GRID5KM_ID),
+  mutate(#GRID5KM_ID = as.character(GRID5KM_ID),
          Region = ifelse(CA_OFFSHOR %in% region_north,
                          "NorCA","CenCA"),
          BIA_mn_noNAs = ifelse(is.na(BIA_mn)==TRUE,0,BIA_mn),
@@ -100,12 +99,22 @@ glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
 ### grab whale data
 
 # blue whales
+# blue whale data within vms cells only
 BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_vms_cells_only.RDS")
-#BLWH_5km_year_mo$GRID5KM_ID <- as.character(BLWH_5km_year_mo$GRID5KM_ID)
+# all blue whale data
+# BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_by_grd_mth.RDS")
+BLWH_5km_year_mo$GRID5KM_ID <- as.character(BLWH_5km_year_mo$GRID5KM_ID)
 BLWH_5km_year_mo$year_mo <- as.character(BLWH_5km_year_mo$year_mo)
 glimpse(BLWH_5km_year_mo)
 
+# rescale blwh values to have min=0, max=1
+BLWH_5km_year_mo <- BLWH_5km_year_mo %>%
+  mutate(
+    normalized_Blue_occurrence_mean = as.vector(scale(Blue_occurrence_mean,center=min(Blue_occurrence_mean),scale=diff(range(Blue_occurrence_mean))))
+  )
+
 #length(which(is.na(BLWH_5km_year_mo$Blue_occurrence_mean) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0
+sum(is.na(BLWH_5km_year_mo$GRID5KM_ID))
 
 # check to see if the blue whale grid cells and the VMS grid cells line up
 length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$GRID5KM_ID == FALSE))
@@ -114,12 +123,21 @@ length(which(BLWH_5km_year_mo$GRID5KM_ID %in% dcrb_ca_vms_tix_analysis_TripInfo$
 # humpbacks
 humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
 head(humpback.sum.long)
-humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
+#humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
 humpback.sum.long$Year_Month <- as.character(humpback.sum.long$Year_Month)
 
-# check to see if the blue whale grid cells and the VMS grid cells line up
+# rescale hump values to have min=0, max=1
+humpback.sum.long <- humpback.sum.long %>%
+  mutate(
+    normalized_H_Avg_Abund = as.vector(scale(H_Avg_Abund,center=min(H_Avg_Abund),scale=diff(range(H_Avg_Abund))))
+  )
 
 ### at long last, make the df we want
+
+# will need to normalize the whale and pings data for risk calculations because pings range to >600 per grid cell but whale values generally fall 0-1
+# https://medium.com/@swethalakshmanan14/how-when-and-why-should-you-normalize-standardize-rescale-your-data-3f083def38ff
+# https://stackoverflow.com/questions/5665599/range-standardization-0-to-1-in-r
+#https://stackoverflow.com/questions/5468280/scale-a-series-between-two-points/5468527#5468527
 
 start.time <- Sys.time()
 con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
@@ -133,8 +151,19 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
   ) %>%
   ungroup() %>%
   left_join(BLWH_5km_year_mo, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="year_mo")) %>%
-  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))
+  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
+  mutate(
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+    blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings
+  ) %>%
+  select(-c(yr, mth, LONGITUDE, LATITUDE, area_km_lno))
 Sys.time() - start.time
+
+glimpse(con_df_weekly_years_5km_CA)
+
+# keep in mind that the dist of num pings is highly left skewed. most cells have <25 pings per week
+with(con_df_weekly_years_5km_CA, table(Num_DCRB_VMS_pings)) # few instances of >1 5km cell with pings >100
 
 # check to see whether whale values are mostly NAs
 length(which(is.na(con_df_weekly_years_5km_CA$Blue_occurrence_mean)==TRUE))/dim(con_df_weekly_years_5km_CA)[1]
@@ -149,6 +178,12 @@ write_rds(con_df_weekly_years_5km_CA,
 
 
 
+### troubleshooting whale join
+dcrb_vms_tix_analysis_blwh <- dcrb_vms_tix_analysis %>%
+  mutate(year_mo = paste0(lubridate::year(westcoastdate_notime),"_", lubridate::month(westcoastdate_notime))) %>%
+  left_join(BLWH_5km_year_mo) #, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="year_mo"))
+
+length(which(is.na(dcrb_vms_tix_analysis_blwh$Blue_occurrence_mean)==TRUE))/dim(dcrb_vms_tix_analysis_blwh)[1]
 
 
 

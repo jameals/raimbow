@@ -32,7 +32,7 @@ con_df_weekly_years_5km_CA %>%
   #mutate(spatial_domain = ifelse(is_empty(spatial_domain)==TRUE,NA,spatial_domain),
          #time_period = ifelse(is_empty(time_period)==TRUE,NA,time_period),
   #       ) %>% 
-  group_by(crab.year, Region, season)
+  group_by(crab_year, Region, season) # crab year, spatial domain, temporal domain in which fishing still occurs
 
 
 scenario_summary_function <- function(df, spatial_domain, scenario_lag, scenario_df_name) {
