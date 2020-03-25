@@ -10,7 +10,7 @@ library(tidyverse)
 # library(sf)
 library(data.table)
 # library(wesanderson)
-# library(viridis)
+library(viridis)
 # library(here)
 #library(ggerr)
 
@@ -100,9 +100,9 @@ glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
 
 # blue whales
 # blue whale data within vms cells only
-BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_vms_cells_only.RDS")
+# BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_vms_cells_only.RDS")
 # all blue whale data
-# BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_by_grd_mth.RDS")
+BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_by_grd_mth.RDS")
 BLWH_5km_year_mo$GRID5KM_ID <- as.character(BLWH_5km_year_mo$GRID5KM_ID)
 BLWH_5km_year_mo$year_mo <- as.character(BLWH_5km_year_mo$year_mo)
 glimpse(BLWH_5km_year_mo)
@@ -176,18 +176,85 @@ write_rds(con_df_weekly_years_5km_CA,
           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2019_fishtix_blue_humpback_whales_grids.RDS")
 
 
+### start here
+
+# also need to decide on best approach for rescaling ris. try log transform
 
 
 ### troubleshooting whale join
 dcrb_vms_tix_analysis_blwh <- dcrb_vms_tix_analysis %>%
-  mutate(year_mo = paste0(lubridate::year(westcoastdate_notime),"_", lubridate::month(westcoastdate_notime))) %>%
+  mutate(
+    yr= lubridate::year(westcoastdate_notime),
+    mth = lubridate::month(westcoastdate_notime)
+         ) %>%
   left_join(BLWH_5km_year_mo) #, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="year_mo"))
 
 length(which(is.na(dcrb_vms_tix_analysis_blwh$Blue_occurrence_mean)==TRUE))/dim(dcrb_vms_tix_analysis_blwh)[1]
+sum(is.na(dcrb_vms_tix_analysis_blwh$Blue_occurrence_mean))
 
+write_rds(dcrb_vms_tix_analysis_blwh, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/dcrb_vms_tix_analysis_blwh.rds")
 
+dcrb_vms_tix_analysis_blwh_na <- dcrb_vms_tix_analysis_blwh %>%
+  filter(is.na(Blue_occurrence_mean)) %>%
+  mutate(
+    empty_cell = 1
+  )
 
+grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
 
+grd_blwh_na <- grd %>%
+  left_join(dcrb_vms_tix_analysis_blwh_na) %>%
+  filter(yr == 2017 & mth == 01)
+
+grd_blwh_na_ca <- grd_blwh_na %>%
+  filter(STATE == "CA")
+  
+ggplot() + 
+  geom_sf(data=grd_blwh_na_ca, 
+          aes(fill=empty_cell)
+          )
+
+library(tidyverse)
+library(magrittr)
+library(sf)
+library(here)
+library(maps) # for map background
+
+plot_theme <-   theme_minimal()+
+  theme(text=element_text(family="serif",size=12,color="black"),
+        legend.text = element_text(size=14),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3))
+theme_set(plot_theme) # set new default for all ggplots
+
+grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
+
+states <- st_as_sf(map("state", fill = TRUE, plot=FALSE))
+
+# ignore NAs
+dcrb_vms_tix_analysis_blwh %>% ggplot()+
+  geom_tile(aes(X_COORD,Y_COORD,fill=Blue_occurrence_mean),na.rm=T,alpha=0.8)+
+  geom_sf(data=states,col=NA,fill='gray50')+
+  scale_fill_viridis(na.value=NA,option="C")+
+  labs(x='',y='',fill='Mean blue whale occurrence')+
+  theme(legend.position = c(0.6,0.7),
+        title=element_text(size=13), 
+        legend.text=element_text(size=12)) +
+  coord_sf(xlim = c(-125.5,-117), ylim = c(33, 47), expand = FALSE)
+
+# if the above works, plots NAs only
+dcrb_vms_tix_analysis_blwh %>% 
+  filter(is.na(Blue_occurrence_mean == TRUE)) %>%
+  ggplot()+
+  geom_tile(aes(X_COORD,Y_COORD,fill=Blue_occurrence_mean),na.rm=T,alpha=0.8)+
+  geom_sf(data=states,col=NA,fill='gray50')+
+  scale_fill_viridis(na.value=NA,option="C")+
+  labs(x='',y='',fill='Mean blue whale occurrence')+
+  theme(legend.position = c(0.6,0.7),
+        title=element_text(size=13), 
+        legend.text=element_text(size=12)) +
+  coord_sf(xlim = c(-125.5,-117), ylim = c(33, 47), expand = FALSE)
 
 
 
