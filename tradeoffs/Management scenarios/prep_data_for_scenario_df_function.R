@@ -224,8 +224,6 @@ grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 
 states <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>% 
   st_transform(st_crs(grd))
 
-vms_bbox <- st_bbox(con_df_weekly_years_5km_CA)
-
 # this join take a few min
 grd_con_df_weekly_years_5km_CA_na_2014 <- grd %>%
   left_join(con_df_weekly_years_5km_CA) %>%
@@ -237,6 +235,10 @@ grd_con_df_weekly_years_5km_CA_na_2014 <- grd %>%
   
   #filter(yr == 2017 & mth == 01) %>%
   #filter(STATE == "CA")
+
+vms_bbox <- st_bbox(grd_con_df_weekly_years_5km_CA_na_2014 %>% 
+                      st_as_sf()
+)
 
 # plot whale blwh NAs occur
 ggplot() + 
