@@ -1,4 +1,4 @@
-# 032620
+# 033020
 # 022820
 
 #library(foreign)
@@ -49,6 +49,8 @@ for(y in unique(vessel_length_key_df$year)){
 }
 
 sum(is.na(dcrb_landings_length_all_years$FINAL_LENGTH))/nrow(dcrb_landings_length_all_years) # 7707 records, or 0.1% have NA for vessel length
+
+write_rds(dcrb_landings_length_all_years, "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS")
 
 dcrb_vms_tix_analysis <- dcrb_landings_length_all_years
 
@@ -180,6 +182,7 @@ humpback.sum.long <- humpback.sum.long %>%
 
 ### at long last, make the df we want
 
+# not joining blwh for now, until we fix coastal cells
 # can go back and make separate df's for small and large vessels
 
 start.time <- Sys.time()
@@ -188,7 +191,7 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     yr= lubridate::year(westcoastdate_notime),
     mth = lubridate::month(westcoastdate_notime)
     ) %>%
-  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  group_by(year, yr, crab_year, year_month, season, month, mth, month_as_numeric, week_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
@@ -197,13 +200,13 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
   ) %>%
   ungroup() %>%
-  left_join(BLWH_5km_year_mo) %>%
+  #left_join(BLWH_5km_year_mo) %>%
   left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
   mutate(
     normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
-    normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    #normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
     normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
-    blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+    #blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
     hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
   ) %>%
   select(-c(yr, mth, LONGITUDE, LATITUDE, area_km_lno))
@@ -211,20 +214,172 @@ Sys.time() - start.time
 
 glimpse(con_df_weekly_years_5km_CA)
 
+# subset to 2018 only since we don't have 2019 predictions yet
+con_df_weekly_2009_2018_5km_CA_hump <- con_df_weekly_years_5km_CA %>%
+  filter(year != 2019)
+
+glimpse(con_df_weekly_2009_2018_5km_CA_hump)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_weekly_2009_2018_5km_CA_hump, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_humpback_whales_grids.RDS")
+
+
+
+
+
+
+
+
+### inspecting the weekly data
+
+# need to decide on best approach for rescaling risk. try log transform
+
+# 033020. log10 transform, no plus group seems adequate. hump data are similarly skewed, we can just go with that. return to code above, and change to log10 for DCRBM VMS pings. still need to consider normalization to put VMS and hump data on same scale
+
+# will need to normalize the whale and pings data for risk calculations because pings range to >600 per grid cell but whale values generally fall 0-1
+# https://medium.com/@swethalakshmanan14/how-when-and-why-should-you-normalize-standardize-rescale-your-data-3f083def38ff
+# https://stackoverflow.com/questions/5665599/range-standardization-0-to-1-in-r
+#https://stackoverflow.com/questions/5468280/scale-a-series-between-two-points/5468527#5468527
+
+# the dist of num pings is highly skewed (fat tail on R). most cells have <25 pings per week
+with(con_df_weekly_years_5km_CA, table(Num_DCRB_VMS_pings)) # few instances of >1 5km cell with pings >100
+with(con_df_weekly_2009_2018_5km_CA_hump, table(Num_DCRB_VMS_pings)) # few instances of >1 5km cell with pings >100
+
+# make some histograms
+# straight hump output
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  ggplot(aes(H_Avg_Abund))+
+  geom_density(fill='#33638DFF')+
+  labs(x='H_Avg_Abund per 5km grid cell')
+
+# log10 hump output
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  mutate(
+    log10_H_Avg_Abund = log10(H_Avg_Abund + 1)
+  ) %>%
+  ggplot(aes(log10_H_Avg_Abund))+
+  geom_density(fill='#33638DFF')+
+  labs(x='log10 H_Avg_Abund per 5km grid cell')
+
+# straight DRCB VMS output
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  ggplot(aes(Num_DCRB_VMS_pings))+
+  geom_density(fill='#33638DFF')+
+  labs(x='DCRB VMS pings per 5km grid cell')
+
+# straight DRCB VMS output, zoomed into small values
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  ggplot(aes(Num_DCRB_VMS_pings))+
+  geom_density(fill='#33638DFF')+
+  labs(x='DCRB VMS pings per 5km grid cell') +
+  xlim(0,25)
+
+# normalized_Num_DCRB_VMS_pings. not any better
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  ggplot(aes(normalized_Num_DCRB_VMS_pings))+
+  geom_density(fill='#33638DFF')+
+  labs(x='Normalized DCRB VMS pings per 5km grid cell')
+
+# create a log10(x+1)
+con_df_weekly_2009_2018_5km_CA_hump %>%
+  mutate(
+    log10_Num_DCRB_VMS_pings = log10(Num_DCRB_VMS_pings + 1)
+  ) %>%
+  ggplot(aes(log10_Num_DCRB_VMS_pings))+
+  geom_density(fill='#33638DFF')+
+  labs(x='log10 DCRB VMS pings per 5km grid cell')
+
+# create a cubetransform
+con_df_weekly_2009_2018_5km_CA_hump %>%
+  mutate(
+    cubetransformed_Num_DCRB_VMS_pings = (Num_DCRB_VMS_pings)^(1/3)
+  ) %>%
+  ggplot(aes(cubetransformed_Num_DCRB_VMS_pings))+
+  geom_density(fill='#33638DFF')+
+  labs(x='cubetransformed DCRB VMS pings per 5km grid cell')
+
+# create a plus group and plot
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  mutate(
+    Num_DCRB_VMS_pings_plus_group = ifelse(Num_DCRB_VMS_pings >=100, 100, Num_DCRB_VMS_pings)
+  ) %>%
+  ggplot(aes(Num_DCRB_VMS_pings_plus_group))+
+  geom_density(fill='#33638DFF')+
+  labs(x='DCRB VMS pings with 100+ group per 5km grid cell')
+
+# create a log10(x+1) plus group and plot
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  mutate(
+    Num_DCRB_VMS_pings_plus_group = ifelse(Num_DCRB_VMS_pings >=100, 100, Num_DCRB_VMS_pings),
+    log10_Num_DCRB_VMS_pings_plus_group = log10(Num_DCRB_VMS_pings_plus_group + 1)
+  ) %>%
+  ggplot(aes(log10_Num_DCRB_VMS_pings_plus_group))+
+  geom_density(fill='#33638DFF')+
+  labs(x='log10 DCRB VMS pings with 100+ group per 5km grid cell')
+
+# create a cube transformed plus group and plot
+con_df_weekly_2009_2018_5km_CA_hump %>% 
+  mutate(
+    Num_DCRB_VMS_pings_plus_group = ifelse(Num_DCRB_VMS_pings >=100, 100, Num_DCRB_VMS_pings),
+    cubetransformed_Num_DCRB_VMS_pings_plus_group = (Num_DCRB_VMS_pings_plus_group)^(1/3)
+  ) %>%
+  ggplot(aes(cubetransformed_Num_DCRB_VMS_pings_plus_group))+
+  geom_density(fill='#33638DFF')+
+  labs(x='cubetransformed DCRB VMS pings with 100+ group per 5km grid cell')
+
+
 # check to see whether whale values are mostly NAs
-sum(is.na(con_df_weekly_years_5km_CA$Blue_occurrence_mean))/nrow(con_df_weekly_years_5km_CA)
-sum(is.na(con_df_weekly_years_5km_CA$H_Avg_Abund))/nrow(con_df_weekly_years_5km_CA)
+# blwh
+sum(is.na(con_df_weekly_years_5km_CA$Blue_occurrence_mean))/nrow(con_df_weekly_years_5km_CA) # 11%
+
+# humps
+sum(is.na(con_df_weekly_years_5km_CA$H_Avg_Abund))/nrow(con_df_weekly_years_5km_CA) # 6%
+View(con_df_weekly_years_5km_CA[which(is.na(con_df_weekly_years_5km_CA$H_Avg_Abund)==TRUE),]) # only 8 points prior to 2019 have NA values. need to add back 2019 hump predictions
+sum(is.na(con_df_weekly_2009_2018_5km_CA_hump$H_Avg_Abund))/nrow(con_df_weekly_2009_2018_5km_CA_hump) # 0.01%
+
 
 # make some maps of where NA values occur
-# blues
-
 grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
 
 # background map
 states <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>% 
   st_transform(st_crs(grd))
 
-# this join take a few min
+# humps
+# 2018 and NAs only
+# this join takes a few min
+grd_con_df_weekly_years_5km_CA_na_2010_hump <- grd %>%
+  left_join(con_df_weekly_years_5km_CA) %>%
+  filter(year == 2010) %>%
+  filter(is.na(H_Avg_Abund)) %>%
+  mutate(
+    empty_cell = 1
+  )
+
+write_rds(grd_con_df_weekly_years_5km_CA_na_2018_hump, "~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2018_hump.RDS")
+
+grd_con_df_weekly_years_5km_CA_na_2018_hump <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2018_hump.RDS")
+
+vms_bbox <- st_bbox(grd_con_df_weekly_years_5km_CA_na_2018_hump %>% 
+                      st_as_sf()
+)
+
+# plot where hump 2018 NAs occur
+p_hump_na_2018 <- ggplot() + 
+  geom_sf(data=grd_con_df_weekly_years_5km_CA_na_2018_hump, 
+          aes(fill=empty_cell)
+  ) +
+  geom_sf(data=states,col=NA,fill='gray50') +
+  ggtitle("2018 hump NAs") +
+  coord_sf(xlim=c(vms_bbox[1],vms_bbox[3]),ylim=c(vms_bbox[2],vms_bbox[4]))
+p_hump_na_2018
+ggsave(here::here('tradeoffs','hump_na_2018.png'),p_hump_na_2018,h=8,w=6)
+
+# blues
+# 2014 and NAs only
+# this join takes a few min
 grd_con_df_weekly_years_5km_CA_na_2014 <- grd %>%
   left_join(con_df_weekly_years_5km_CA) %>%
   filter(year == 2014) %>%
@@ -236,137 +391,94 @@ grd_con_df_weekly_years_5km_CA_na_2014 <- grd %>%
   #filter(yr == 2017 & mth == 01) %>%
   #filter(STATE == "CA")
 
+write_rds(grd_con_df_weekly_years_5km_CA_na_2014, "~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2014.RDS")
+
+grd_con_df_weekly_years_5km_CA_na_2014 <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2014.RDS")
+
 vms_bbox <- st_bbox(grd_con_df_weekly_years_5km_CA_na_2014 %>% 
                       st_as_sf()
 )
 
-# plot whale blwh NAs occur
-ggplot() + 
+# plot where blwh 2014 NAs occur
+p_blwh_na_2014 <- ggplot() + 
   geom_sf(data=grd_con_df_weekly_years_5km_CA_na_2014, 
           aes(fill=empty_cell)
   ) +
   geom_sf(data=states,col=NA,fill='gray50') +
   coord_sf(xlim=c(vms_bbox[1],vms_bbox[3]),ylim=c(vms_bbox[2],vms_bbox[4]))
+p_blwh_na_2014
+ggsave(here::here('tradeoffs','blwh_na_2014.png'),p_blwh_na_2014,h=8,w=6)
 
-
-
-
-
-### if and when satisfied, write out rds
-
-write_rds(con_df_weekly_years_5km_CA, 
-          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2019_fishtix_blue_humpback_whales_grids.RDS")
-
-
-
-
-# also need to decide on best approach for rescaling ris. try log transform
-# will need to normalize the whale and pings data for risk calculations because pings range to >600 per grid cell but whale values generally fall 0-1
-# https://medium.com/@swethalakshmanan14/how-when-and-why-should-you-normalize-standardize-rescale-your-data-3f083def38ff
-# https://stackoverflow.com/questions/5665599/range-standardization-0-to-1-in-r
-#https://stackoverflow.com/questions/5468280/scale-a-series-between-two-points/5468527#5468527
-# keep in mind that the dist of num pings is highly left skewed. most cells have <25 pings per week
-with(con_df_weekly_years_5km_CA, table(Num_DCRB_VMS_pings)) # few instances of >1 5km cell with pings >100
-
-
-
-
-### start here
-
-
-
-
-### troubleshooting whale join
-# blues
-dcrb_vms_tix_analysis_blwh <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  mutate(
-    yr= lubridate::year(westcoastdate_notime),
-    mth = lubridate::month(westcoastdate_notime)
-         ) %>%
-  left_join(BLWH_5km_year_mo) #, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="year_mo"))
-
-sum(is.na(dcrb_vms_tix_analysis_blwh$Blue_occurrence_mean))/nrow(dcrb_vms_tix_analysis_blwh) # 14% of 5km grid cells with VMS points have NA for blwh occurrence.
-
-# humps
-dcrb_vms_tix_analysis_hump <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))
-
-sum(is.na(dcrb_vms_tix_analysis_hump$normalized_H_Avg_Abund))/nrow(dcrb_vms_tix_analysis_hump) # 7% of 5km grid cells with VMS points have NA for hump density.
-
-#write_rds(dcrb_vms_tix_analysis_blwh, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/dcrb_vms_tix_analysis_blwh.rds")
-
-# make some figures to convince myself
-dcrb_vms_tix_analysis_blwh_na <- dcrb_vms_tix_analysis_blwh %>%
+# 2018 and NAs only
+# this join takes a few min
+grd_con_df_weekly_years_5km_CA_na_2018 <- grd %>%
+  left_join(con_df_weekly_years_5km_CA) %>%
+  filter(year == 2018) %>%
   filter(is.na(Blue_occurrence_mean)) %>%
   mutate(
     empty_cell = 1
   )
 
-grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
+#filter(yr == 2017 & mth == 01) %>%
+#filter(STATE == "CA")
 
-grd_blwh_na_ca <- grd %>%
-  left_join(dcrb_vms_tix_analysis_blwh_na) %>%
-  filter(yr == 2017 & mth == 01) %>%
-  filter(STATE == "CA")
+write_rds(grd_con_df_weekly_years_5km_CA_na_2018, "~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2018.RDS")
 
-states <- st_as_sf(map("state", fill = TRUE, plot=FALSE))
+grd_con_df_weekly_years_5km_CA_na_2018 <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_na_2018.RDS")
 
-ggplot() + 
-  geom_sf(data=grd_blwh_na_ca, 
+vms_bbox <- st_bbox(grd_con_df_weekly_years_5km_CA_na_2018 %>% 
+                      st_as_sf()
+)
+
+# plot where blwh 2018 NAs occur
+p_blwh_na_2018 <- ggplot() + 
+  geom_sf(data=grd_con_df_weekly_years_5km_CA_na_2018, 
           aes(fill=empty_cell)
-          ) +
-  geom_sf(data=states,col=NA,fill='gray50') # need to zoom into CA only
+  ) +
+  geom_sf(data=states,col=NA,fill='gray50') +
+  coord_sf(xlim=c(vms_bbox[1],vms_bbox[3]),ylim=c(vms_bbox[2],vms_bbox[4]))
+p_blwh_na_2018
+ggsave(here::here('tradeoffs','blwh_na_2018.png'),p_blwh_na_2018,h=8,w=6)
 
-# i think this is working. go back to line 140 and join both blue and hump whales at the same time, do the filtering and move on
+# 2018 and valid blwh values only
+# this join takes a few min
+grd_con_df_weekly_years_5km_CA_nona_2018 <- grd %>%
+  left_join(con_df_weekly_years_5km_CA) %>%
+  filter(year == 2018) %>%
+  filter(is.na(Blue_occurrence_mean)==FALSE) %>%
+  mutate(
+    empty_cell = 1
+  )
 
-# library(tidyverse)
-# library(magrittr)
-# library(sf)
-# library(here)
-# library(maps) # for map background
-# 
-# plot_theme <-   theme_minimal()+
-#   theme(text=element_text(family="serif",size=12,color="black"),
-#         legend.text = element_text(size=14),
-#         axis.title=element_text(family="sans",size=14,color="black"),
-#         axis.text=element_text(family="sans",size=8,color="black"),
-#         panel.grid.major = element_line(color="gray50",linetype=3))
-# theme_set(plot_theme) # set new default for all ggplots
-# 
-# grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
-# 
-# states <- st_as_sf(map("state", fill = TRUE, plot=FALSE))
-# 
-# # ignore NAs
-# dcrb_vms_tix_analysis_blwh %>% ggplot()+
-#   geom_tile(aes(X_COORD,Y_COORD,fill=Blue_occurrence_mean),na.rm=T,alpha=0.8)+
-#   geom_sf(data=states,col=NA,fill='gray50')+
-#   scale_fill_viridis(na.value=NA,option="C")+
-#   labs(x='',y='',fill='Mean blue whale occurrence')+
-#   theme(legend.position = c(0.6,0.7),
-#         title=element_text(size=13), 
-#         legend.text=element_text(size=12)) +
-#   coord_sf(xlim = c(-125.5,-117), ylim = c(33, 47), expand = FALSE)
-# 
-# # if the above works, plots NAs only
-# dcrb_vms_tix_analysis_blwh %>% 
-#   filter(is.na(Blue_occurrence_mean == TRUE)) %>%
-#   ggplot()+
-#   geom_tile(aes(X_COORD,Y_COORD,fill=Blue_occurrence_mean),na.rm=T,alpha=0.8)+
-#   geom_sf(data=states,col=NA,fill='gray50')+
-#   scale_fill_viridis(na.value=NA,option="C")+
-#   labs(x='',y='',fill='Mean blue whale occurrence')+
-#   theme(legend.position = c(0.6,0.7),
-#         title=element_text(size=13), 
-#         legend.text=element_text(size=12)) +
-#   coord_sf(xlim = c(-125.5,-117), ylim = c(33, 47), expand = FALSE)
-# 
-# 
+write_rds(grd_con_df_weekly_years_5km_CA_nona_2018, "~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_nona_2018.RDS")
+
+grd_con_df_weekly_years_5km_CA_nona_2018 <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/grd_con_df_weekly_years_5km_CA_nona_2018.RDS")
+
+vms_bbox <- st_bbox(grd_con_df_weekly_years_5km_CA_nona_2018 %>% 
+                      st_as_sf()
+)
+
+# plot where blwh 2018 non NAs occur
+p_blwh_nona_2018 <- ggplot() + 
+  geom_sf(data=grd_con_df_weekly_years_5km_CA_nona_2018, 
+          aes(fill=empty_cell)
+  ) +
+  geom_sf(data=states,col=NA,fill='gray50') +
+  ggtitle("2018 blwh not NAs") +
+  coord_sf(xlim=c(vms_bbox[1],vms_bbox[3]),ylim=c(vms_bbox[2],vms_bbox[4]))
+p_blwh_nona_2018
+ggsave(here::here('tradeoffs','blwh_nona_2018.png'),p_blwh_nona_2018,h=8,w=6)
+
+
+
+
 
 
 ####################################
 ####################################
 ####################################
+
+# graveyard
 
 # i replaced the code below with interpolated data processed through Owen's pipeline, and matched to blwh predictions matched to the 5km grid using a nearest neighbor function
 
