@@ -38,7 +38,7 @@ if (user == "JS") {
   flag.save <- FALSE
   
   # file.data.mnpreds <- paste0(rmd.path.local, "Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv")
-  file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv"
+  file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_2009-01-02to2019-08-14_Bidaily_dens.csv"
   file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 
                      "Non-confidential VMS data summarized by 5km grid cell 2009-18 All 3 states.csv")
@@ -72,8 +72,8 @@ The user should update this section as desired to specify 1) the dates for which
 # )
 
 df.key.ym <- tibble(
-  year = c(rep(2009, 2), sapply(2010:2017, rep, 12), rep(2018, 7)),
-  month = sprintf("%02d", c(11, 12, rep(1:12, 8), 1:7))
+  year = c(rep(2009, 2), sapply(2010:2018, rep, 12), rep(2019, 7)),
+  month = sprintf("%02d", c(11, 12, rep(1:12, 9), 1:7))
 )
 
 ### 2) Specify how to represent fishing effort, ie the column name from file.vms
@@ -100,11 +100,12 @@ grid.5km.geom <- st_read(file.data.grid)
 load(file.landerased)
 
 range.dates <- seq(
-  from = as.Date("2008-01-01"), to = as.Date("2018-08-01"), by = "months"
+  from = as.Date("2009-01-01"), to = as.Date("2019-08-01"), by = "months"
 )
 
 humpback.dens <- whalepreds_aggregate(
-  humpback.raw, 2:2481, 3:10, aggr.level = NULL, range.dates = range.dates, 
+  humpback.raw, 2:ncol(humpback.raw), 3:10, aggr.level = NULL, 
+  range.dates = range.dates, 
   se.calc = FALSE #Note: would need to change naming below if se.calc = TRUE
 )  %>% 
   set_names(c("GRID5KM_ID", paste0("H_Avg_", substr(names(.)[-1], 10, 16)))) %>% 

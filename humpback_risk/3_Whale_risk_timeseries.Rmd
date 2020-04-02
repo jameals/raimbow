@@ -36,8 +36,8 @@ source("User_script_local.R")
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  flag.save <- FALSE
-  wa.inc <- FALSE
+  flag.save <- TRUE
+  wa.inc <- TRUE
   file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
   file.risk <- "../raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
   file.grid.region <- "../raimbow-local/RDATA_files/Grid_region.Rdata"
