@@ -1,4 +1,4 @@
-# 033120
+# 040320
 # 022820
 
 rm(list = ls())
@@ -65,6 +65,8 @@ vessel_size_category_break <- 40
 winter_months <- c("November", "December", "January", "February", "March")
 crab_months <- c(1:7,11:12)
 removal_types <- c("COMMERCIAL (NON-EFP)", "COMMERCIAL(DIRECT SALES)", "UNKNOWN")
+max_speed <- 4.11556
+min_speed <- 0
 
 #ports <- c("CCA", "ERA", "BGA","BDA", "SFA", "MRA", "MNA")
 #region_south <- c(1035, 1036, 1037, 1038)
@@ -80,7 +82,7 @@ dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
   filter(removal_type_name %in% removal_types) %>%
   filter(CA_OFFSHOR != -999) %>%
   filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
-  filter(avg_speed_recalc <= 4.11556 & avg_speed_recalc >= 0) %>%
+  filter(avg_speed_recalc <= max_speed & avg_speed_recalc >= min_speed) %>%
   #filter(is.na(in_port) == TRUE) %>% # only removes ~4000 records
   #filter(port_group_code %in% ports) %>%
   mutate(#GRID5KM_ID = as.character(GRID5KM_ID),
@@ -93,6 +95,7 @@ dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
          month = lubridate::month(westcoastdate_notime, label=TRUE, abbr = FALSE),
          month_as_numeric = month(westcoastdate_notime),
          week_of_year = week(westcoastdate_notime),
+         day_of_year = yday(westcoastdate_notime),
          season = as.character(ifelse(month %in% winter_months, "Winter", "Spring-Summer")),
          crab_year = ifelse(
            month_as_numeric >= 11, paste0(year,"_",1+year), paste0(year - 1,"_",year)
@@ -104,7 +107,7 @@ dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
   filter(month_as_numeric %in% crab_months) %>%
   dplyr::select(
     Rec_ID, VMS_RECNO, drvid, Vessel_Size,
-    westcoastdate_notime, year, crab_year, year_month, month, month_as_numeric, week_of_year, season,
+    westcoastdate_notime, year, crab_year, year_month, month, month_as_numeric, week_of_year, day_of_year, season,
     GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, pacfin_port_code, port_group_code, DEPTH_CATM, NGDC_M,
     TARGET_lbs, TARGET_rev, DCRB_lbs, DCRB_revenue
     )
@@ -177,12 +180,13 @@ humpback.sum.long <- humpback.sum.long %>%
 # can go back and make separate df's for small and large vessels
 
 start.time <- Sys.time()
-con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+
+con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
   mutate(
     yr= lubridate::year(westcoastdate_notime),
     mth = lubridate::month(westcoastdate_notime)
-    ) %>%
-  group_by(year, yr, crab_year, year_month, season, month, mth, month_as_numeric, week_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  ) %>%
+  group_by(year, yr, crab_year, year_month, season, month, mth, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
@@ -195,25 +199,63 @@ con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
   left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
   mutate(
     normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
-    #normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
     normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
-    #blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+    blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
     hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
   ) %>%
   select(-c(yr, mth, LONGITUDE, LATITUDE, area_km_lno))
+
 Sys.time() - start.time
 
-glimpse(con_df_weekly_years_5km_CA)
+# con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+#   mutate(
+#     yr= lubridate::year(westcoastdate_notime),
+#     mth = lubridate::month(westcoastdate_notime)
+#     ) %>%
+#   group_by(year, yr, crab_year, year_month, season, month, mth, month_as_numeric, week_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+#   summarise(
+#     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+#     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+#     Num_DCRB_VMS_pings = n(),
+#     Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+#     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+#   ) %>%
+#   ungroup() %>%
+#   left_join(BLWH_5km_year_mo) %>%
+#   left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
+#   mutate(
+#     normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+#     #normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+#     normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
+#     #blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+#     hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
+#   ) %>%
+#   select(-c(yr, mth, LONGITUDE, LATITUDE, area_km_lno))
+
+
+#glimpse(con_df_weekly_years_5km_CA)
+glimpse(con_df_daily_years_5km_CA)
 
 # subset to 2018 only since we don't have 2019 predictions yet
-con_df_weekly_2009_2018_5km_CA <- con_df_weekly_years_5km_CA %>%
+# con_df_weekly_2009_2018_5km_CA <- con_df_weekly_years_5km_CA %>%
+#   filter(year != 2019)
+# 
+# glimpse(con_df_weekly_2009_2018_5km_CA)
+
+# subset to 2018 only since we don't have 2019 predictions yet
+con_df_daily_2009_2018_5km_CA <- con_df_daily_years_5km_CA %>%
   filter(year != 2019)
 
-glimpse(con_df_weekly_2009_2018_5km_CA)
+# glimpse(con_df_weekly_2009_2018_5km_CA)
+glimpse(con_df_daily_2009_2018_5km_CA)
 
 ### if and when satisfied, write out rds
 
-write_rds(con_df_weekly_2009_2018_5km_CA, 
+write_rds(con_df_daily_2009_2018_5km_CA, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+
+#write_rds(con_df_weekly_2009_2018_5km_CA, 
           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
 
 #####################################################
