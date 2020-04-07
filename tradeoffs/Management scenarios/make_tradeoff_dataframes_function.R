@@ -15,6 +15,17 @@
 root.dir <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/"
 load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
 
+con_df_weekly_years_5km_CA <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+glimpse(con_df_weekly_years_5km_CA)
+
+scenario_table <- read_rds(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table.RDS"
+)
+)
+scenario_table
+
 ####################################################################
 ####################################################################
 
@@ -27,17 +38,6 @@ load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
 # if max $ is X, then for each year we want $ in that year relative to max, and scaled to a %
 # if max risk is Y, then for relative risk we want max risk to be zero and complete closure to be 100% reduction
 # all relative metrics are relative to the year under consideration if both winter and spring DCRB season were open. based on revised approach 012420
-
-con_df_weekly_years_5km_CA <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
-glimpse(con_df_weekly_years_5km_CA)
-
-scenario_table <- read_rds(here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-  )
-)
-scenario_table
 
 # I am thinking we want to generate summary df's with the metrics below for time-areas open to fishing, and then a separate set of summary df's with these metrics for time-areas closed to fishing
 
