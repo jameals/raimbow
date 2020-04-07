@@ -37,7 +37,6 @@ if (user == "JS") {
 } else if (user == "SMW") {
   flag.save <- FALSE
   
-  # file.data.mnpreds <- paste0(rmd.path.local, "Outputs/WEAR5km_76_Model1_dens_2009-01-02to2018-07-30.csv")
   file.data.mnpreds <- "../raimbow-local/Outputs/WEAR5km_76_2009-01-02to2019-08-14_Bidaily_dens.csv"
   file.data.grid <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   file.vms <- paste0("../raimbow-local/Data/Non-confidential VMS monthly data/", 
@@ -212,7 +211,7 @@ risk.all <- humpback.all <- fish.all <-
 name.idx <- ncol(risk.all)
 
 #------------------------------------------------------------------------------
-### For loop; set path below for output if desired
+### For loop through year-month pairs
 for (i in 1: nrow(df.key)) {
   # Conditional for months where there is no fishing data, and thus no column
   #   in fishing data frame
