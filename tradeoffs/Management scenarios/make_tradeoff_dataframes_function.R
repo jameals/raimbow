@@ -51,6 +51,7 @@ scenario_table
 # sum_Num_DCRB_Vessels = sum(Num_DCRB_Vessels), # total crab vessel days in areas and times open to fishing
 # mean_Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels), # mean unique crab vessels per 5km grid cell in areas and times open to fishing
 # mean_normalized_Num_DCRB_VMS_pings = mean(normalized_Num_DCRB_VMS_pings), # mean crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# sum_normalized_Num_DCRB_VMS_pings = sum(normalized_Num_DCRB_VMS_pings), # sum crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
 
 # blue whales
 # Blue_occurrence_mean = mean(Blue_occurrence_mean), # mean probability of blue whale occurrence per 5km grid cell in areas and times open to fishing. note we do not need to retain normalized_Blue_occurrence_mean because it is already scaled 0-1
