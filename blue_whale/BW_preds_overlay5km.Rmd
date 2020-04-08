@@ -1,0 +1,124 @@
+---
+title: "Overlay blue whale predictions"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
+```
+
+## Introduction
+
+In this document, blue whale predictions from Abrahms et al. 2019 are overlaid onto the 5km, equal area grid using the overlay method (areal interpolation). This is done to minimize the amount of information lost, particularly in coastal grid cells.
+
+```{r, message=FALSE}
+library(dplyr)
+library(eSDM)
+library(sf)
+library(stars)
+
+
+source("User_script_local.R")
+
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  path.preds <- "../raimbow-local/Data/"
+  file.grid5kmlno <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+}
+```
+
+## Import blue whale predictions
+
+First we must import the blue whale predictions from 2009 - 2018
+
+```{r}
+path.preds1 <- paste0(path.preds, "Blue whale predictions - 2009-18")
+file.count <- length(list.files(path.preds1))
+files.grd1 <- list.files(path.preds1, pattern = ".grd")
+files.grd <- files.grd1[!grepl("aux", files.grd1)]
+
+list.stars <- lapply(paste(path.preds1, files.grd, sep = "/"), read_stars) #~120s
+names(list.stars) <- paste0("Bm_", files.grd)
+
+stopifnot(
+  all.equal(list.stars[[1]], read_stars(paste(path.preds1, files.grd[1], sep = "/")))
+)
+```
+
+Now we import predictions from 2019, combine the lists, convert the list to a stars object, and convert the stars object to an sf object.
+
+```{r}
+path.preds2 <- paste0(path.preds, "Blue whale predictions - 2018-19")
+file.count2 <- length(list.files(path.preds2))
+files.grd2 <- list.files(path.preds2, pattern = ".grd")
+files.grd2.noaux <- files.grd2[!grepl("aux", files.grd2)]
+files.grd2019 <- files.grd2.noaux[grepl("2019", files.grd2.noaux)]
+stopifnot(length(files.grd2019) == 227)
+
+list.stars2019 <- lapply(paste(path.preds2, files.grd2019, sep = "/"), read_stars) #
+names(list.stars2019) <- paste0("Bm_", files.grd2019)
+
+
+bm.list <- c(list.stars, list.stars2019)
+bm.stars<- do.call(c, bm.list)
+bm.sf <- st_as_sf(bm.stars) %>% 
+  purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% 
+  st_set_crs(4326)
+
+# bm.sf.area <- as.numeric(units::set_units(st_area(bm.sf), "km^2"))
+# summary(bm.sf.area)
+```
+
+## Overlay and write output
+
+The overlay takes ~1.5hrs on Sam's computer; it takes so much longer than the humpback overlay because the blue whale predictions go so much farther offshore. 
+
+```{r}
+# Load 5km ea grid, with land erased
+load(file.grid5kmlno)
+
+# Do overlay
+preds.names <- names(st_drop_geometry(bm.sf))
+system.time(tmp.over <- overlay_sdm( #~94min
+  st_geometry(grid.5km.lno), bm.sf, preds.names, 0
+))
+# save(tmp.over, file = "../raimbow-local/RDATA_files/Bm_tmp_over.RDATA")
+
+bm.preds.lno.5kmover <- tmp.over %>% 
+  mutate(GRID5KM_ID = grid.5km.lno$GRID5KM_ID, 
+         area_km_lno = as.numeric(units::set_units(st_area(geometry), "km^2"))) %>% 
+  select(GRID5KM_ID, area_km_lno, starts_with("Bm_"))
+
+# # Sanity check
+# identical(st_geometry(bm.preds.lno.5kmover), st_geometry(grid.5km.lno))
+# eSDM::model_abundance(bm.sf, "Bm_2009_01_05")
+# eSDM::model_abundance(bm.preds.lno.5kmover, "Bm_2009_01_05")
+
+# # Shows that all columns have NAs in the same rows
+# x.df <- st_drop_geometry(bm.preds.lno.5kmover) %>% select(starts_with("Bm_"))
+# x.na.which <- purrr::map(x.df, function(i) which(is.na(i)))
+# x.temp <- vapply(
+#   x.na.which, function(i, j) {identical(i, j)}, as.logical(1),
+#   j = x.na.which[[1]])
+# all(x.temp)
+
+# Remove rows with all NAs
+bm.preds.lno.5kmover.nona <- bm.preds.lno.5kmover %>% 
+  filter(!is.na(Bm_2009_01_01)) %>% 
+  st_drop_geometry()
+```
+
+Write to output
+
+```{r}
+readr::write_csv(
+  bm.preds.lno.5kmover.nona, 
+  path = "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.csv"
+)
+```
