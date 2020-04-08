@@ -1,0 +1,80 @@
+---
+title: "Overlay blue whale predictions"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
+```
+
+## Introduction
+
+The goal of this document is to aggregate the overlaid blue whale predictions by month, calculating both the mean and SD values for each grid cell for each year-month from Nov 2009 to the most recent predictions (currently June 2018)
+
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(sf)
+library(lubridate)
+
+
+source("User_script_local.R")
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  file.data.mnpreds <- "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.csv"
+  file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+}
+
+source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
+```
+
+## Aggregate by month and tidy
+
+```{r}
+# bm.raw <- read_csv(file.data.mnpreds) #~75s vs 13s for RDS
+bm.raw <- readRDS("../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.rds")
+
+# load(file.landerased)
+
+range.dates <- seq(
+  from = as.Date("2009-01-01"), to = as.Date("2019-08-01"), by = "months"
+)
+
+bm.aggr <- whalepreds_aggregate(
+  bm.raw, 3:ncol(bm.raw), 4:13, aggr.level = NULL, range.dates = range.dates, 
+  se.calc = TRUE
+) %>% 
+  set_names(c("GRID5KM_ID", "area_km_lno", paste0("Bm_", names(.)[-c(1:2)]))) %>% 
+  set_names(gsub("Avg_user_", "", names(.))) %>% 
+  set_names(gsub("user_", "", names(.)))
+
+# # Sam's musings
+# bm.raw.long <- bm.raw %>% 
+#   gather(key = "key", value = "Bm_occur", -GRID5KM_ID, -area_km_lno)
+# bm.aggr2 <- bm.raw.long %>% 
+#   mutate(date = ymd(substr(key, 4, 13)), 
+#          yr = year(date), 
+#          mon = month(date)) %>% 
+#   group_by(yr, mon)
+```
+
+Now we make the data long and extract means and SEs.
+
+```{r}
+bm.proc <- bm.aggr %>% 
+  gather(key = "key", value = "value", -GRID5KM_ID, -area_km_lno) %>% 
+  mutate(type = ifelse(grepl("SE", key), "se", "pred"),
+         date = ymd(ifelse(type == "se", substr(key, 7, 16), substr(key, 4, 13))))
+
+bm.proc2 <- bm.proc %>% 
+  select(-key) %>%
+  pivot_wider(names_from = type, values_from = value) %>% 
+  rename(Blue_occurrence_mean = pred, Blue_occurrence_se = se)
+
+saveRDS(bm.proc2, file = "../raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds")
+```

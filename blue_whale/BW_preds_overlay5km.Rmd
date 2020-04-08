@@ -114,11 +114,14 @@ bm.preds.lno.5kmover.nona <- bm.preds.lno.5kmover %>%
   st_drop_geometry()
 ```
 
-Write to output
+Write to output. Also write as an RDS for the sake of reading it back in later.
 
 ```{r}
 readr::write_csv(
   bm.preds.lno.5kmover.nona, 
   path = "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.csv"
 )
+saveRDS(bm.preds.lno.5kmover.nona, 
+        file = "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.rds")
+
 ```
