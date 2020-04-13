@@ -1,5 +1,5 @@
 # 041320
-# Make tradeoff plots
+# Make time series plots: plot_ts_byRegion_byPeriod_function
 
 # developed from "Simple early closure analysis.Rmd"
 # Include new variables relative risk and relative revenue reduction
@@ -95,120 +95,69 @@ library(ggrepel)
 ####################################################################
 ####################################################################
 
+####################################################################
+####################################################################
+
+# this function plots a time series of response_var (eg, H_Avg_Abund) for each time_col (eg year) for each region_var (eg CenCA and NorCA) and time_var (eg Winter and Spring)
+
+# https://stackoverflow.com/questions/5106782/use-of-ggplot-within-another-function-in-r
+plot_ts_byRegion_byPeriod_function <- function(
+  df, time_col, response_var, time_var, region_var, yaxis_lab) #
+{
+  p_tmp <- ggplot(
+    df, #df
+    aes_string(
+      x=time_col,
+      y=response_var,
+      colour=region_var
+      )
+  ) + 
+    geom_point(aes_string(shape=region_var), size=4) +
+    geom_line(aes_string(linetype=time_var)) + 
+    scale_colour_viridis(option="D", discrete=TRUE, begin=0.2, end=0.8)+
+    ylab(yaxis_lab) +
+    xlab("") +
+    theme_classic() +
+    theme(legend.title = element_blank(),
+          title = element_text(size = 26),
+          legend.text = element_text(size = 20),
+          legend.position = c(.15, .85),
+          axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+          axis.text.y = element_text(size = 18),
+          axis.title = element_text(size = 20),
+          strip.text = element_text(size=18))
+  p_tmp
+}
+
+# example implementation of code commented out below
+
+# Humpbacks
+# annually, by norCA vs cenCA
+# png(paste0(plot.filepath, "Summed_humpback_abundance_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+# plot_ts_byRegion_byPeriod_function(df=risk.df.annually.byCAregion, 
+#            time_col="year", 
+#            response_var="sum_H_Avg_Abund", 
+#            time_var = NULL,
+#            region_var="Region", 
+#            yaxis_lab="Predicted abundance of humpback whales" #,shape_var="Region"
+# )
+# dev.off()
+
+# Humpbacks
+# annually, by norCA vs cenCA and Winter/Spring
+# png(paste0(plot.filepath, "Summed_humpback_abundance_CA_cenCA_v_norCA_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
+# plot_ts_byRegion_byPeriod_function(df=risk.df.annually.byCAregion.bySeason, 
+#                               time_col="plotting.year", 
+#                               response_var="sum_H_Avg_Abund", 
+#                               time_var = "B_or_A_April1", 
+#                               region_var="Region", 
+#                               yaxis_lab="Predicted abundance of humpback whales" #,shape_var="Region"
+# )
+# dev.off()
 
 ####################################################################
 ####################################################################
 
-# START HERE to make this into a function
-  
-png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Hump_risk_pings_2009-18_annualmeans.png"), width = 10, height = 8, units = "in", res = 300)
-p_0_h <- ggplot(
-  df.tradeoff, #df
-  aes(
-    x=relative_dollars_DCRB,
-    y=relative_Hump_risk_pings,
-    #label=crab.year,
-    colour=Scenario_long
-  )
-) + # group=1 tells ggplot that there is only 1 group
-  geom_point(size=2, alpha=0.6) +
-  stat_err(spread = "se", mult = 2, width=.1) + 
-  stat_err(geom="point", size=7, alpha = 0.8) + 
-  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
-  #geom_text() + 
-  #geom_point(data=df.tradeoff.annualmeans, size=10) +
-  ylab("Relative reduction in risk to humpbacks") +
-  xlab("Relative revenue to the Dungeness crab fishery") +
-  guides(color = guide_legend("Scenario"),  shape = guide_legend("Scenario")) +
-  theme_classic() +
-  theme(
-    title = element_text(size = 26),
-    axis.text.x = element_text(size = 18),
-    axis.text.y = element_text(size = 18),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=18)
-  )
-p_0_h
-dev.off()
 
-png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Blue_risk_pings_2009-18_annualmeans.png"), width = 10, height = 8, units = "in", res = 300)
-p_0_b <- ggplot(
-  df.tradeoff, #df
-  aes(
-    x=relative_dollars_DCRB,
-    y=relative_Blue_risk_pings,
-    #label=crab.year,
-    colour=Scenario_long
-  )
-) + # group=1 tells ggplot that there is only 1 group
-  geom_point(size=2, alpha=0.6) +
-  stat_err(spread = "se", mult = 2, width=.1) + 
-  stat_err(geom="point", size=7, alpha = 0.8) + 
-  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
-  #geom_text() + 
-  #geom_point(data=df.tradeoff.annualmeans, size=10) +
-  ylab("Relative reduction in risk to blues") +
-  xlab("Relative revenue to the Dungeness crab fishery") +
-  guides(color = guide_legend("Scenario"),  shape = guide_legend("Scenario")) +
-  theme_classic() +
-  theme(
-    title = element_text(size = 26),
-    axis.text.x = element_text(size = 18),
-    axis.text.y = element_text(size = 18),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=18)
-  )
-p_0_b
-dev.off()
 
-png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Hump_risk_pings_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
-p_1 <- ggplot(
-  df.tradeoff, #df
-  aes(
-    x=relative_dollars_DCRB,
-    y=relative_Hump_risk_pings,
-    label=crab.year,
-    colour=Scenario_long
-  )
-) + # group=1 tells ggplot that there is only 1 group
-  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
-  geom_text_repel() + 
-  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
-  #scale_x_continuous(trans = "log10") +  
-  ylab("Relative reduction in risk to humpbacks") +
-  xlab("Relative revenue to the Dungeness crab fishery") +
-  theme_classic() +
-  theme(
-    title = element_text(size = 26),
-    axis.text.x = element_text(size = 18),
-    axis.text.y = element_text(size = 18),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=18))
-p_1
-dev.off()
 
-png(paste0(plot.filepath, "within_year_relative_dollars_DCRB_relative_Blue_risk_pings_2009-18.png"), width = 10, height = 8, units = "in", res = 300)
-p_2 <- ggplot(
-  df.tradeoff, #df
-  aes(
-    x=relative_dollars_DCRB,
-    y=relative_Blue_risk_pings,
-    label=crab.year,
-    colour=Scenario_long
-  )
-) + # group=1 tells ggplot that there is only 1 group
-  geom_point(size=2) + # aes_string(x=time_col,y=response_var,colour=grouping_var,shape=shape_var),
-  geom_text_repel() + 
-  #facet_wrap(as.formula(paste(time_var, "~", region_var)),nrow=2) +
-  #scale_x_continuous(trans = "log10") +  
-  ylab("Relative reduction in risk to blues") +
-  xlab("Relative revenue to the Dungeness crab fishery") +
-  theme_classic() +
-  theme(
-    title = element_text(size = 26),
-    axis.text.x = element_text(size = 18),
-    axis.text.y = element_text(size = 18),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=18))
-p_2
-dev.off()

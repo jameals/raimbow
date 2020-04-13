@@ -9,6 +9,8 @@
 
 ### REMOVE THIS CHUNK ONCE IT IS LINKED WITH OUTPUTS FROM SW'S FUNCTIONS
 
+library(tidyverse)
+
 # make df. Year, Scenario, hump risk, blue risk, DCRB $
 # scenarios: sq, CA, cenCA, BIAs
 
