@@ -4,7 +4,9 @@
 
 ###############################################################################
 # Input format for x: 'CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS'
-# Implement management efforts
+
+# Implement effect of management scenarios on fishing effort
+# See 'Readme for Funcs_management_scenarios.docx' for pseudocode
 effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL, 
                         delay.method.shift = NULL, delay.method.fidelity = NULL, 
                         closure.date = NULL, closure.region = NULL, 
@@ -54,7 +56,7 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     is.null(delay.method.fidelity) | (delay.method.fidelity %in% c("spatial", "temporal")), 
     is.null(closure.method) | (closure.method %in% c("remove", "temporal")), 
     inherits(closure.redist.percent, c("numeric", "integer")), 
-    between(closure.redist.percent, 0, 100)
+    dplyr::between(closure.redist.percent, 0, 100)
   )
   
   
@@ -75,25 +77,34 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
          paste(unique(c(names.x.fish, names.x.info)), collapse = ", "))
   
   
+  # Check at least one ~valid management scenario is specified
+  if (is.null(delay.date) & is.null(closure.date)) 
+    stop("At least one of delay.date or closure.date must not be NULL")
+  
+  if (!is.null(delay.date) & !is.null(closure.date)) 
+    if (delay.date >= closure.date)
+      stop("delay.date must come before closure.date")
+  
+  
   # Check date values are for the 2009-10 fishing season, and date-region interplay
   if (!is.null(delay.date)) { 
     if (length(delay.region) != 1 | is.null(delay.region)) 
-      stop("If there is a delayed opening date, ", 
+      stop("If a delayed opening date is provided, ", 
            "delay.region must not be NULL and of length 1")
     
-    if (!between(delay.date, as.Date("2009-11-15"), as.Date("2010-10-31")))
+    if (!between(delay.date, as.Date("2009-11-15"), as.Date("2010-07-31")))
       stop("delay.date must be for the 2009-10 fishing season, ", 
-           "i.e. it must be between 2009-11-15 and 2010-10-31")
+           "meaning it must be between 2009-11-15 and 2010-07-31")
   }
   
   if (!is.null(closure.date)) { 
     if (length(closure.region) != 1 | is.null(closure.region)) 
-      stop("If there is an early closure date, ", 
+      stop("If an early closure date is provided, ", 
            "closure.region must not be NULL and of length 1")
     
-    if (!between(closure.date, as.Date("2009-11-15"), as.Date("2010-10-31")))
+    if (!between(closure.date, as.Date("2009-11-15"), as.Date("2010-07-31")))
       stop("closure.date must be for the 2009-10 fishing season, ", 
-           "i.e. it must be between 2010-11-15 and 2010-10-31")
+           "meaning it must be between 2010-11-15 and 2010-07-31")
   }
   
   
@@ -104,22 +115,25 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
          paste(region.acc, collapse = ", "))
   
   if (!is.null(delay.date))
-    if (delay.region %in% region.acc)
+    if (!(delay.region %in% region.acc))
       stop("Both delay.region and closure.region must either be NULL or one of:\n", 
            paste(region.acc, collapse = ", "))
   
-  if (!is.null(closure.region))
-    if (closure.region %in% region.acc)
+  if (!is.null(closure.date))
+    if (!(closure.region %in% region.acc))
       stop("Both delay.region and closure.region must either be NULL or one of:\n", 
            paste(region.acc, collapse = ", "))
   
   
   #----------------------------------------------------------------------------
-  # Process data - extract 'constant' data (data that won't be changed)
+  ### Initial processing
+  
+  # Extract 'constant' data (data that won't be changed)
   x.other <- x %>% 
     select(!!names.x.info) %>% 
     distinct()
   
+  # Select for and do initial processing of effort data
   x.fish <- x %>% 
     select(!!names.x.fish) %>%
     mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
@@ -134,6 +148,21 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
              round_date(date_decimal(decimal_record), unit = "day")), 
            year_month = func_year_mo(date_record)) %>% 
     select(-year, -day_of_year, -date_record_orig, -decimal_record)
+  
+  # For each crab season and Region, get end dates
+  x.fish.end.summ <- x.fish %>% 
+    group_by(crab_year, Region) %>% 
+    summarise(season_date_end = max(date_record), 
+              region_date_end = as.Date(paste0(
+                substr(unique(crab_year), 6, 9), 
+                ifelse(unique(Region) == "CenCA", "-07-15", "-07-31")
+              ))
+    ) %>% 
+    ungroup()
+  
+  if (any(x.fish.end.summ$season_date_end > x.fish.end.summ$region_date_end))
+    warning("Some season end dates come after the region end dates")
+  
   
   #####
   # sum(x.fish$date_record != x.fish$date_record_orig) #1797
@@ -183,7 +212,7 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
                                               sep = "-"))) %>% 
       group_by(crab_year, Region) %>% 
       summarise(season_date_st = min(date_record), #Ok since date_records altered above
-                season_date_end = max(date_record), 
+                # season_date_end = max(date_record), 
                 season_open_mgmt = unique(season_open_mgmt), 
                 season_days_delayed = as.numeric(difftime(season_open_mgmt, season_date_st, 
                                                           units = "days"))) %>% 
@@ -218,17 +247,17 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     } 
     
     x.fish.redist <- x.fish.redist %>% 
-      left_join(select(season.mgmt.summ, crab_year, Region, season_date_end), 
-                by = c("crab_year", "Region")) %>% 
-      mutate(date_past_season_end = date_record > season_date_end) %>% 
+      # left_join(select(season.mgmt.summ, crab_year, Region, season_date_end), 
+      #           by = c("crab_year", "Region")) %>% 
+      # mutate(date_past_season_end = date_record > season_date_end) %>% 
       select(crab_year, GRID5KM_ID, Region, year_month, date_record, 
              BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn, 
              DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, 
-             Num_Unique_DCRB_Vessels, 
-             date_past_season_end)
+             Num_Unique_DCRB_Vessels)
+    # date_past_season_end)
     
     x.fish.delay <- x.d.fish.nofilter %>% 
-      mutate(date_past_season_end = NA) %>% 
+      # mutate(date_past_season_end = FALSE) %>% 
       select(!!names(x.fish.redist)) %>% 
       bind_rows(x.fish.redist) %>% 
       arrange(crab_year, Region, day(date_record), GRID5KM_ID)
@@ -288,19 +317,25 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     #------------------------------------------------------
     # Remove or redistribute closed effort in applicable region(s)
     if (closure.method == "remove") {
-      x.fish.closure2 <- x.fish.c2 %>% 
+      x.fish.closure <- x.fish.c2 %>% 
         filter(!record_closed) %>% 
+        # mutate(date_past_season_end = date_record > season_close_mgmt) %>% 
         select(-season_close_mgmt, -record_post_closure_date, 
                -date_record_old, -year_month_old, 
-               -record_closed, -region_toshiftto) %>% 
-        mutate(date_past_season_end = FALSE)
+               -record_closed, -region_toshiftto)
       
     } else if (closure.method == "temporal") {
+      # df.tmp <- x.fish.c1 %>% 
+      #   select(crab_year, Region, season_close_mgmt) %>% 
+      #   distinct()
+      
       x.fish.closure <- x.fish.c2 %>% 
         mutate(record_toshift = record_closed, 
                record_base = !record_toshift & record_post_closure_date) %>% 
-        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent) %>% 
-        mutate(date_past_season_end = FALSE)
+        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent) #%>% 
+        # left_join(df.tmp, by = c("crab_year", "Region")) %>% 
+        # mutate(date_past_season_end = date_record > season_close_mgmt) %>% 
+        # select(-season_close_mgmt)
     }
     
     rm(x.fish.c1, x.fish.c2)
@@ -310,15 +345,14 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
   #----------------------------------------------------------------------------
   # Final checks and formatting
   x.fish.closure %>% 
-    mutate(tmp_chr = paste0(substr(crab_year, 6, 9), ifelse(Region == "CenCA", "-07-15", "-07-31")),
-           tmp_region_end = as.Date(tmp_chr), 
-           date_past_region_end = date_record > tmp_region_end, 
+    left_join(x.fish.end.summ, by = c("crab_year", "Region")) %>% 
+    mutate(date_past_season_end = date_record > season_date_end, 
+           date_past_region_end = date_record > region_date_end, 
            year = year(date_record), 
            month_as_numeric = month(date_record), 
            month = factor(month(date_record, label = TRUE, abbr = FALSE), 
                           levels = levels(x$month)), 
            day_of_year = yday(date_record)) %>% 
-    select(-tmp_chr, -tmp_region_end) %>% 
     left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
 }
 
@@ -367,13 +401,8 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
   # z.perc: numeric; default is 100. Percentage multiplier for effort
   #   to be redistributed
   
-  # TODO: Add a multiplier:
-  # My best estimate based on the 2015–20 16 crab season is that only about 10% of the effort will redistribute between districts. 
-  # So if it is easy to build in a scalar that redistributes only a percentage of the effort from one region to the other, 
-  # that would be amazing
-  
   ### Output: 
-  # TODO
+  # A data frame with fishing effort data redistributed temporally  
   
   z.col <- enquo(z.col)
   
