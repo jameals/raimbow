@@ -39,11 +39,12 @@ scenario_table
 # I am thinking we want to generate summary df's with the metrics below for time-areas open to fishing, and then a separate set of summary df's with these metrics for time-areas closed to fishing
 
 # column headers for output df from SW functions: 
-# year(2009:2019), crab_year (2009-10 to 2018-19), full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (lag or pile up), delay_redistribution (cell fidelity or temporal fidelity)
+# year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (lag or pile up), delay_redistribution (cell fidelity or temporal fidelity)
 
 # DCRB fishing activity
 # sum_DCRB_lbs = sum(DCRB_lbs), # total pounds crab landed in areas and times open to fishing
 # sum_DCRB_rev = sum(sum_DCRB_rev), # total $ crab landed in areas and times open to fishing
+# normalized_Num_DCRB_VMS_pings = , # Num_DCRB_VMS_pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
 # sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), # total crab VMS pings in areas and times open to fishing
 # sum_Num_DCRB_Vessels = sum(Num_DCRB_Vessels), # total crab vessel days in areas and times open to fishing
 # mean_Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels), # mean unique crab vessels per 5km grid cell in areas and times open to fishing
@@ -96,9 +97,10 @@ scenario_table
 # all relative metrics are relative to the year under consideration if both winter and spring DCRB season were open. based on revised approach 012420
 
 # column headers for output df from SW functions: 
-# year(2009:2019), crab_year (2009-10 to 2018-19), full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (NA, lag, pile up), delay_redistribution (NA, cell fidelity, temporal fidelity)
+# year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (NA, lag, pile up), delay_redistribution (NA, cell fidelity, temporal fidelity)
 
-# JS stopped here 0740 040820. need to start at line 102 and try function with a toy df
+# JS stopped here 0740 040820. need to start at line 102 and try function with a toy df. 
+# 041320 also need to make sure grouping by crab.year deals with month stuff 
 
 # inputs to function: hump_risk_metric (original or normalized), blwh_risk_metric (original or normalized),  pings_metric (original or normalized),  
 tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metric) 
