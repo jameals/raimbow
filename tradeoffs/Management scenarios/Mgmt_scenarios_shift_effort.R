@@ -4,26 +4,26 @@
 # library(dplyr)
 # library(lubridate)
 # 
-# x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>% 
-#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>% 
+# x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
+#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
 #   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
 # 
-# x.orig <- readRDS("../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>% 
-#   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>% 
+# x.orig <- readRDS("../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
+#   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>%
 #   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
 # rm(x.hump)
 # 
 # 
 # # source("tradeoffs/Management scenarios/Funcs_management_scenarios.R")
 # d <- effort_mgmt(
-#   x = x.orig, 
-#   delay.date = as.Date("2009-12-15"), 
-#   delay.region = "CenCA", 
-#   delay.method.shift = "lag", 
-#   delay.method.fidelity = "temporal", 
-#   closure.date = as.Date("2010-04-01), 
-#   closure.region = "CenCA", 
-#   closure.method = "temporal", 
+#   x = x.orig,
+#   delay.date = as.Date("2009-12-15"),
+#   delay.region = "CenCA",
+#   delay.method.shift = "lag",
+#   delay.method.fidelity = "temporal",
+#   closure.date = as.Date("2010-04-01"),
+#   closure.region = "CenCA",
+#   closure.method = "temporal",
 #   closure.redist.percent = 10
 # )
 
@@ -518,7 +518,13 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
     set_names(list.nas.names)
   
   # 2) Get effort that needs to be redistributed, but has no base for redistribution
-  z.redist.nobase <- z.use %>% filter(record_toshift, !(id %in% z.id.base))
+  z.redist.nobase <- z.use %>% 
+    filter(record_toshift, !(id %in% z.id.base)) %>% 
+    mutate(DCRB_lbs = DCRB_lbs * z.perc, 
+           DCRB_rev = DCRB_rev * z.perc, 
+           Num_DCRB_VMS_pings = Num_DCRB_VMS_pings * z.perc, 
+           Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
+           Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
   
   # 3) Get effort that is not being redistributed
   z.tostay <- z.use %>% filter(!record_toshift)
@@ -582,7 +588,7 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
   # Sanity check 2: amount of effort in mataches amount of effort out
   func.sanity2 <- function(zzz, z.perc) {
     sum(z.new[[zzz]]) + 
-      (1-z.perc) / z.perc * (sum(z.redist.base[[zzz]] + sum(z.redist.nobase[[zzz]])))
+      (1-z.perc) / z.perc * (sum(z.redist.base[[zzz]]) + sum(z.redist.nobase[[zzz]]))
   }
   stopifnot(
     isTRUE(all.equal(func.sanity2("DCRB_lbs", z.perc), sum(z$DCRB_lbs))),
