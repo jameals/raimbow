@@ -1,60 +1,20 @@
 ###############################################################################
-# Script for running effort_mgmt() function (currently set to Sam's or Jameal's file paths)
-
-# library(dplyr)
-# library(lubridate)
-# 
-# # SW
-# x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
-#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
-#   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
-# #JS
-# x.hump <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds") %>%
-#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
-#   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
-# 
-# #SW
-# x.orig <- readRDS("../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
-#   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>%
-#   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
-# rm(x.hump)
-# #JS
-# x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
-#   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>%
-#   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
-# rm(x.hump)
-# 
-# 
-# # source("tradeoffs/Management scenarios/Funcs_management_scenarios.R") # this is a relict, right Sam? so we can delete?
-# d <- effort_mgmt(
-#   x = x.orig,
-#   delay.date = as.Date("2009-12-15"),
-#   delay.region = "CenCA",
-#   delay.method.shift = "lag",
-#   delay.method.fidelity = "temporal",
-#   closure.date = as.Date("2010-04-01"),
-#   closure.region = "CenCA",
-#   closure.method = "temporal",
-#   closure.redist.percent = 10
-# )
-
-# error 042420
-# Error in redist_temporal(., Num_DCRB_VMS_pings, "closure", closure.redist.percent) : 
-#   isTRUE(all.equal(func.sanity2("DCRB_lbs", z.perc), sum(z$DCRB_lbs))) is not TRUE
-# Called from: redist_temporal(., Num_DCRB_VMS_pings, "closure", closure.redist.percent)
-# Browse[1]> 
-
-###############################################################################
 # Input format for x: 'CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS'
+
+# See 'Mgmt_testing' files for sample code
 
 # Implement effect of management scenarios on fishing effort
 # See 'Readme for Funcs_management_scenarios.docx' for pseudocode
-effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL, 
+effort_mgmt <- function(x, early.data.method, 
+                        delay.date = NULL, delay.region = NULL, 
                         delay.method.shift = NULL, delay.method.fidelity = NULL, 
                         closure.date = NULL, closure.region = NULL, 
                         closure.method = NULL, closure.redist.percent = 100) {
   ### Inputs
   # x: data.frame; expected to has same format at data frame from Jameal
+  # early.data.method: character; either "pile" or "remove". Represents what to
+  #   to do with data that comes before minimum season start date, 
+  #   e.g. data that comes before 15 Nov in Central CA
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
   #   If NULL, then there is no delayed opening
   #   If NULL, then there is no early (e.g. spring) closure
@@ -92,11 +52,15 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
   # Basic checks
   stopifnot(
     inherits(x, "data.frame"), 
+    identical(early.data.method, "pile") | identical(early.data.method, "remove"), 
     is.null(delay.date) | inherits(delay.date, "Date"), 
     is.null(closure.date) | inherits(closure.date, "Date"), 
-    is.null(delay.method.shift) | (delay.method.shift %in% c("pile", "lag")), 
-    is.null(delay.method.fidelity) | (delay.method.fidelity %in% c("spatial", "temporal")), 
-    is.null(closure.method) | (closure.method %in% c("remove", "temporal")), 
+    is.null(delay.method.shift) | 
+      identical(delay.method.shift, "pile") | identical(delay.method.shift, "lag"), 
+    is.null(delay.method.fidelity) | 
+      identical(delay.method.fidelity, "spatial") | identical(delay.method.fidelity, "temporal"), 
+    is.null(closure.method) | 
+      identical(closure.method, "remove") |identical(closure.method, "temporal"), 
     inherits(closure.redist.percent, c("numeric", "integer")), 
     dplyr::between(closure.redist.percent, 0, 100)
   )
@@ -110,13 +74,21 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
   )
   names.x.info <- c(
-    "crab_year", "year_month", "GRID5KM_ID", "BAND_25KM", "BAND_50KM", "CA_OFFSHOR", "Region", 
-    "Blue_occurrence_mean", "Blue_occurrence_sd", "normalized_Blue_occurrence_mean", 
+    "crab_year", "year_month", "GRID5KM_ID", "Region", 
+    "BAND_25KM", "BAND_50KM", #"CA_OFFSHOR", 
+    "Blue_occurrence_mean", "Blue_occurrence_se",
     "Humpback_dens_mean", "Humpback_dens_se"
   )
   if (!(all(names.x.info %in% names(x)) & all(names.x.fish %in% names(x))))
     stop("x does not contain all required columns:\n", 
          paste(unique(c(names.x.fish, names.x.info)), collapse = ", "))
+  
+  if ("CA_OFFSHOR" %in% names(x))
+    warning("Column CA_OFFSHOR is ignored because some grid cells ", 
+            "are in two offshore regions, ", 
+            "which creates duplicate year_month - grid cell pairs ", 
+            "that cause issues when joining",
+            immediate. = TRUE)
   
   
   # Check at least one ~valid management scenario is specified
@@ -170,26 +142,47 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
   #----------------------------------------------------------------------------
   ### Initial processing
   
+  # Determine year-month + GRID5KM_ID pairs in original data
+  #   This must be before 'early effort' processing
+  x.id <- unique(paste(x$year_month, x$GRID5KM_ID, sep = "-"))
+  
   # Extract 'constant' data (data that won't be changed)
   x.other <- x %>% 
     select(!!names.x.info) %>% 
     distinct()
   
-  # Select for and do initial processing of effort data
-  x.fish <- x %>% 
+  # Select for and do initial processing of effort data - shift or drop early data
+  x.fish.pre <- x %>% 
     select(!!names.x.fish) %>%
     mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
                                               ifelse(Region == "CenCA", "11-15", "12-01"), 
                                               sep = "-")), 
            year = as.numeric(substr(year_month, 1, 4)), 
-           date_record_orig = as.Date(day_of_year - 1, origin = as.Date(paste0(year, "-01-01"))), 
-           decimal_record = ifelse(date_record_orig < season_date_st_min, 
-                                   decimal_date(season_date_st_min), 
-                                   decimal_date(date_record_orig)), 
-           date_record = as.Date(
-             round_date(date_decimal(decimal_record), unit = "day")), 
-           year_month = func_year_mo(date_record)) %>% 
-    select(-year, -day_of_year, -date_record_orig, -decimal_record)
+           date_record_orig = as.Date(day_of_year - 1, 
+                                      origin = as.Date(paste0(year, "-01-01"))))
+  
+  
+  if (early.data.method == "pile") {
+    x.fish <- x.fish.pre %>% 
+      mutate(decimal_record = ifelse(date_record_orig < season_date_st_min, 
+                                     decimal_date(season_date_st_min), 
+                                     decimal_date(date_record_orig)), 
+             date_record = as.Date(
+               round_date(date_decimal(decimal_record), unit = "day")), 
+             year_month = func_year_mo(date_record)) %>% 
+      select(-decimal_record)
+    
+  } else if (early.data.method == "remove") {
+    x.fish <- x.fish.pre %>% 
+      filter(date_record_orig >= season_date_st_min) %>% 
+      mutate(date_record = date_record_orig)
+    
+  } else {
+    stop("Invalid argument passed to early.data.method")
+  }
+  
+  x.fish <- x.fish %>% select(-year, -day_of_year, -date_record_orig)
+  
   
   # For each crab season and Region, get end dates
   x.fish.end.summ <- x.fish %>% 
@@ -203,10 +196,12 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     ungroup()
   
   if (any(x.fish.end.summ$season_date_end > x.fish.end.summ$region_date_end))
-    warning("Some season end dates come after the region end dates")
+    warning("In original data, ", 
+            "some season end dates come after the region end dates")
   
   
   #####
+  # # With pile method for early.data.method
   # sum(x.fish$date_record != x.fish$date_record_orig) #1797
   # identical(
   #   which(x.fish$date_record_orig < x.fish$season_date_st_min), 
@@ -254,7 +249,6 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
                                               sep = "-"))) %>% 
       group_by(crab_year, Region) %>% 
       summarise(season_date_st = min(date_record), #Ok since date_records altered above
-                # season_date_end = max(date_record), 
                 season_open_mgmt = unique(season_open_mgmt), 
                 season_days_delayed = as.numeric(difftime(season_open_mgmt, season_date_st, 
                                                           units = "days"))) %>% 
@@ -289,17 +283,12 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     } 
     
     x.fish.redist <- x.fish.redist %>% 
-      # left_join(select(season.mgmt.summ, crab_year, Region, season_date_end), 
-      #           by = c("crab_year", "Region")) %>% 
-      # mutate(date_past_season_end = date_record > season_date_end) %>% 
       select(crab_year, GRID5KM_ID, Region, year_month, date_record, 
              BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn, 
              DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, 
              Num_Unique_DCRB_Vessels)
-    # date_past_season_end)
     
     x.fish.delay <- x.d.fish.nofilter %>% 
-      # mutate(date_past_season_end = FALSE) %>% 
       select(!!names(x.fish.redist)) %>% 
       bind_rows(x.fish.redist) %>% 
       arrange(crab_year, Region, day(date_record), GRID5KM_ID)
@@ -361,23 +350,15 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
     if (closure.method == "remove") {
       x.fish.closure <- x.fish.c2 %>% 
         filter(!record_closed) %>% 
-        # mutate(date_past_season_end = date_record > season_close_mgmt) %>% 
         select(-season_close_mgmt, -record_post_closure_date, 
                -date_record_old, -year_month_old, 
                -record_closed, -region_toshiftto)
       
     } else if (closure.method == "temporal") {
-      # df.tmp <- x.fish.c1 %>% 
-      #   select(crab_year, Region, season_close_mgmt) %>% 
-      #   distinct()
-      
       x.fish.closure <- x.fish.c2 %>% 
         mutate(record_toshift = record_closed, 
                record_base = !record_toshift & record_post_closure_date) %>% 
-        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent) #%>% 
-        # left_join(df.tmp, by = c("crab_year", "Region")) %>% 
-        # mutate(date_past_season_end = date_record > season_close_mgmt) %>% 
-        # select(-season_close_mgmt)
+        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent)
     }
     
     rm(x.fish.c1, x.fish.c2)
@@ -386,7 +367,7 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
   
   #----------------------------------------------------------------------------
   # Final checks and formatting
-  x.fish.closure %>% 
+  x.out <- x.fish.closure %>% 
     left_join(x.fish.end.summ, by = c("crab_year", "Region")) %>% 
     mutate(date_past_season_end = date_record > season_date_end, 
            date_past_region_end = date_record > region_date_end, 
@@ -394,8 +375,26 @@ effort_mgmt <- function(x, delay.date = NULL, delay.region = NULL,
            month_as_numeric = month(date_record), 
            month = factor(month(date_record, label = TRUE, abbr = FALSE), 
                           levels = levels(x$month)), 
-           day_of_year = yday(date_record)) %>% 
+           day_of_year = yday(date_record), 
+           id = paste(year_month, GRID5KM_ID, sep = "-")) %>% 
     left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
+  
+  if (nrow(x.out) > nrow(x.fish.closure))
+    stop("Error when joinging shifted effort and identifier variables")
+  
+  
+  x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
+  x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
+  if (!all(x.out.id %in% x.id))
+    warning(paste0("Some of the effort was shifted into novel ", 
+                   "year_month - grid cell spaces, e.g. ", 
+                   head(x.out.id[!(x.out.id %in% x.id)], 1), 
+                   ", either by piling 'early' effort or ", 
+                   "using delayed opening/early closure shifts.", 
+                   "These rows will have NA identifier variables, ", 
+                   "such as whale prediction values or CA offshore region"))
+  
+  x.out
 }
 
 
@@ -534,7 +533,13 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
     set_names(list.nas.names)
   
   # 2) Get effort that needs to be redistributed, but has no base for redistribution
-  z.redist.nobase <- z.use %>% filter(record_toshift, !(id %in% z.id.base))
+  z.redist.nobase <- z.use %>% 
+    filter(record_toshift, !(id %in% z.id.base)) %>% 
+    mutate(DCRB_lbs = DCRB_lbs * z.perc, 
+           DCRB_rev = DCRB_rev * z.perc, 
+           Num_DCRB_VMS_pings = Num_DCRB_VMS_pings * z.perc, 
+           Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
+           Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
   
   # 3) Get effort that is not being redistributed
   z.tostay <- z.use %>% filter(!record_toshift)
@@ -598,7 +603,7 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
   # Sanity check 2: amount of effort in mataches amount of effort out
   func.sanity2 <- function(zzz, z.perc) {
     sum(z.new[[zzz]]) + 
-      (1-z.perc) / z.perc * (sum(z.redist.base[[zzz]] + sum(z.redist.nobase[[zzz]])))
+      (1-z.perc) / z.perc * (sum(z.redist.base[[zzz]]) + sum(z.redist.nobase[[zzz]]))
   }
   stopifnot(
     isTRUE(all.equal(func.sanity2("DCRB_lbs", z.perc), sum(z$DCRB_lbs))),
