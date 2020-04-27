@@ -1,0 +1,65 @@
+---
+title: "Compare original and overlaid blue whale predictions"
+author: "Sam Woodman"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
+```
+
+## Introduction
+
+In this document, we compare the original and overlaid (onto 5km grid) blue whale predictions. Specifically, we...
+
+```{r cars}
+library(dplyr)
+library(sf)
+library(tidyr)
+```
+
+## Loading and processing
+
+First we load the two sets of predictions and the 5km grid
+
+```{r}
+x.orig.sf <- readRDS("../raimbow-local/Outputs/BlueWhale_orig_sf.rds")
+x.over <- readRDS("../raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds")
+
+load("../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA")
+
+x.over.sf.cent <- x.over %>% 
+  filter(!duplicated(GRID5KM_ID)) %>% 
+  left_join(st_centroid(grid.5km.lno)) %>% 
+  st_sf()
+```
+
+Now we determine which of original predictions overlapped with the centroids of the 5km grid
+
+```{r}
+d <- st_intersects(x.orig.sf, st_geometry(x.over.sf.cent))
+d.len <- sapply(d, length)
+
+x.orig.sf.int <- x.orig.sf[d.len > 0, ]
+x.orig.sf.int.long <- pivot_longer(
+  st_drop_geometry(x.orig.sf.int), cols = starts_with("Bm_"), 
+  names_to = "col_name", values_to = "pred"
+) %>% 
+  mutate(date = as.Date(substr(col_name, 4, 13), format = "%Y_%m_%d"))
+
+x.orig.sf.int.long.filt <- x.orig.sf.int.long %>% 
+  filter(between(date, min(x.over$date), max(x.over$date)))
+```
+
+## Histograms of predictions
+
+```{r pressure, echo=FALSE}
+hist(x.orig.sf.int.long.filt$pred, breaks = seq(0, 1, by = 0.01))
+hist(x.over$Blue_occurrence_mean, breaks = seq(0, 1, by = 0.01))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

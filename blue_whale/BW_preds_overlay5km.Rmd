@@ -71,6 +71,8 @@ bm.sf <- st_as_sf(bm.stars) %>%
   purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% 
   st_set_crs(4326)
 
+# saveRDS(bm.sf, file = "../raimbow-local/Outputs/BlueWhale_orig_sf.rds")
+
 # bm.sf.area <- as.numeric(units::set_units(st_area(bm.sf), "km^2"))
 # summary(bm.sf.area)
 ```

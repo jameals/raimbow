@@ -32,17 +32,17 @@ effort_plot_time <- function(x) {
 }
 
 
-# library(dplyr)
-# library(lubridate)
-# 
-# x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>% 
-#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>% 
-#   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
-# 
-# x.orig <- readRDS("../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>% 
-#   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>% 
-#   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
-# rm(x.hump)
+library(dplyr)
+library(lubridate)
 
-# effort_plot_time(x.orig)
+x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
+  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+  select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
+
+x.orig <- readRDS("../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
+  select(-year_mo, -contains("risk"), -contains("H_Avg_Abund")) %>%
+  left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
+rm(x.hump)
+
+effort_plot_time(x.orig)
 # ggsave("../raimbow-local/Plots/DC_Effort_daily.png", width = 12, height = 8)
