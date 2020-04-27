@@ -108,22 +108,33 @@ effort_mgmt <- function(x, early.data.method,
     "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", 
     "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
   )
+  if (!all(names.x.fish %in% names(x)))
+    stop("x does not contain all required columns:\n", 
+         paste(names.x.fish, collapse = ", "))
+  
   names.x.info <- c(
     "crab_year", "year_month", "GRID5KM_ID", "Region", 
     "BAND_25KM", "BAND_50KM", #"CA_OFFSHOR", 
     "Blue_occurrence_mean", "Blue_occurrence_se",
     "Humpback_dens_mean", "Humpback_dens_se"
   )
-  if (!(all(names.x.info %in% names(x)) & all(names.x.fish %in% names(x))))
-    stop("x does not contain all required columns:\n", 
-         paste(unique(c(names.x.fish, names.x.info)), collapse = ", "))
-  
-  if ("CA_OFFSHOR" %in% names(x))
-    warning("Column CA_OFFSHOR is ignored because some grid cells ", 
-            "are in two offshore regions, ", 
-            "which creates duplicate year_month - grid cell pairs ", 
-            "that cause issues when joining",
-            immediate. = TRUE)
+  if (!all(names.x.info %in% names(x))) {
+    x.info <- FALSE
+    names.x.info.no <- names.x.info[!(names.x.info %in% names(x))]
+    message("x does not contain the following info column(s), ", 
+            "and thus the shifted effort data will not have associated ", 
+            "information (e.g. whale predictions):\n", 
+            paste(names.x.info.no, collapse = ", "))
+    
+  } else {
+    x.info <- TRUE
+    if ("CA_OFFSHOR" %in% names(x))
+      warning("Column CA_OFFSHOR is ignored because some grid cells ", 
+              "are in two offshore regions, ", 
+              "which creates duplicate year_month - grid cell pairs ", 
+              "that cause issues when joining",
+              immediate. = TRUE)
+  }
   
   
   # Check at least one ~valid management scenario is specified
@@ -182,9 +193,11 @@ effort_mgmt <- function(x, early.data.method,
   x.id <- unique(paste(x$year_month, x$GRID5KM_ID, sep = "-"))
   
   # Extract 'constant' data (data that won't be changed)
-  x.other <- x %>% 
-    select(!!names.x.info) %>% 
-    distinct()
+  if (x.info) {
+    x.other <- x %>% 
+      select(!!names.x.info) %>% 
+      distinct()
+  }
   
   # Select for and do initial processing of effort data - shift or drop early data
   x.fish.pre <- x %>% 
@@ -411,23 +424,26 @@ effort_mgmt <- function(x, early.data.method,
            month = factor(month(date_record, label = TRUE, abbr = FALSE), 
                           levels = levels(x$month)), 
            day_of_year = yday(date_record), 
-           id = paste(year_month, GRID5KM_ID, sep = "-")) %>% 
-    left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
+           id = paste(year_month, GRID5KM_ID, sep = "-")) 
   
-  if (nrow(x.out) > nrow(x.fish.closure))
-    stop("Error when joinging shifted effort and identifier variables")
-  
-  
-  x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
-  x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
-  if (!all(x.out.id %in% x.id))
-    warning(paste0("Some of the effort was shifted into novel ", 
-                   "year_month - grid cell spaces, e.g. ", 
-                   head(x.out.id[!(x.out.id %in% x.id)], 1), 
-                   ", either by piling 'early' effort or ", 
-                   "using delayed opening/early closure shifts.", 
-                   "These rows will have NA identifier variables, ", 
-                   "such as whale prediction values or CA offshore region"))
+  if (x.info) {
+    x.out <- x.out %>% 
+      left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
+    
+    if (nrow(x.out) > nrow(x.fish.closure))
+      stop("Error when joining shifted effort and identifier variables")
+    
+    x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
+    x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
+    if (!all(x.out.id %in% x.id))
+      warning(paste0("Some of the effort was shifted into novel ", 
+                     "year_month - grid cell spaces, e.g. ", 
+                     head(x.out.id[!(x.out.id %in% x.id)], 1), 
+                     ", either by piling 'early' effort or ", 
+                     "using delayed opening/early closure shifts.", 
+                     "These rows will have NA identifier variables, ", 
+                     "such as whale prediction values or CA offshore region"))
+  }
   
   x.out
 }
