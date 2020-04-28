@@ -1,0 +1,117 @@
+---
+title: "Fishing effort - season start date"
+author: "Sam Woodman"
+date: "4/27/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../../")
+```
+
+## Introduction
+
+This document explores differnt methods for determining the start date of each Dungeness crab fishing season. The impetus for this document was fishing records from before the season start date, particularly when there were management actions. For instance, during the 2011-12 fishing season, Northern CA was delayed until Jan 15. However, there were a couple of fishing records in early December, and these rogue records can effect effort shifting when using `effort_mgmt`.
+
+## Initial processing
+
+Most of this code was copied from `effort_mgmt()`
+
+```{r}
+library(dplyr)
+
+source("User_script_local.R")
+file.path <- if (user == "SMW") {
+  file.path <- "../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
+} else if (user == "JS") {
+  NULL
+}
+
+
+x <- readRDS(file.path) %>%
+  select(-year_mo, -contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_")) 
+
+names.x.fish <- c(
+  "crab_year", "GRID5KM_ID", "Region", "year_month", "day_of_year",
+  "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", 
+  "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
+)
+
+x.fish.pre <- x %>% 
+  select(!!names.x.fish) %>%
+  mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
+                                            ifelse(Region == "CenCA", "11-15", "12-01"), 
+                                            sep = "-")), 
+         year = as.numeric(substr(year_month, 1, 4)), 
+         date_record_orig = as.Date(day_of_year - 1, 
+                                    origin = as.Date(paste0(year, "-01-01"))))
+
+
+# Use 'remove' method from function
+x.fish <- x.fish.pre %>% 
+  filter(date_record_orig >= season_date_st_min) %>% 
+  mutate(date_record = date_record_orig) %>% 
+  select(-year, -day_of_year, -date_record_orig)
+```
+
+## Explore different ways of calculating season start dates
+
+Now we want to compare different methods for determining the season start date. Specifically:
+
+1. The minimum date for that crab season
+2. The date that 1% (of the total value for that season) of a specified metric was reached
+3. The date from (2) minus some number of days
+
+First we do some prep
+
+```{r}
+# Set percent value for which to calculate date
+perc.val <- 0.01
+
+# Get sum of fishing effort values by season
+eff.summ <- x.fish %>% 
+  group_by(crab_year, Region) %>% 
+  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum)
+
+#
+exp.summ <- x.fish %>% 
+  arrange(Region, date_record) %>% 
+  group_by(crab_year, Region, date_record) %>%
+  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum) %>%
+  group_by(crab_year, Region) %>% 
+  mutate_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), cumsum) %>% 
+  left_join(eff.summ, by = c("crab_year", "Region")) %>% 
+  mutate(DCRB_lbs_perc = DCRB_lbs.x / DCRB_lbs.y, 
+         DCRB_rev_perc = DCRB_rev.x / DCRB_rev.y, 
+         Num_DCRB_VMS_pings_perc = Num_DCRB_VMS_pings.x / Num_DCRB_VMS_pings.y, 
+         Num_DCRB_Vessels_perc = Num_DCRB_Vessels.x / Num_DCRB_Vessels.y, 
+         Num_Unique_DCRB_Vessels_perc = Num_Unique_DCRB_Vessels.x / Num_Unique_DCRB_Vessels.y)
+
+exp.summ.first <- exp.summ %>% 
+  # already grouped
+  summarise(DCRB_lbs_dt = date_record[min(which(DCRB_lbs_perc > perc.val))], 
+            DCRB_rev_dt = date_record[min(which(DCRB_rev_perc > perc.val))], 
+            Num_DCRB_VMS_pings_dt = date_record[min(which(Num_DCRB_VMS_pings_perc > perc.val))], 
+            Num_DCRB_Vessels_dt = date_record[min(which(Num_DCRB_Vessels_perc > perc.val))], 
+            Num_Unique_DCRB_Vessels_dt = date_record[min(which(Num_Unique_DCRB_Vessels_perc > perc.val))])
+```
+
+And now we can get the start dates using the various methodologies
+
+```{r}
+# For each crab season and Region, get start dates
+x.fish.st.summ <- x.fish %>% 
+  group_by(crab_year, Region) %>% 
+  summarise(season_date_possible_min = unique(season_date_st_min), 
+            season_date_record_min = min(date_record)) %>% 
+  left_join(exp.summ.first, by = c("crab_year", "Region")) %>% 
+  mutate(diff_days = difftime(Num_DCRB_VMS_pings_dt, season_date_record_min, 
+                              unit = "days")) %>% 
+  select(crab_year, Region, season_date_possible_min, season_date_record_min, 
+         Num_DCRB_VMS_pings_dt, diff_days)
+
+x.fish.st.summ
+```
