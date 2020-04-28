@@ -3,8 +3,8 @@ title: "Compare humpback predictions with entanglement reports"
 author: "Sam Woodman"
 date: "1/9/2020"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -44,7 +44,7 @@ Also of note - currently we are using the Mn predictions overlaid on Blake's 5km
 load("../raimbow-local/RDATA_files/Whale_risk.Rdata")
 rm(df.key, fish.all.num, risk.all.dens)
 
-z <- humpback.all.dens %>% 
+z <- humpback.abund %>% #humpback.all.dens %>% 
   gather(key = "col_name", value = "H_Abund", 
          -GRID5KM_ID, -LONGITUDE, -LATITUDE, -area_km_lno) %>% 
   mutate(Year = as.numeric(substr(col_name, 4, 7)), 
@@ -77,7 +77,7 @@ Load 5km grid, make `sf` objects of the Mn preds and entanglement data, and visu
 grid.5km <- st_read("../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp") %>% 
   select(GRID5KM_ID)
 
-humpback.sf <- humpback.all.dens %>% 
+humpback.sf <- humpback.abund %>% 
   left_join(grid.5km, by = "GRID5KM_ID") %>% 
   select(starts_with("Mn_"), geometry) %>% 
   st_as_sf(agr = "constant")

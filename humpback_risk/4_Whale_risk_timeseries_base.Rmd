@@ -3,12 +3,13 @@ title: "Whale risk time series - baseline risk"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Intro
@@ -23,7 +24,7 @@ This analysis currently is done using all CA data, and non-confidential OR and W
 library(gridExtra)
 library(tidyverse)
 
-source("Whale_risk_timeseries_funcs.R")
+source("humpback_risk/funcs_whale_risk_timeseries.R")
 
 wa.inc <- TRUE #Currently this does nothing as functions do not set wa.flag
 save.flag <- TRUE
