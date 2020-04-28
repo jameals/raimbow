@@ -17,12 +17,12 @@ effort_mgmt <- function(x, early.data.method,
   #   e.g. data that comes before 15 Nov in Central CA
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
   #   If NULL, then there is no delayed opening
-  #   If NULL, then there is no early (e.g. spring) closure
   # delay.region: character; one of NULL, "All", "CenCA", "BIA"
   # delay.method.shift: character; if used, either "pile" or "lag"
   # delay.method.fidelity: character; method of redistribution, 
   #   if used, either "spatial" (fidelity) or "temporal" (fidelity)
   # closure.date: Date; date for which the fishery will close in 2009-10 crab season
+  #   If NULL, then there is no early (e.g. spring) closure
   # closure.region: character; see 'delay.region'
   # closure.method: character; if used, either "remove" or "temporal (fidelity)
   # closure.redist.percent: numeric; default is 100. If used, 
@@ -165,10 +165,11 @@ effort_mgmt <- function(x, early.data.method,
   }
   
   # Select for and do initial processing of effort data - shift or drop early data
+  browser() # baby steps for JS to understand function
   x.fish.pre <- x %>% 
     select(!!names.x.fish) %>%
     mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
-                                              ifelse(Region == "CenCA", "11-15", "12-01"), 
+                                              ifelse(Region == "CenCA", "11-15", "12-01"), # JS: we want to define this above so it is easy to modify
                                               sep = "-")), 
            year = as.numeric(substr(year_month, 1, 4)), 
            date_record_orig = as.Date(day_of_year - 1, 
@@ -281,7 +282,7 @@ effort_mgmt <- function(x, early.data.method,
       as.Date(paste0(substr(x.fish.shifted$crab_year, 6, 9), "-10-31"))
     )
     if (!all(x.fish.shifted$date_record_old %within% check.int)) 
-      warning("Error in dealyed opening date shifting - shifted out of crab season")
+      warning("Error in delayed opening date shifting - shifted out of crab season")
     rm(check.int)
     
     
@@ -371,7 +372,7 @@ effort_mgmt <- function(x, early.data.method,
       x.fish.closure <- x.fish.c2 %>% 
         mutate(record_toshift = record_closed, 
                record_base = !record_toshift & record_post_closure_date) %>% 
-        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent)
+        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent) # function below
     }
     
     rm(x.fish.c1, x.fish.c2)
