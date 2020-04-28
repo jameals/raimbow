@@ -36,8 +36,8 @@ x.orig <- x.orig.noinfo %>%
   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
 
 
-x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>% 
-  left_join(x.reg.key)
+x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
+  # left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
 

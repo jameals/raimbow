@@ -11,8 +11,11 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   # ym.min: character; maximum year_month value for which to calculate risk
   
   ### Output
-  # Data frame with effort data, whale predictions, and risk values 
-  #   grouped by year_month and summed
+  # Data frame with effort data and risk values grouped by year_month/Region 
+  #   and summed. 
+  # Whale predictions are not included because this function does not use 
+  #   complete() to fill out year_months and grid cells, and thus the 
+  #   whale predictions would not be comparable
   
   
   x.col <- enquo(x.col)
@@ -66,16 +69,26 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
            paste(names.y, collapse = ", "))
   }
   
+  # Test that grid cells only are assigned to one region
+  test.df <- x %>% 
+    group_by(GRID5KM_ID) %>% 
+    summarise(reg_count = length(unique(Region)))
+  if (!all(test.df$reg_count == 1)) {
+    grid.mult <- test.df$GRID5KM_ID[test.df$reg_count > 1]
+    stop("The following grid cell(s) in x are assigned to multiple regions\n:", 
+         paste(grid.mult, collapse = ", "))
+  }
+  rm(test.df)
+  
   
   #----------------------------------------------------------------------------
   ### Processing
   
   # Summarize whale preds by year_month and Region
-  # TODO:
-  y.summ <- y %>% 
-    group_by(year_month, Region) %>% 
-    summarise(Blue_occurrence_mean = sum(Blue_occurrence_mean, na.rm = TRUE), 
-              Humpback_dens_mean = sum(Humpback_dens_mean, na.rm = TRUE))
+  # y.summ <- y %>% 
+  #   group_by(year_month, Region) %>% 
+  #   summarise(Blue_occurrence_mean = sum(Blue_occurrence_mean, na.rm = TRUE), 
+  #             Humpback_dens_mean = sum(Humpback_dens_mean, na.rm = TRUE))
   
   # Get all year_months for which to calculate risk
   ym.seq.date <- seq(
@@ -94,42 +107,59 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
             "range provided via ym.min and ym.max", 
             immediate. = TRUE)
   
+  browser()
   x.ym <- x %>% 
     filter(year_month %in% ym.seq) %>% 
-    group_by(year_month, GRID5KM_ID) %>% 
-    summarise(Region = length(unique(Region)), 
-              effort_val = sum(!!x.col), 
+    group_by(year_month, GRID5KM_ID, Region) %>% 
+    summarise(effort_val = sum(!!x.col), 
               DCRB_lbs = sum(DCRB_lbs), 
               DCRB_rev = sum(DCRB_rev), 
               Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), 
               Num_DCRB_Vessels = sum(Num_DCRB_Vessels), 
               Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% 
     ungroup()
+    # complete(year_month = ym.seq, GRID5KM_ID, 
+    #          fill = list(effort_val = 0, DCRB_lbs = 0, DCRB_rev = 0, 
+    #                      Num_DCRB_VMS_pings = 0, Num_DCRB_Vessels = 0, 
+    #                      Num_Unique_DCRB_Vessels = 0)) %>% 
+    # arrange(year_month, GRID5KM_ID)
   
   
-  # Add in whale predictions and calculate risk. Check there is no NA risk
+  # Add in whale predictions and calculate risk
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(risk_humpback = effort_val * Humpback_dens_mean, 
            risk_blue = effort_val * Blue_occurrence_mean)
   
-  # # TODO: make this more informative
-  # if (any(is.na(x.ym.risk$risk_humpback) | is.na(x.ym.risk$risk_blue)))
-  #   stop("The whale predictions do not span the range provided via ym.min and ym.max; please fix this")
+  # Print messages if any whale predictions are NA
+  if (any(is.na(x.ym.risk$risk_humpback)))
+    message("Note that the following grid cells have NA humpback predictions ", 
+            "for at least some year_month/grid cell combos with fishing effort:\n", 
+            paste(sort(unique(x.ym.risk$GRID5KM_ID[is.na(x.ym.risk$Humpback_dens_mean)])), 
+                  collapse = ", "))
   
+  if (any(is.na(x.ym.risk$risk_blue)))
+    message("Note that the following grid cells have NA blue whale predictions ", 
+            "for at least some year_month/grid cell combos with fishing effort:\n", 
+            paste(sort(unique(x.ym.risk$GRID5KM_ID[is.na(x.ym.risk$Blue_occurrence_mean)])), 
+                  collapse = ", "))
   
-  # Summarize risk by year_month
+  # Summarize risk by year_month and Region
+  #   To summarize whale preds, would need to complete() grid cells and year_months
+  if (any(is.na(x.ym.risk$Region))) 
+    stop("NA regions - error in effort processing")
+  
   risk.summ <- x.ym.risk %>% 
-    group_by(year_month) %>% 
+    group_by(year_month, Region) %>% 
     summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:risk_blue), 
                  sum, na.rm = TRUE) %>% 
     ungroup() %>% 
-    complete(year_month = ym.seq, 
-             fill = list(DCRB_lbs = 0, DCRB_rev = 0, Num_DCRB_VMS_pings = 0, 
-                         Num_DCRB_Vessels = 0, Num_Unique_DCRB_Vessels = 0, 
-                         risk_humpback = 0, risk_blue = 0)) %>% 
-    arrange(year_month) %>% 
-    left_join(y.summ, by = "year_month") %>% 
+    # complete(year_month = ym.seq, 
+    #          fill = list(DCRB_lbs = 0, DCRB_rev = 0, Num_DCRB_VMS_pings = 0, 
+    #                      Num_DCRB_Vessels = 0, Num_Unique_DCRB_Vessels = 0, 
+    #                      risk_humpback = 0, risk_blue = 0)) %>% 
+    # arrange(year_month) %>% 
+    # left_join(y.summ, by = "year_month") %>% 
     mutate(crab_year = func_crab_year(year_month)) %>% 
     select(year_month, crab_year, everything())
   
