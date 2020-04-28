@@ -63,8 +63,6 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
 
 #####
 
-# source("tradeoffs/Management scenarios/Funcs_management_scenarios.R") # this is a relict, right Sam? so we can delete?
-
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d.noinfo <- effort_mgmt(
   x = x.orig.noinfo,
