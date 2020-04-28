@@ -107,7 +107,6 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
             "range provided via ym.min and ym.max", 
             immediate. = TRUE)
   
-  browser()
   x.ym <- x %>% 
     filter(year_month %in% ym.seq) %>% 
     group_by(year_month, GRID5KM_ID, Region) %>% 
