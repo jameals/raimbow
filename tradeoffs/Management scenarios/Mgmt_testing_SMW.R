@@ -28,6 +28,13 @@ x.orig.noinfo <- x.orig.noinfo %>%
 x.reg.key <- x.orig.noinfo %>% 
   select(Region, GRID5KM_ID) %>% 
   distinct()
+
+
+# ^ Shows that several grid cells have multiple 'CAOFFSHOR' specifications
+x.off.key.test <- x.orig.noinfo %>% 
+  select(CA_OFFSHOR, GRID5KM_ID) %>% 
+  distinct()
+x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ]
 #####
 
 
@@ -49,8 +56,8 @@ d.noinfo <- effort_mgmt(
   delay.date = as.Date("2009-11-15"),
   delay.region = "CenCA",
   delay.method.shift = "pile",
-  delay.method.fidelity = "spatial",
-  closure.date = as.Date("2010-04-01"),
+  delay.method.fidelity = "temporal",
+  closure.date = as.Date("2010-05-01"),
   closure.region = "BIA",
   closure.method = "temporal",
   closure.redist.percent = 10

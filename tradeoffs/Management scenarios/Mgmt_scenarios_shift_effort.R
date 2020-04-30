@@ -10,6 +10,10 @@ effort_mgmt <- function(x, early.data.method,
                         delay.method.shift = NULL, delay.method.fidelity = NULL, 
                         closure.date = NULL, closure.region = NULL, 
                         closure.method = NULL, closure.redist.percent = 100) {
+  
+  # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
+  #   Ideally this could be used in conjuncture with delayed openinga and early closures
+  
   ### Inputs
   # x: data.frame; expected to has same format at data frame from Jameal
   # early.data.method: character; either "pile" or "remove". Represents what to
@@ -17,14 +21,14 @@ effort_mgmt <- function(x, early.data.method,
   #   e.g. data that comes before 15 Nov in Central CA
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
   #   If NULL, then there is no delayed opening
-  # delay.region: character; one of NULL, "All", "CenCA", "BIA"
-  # delay.method.shift: character; if used, either "pile" or "lag"
+  # delay.region: character; if not NULL, then one of "All", "CenCA", "BIA"
+  # delay.method.shift: character; if not NULL, either "pile" or "lag"
   # delay.method.fidelity: character; method of redistribution, 
   #   if used, either "spatial" (fidelity) or "temporal" (fidelity)
   # closure.date: Date; date for which the fishery will close in 2009-10 crab season
   #   If NULL, then there is no early (e.g. spring) closure
   # closure.region: character; see 'delay.region'
-  # closure.method: character; if used, either "remove" or "temporal (fidelity)
+  # closure.method: character; if not NULL, then either "remove" or "temporal (fidelity)
   # closure.redist.percent: numeric; default is 100. If used, 
   #   percentage of effort to redistribute that is kept
   
@@ -289,7 +293,7 @@ effort_mgmt <- function(x, early.data.method,
     #------------------------------------------------------
     # Step 4) redistribute effort using spatial or temporal fidelity
     x.fish.redist <- if (delay.method.fidelity == "temporal") {
-      redist_temporal(x.fish.shifted, Num_DCRB_VMS_pings, "delay")
+      redistribute_temporal(x.fish.shifted, Num_DCRB_VMS_pings, "delay", delay.region)
     } else if (delay.method.fidelity == "spatial") {
       x.fish.shifted %>% select(-starts_with("season_")) 
     } else {
@@ -372,7 +376,8 @@ effort_mgmt <- function(x, early.data.method,
       x.fish.closure <- x.fish.c2 %>% 
         mutate(record_toshift = record_closed, 
                record_base = !record_toshift & record_post_closure_date) %>% 
-        redist_temporal(Num_DCRB_VMS_pings, "closure", closure.redist.percent) # function below
+        redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
+                              closure.redist.percent) # function below
     }
     
     rm(x.fish.c1, x.fish.c2)
@@ -451,11 +456,12 @@ delay_date_shift <- function(y, delay.method.shift) {
 
 ###############################################################################
 # Temporal fidelity redistribution function
-redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
+redistribute_temporal <- function(z, z.col, z.type, z.reg, z.perc = 100) {
   ### Inputs
   # z: data frame; Contains columns described in z.cols.nec
   # z.col: symbol, column name to use for redistribution percentages
   # z.type: either "delay" or "closure"
+  # z.reg: character; region that effort is being shifted out of
   # z.perc: numeric; default is 100. Percentage multiplier for effort
   #   to be redistributed
   
@@ -480,6 +486,7 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
     all(z.cols.nec %in% names(z)),
     all(z.cols.dcrb %in% names(z)), 
     z.type %in% c("delay", "closure"), 
+    z.reg %in% c("CenCA", "NorCA", "BIA", "All"), 
     between(z.perc, 0, 100)
   )
   
@@ -557,6 +564,11 @@ redist_temporal <- function(z, z.col, z.type, z.perc = 100) {
            Num_DCRB_VMS_pings = Num_DCRB_VMS_pings * z.perc, 
            Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
            Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
+  
+  if (z.reg == "BIA" & nrow(z.redist.nobase) > 0)
+    warning("Some effort being redistributed out of the BIAs does not have ", 
+            "a base for redistribution - ", 
+            "this will result in an incorrect output file")
   
   # 3) Get effort that is not being redistributed
   z.tostay <- z.use %>% filter(!record_toshift)
