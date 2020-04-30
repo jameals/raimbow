@@ -152,7 +152,7 @@ effort_mgmt <- function(x, early.data.method,
   
   #----------------------------------------------------------------------------
   ### Initial processing
-  
+  #browser()
   # Determine year-month + GRID5KM_ID pairs in original data
   #   This must be before 'early effort' processing
   x.id <- unique(paste(x$year_month, x$GRID5KM_ID, sep = "-"))
@@ -165,7 +165,7 @@ effort_mgmt <- function(x, early.data.method,
   }
   
   # Select for and do initial processing of effort data - shift or drop early data
-  browser() # baby steps for JS to understand function
+  #browser() # baby steps for JS to understand function
   x.fish.pre <- x %>% 
     select(!!names.x.fish) %>%
     mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
@@ -259,7 +259,7 @@ effort_mgmt <- function(x, early.data.method,
     # Step 2) determine the number of days each season would have been delayed
     season.mgmt.summ <- x.d.fish.filter %>% 
       mutate(mgmt_yr = if (year(delay.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             season_open_mgmt = as.Date(paste(mgmt_yr, month(delay.date), day(delay.date), 
+             season_open_mgmt = as.Date(paste(mgmt_yr, lubridate::month(delay.date), day(delay.date), 
                                               sep = "-"))) %>% 
       group_by(crab_year, Region) %>% 
       summarise(season_date_st = min(date_record), #Ok since date_records altered above
@@ -322,7 +322,7 @@ effort_mgmt <- function(x, early.data.method,
     # Determine which records come after closure date
     x.fish.c1 <- x.fish.delay %>% 
       mutate(mgmt_yr = if (year(closure.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             season_close_mgmt = as.Date(paste(mgmt_yr, month(closure.date), day(closure.date), 
+             season_close_mgmt = as.Date(paste(mgmt_yr, lubridate::month(closure.date), day(closure.date), 
                                                sep = "-")), 
              record_post_closure_date = date_record >= season_close_mgmt, 
              date_record_old = date_record, 
@@ -386,8 +386,8 @@ effort_mgmt <- function(x, early.data.method,
     mutate(date_past_season_end = date_record > season_date_end, 
            date_past_region_end = date_record > region_date_end, 
            year = year(date_record), 
-           month_as_numeric = month(date_record), 
-           month = factor(month(date_record, label = TRUE, abbr = FALSE), 
+           month_as_numeric = lubridate::month(date_record), 
+           month = factor(lubridate::month(date_record, label = TRUE, abbr = FALSE), 
                           levels = levels(x$month)), 
            day_of_year = yday(date_record), 
            id = paste(year_month, GRID5KM_ID, sep = "-")) 

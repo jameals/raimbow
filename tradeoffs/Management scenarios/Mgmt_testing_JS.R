@@ -1,6 +1,8 @@
 library(dplyr)
 library(lubridate)
 
+rm(list = ls())
+
 # SW
 # x.hump <- readRDS("../raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
 #   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
@@ -64,15 +66,23 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
 #####
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
-d.noinfo <- effort_mgmt(
+scenario.output.df <- effort_mgmt(
   x = x.orig.noinfo,
-  early.data.method = "pile", 
-  delay.date = as.Date("2009-11-15"),
-  delay.region = "CenCA",
-  delay.method.shift = "pile",
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method.shift = "lag",
   delay.method.fidelity = "spatial",
   closure.date = as.Date("2010-04-01"),
   closure.region = "BIA",
   closure.method = "temporal",
-  closure.redist.percent = 10
+  closure.redist.percent = 100
 )
+
+tail(data.frame(scenario.output.df))[1:100]
+head(data.frame(scenario.output.df))
+
+### Calculate and summarize risk
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+risk_mgmt(d.noinfo, Num_DCRB_VMS_pings, x.whale)
+
