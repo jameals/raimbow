@@ -148,7 +148,7 @@ scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_tabl
 
 #rm()
 
-save.image(paste0("tradeoffs/Management scenarios/scenario_output_dataframes/scenario.output.df.noinfo_",today(),".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario.output.df.noinfo_",today(),".RData"))
 # this line gave the following warning message, not sure why:
 #Warning message:
 # In file.remove(outfile) :
