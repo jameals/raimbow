@@ -106,9 +106,10 @@ effort_mgmt <- function(x, early.data.method,
   }
   
   
-  # Check at least one ~valid management scenario is specified
+  # Check for management scenarios
   if (is.null(delay.date) & is.null(closure.date)) 
-    stop("At least one of delay.date or closure.date must not be NULL")
+    message("Both delay.date and closure.date are NULL, ", 
+            "and thus only 'early data' will be shifted")
   
   if (!is.null(delay.date) & !is.null(closure.date)) 
     if (delay.date >= closure.date)

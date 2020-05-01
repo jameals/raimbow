@@ -44,7 +44,7 @@ x.orig <- x.orig.noinfo %>%
 
 
 x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
-  # left_join(x.reg.key)
+# left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
 
@@ -67,4 +67,49 @@ d.noinfo <- effort_mgmt(
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 risk_mgmt(d.noinfo, Num_DCRB_VMS_pings, x.whale)
+
+
+
+###############################################################################
+source("tradeoffs/Management scenarios/make_scenarios_table.R")
+scenario_table[1,]
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+# for(i in 1:nrow(scenario_table)) {
+scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_table) {
+  print(i)
+  browser()
+
+  # i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
+  # i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
+  scenario.output.df.noinfo <- effort_mgmt(
+    x = x.orig.noinfo,
+    
+    early.data.method = scenario_table$early.data.method[i], 
+    
+    delay.date = if (scenario_table$delay.date[i] == "NULL") {
+      NULL
+    } else {
+      as.Date(scenario_table$delay.date[i])
+    },
+    
+    delay.region = if (scenario_table$delay.region[i] == "NULL") NULL else scenario_table$delay.region[i],
+    
+    delay.method.shift = scenario_table$delay.method.shift[i],
+    
+    delay.method.fidelity = scenario_table$delay.method.fidelity[i],
+    
+    closure.date = if (scenario_table$closure.date[i] == "NULL") NULL else as.Date(scenario_table$closure.date[i]),
+    
+    closure.region = if (scenario_table$closure.region[i] == "NULL") NULL else scenario_table$closure.region[i],
+    
+    closure.method = scenario_table$closure.method[i],
+    
+    closure.redist.percent = scenario_table$closure.redist.percent[i]
+  )
+  
+}, scenario_table = scenario_table)
+
+
+
 
