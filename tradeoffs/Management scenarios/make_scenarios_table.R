@@ -20,7 +20,7 @@ library(tidyverse)
 # delay.method.fidelity: develop 2 complete sets of scenarios, 1 with this setting as "spatial" and 1 as "temporal". JS preferred / main text scenario setting is "spatial"
 # closure.date: NULL or Apr 1
 # closure.region: NULL, "All", "CenCA", "BIA"
-# closure.method: set as "temporal" unless asked to do otherwise
+# closure.method: set as "temporal" unless asked to do otherwise, though it must be "remove" when closure.region is "All"
 # closure.redist.percent: develop 2 complete sets of scenarios, 1 with this setting as 100 and 1 as 10. JS preferred / main text scenario setting is 10 for closure.region== "CenCA", 100 for closure.region=="BIA
 
 ### Make the scenario combinations 
@@ -72,7 +72,7 @@ scenario_table_1 <- scenario_table %>%
                                                     )
                                              )
                                       ),
-    closure.method = "temporal",
+    closure.method = ifelse(closure.region != "All", "temporal", "remove"),
     closure.redist.percent = 100
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,

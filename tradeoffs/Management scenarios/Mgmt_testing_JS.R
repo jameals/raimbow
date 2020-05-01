@@ -63,7 +63,9 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
   left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
-#####
+###############################################################################
+
+##### test individual scenarios
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 scenario.output.df.noinfo <- effort_mgmt(
@@ -95,57 +97,111 @@ scenario.output.df <- effort_mgmt(
 tail(data.frame(scenario.output.df))[1:100]
 head(data.frame(scenario.output.df))
 
-### Calculate and summarize risk
+###############################################################################
+
+### Calculate and summarize risk fpr an individual scenario
+
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
 
+###############################################################################
+
 ##### Loop through scenarios of interest and create a list of output df's
+
 source("tradeoffs/Management scenarios/make_scenarios_table.R")
-scenario_table[1,]
+#scenario_table[1,]
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
-for(i in 1:nrow(scenario_table)){
+scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_table) { # for testing. nrow(scenario_table[1:12,])
+  print(i)
+  #browser()
   
-  i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
-  i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
+  # i=1 # testing. no longer breaks because "At least one of delay.date or closure.date must not be NULL"
+  # i=2 # testing. no longer breaks because when switch() is used and does not return NULL, it returns nothing
   scenario.output.df.noinfo <- effort_mgmt(
     x = x.orig.noinfo,
     
     early.data.method = scenario_table$early.data.method[i], 
     
-    delay.date = switch(
-      scenario_table$delay.date[i] == "NULL", 
-      NULL,
+    delay.date = if (scenario_table$delay.date[i] == "NULL") {
+      NULL
+    } else {
       as.Date(scenario_table$delay.date[i])
-      ),
+    },
     
-    delay.region = switch(
-      scenario_table$delay.region[i] == "NULL",
-      NULL,
-      scenario_table$delay.region[i]
-    ),
+    delay.region = if (scenario_table$delay.region[i] == "NULL") NULL else scenario_table$delay.region[i],
     
     delay.method.shift = scenario_table$delay.method.shift[i],
     
     delay.method.fidelity = scenario_table$delay.method.fidelity[i],
     
-    closure.date = switch(
-      scenario_table$closure.date[i] == "NULL", 
-      NULL,
-      as.Date(scenario_table$closure.date[i]),
-      ),
+    closure.date = if (scenario_table$closure.date[i] == "NULL") NULL else as.Date(scenario_table$closure.date[i]),
     
-    closure.region = switch(
-      scenario_table$closure.region[i] == "NULL",
-      NULL,
-      scenario_table$closure.region[i]
-    ),
+    closure.region = if (scenario_table$closure.region[i] == "NULL") NULL else scenario_table$closure.region[i],
     
     closure.method = scenario_table$closure.method[i],
     
     closure.redist.percent = scenario_table$closure.redist.percent[i]
   )
   
-}
+}, scenario_table = scenario_table)
 
+#rm()
 
+save.image(paste0("tradeoffs/Management scenarios/scenario_output_dataframes/scenario.output.df.noinfo_",today(),".RData"))
+# this line gave the following warning message, not sure why:
+#Warning message:
+# In file.remove(outfile) :
+#   cannot remove file 'scenario_output_dataframes/scenario.output.df.noinfo_2020-05-01.RDataTmp', reason 'No such file or directory'
+
+### graveyard
+##### Loop through scenarios of interest and create a list of output df's
+# source("tradeoffs/Management scenarios/make_scenarios_table.R")
+# 
+# source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+# 
+# for(i in 1:nrow(scenario_table)){
+#   
+#   i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
+#   i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
+#   scenario.output.df.noinfo <- effort_mgmt(
+#     x = x.orig.noinfo,
+#     
+#     early.data.method = scenario_table$early.data.method[i], 
+#     
+#     delay.date = switch(
+#       scenario_table$delay.date[i] == "NULL", 
+#       NULL,
+#       as.Date(scenario_table$delay.date[i])
+#       ),
+#     
+#     delay.region = switch(
+#       scenario_table$delay.region[i] == "NULL",
+#       NULL,
+#       scenario_table$delay.region[i]
+#     ),
+#     
+#     delay.method.shift = scenario_table$delay.method.shift[i],
+#     
+#     delay.method.fidelity = scenario_table$delay.method.fidelity[i],
+#     
+#     closure.date = switch(
+#       scenario_table$closure.date[i] == "NULL", 
+#       NULL,
+#       as.Date(scenario_table$closure.date[i]),
+#       ),
+#     
+#     closure.region = switch(
+#       scenario_table$closure.region[i] == "NULL",
+#       NULL,
+#       scenario_table$closure.region[i]
+#     ),
+#     
+#     closure.method = scenario_table$closure.method[i],
+#     
+#     closure.redist.percent = scenario_table$closure.redist.percent[i]
+#   )
+#   
+# }
+# 
+# 
