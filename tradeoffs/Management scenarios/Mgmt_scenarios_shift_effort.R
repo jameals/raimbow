@@ -33,14 +33,14 @@ effort_mgmt <- function(x, early.data.method,
   #   percentage of effort to redistribute that is kept
   
   ### Output
-  # Data frame with shifted effort and the following columns added:
+  # Data frame with simulated shifts in effort for a scenario and the following columns added:
   #   date_record: class Date, date of effort
   #   date_past_season_end: logical; indicates if date_record is past the 
   #     original end date for this Region in this crab year
   #   date_past_region_end: logical; indicates if date_record is past the 
   #     lawful end date (July 15 for central CA and July 31 otherwise) 
   #     for this Region in this crab year
-  
+
   
   stopifnot(
     require(dplyr), 

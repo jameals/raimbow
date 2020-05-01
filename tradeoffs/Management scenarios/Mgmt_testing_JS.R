@@ -66,8 +66,21 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
 #####
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
-scenario.output.df <- effort_mgmt(
+scenario.output.df.noinfo <- effort_mgmt(
   x = x.orig.noinfo,
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method.shift = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = as.Date("2010-04-01"),
+  closure.region = "BIA",
+  closure.method = "temporal",
+  closure.redist.percent = 100
+)
+
+scenario.output.df <- effort_mgmt(
+  x = x.orig,
   early.data.method = "remove", 
   delay.date = NULL,
   delay.region = NULL,
@@ -84,5 +97,55 @@ head(data.frame(scenario.output.df))
 
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-risk_mgmt(d.noinfo, Num_DCRB_VMS_pings, x.whale)
+risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
+
+##### Loop through scenarios of interest and create a list of output df's
+source("tradeoffs/Management scenarios/make_scenarios_table.R")
+scenario_table[1,]
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+for(i in 1:nrow(scenario_table)){
+  
+  i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
+  i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
+  scenario.output.df.noinfo <- effort_mgmt(
+    x = x.orig.noinfo,
+    
+    early.data.method = scenario_table$early.data.method[i], 
+    
+    delay.date = switch(
+      scenario_table$delay.date[i] == "NULL", 
+      NULL,
+      as.Date(scenario_table$delay.date[i])
+      ),
+    
+    delay.region = switch(
+      scenario_table$delay.region[i] == "NULL",
+      NULL,
+      scenario_table$delay.region[i]
+    ),
+    
+    delay.method.shift = scenario_table$delay.method.shift[i],
+    
+    delay.method.fidelity = scenario_table$delay.method.fidelity[i],
+    
+    closure.date = switch(
+      scenario_table$closure.date[i] == "NULL", 
+      NULL,
+      as.Date(scenario_table$closure.date[i]),
+      ),
+    
+    closure.region = switch(
+      scenario_table$closure.region[i] == "NULL",
+      NULL,
+      scenario_table$closure.region[i]
+    ),
+    
+    closure.method = scenario_table$closure.method[i],
+    
+    closure.redist.percent = scenario_table$closure.redist.percent[i]
+  )
+  
+}
+
 
