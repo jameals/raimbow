@@ -40,7 +40,7 @@ effort_mgmt <- function(x, early.data.method,
   #   date_past_region_end: logical; indicates if date_record is past the 
   #     lawful end date (July 15 for central CA and July 31 otherwise) 
   #     for this Region in this crab year
-
+  
   
   stopifnot(
     require(dplyr), 
@@ -307,10 +307,15 @@ effort_mgmt <- function(x, early.data.method,
              DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, 
              Num_Unique_DCRB_Vessels)
     
-    x.fish.delay <- x.d.fish.nofilter %>% 
-      select(!!names(x.fish.redist)) %>% 
-      bind_rows(x.fish.redist) %>% 
-      arrange(crab_year, Region, day(date_record), GRID5KM_ID)
+    # Check in case region was "All"
+    x.fish.delay <- if (is.null(x.d.fish.nofilter)) {
+      x.fish.redist
+    } else {
+      x.d.fish.nofilter %>% 
+        select(!!names(x.fish.redist)) %>% 
+        bind_rows(x.fish.redist) %>% 
+        arrange(crab_year, Region, day(date_record), GRID5KM_ID)
+    }
     
     rm(x.fish.shifted, season.mgmt.summ, x.fish.redist, 
        x.d.fish.filter, x.d.fish.nofilter)
