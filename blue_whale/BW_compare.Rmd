@@ -3,8 +3,8 @@ title: "Compare original and overlaid blue whale predictions"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,52 +14,200 @@ if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = 
 
 ## Introduction
 
-In this document, we compare the original and overlaid (onto 5km grid) blue whale predictions. Specifically, we...
+In this document, we compare the original and overlaid (onto 5km grid) blue whale predictions. Specifically, we first look at the distribution and plots of a subset of daily predictions. Then we do a more in-depth comparison of the monthly average of the predictions, since these predictions are what we're using in the risk assessment. We do not currently compare the uncertainty values.
 
-```{r cars}
+```{r, message=FALSE}
 library(dplyr)
+library(purrr)
 library(sf)
 library(tidyr)
+
+source("whalepreds_aggregate/Whalepreds_aggregate.R", local = TRUE, echo = FALSE)
+source("User_script_local.R")
+
+if (user == "SMW") {
+  file.orig.daily <- "../raimbow-local/Outputs/BlueWhale_orig_sf.rds"
+  file.over.daily <- "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.rds"
+  file.grid5km.lno <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+  file.over.mon.lon <- "../raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds"
+  
+} else if (user == "JS") {
+  
+}
 ```
 
-## Loading and processing
+## Daily predictions
 
-First we load the two sets of predictions and the 5km grid
+First we load the two sets of daily predictions, and make sure they are both sf objects that we can plot. Then we subset the original predictions, keeping only those that overlap with the overlaid prediction to standardize the study area.
 
 ```{r}
-x.orig.sf <- readRDS("../raimbow-local/Outputs/BlueWhale_orig_sf.rds")
-x.over <- readRDS("../raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds")
+x.orig.sf <- readRDS(file.orig.daily)
+x.over <- readRDS(file.over.daily)
 
-load("../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA")
+load(file.grid5km.lno)
 
-x.over.sf.cent <- x.over %>% 
-  filter(!duplicated(GRID5KM_ID)) %>% 
-  left_join(st_centroid(grid.5km.lno)) %>% 
-  st_sf()
+x.over.sf <- x.over %>% 
+  left_join(select(grid.5km.lno, GRID5KM_ID), by = c("GRID5KM_ID")) %>% 
+  st_sf(agr = "constant")
+
+
+# Intersect
+orig.over.int <- st_intersects(x.orig.sf, st_geometry(x.over.sf))
+x.orig.sf.int <- x.orig.sf[sapply(orig.over.int, length) > 0, ]
 ```
 
-Now we determine which of original predictions overlapped with the centroids of the 5km grid
+First we make histograms
+
+```{r, fig.width=9}
+func.hist.bm <- function(x) {
+  d1 <- unlist(select(st_drop_geometry(x.orig.sf.int), starts_with(x)))
+  d2 <- unlist(select(x.over, starts_with(x)))
+  
+  layout(matrix(1:2, ncol = 2))
+  hist(d1, breaks = seq(0, 1, by = 0.01), main = paste("Original predictions -", x))
+  hist(d2, breaks = seq(0, 1, by = 0.01), main = paste("Overlaid predictions -", x))
+}
+
+func.hist.bm("Bm_2009_11")
+func.hist.bm("Bm_2009_07")
+func.hist.bm("Bm_2013_08")
+func.hist.bm("Bm_2016_04")
+```
+
+And then we make a few plots of selected dates
 
 ```{r}
-d <- st_intersects(x.orig.sf, st_geometry(x.over.sf.cent))
-d.len <- sapply(d, length)
+func.plot.bm <- function(x, brks = seq(0, 1, by = 0.1)) {
+  plot(x.orig.sf.int[x], axes = TRUE, border = NA, 
+       main = paste("Original predictions -", x), 
+       breaks = brks, key.length = 1, key.pos = 4)
+  
+  plot(x.over.sf[x], axes = TRUE, border = NA, 
+       main = paste("Overlaid predictions -", x), 
+       breaks = brks, key.length = 1, key.pos = 4)  
+}
 
-x.orig.sf.int <- x.orig.sf[d.len > 0, ]
-x.orig.sf.int.long <- pivot_longer(
-  st_drop_geometry(x.orig.sf.int), cols = starts_with("Bm_"), 
-  names_to = "col_name", values_to = "pred"
+func.plot.bm("Bm_2009_11_15")
+func.plot.bm("Bm_2012_12_30")
+func.plot.bm("Bm_2016_04_01")
+func.plot.bm("Bm_2018_01_01")
+```
+
+We can see that 1) the values have a similar distribution and 2) the plots look quite similar visually. this gives us confidence that the overlaid daily prediction maintain the distribution and patterns of the original predictions.
+
+## Monthly predictions
+
+Now we do the same for the monthly average of the predictions, again since this is the temporal resolution we're using in the risk assessment.
+
+```{r}
+# Overlaid preds
+x.over.mon.long <- readRDS(file.over.mon.lon)
+
+
+# Original preds - must aggreaget and make long to match
+range.dates <- seq(
+  from = as.Date("2009-01-01"), to = as.Date("2019-08-01"), by = "months"
+)
+
+x.orig.mon <- whalepreds_aggregate(
+  st_drop_geometry(x.orig.sf.int), 1:(ncol(x.orig.sf.int)-1), 4:13, 
+  aggr.level = NULL, range.dates = range.dates, 
+  se.calc = TRUE
 ) %>% 
-  mutate(date = as.Date(substr(col_name, 4, 13), format = "%Y_%m_%d"))
+  set_names(paste0("Bm_", names(.))) %>% 
+  set_names(gsub("Avg_user_", "", names(.))) %>% 
+  set_names(gsub("user_", "", names(.))) %>% 
+  mutate(idx = 1:length(Bm_2009_01_01))
 
-x.orig.sf.int.long.filt <- x.orig.sf.int.long %>% 
-  filter(between(date, min(x.over$date), max(x.over$date)))
+x.orig.mon.long <- x.orig.mon %>% 
+  pivot_longer(cols = starts_with("Bm_"), names_to = "key", values_to = "value") %>% 
+  mutate(type = ifelse(grepl("SE", key), "se", "pred"),
+         date = ymd(ifelse(type == "se", substr(key, 7, 16), substr(key, 4, 13)))) %>% 
+  select(-key) %>%
+  pivot_wider(names_from = type, values_from = value) %>% 
+  rename(Blue_occurrence_mean = pred, Blue_occurrence_se = se) %>% 
+  arrange(date, idx)
 ```
 
-## Histograms of predictions
+Now we want to show there is no systematic bias between the original and overlaid predictions. We start to address this question by comparing values using histograms, maps, and the distribution of the values.
 
-```{r pressure, echo=FALSE}
-hist(x.orig.sf.int.long.filt$pred, breaks = seq(0, 1, by = 0.01))
-hist(x.over$Blue_occurrence_mean, breaks = seq(0, 1, by = 0.01))
+First up are histograms
+
+```{r, fig.width=9}
+layout(matrix(1:2, ncol = 2))
+hist(x.orig.mon.long$Blue_occurrence_mean, breaks = seq(0, 1, by = 0.01), main = "Original predictions - monthly")
+hist(x.over.mon.long$Blue_occurrence_mean, breaks = seq(0, 1, by = 0.01), main = "Original predictions - monthly")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Then spatial maps
+
+```{r}
+orig.geom <- x.orig.sf %>% 
+  mutate(idx = 1:length(Bm_2009_01_01)) %>% 
+  select(idx)
+
+over.geom <- x.over.sf %>% select(GRID5KM_ID)
+
+func.plot.bm.monthly <- function(x.date, brks = seq(0, 1, by = 0.1)) {
+  stopifnot(inherits(x.date, "Date"))
+  
+  y1 <- x.orig.mon.long %>% 
+    filter(date == x.date) %>% 
+    left_join(orig.geom, by = "idx") %>% 
+    st_sf()
+  
+  plot(y1["Blue_occurrence_mean"], axes = TRUE, border = NA, 
+       main =paste0("Original monthly predictions - ", 
+                    year(x.date), "-", sprintf("%02d", month(x.date))), 
+       breaks = brks, key.length = 1, key.pos = 4)
+  
+  y2 <- x.over.mon.long %>% 
+    filter(date == x.date) %>% 
+    left_join(over.geom, by = "GRID5KM_ID") %>% 
+    st_sf()
+  
+  plot(y2["Blue_occurrence_mean"], axes = TRUE, border = NA,
+       main = paste0("Overlaid monthly predictions - ", 
+                     year(x.date), "-", sprintf("%02d", month(x.date))),
+       breaks = brks, key.length = 1, key.pos = 4)
+}
+
+func.plot.bm.monthly(as.Date("2009-11-01"))
+func.plot.bm.monthly(as.Date("2010-08-01"))
+func.plot.bm.monthly(as.Date("2014-03-01"))
+func.plot.bm.monthly(as.Date("2018-07-01"))
+```
+
+Numeric distribution:
+
+```{r, fig.width=9, fig.height=6}
+summ.func.bm <- function(x) {
+  x %>% 
+    mutate(month = lubridate::month(date)) %>% 
+    group_by(month) %>% 
+    summarise(mean = mean(Blue_occurrence_mean), 
+              median = median(Blue_occurrence_mean), 
+              quantile05 = quantile(Blue_occurrence_mean, 0.05), 
+              quantile25 = quantile(Blue_occurrence_mean, 0.25), 
+              quantile75 = quantile(Blue_occurrence_mean, 0.75), 
+              quantile95 = quantile(Blue_occurrence_mean, 0.95))
+}
+
+
+round(summ.func.bm(x.orig.mon.long), 4)
+round(summ.func.bm(x.over.mon.long), 4)
+
+layout(matrix(1:12, ncol = 4))
+for (i in 1:12) {
+    hist(filter(x.orig.mon.long, lubridate::month(date) == i)$Blue_occurrence_mean, 
+         breaks = seq(0, 1, by = 0.01), xlab = "Prob of occur", 
+         main = paste("Original - month", i))
+}
+
+layout(matrix(1:12, ncol = 4))
+for (i in 1:12) {
+    hist(filter(x.over.mon.long, lubridate::month(date) == i)$Blue_occurrence_mean, 
+         breaks = seq(0, 1, by = 0.01), xlab = "Prob of occur", 
+         main = paste("Overlaid - month", i))
+}
+```
