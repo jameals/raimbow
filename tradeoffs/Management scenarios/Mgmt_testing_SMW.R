@@ -21,6 +21,8 @@ x.reg.key.test <- x.orig.noinfo %>%
   select(Region, GRID5KM_ID) %>% 
   distinct()
 x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ]
+paste(sort(x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
+      collapse = ", ")
 
 # ^ Shows that several grid cells have multiple 'Region' specifications - this is a temporary fix
 x.orig.noinfo <- x.orig.noinfo %>% 
@@ -35,6 +37,8 @@ x.off.key.test <- x.orig.noinfo %>%
   select(CA_OFFSHOR, GRID5KM_ID) %>% 
   distinct()
 x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ]
+paste(sort(x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
+      collapse = ", ")
 #####
 
 
@@ -78,7 +82,7 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 # for(i in 1:nrow(scenario_table)) {
 scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_table) {
   print(i)
-  browser()
+  # browser()
 
   # i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
   # i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
