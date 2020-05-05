@@ -1,6 +1,6 @@
 # Function for calculating risk after shifting effort based on management scenarios
 
-risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06") {
+risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06") { # need to update ym.max to 2019_07
   ### Inputs
   # x: data frame; e.g. output of effort_mgmt()
   # x.col: symbol (i.e. column name without quotes); 
@@ -14,9 +14,12 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   ### Output
   # Data frame with effort data and risk values grouped by year_month/Region 
   #   and summed. 
+  # For humpbacks, risk is whale density * effort_val, eg [pings * whales]/km^2
+  # For blues, risk is whale occurrence * effort_val, eg [pings * probability of occurrence]. Q for SW: do we want to divide by area to get a density metric?
   # Whale predictions are not included because this function does not use 
   #   complete() to fill out year_months and grid cells, and thus the 
-  #   whale predictions would not be comparable
+  #   whale predictions would not be comparable. If we want whale predictions in the output table
+  #  we should 1) determine all of the grid cells that have effort in them in any year/month, 2) filter the whale preds for those grid cells, and then 3) group and summarize the filtered whale preds.
   
   
   x.col <- enquo(x.col)

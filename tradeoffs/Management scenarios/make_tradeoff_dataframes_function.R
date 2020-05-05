@@ -36,52 +36,22 @@ scenario_table
 ####################################################################
 ####################################################################
 
-# I am thinking we want to generate summary df's with the metrics below for time-areas open to fishing, and then a separate set of summary df's with these metrics for time-areas closed to fishing
+#050520
 
-# column headers for output df from SW functions: 
-# year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (lag or pile up), delay_redistribution (cell fidelity or temporal fidelity)
+# the SW functions effort_mgmt() and risk_mgmt() together generate summary df's with the metrics below for time-areas open to fishing
 
-# DCRB fishing activity
-# sum_DCRB_lbs = sum(DCRB_lbs), # total pounds crab landed in areas and times open to fishing
-# sum_DCRB_rev = sum(sum_DCRB_rev), # total $ crab landed in areas and times open to fishing
-# normalized_Num_DCRB_VMS_pings = , # Num_DCRB_VMS_pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
-# sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), # total crab VMS pings in areas and times open to fishing
-# sum_Num_DCRB_Vessels = sum(Num_DCRB_Vessels), # total crab vessel days in areas and times open to fishing
-# mean_Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels), # mean unique crab vessels per 5km grid cell in areas and times open to fishing
-# mean_normalized_Num_DCRB_VMS_pings = mean(normalized_Num_DCRB_VMS_pings), # mean crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
-# sd_normalized_Num_DCRB_VMS_pings = sd(normalized_Num_DCRB_VMS_pings), # standard deviation crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
-# sum_normalized_Num_DCRB_VMS_pings = sum(normalized_Num_DCRB_VMS_pings), # sum crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# column headers for output df from effort_mgmt() and risk_mgmt(): 
+# year_month (2009:2019, 11:12 and 1:7), crab_year (2009-10 to 2018-19), Region, DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, Num_Unique_DCRB_Vessels, risk_humpback, risk_blue
+# DCRB_lbs, # total pounds crab landed in areas and times open to fishing
+# DCRB_rev, # total $ crab landed in areas and times open to fishing
+# Num_DCRB_VMS_pings, # Num_DCRB_VMS_pings in areas and times open to fishing
+# Num_DCRB_Vessels, # total crab vessel days in areas and times open to fishing
+# Num_Unique_DCRB_Vessels, # sum of unique crab vessels per 5km grid cell in areas and times open to fishing
+# risk_humpback = Humpback_dens_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
+# risk_blue = Blue_occurrence_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
 
-# blue whales
-# Blue_occurrence_mean = mean(Blue_occurrence_mean), # mean probability of blue whale occurrence per 5km grid cell in areas and times open to fishing. note we do not need to retain normalized_Blue_occurrence_mean because it is already scaled 0-1
-# Blue_occurrence_sd = sd(Blue_occurrence_mean), # standard deviation in probability of blue whale occurrence per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
+# metadata for scenarios in scenario_table.RDS, see make_scenarios_table.R for descriptions: "scenario_df_name"       "delay_scenario"         "closure_scenario"       "early.data.method"      "delay.date", "delay.region", "delay.method.shift"     "delay.method.fidelity"  "closure.date"           "closure.region"         "closure.method"         "closure.redist.percent"
 
-# humpback whales
-# H_Avg_Abund = mean(H_Avg_Abund), # mean humpback whale abundance per 5km grid cell in areas and times open to fishing,
-# mean_normalized_H_Avg_Abund = mean(normalized_H_Avg_Abund), # mean humpback whale abundance per 5km grid cell in areas and times open to fishing, with humpback abundance normalized to 0-1
-# H_Avg_Abund_sd = sd(H_Avg_Abund), # standard deviation in predicted hump abundance per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
-# mean_normalized_H_Avg_Density = mean(normalized_H_Avg_Abund / 5km_grid_cell_area), # mean humpback whale density per 5km grid cell in areas and times open to fishing, with humpback abundance normalized to 0-1
-# sd_normalized_H_Avg_Density = sd(normalized_H_Avg_Abund / 5km_grid_cell_area), # standard deviation in predicted humpback whale density per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
-
-# blue whale risk metrics
-# mean_blue_risk = mean(Blue_occurrence_mean * Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
-# sum_blue_risk = sum(Blue_occurrence_mean * Num_DCRB_VMS_pings), # sum of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean] in areas and times open to fishing
-# mean_blue_risk_density = mean((Blue_occurrence_mean * Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
-# sum_blue_risk_density = sum((Blue_occurrence_mean * Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # sum of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
-# mean_normalized_blue_risk = mean(Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
-# sum_normalized_blue_risk = sum(Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings), # sum of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
-# mean_normalized_blue_risk_density = mean((Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
-# sum_normalized_blue_risk_density = sum((Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # sum of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
-
-# humpback whale risk metrics
-# mean_hump_risk = mean(H_Avg_Abund * Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], in areas and times open to fishing
-# sum_hump_risk = sum(H_Avg_Abund * Num_DCRB_VMS_pings), # sum of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], in areas and times open to fishing
-# mean_hump_risk_density = mean((H_Avg_Abund * Num_DCRB_VMS_pings) / area_of_5kmgridcell), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
-# sum_hump_risk_density = sum((H_Avg_Abund * Num_DCRB_VMS_pings) / area_of_5kmgridcell), # sum of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
-# mean_normalized_hump_risk = mean(normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], in areas and times open to fishing
-# sum_normalized_hump_risk = sum(normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings), # sum of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], in areas and times open to fishing
-# mean_normalized_hump_risk_density = mean((normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings) / area_of_5kmgridcell), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
-# sum_normalized_hump_risk_density = sum((normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings) / area_of_5kmgridcell), # sum of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
 
 ####################################################################
 ####################################################################
@@ -89,15 +59,47 @@ scenario_table
 ####################################################################
 ####################################################################
 
-# ok if output looks something like what is described above, make a function to create a df that reveals tradeoffs under each scenario
+# make a function to create a df that reveals tradeoffs under each scenario
 
 # response variables are calculated in terms of relative reduction: relative risk reduction to whales and relative revenue reduction to DCRB
 # if max $ is X, then for each year we want $ in that year relative to max, and scaled to a %
 # if max risk is Y, then for relative risk we want max risk to be zero and complete closure to be 100% reduction
 # all relative metrics are relative to the year under consideration if both winter and spring DCRB season were open. based on revised approach 012420
 
-# column headers for output df from SW functions: 
-# year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (NA, lag, pile up), delay_redistribution (NA, cell fidelity, temporal fidelity)
+# column headers for output df from effort_mgmt() and risk_mgmt(): 
+# year_month (2009:2019, 11:12 and 1:7), crab_year (2009-10 to 2018-19), Region, DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, Num_Unique_DCRB_Vessels, risk_humpback, risk_blue
+
+# 050520
+
+scenario_table <- read_rds(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table.RDS"
+)
+)
+scenario_table
+
+# for each scenario df, (1) sum by crab_year (over year_month and Region) to get annual values for each crab_year, (2) join to metadata for scenario
+
+annual_statewide_df <- risk_out %>%
+  group_by(crab_year) %>%
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs, na.rm=TRUE), 
+    DCRB_rev = sum(DCRB_rev, na.rm=TRUE), 
+    Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings, na.rm=TRUE), 
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels, na.rm=TRUE), 
+    risk_humpback = sum(risk_humpback, na.rm=TRUE), 
+    risk_blue = sum(risk_blue, na.rm=TRUE)
+    ) %>%
+  add_column(
+    scenario_table[1,]
+    )
+
+# next steps:  
+# repeat above lines 84-96 for all scenarios
+# apply lines 115-178 to get relative change in risk
+
+
 
 # JS stopped here 0740 040820. need to start at line 102 and try function with a toy df. 
 # 041320 also need to make sure grouping by crab.year deals with month stuff 
@@ -107,6 +109,8 @@ tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metri
   {
   df.tradeoff <- output_df_from_sw %>%
     group_by(crab.year) %>%
+      
+      # STATUS QUO
       # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
       mutate(
         hump_risk_under_statusquo = hump_risk_metric[which(
@@ -178,6 +182,158 @@ tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metri
 
 ####################################################################
 ####################################################################
+
+
+
+
+# ####################################################################
+# ####################################################################
+# 
+# #041320
+# 
+# # I am thinking we want to generate summary df's with the metrics below for time-areas open to fishing, and then a separate set of summary df's with these metrics for time-areas closed to fishing
+# 
+# # column headers for output df from SW functions: 
+# # year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (lag or pile up), delay_redistribution (cell fidelity or temporal fidelity)
+# 
+# # DCRB fishing activity
+# # sum_DCRB_lbs = sum(DCRB_lbs), # total pounds crab landed in areas and times open to fishing
+# # sum_DCRB_rev = sum(sum_DCRB_rev), # total $ crab landed in areas and times open to fishing
+# # normalized_Num_DCRB_VMS_pings = , # Num_DCRB_VMS_pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# # sum_Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), # total crab VMS pings in areas and times open to fishing
+# # sum_Num_DCRB_Vessels = sum(Num_DCRB_Vessels), # total crab vessel days in areas and times open to fishing
+# # mean_Num_Unique_DCRB_Vessels = mean(Num_Unique_DCRB_Vessels), # mean unique crab vessels per 5km grid cell in areas and times open to fishing
+# # mean_normalized_Num_DCRB_VMS_pings = mean(normalized_Num_DCRB_VMS_pings), # mean crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# # sd_normalized_Num_DCRB_VMS_pings = sd(normalized_Num_DCRB_VMS_pings), # standard deviation crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# # sum_normalized_Num_DCRB_VMS_pings = sum(normalized_Num_DCRB_VMS_pings), # sum crab VMS pings per 5km grid cell in areas and times open to fishing, with pings normalized to 0-1
+# 
+# # blue whales
+# # Blue_occurrence_mean = mean(Blue_occurrence_mean), # mean probability of blue whale occurrence per 5km grid cell in areas and times open to fishing. note we do not need to retain normalized_Blue_occurrence_mean because it is already scaled 0-1
+# # Blue_occurrence_sd = sd(Blue_occurrence_mean), # standard deviation in probability of blue whale occurrence per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
+# 
+# # humpback whales
+# # H_Avg_Abund = mean(H_Avg_Abund), # mean humpback whale abundance per 5km grid cell in areas and times open to fishing,
+# # mean_normalized_H_Avg_Abund = mean(normalized_H_Avg_Abund), # mean humpback whale abundance per 5km grid cell in areas and times open to fishing, with humpback abundance normalized to 0-1
+# # H_Avg_Abund_sd = sd(H_Avg_Abund), # standard deviation in predicted hump abundance per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
+# # mean_normalized_H_Avg_Density = mean(normalized_H_Avg_Abund / 5km_grid_cell_area), # mean humpback whale density per 5km grid cell in areas and times open to fishing, with humpback abundance normalized to 0-1
+# # sd_normalized_H_Avg_Density = sd(normalized_H_Avg_Abund / 5km_grid_cell_area), # standard deviation in predicted humpback whale density per 5km grid cell in areas and times open to fishing. need to think more about how to do this. StDev for each cell each month based on daily/bidaily predictions but StDev for each region based on monthly means within each cell,
+# 
+# # blue whale risk metrics
+# # mean_blue_risk = mean(Blue_occurrence_mean * Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
+# # sum_blue_risk = sum(Blue_occurrence_mean * Num_DCRB_VMS_pings), # sum of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean] in areas and times open to fishing
+# # mean_blue_risk_density = mean((Blue_occurrence_mean * Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
+# # sum_blue_risk_density = sum((Blue_occurrence_mean * Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # sum of the product of [Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
+# # mean_normalized_blue_risk = mean(Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
+# # sum_normalized_blue_risk = sum(Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings), # sum of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], in areas and times open to fishing
+# # mean_normalized_blue_risk_density = mean((Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
+# # sum_normalized_blue_risk_density = sum((Blue_occurrence_mean *normalized_Num_DCRB_VMS_pings)/ 5km_grid_cell_area), # sum of the product of [normalized_Num_DCRB_VMS_pings and Blue_occurrence_mean], divided by area of 5km grid cell, in areas and times open to fishing
+# 
+# # humpback whale risk metrics
+# # mean_hump_risk = mean(H_Avg_Abund * Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], in areas and times open to fishing
+# # sum_hump_risk = sum(H_Avg_Abund * Num_DCRB_VMS_pings), # sum of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], in areas and times open to fishing
+# # mean_hump_risk_density = mean((H_Avg_Abund * Num_DCRB_VMS_pings) / area_of_5kmgridcell), # mean per 5km grid cell of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
+# # sum_hump_risk_density = sum((H_Avg_Abund * Num_DCRB_VMS_pings) / area_of_5kmgridcell), # sum of the product of [Num_DCRB_VMS_pings and H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
+# # mean_normalized_hump_risk = mean(normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], in areas and times open to fishing
+# # sum_normalized_hump_risk = sum(normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings), # sum of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], in areas and times open to fishing
+# # mean_normalized_hump_risk_density = mean((normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings) / area_of_5kmgridcell), # mean per 5km grid cell of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
+# # sum_normalized_hump_risk_density = sum((normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings) / area_of_5kmgridcell), # sum of the product of [normalized_Num_DCRB_VMS_pings and normalized_H_Avg_Abund], divided by area of 5km grid cell, in areas and times open to fishing
+# 
+# ####################################################################
+# ####################################################################
+# 
+# ####################################################################
+# ####################################################################
+# 
+# # ok if output looks something like what is described above, make a function to create a df that reveals tradeoffs under each scenario
+# 
+# # response variables are calculated in terms of relative reduction: relative risk reduction to whales and relative revenue reduction to DCRB
+# # if max $ is X, then for each year we want $ in that year relative to max, and scaled to a %
+# # if max risk is Y, then for relative risk we want max risk to be zero and complete closure to be 100% reduction
+# # all relative metrics are relative to the year under consideration if both winter and spring DCRB season were open. based on revised approach 012420
+# 
+# # column headers for output df from SW functions: 
+# # year(2009:2019), crab_year (2009-10 to 2018-19), month, full_scenario_ID, delay_time_scenario (NA or Dec-15), delay_domain_scenario (NA, State, CenCA), closure_time_scenario (NA or Spring-Summer), closure_domain_scenario (NA, Sta, Cen, BIA), delay_approach (NA, lag, pile up), delay_redistribution (NA, cell fidelity, temporal fidelity)
+# 
+# # JS stopped here 0740 040820. need to start at line 102 and try function with a toy df. 
+# # 041320 also need to make sure grouping by crab.year deals with month stuff 
+# 
+# # inputs to function: hump_risk_metric (original or normalized), blwh_risk_metric (original or normalized),  pings_metric (original or normalized),  
+# tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metric) 
+# {
+#   df.tradeoff <- output_df_from_sw %>%
+#     group_by(crab.year) %>%
+#     # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
+#     mutate(
+#       hump_risk_under_statusquo = hump_risk_metric[which(
+#         is.na(delay_time_scenario) == TRUE &
+#           is.na(delay_domain_scenario) == TRUE &
+#           is.na(closure_time_scenario) == TRUE &
+#           is.na(closure_domain_scenario) == TRUE &
+#           is.na(delay_approach) == TRUE &
+#           is.na(delay_redistribution) == TRUE
+#       )],
+#       blwh_risk_under_statusquo = blwh_risk_metric[which(
+#         is.na(delay_time_scenario) == TRUE &
+#           is.na(delay_domain_scenario) == TRUE &
+#           is.na(closure_time_scenario) == TRUE &
+#           is.na(closure_domain_scenario) == TRUE &
+#           is.na(delay_approach) == TRUE &
+#           is.na(delay_redistribution) == TRUE
+#       )],
+#       pings_under_statusquo = pings_metric[which(
+#         is.na(delay_time_scenario) == TRUE &
+#           is.na(delay_domain_scenario) == TRUE &
+#           is.na(closure_time_scenario) == TRUE &
+#           is.na(closure_domain_scenario) == TRUE &
+#           is.na(delay_approach) == TRUE &
+#           is.na(delay_redistribution) == TRUE
+#       )],
+#       dollars_under_statusquo = sum_DCRB_rev[which(
+#         is.na(delay_time_scenario) == TRUE &
+#           is.na(delay_domain_scenario) == TRUE &
+#           is.na(closure_time_scenario) == TRUE &
+#           is.na(closure_domain_scenario) == TRUE &
+#           is.na(delay_approach) == TRUE &
+#           is.na(delay_redistribution) == TRUE
+#       )],
+#       pounds_under_statusquo = sum_DCRB_lbs[which(
+#         is.na(delay_time_scenario) == TRUE &
+#           is.na(delay_domain_scenario) == TRUE &
+#           is.na(closure_time_scenario) == TRUE &
+#           is.na(closure_domain_scenario) == TRUE &
+#           is.na(delay_approach) == TRUE &
+#           is.na(delay_redistribution) == TRUE
+#       )]
+#     ) %>%
+#     ungroup() %>%
+#     group_by(full_scenario_ID, crab.year) %>%
+#     summarise(
+#       relative_hump_risk = 100 *  (1 - (
+#         hump_risk_metric / hump_risk_under_statusquo
+#       )),
+#       relative_blwh_risk = 100 *  (1 - (
+#         blwh_risk_metric / blwh_risk_under_statusquo
+#       )),
+#       relative_pings = 100 *  (1 - (
+#         pings_metric / pings_under_statusquo
+#       )),
+#       relative_dollars = 100* (
+#         sum_DCRB_rev / dollars_under_statusquo
+#       ),
+#       relative_pounds = 100* (
+#         sum_DCRB_lbs / pounds_under_statusquo
+#       )
+#     ) %>%
+#     mutate(
+#       Scenario = unique(full_scenario_ID)
+#     )
+#   df.tradeoff
+#   
+# }
+# 
+# ####################################################################
+# ####################################################################
+
 
 ####################################################################
 ####################################################################

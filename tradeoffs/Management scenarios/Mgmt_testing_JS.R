@@ -59,8 +59,8 @@ x.orig <- x.orig.noinfo %>%
   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
 
 
-x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>% 
-  left_join(x.reg.key)
+x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) #%>% 
+  #left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
 
@@ -131,6 +131,21 @@ risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
 ##### test individual scenarios
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+# STATUS QUO
+scenario.output.df.noinfo <- effort_mgmt(
+  x = x.orig.noinfo,
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method.shift = NULL,
+  delay.method.fidelity = NULL,
+  closure.date = NULL,
+  closure.region = NULL,
+  closure.method = NULL,
+  closure.redist.percent = 100
+)
+
 scenario.output.df.noinfo <- effort_mgmt(
   x = x.orig.noinfo,
   early.data.method = "remove", 
@@ -139,7 +154,7 @@ scenario.output.df.noinfo <- effort_mgmt(
   delay.method.shift = "lag",
   delay.method.fidelity = "spatial",
   closure.date = as.Date("2010-04-01"),
-  closure.region = "CenCA",
+  closure.region = "BIA",
   closure.method = "temporal",
   closure.redist.percent = 100
 )
@@ -166,7 +181,7 @@ head(data.frame(scenario.output.df))
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 risk_out <- risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
-
+risk_out
 
 ### graveyard
 ##### Loop through scenarios of interest and create a list of output df's
