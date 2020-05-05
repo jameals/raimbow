@@ -80,7 +80,7 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   }
   rm(test.df)
   
-  
+  #browser()
   #----------------------------------------------------------------------------
   ### Processing
   
@@ -126,7 +126,7 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   
   # Add in whale predictions and calculate risk
   x.ym.risk <- x.ym %>% 
-    left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
+    left_join(y, by = c("GRID5KM_ID", "year_month", "Region")) %>%
     mutate(risk_humpback = effort_val * Humpback_dens_mean, 
            risk_blue = effort_val * Blue_occurrence_mean)
   

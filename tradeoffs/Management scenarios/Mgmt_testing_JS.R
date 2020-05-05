@@ -63,46 +63,6 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
   left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
-###############################################################################
-
-##### test individual scenarios
-
-source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
-scenario.output.df.noinfo <- effort_mgmt(
-  x = x.orig.noinfo,
-  early.data.method = "remove", 
-  delay.date = NULL,
-  delay.region = NULL,
-  delay.method.shift = "lag",
-  delay.method.fidelity = "spatial",
-  closure.date = as.Date("2010-04-01"),
-  closure.region = "BIA",
-  closure.method = "temporal",
-  closure.redist.percent = 100
-)
-
-scenario.output.df <- effort_mgmt(
-  x = x.orig,
-  early.data.method = "remove", 
-  delay.date = NULL,
-  delay.region = NULL,
-  delay.method.shift = "lag",
-  delay.method.fidelity = "spatial",
-  closure.date = as.Date("2010-04-01"),
-  closure.region = "BIA",
-  closure.method = "temporal",
-  closure.redist.percent = 100
-)
-
-tail(data.frame(scenario.output.df))[1:100]
-head(data.frame(scenario.output.df))
-
-###############################################################################
-
-### Calculate and summarize risk fpr an individual scenario
-
-source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
 
 ###############################################################################
 
@@ -153,6 +113,60 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 #Warning message:
 # In file.remove(outfile) :
 #   cannot remove file 'scenario_output_dataframes/scenario.output.df.noinfo_2020-05-01.RDataTmp', reason 'No such file or directory'
+
+###############################################################################
+
+
+### Calculate and summarize risk for multiple scenarios
+
+# does risk_mgmt() function differ from code in prep_data_for_scenario_df_function.R lines 182-209?
+
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
+
+
+###############################################################################
+
+
+##### test individual scenarios
+
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+scenario.output.df.noinfo <- effort_mgmt(
+  x = x.orig.noinfo,
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method.shift = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = as.Date("2010-04-01"),
+  closure.region = "CenCA",
+  closure.method = "temporal",
+  closure.redist.percent = 100
+)
+
+scenario.output.df <- effort_mgmt(
+  x = x.orig,
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method.shift = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = as.Date("2010-04-01"),
+  closure.region = "BIA",
+  closure.method = "temporal",
+  closure.redist.percent = 100
+)
+
+tail(data.frame(scenario.output.df))[1:100]
+head(data.frame(scenario.output.df))
+
+###############################################################################
+
+### Calculate and summarize risk for an individual scenario
+
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+risk_out <- risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
+
 
 ### graveyard
 ##### Loop through scenarios of interest and create a list of output df's
