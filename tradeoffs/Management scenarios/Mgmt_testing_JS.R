@@ -119,10 +119,27 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 ### Calculate and summarize risk for multiple scenarios
 
-# does risk_mgmt() function differ from code in prep_data_for_scenario_df_function.R lines 182-209?
+# does risk_mgmt() function differ from code in prep_data_for_scenario_df_function.R lines 182-209? yes
+
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario.output.df.noinfo_","2020-05-01",".RData"))
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
+
+risk_out_list <- lapply(1:nrow(scenario_table[1:3,]), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
+  print(paste("Summarizing risk for Scenario", i))
+  #browser()
+  
+  risk_out <- risk_mgmt(
+    scenario.output.list[[i]], 
+    Num_DCRB_VMS_pings, 
+    x.whale
+    )
+  }, scenario_table = scenario_table
+  )
+  
+
+
+
 
 
 ###############################################################################
@@ -133,7 +150,7 @@ risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
 # STATUS QUO
-scenario.output.df.noinfo <- effort_mgmt(
+scenario.output.df.noinfo.sq <- effort_mgmt(
   x = x.orig.noinfo,
   early.data.method = "remove", 
   delay.date = NULL,
@@ -180,8 +197,8 @@ head(data.frame(scenario.output.df))
 ### Calculate and summarize risk for an individual scenario
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-risk_out <- risk_mgmt(scenario.output.df.noinfo, Num_DCRB_VMS_pings, x.whale)
-risk_out
+risk_out_sq <- risk_mgmt(scenario.output.df.noinfo.sq, Num_DCRB_VMS_pings, x.whale)
+risk_out_sq
 
 ### graveyard
 ##### Loop through scenarios of interest and create a list of output df's
