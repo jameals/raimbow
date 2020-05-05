@@ -6,7 +6,8 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   # x.col: symbol (i.e. column name without quotes); 
   #   fishing metric (column of x) that will be used to calculate risk
   # y: data frame with whale predictions. If not NULL, this data frame 
-  #   will be joined with x by "GRID5KM_ID" and "year_month"
+  #   will be joined with x by "GRID5KM_ID" and "year_month". 
+  #   If not NULL, exepceted columns will be selected (see names.y)
   # ym.min: character; minimum year_month value for which to calculate risk
   # ym.min: character; maximum year_month value for which to calculate risk
   
@@ -67,6 +68,8 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
     if (!all(names.y %in% names(y)))
       stop("y must contain all of the following columns:\n", 
            paste(names.y, collapse = ", "))
+    
+    y <- y %>% select(!!names.y)
   }
   
   # Test that grid cells only are assigned to one region
@@ -117,16 +120,16 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
               Num_DCRB_Vessels = sum(Num_DCRB_Vessels), 
               Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% 
     ungroup()
-    # complete(year_month = ym.seq, GRID5KM_ID, 
-    #          fill = list(effort_val = 0, DCRB_lbs = 0, DCRB_rev = 0, 
-    #                      Num_DCRB_VMS_pings = 0, Num_DCRB_Vessels = 0, 
-    #                      Num_Unique_DCRB_Vessels = 0)) %>% 
-    # arrange(year_month, GRID5KM_ID)
+  # complete(year_month = ym.seq, GRID5KM_ID, 
+  #          fill = list(effort_val = 0, DCRB_lbs = 0, DCRB_rev = 0, 
+  #                      Num_DCRB_VMS_pings = 0, Num_DCRB_Vessels = 0, 
+  #                      Num_Unique_DCRB_Vessels = 0)) %>% 
+  # arrange(year_month, GRID5KM_ID)
   
   
   # Add in whale predictions and calculate risk
   x.ym.risk <- x.ym %>% 
-    left_join(y, by = c("GRID5KM_ID", "year_month", "Region")) %>%
+    left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(risk_humpback = effort_val * Humpback_dens_mean, 
            risk_blue = effort_val * Blue_occurrence_mean)
   
