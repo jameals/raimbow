@@ -123,9 +123,11 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario.output.df.noinfo_","2020-05-01",".RData"))
 
+start.time <- Sys.time()
+
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 
-risk_out_list <- lapply(1:nrow(scenario_table[1:3,]), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
+risk_out_list <- lapply(1:nrow(scenario_table), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
   print(paste("Summarizing risk for Scenario", i))
   #browser()
   
@@ -137,9 +139,10 @@ risk_out_list <- lapply(1:nrow(scenario_table[1:3,]), function(i, scenario_table
   }, scenario_table = scenario_table
   )
   
+Sys.time() - start.time
+# Time difference of 5.490882 mins
 
-
-
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario.output.df.noinfo_with.risk",today(),".RData"))
 
 
 ###############################################################################
