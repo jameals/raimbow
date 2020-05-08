@@ -2,35 +2,10 @@
 # Make tradeoff data frames
 
 # developed from "Simple early closure analysis.Rmd"
-# Include new variables relative risk and relative revenue reduction
-
-####################################################################
-####################################################################
-
-### REMOVE THIS CHUNK ONCE IT IS LINKED WITH OUTPUTS FROM SW'S FUNCTIONS
+# Includes output variables relative risk and relative revenue reduction
 
 library(tidyverse)
-
-# make df. Year, Scenario, hump risk, blue risk, DCRB $
-# scenarios: sq, CA, cenCA, BIAs
-
-root.dir <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/"
-load(paste0(root.dir,"Output_Data/Scenario_Analysis_Data_2009_2018.RData"))
-
-con_df_weekly_years_5km_CA <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
-glimpse(con_df_weekly_years_5km_CA)
-
-scenario_table <- read_rds(here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-)
-)
-scenario_table
-
-####################################################################
-####################################################################
-
+library(magrittr)
 
 
 ####################################################################
@@ -56,6 +31,20 @@ scenario_table
 ####################################################################
 ####################################################################
 
+# read in the relevant data
+#load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario.output.df.noinfo_with.risk2020-05-05.RData")
+
+# scenario_table <- read_rds(here::here(
+#   "tradeoffs",
+#   "Management scenarios",
+#   "scenario_table.RDS"
+#   )
+#   )
+#scenario_table
+
+####################################################################
+####################################################################
+
 ####################################################################
 ####################################################################
 
@@ -70,115 +59,215 @@ scenario_table
 # year_month (2009:2019, 11:12 and 1:7), crab_year (2009-10 to 2018-19), Region, DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, Num_Unique_DCRB_Vessels, risk_humpback, risk_blue
 
 # 050520
+# 050820
 
-scenario_table <- read_rds(here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table.RDS"
-)
-)
-scenario_table
+# may want to add functionality later using sym(), enquo(), etc. for scenario names, DCRB metrics, hump_risk_metric, blwh_risk_metric, pings_metric
 
-# for each scenario df, (1) sum by crab_year (over year_month and Region) to get annual values for each crab_year, (2) join to metadata for scenario
+tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewide_df_name, df_tradeoff_name) { 
 
-annual_statewide_df <- risk_out %>%
-  group_by(crab_year) %>%
-  summarise(
-    DCRB_lbs = sum(DCRB_lbs, na.rm=TRUE), 
-    DCRB_rev = sum(DCRB_rev, na.rm=TRUE), 
-    Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings, na.rm=TRUE), 
-    Num_DCRB_Vessels = sum(Num_DCRB_Vessels, na.rm=TRUE), 
-    risk_humpback = sum(risk_humpback, na.rm=TRUE), 
-    risk_blue = sum(risk_blue, na.rm=TRUE)
-    ) %>%
-  add_column(
-    scenario_table[1,]
-    )
+  
+  #risk_list <- risk_out_list
+  #scenario_names_table <- scenario_table
+  #hump_risk_metric <- risk_humpback
+  #blwh_risk_metric <- risk_blue
+  #pings_metric <- Num_DCRB_VMS_pings
 
-# next steps:  
-# repeat above lines 84-96 for all scenarios
+  ### STEP 1
+  
+  # for each scenario df, (1) sum by crab_year (over year_month and Region) to get annual values for each crab_year, (2) join to metadata for scenario
+
+  #browser()
+  
+  if (length(risk_list) != nrow(scenario_names_table))
+    stop("x must contain the same number of scenarios:\n", 
+         paste(c("risk_out_list", "scenario_table"), collapse = ", "))
+  
+  #browser()
+  
+  annual_statewide_df_internal <- purrr::map_df(1:nrow(scenario_names_table), function(i){
+    df <- risk_list[[i]]  
+    df %>%
+      group_by(crab_year) %>%
+      summarise(
+        DCRB_lbs = sum(DCRB_lbs, na.rm=TRUE),
+        DCRB_rev = sum(DCRB_rev, na.rm=TRUE),
+        Num_DCRB_Vessels = sum(Num_DCRB_Vessels, na.rm=TRUE),
+        
+        Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings, na.rm=TRUE),
+        risk_humpback = sum(risk_humpback, na.rm=TRUE),
+        risk_blue = sum(risk_blue, na.rm=TRUE)
+      ) %>%
+      add_column(
+        scenario_names_table[i,]
+      )
+  })
+  
+  #browser()
+  assign(annual_statewide_df_name, annual_statewide_df_internal, envir=.GlobalEnv)
+  
+  write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_ouputs_",today(),".rds"))
+
+# annual_statewide_df <- c()
+# 
+# for (i in 1:nrow(scenario_table)) # for testing. nrow(scenario_table[1:3,])
+#   { 
+#   
+#   print(paste("Summarizing annual data for Scenario", i))
+# 
+#   annual_statewide_df_tmp <- risk_out_list[[i]] %>%
+#     group_by(crab_year) %>%
+#     summarise(
+#       DCRB_lbs = sum(DCRB_lbs, na.rm=TRUE), 
+#       DCRB_rev = sum(DCRB_rev, na.rm=TRUE), 
+#       Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings, na.rm=TRUE), 
+#       Num_DCRB_Vessels = sum(Num_DCRB_Vessels, na.rm=TRUE), 
+#       risk_humpback = sum(risk_humpback, na.rm=TRUE), 
+#       risk_blue = sum(risk_blue, na.rm=TRUE)
+#       ) %>%
+#     add_column(
+#       scenario_table[i,]
+#       )
+# 
+#   annual_statewide_df %<>% bind_rows(annual_statewide_df_tmp)
+#   
+#   }
+# 
+
+
+# implement mutate for rel risk
 # apply lines 115-178 to get relative change in risk
 
+  ### STEP 2
+  
+  # make tradeoff df
+  
+  #browser()
+  
+  df_tradeoff_internal <- annual_statewide_df %>%
+    group_by(crab_year) %>%
+    
+    # STATUS QUO
+    # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
+    mutate(
+      hump_risk_under_statusquo = risk_humpback[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      blwh_risk_under_statusquo = risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      pings_under_statusquo = Num_DCRB_VMS_pings[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      dollars_under_statusquo = DCRB_rev[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")]
+    ) %>%
+    
+    ungroup() %>%
+    
+    group_by(scenario_df_name, crab_year) %>%
+    
+    summarise(
+      relative_hump_risk = 100 *  (1 - (
+        risk_humpback / hump_risk_under_statusquo
+      )),
+      relative_blwh_risk = 100 *  (1 - (
+        risk_blue / blwh_risk_under_statusquo
+      )),
+      relative_pings = 100 *  (1 - (
+        Num_DCRB_VMS_pings / pings_under_statusquo
+      )),
+      relative_dollars = 100* (
+        DCRB_rev / dollars_under_statusquo
+      ),
+      relative_pounds = 100* (
+        DCRB_lbs / pounds_under_statusquo
+      )
+    ) #%>%
+    
+    # mutate(
+    #   Scenario = unique(scenario_df_name)
+    # )
+  
+  #browser()
+  assign(df_tradeoff_name, df_tradeoff_internal, envir=.GlobalEnv)
+
+  write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_",today(),".rds"))
+
+}
 
 
 # JS stopped here 0740 040820. need to start at line 102 and try function with a toy df. 
 # 041320 also need to make sure grouping by crab.year deals with month stuff 
 
 # inputs to function: hump_risk_metric (original or normalized), blwh_risk_metric (original or normalized),  pings_metric (original or normalized),  
-tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metric) 
-  {
-  df.tradeoff <- output_df_from_sw %>%
-    group_by(crab.year) %>%
-      
-      # STATUS QUO
-      # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
-      mutate(
-        hump_risk_under_statusquo = hump_risk_metric[which(
-          is.na(delay_time_scenario) == TRUE &
-            is.na(delay_domain_scenario) == TRUE &
-            is.na(closure_time_scenario) == TRUE &
-            is.na(closure_domain_scenario) == TRUE &
-            is.na(delay_approach) == TRUE &
-            is.na(delay_redistribution) == TRUE
-        )],
-        blwh_risk_under_statusquo = blwh_risk_metric[which(
-          is.na(delay_time_scenario) == TRUE &
-            is.na(delay_domain_scenario) == TRUE &
-            is.na(closure_time_scenario) == TRUE &
-            is.na(closure_domain_scenario) == TRUE &
-            is.na(delay_approach) == TRUE &
-            is.na(delay_redistribution) == TRUE
-        )],
-        pings_under_statusquo = pings_metric[which(
-          is.na(delay_time_scenario) == TRUE &
-            is.na(delay_domain_scenario) == TRUE &
-            is.na(closure_time_scenario) == TRUE &
-            is.na(closure_domain_scenario) == TRUE &
-            is.na(delay_approach) == TRUE &
-            is.na(delay_redistribution) == TRUE
-        )],
-        dollars_under_statusquo = sum_DCRB_rev[which(
-          is.na(delay_time_scenario) == TRUE &
-            is.na(delay_domain_scenario) == TRUE &
-            is.na(closure_time_scenario) == TRUE &
-            is.na(closure_domain_scenario) == TRUE &
-            is.na(delay_approach) == TRUE &
-            is.na(delay_redistribution) == TRUE
-        )],
-        pounds_under_statusquo = sum_DCRB_lbs[which(
-          is.na(delay_time_scenario) == TRUE &
-            is.na(delay_domain_scenario) == TRUE &
-            is.na(closure_time_scenario) == TRUE &
-            is.na(closure_domain_scenario) == TRUE &
-            is.na(delay_approach) == TRUE &
-            is.na(delay_redistribution) == TRUE
-        )]
-      ) %>%
-      ungroup() %>%
-      group_by(full_scenario_ID, crab.year) %>%
-      summarise(
-        relative_hump_risk = 100 *  (1 - (
-          hump_risk_metric / hump_risk_under_statusquo
-        )),
-        relative_blwh_risk = 100 *  (1 - (
-          blwh_risk_metric / blwh_risk_under_statusquo
-        )),
-        relative_pings = 100 *  (1 - (
-          pings_metric / pings_under_statusquo
-        )),
-        relative_dollars = 100* (
-          sum_DCRB_rev / dollars_under_statusquo
-        ),
-        relative_pounds = 100* (
-          sum_DCRB_lbs / pounds_under_statusquo
-        )
-      ) %>%
-      mutate(
-        Scenario = unique(full_scenario_ID)
-      )
-  df.tradeoff
-  
-  }
+# tradeoff_df_function <- function(hump_risk_metric, blwh_risk_metric, pings_metric) 
+#   {
+#   df.tradeoff <- output_df_from_sw %>%
+#     group_by(crab.year) %>%
+#       
+#       # STATUS QUO
+#       # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
+#       mutate(
+#         hump_risk_under_statusquo = hump_risk_metric[which(
+#           is.na(delay_time_scenario) == TRUE &
+#             is.na(delay_domain_scenario) == TRUE &
+#             is.na(closure_time_scenario) == TRUE &
+#             is.na(closure_domain_scenario) == TRUE &
+#             is.na(delay_approach) == TRUE &
+#             is.na(delay_redistribution) == TRUE
+#         )],
+#         blwh_risk_under_statusquo = blwh_risk_metric[which(
+#           is.na(delay_time_scenario) == TRUE &
+#             is.na(delay_domain_scenario) == TRUE &
+#             is.na(closure_time_scenario) == TRUE &
+#             is.na(closure_domain_scenario) == TRUE &
+#             is.na(delay_approach) == TRUE &
+#             is.na(delay_redistribution) == TRUE
+#         )],
+#         pings_under_statusquo = pings_metric[which(
+#           is.na(delay_time_scenario) == TRUE &
+#             is.na(delay_domain_scenario) == TRUE &
+#             is.na(closure_time_scenario) == TRUE &
+#             is.na(closure_domain_scenario) == TRUE &
+#             is.na(delay_approach) == TRUE &
+#             is.na(delay_redistribution) == TRUE
+#         )],
+#         dollars_under_statusquo = sum_DCRB_rev[which(
+#           is.na(delay_time_scenario) == TRUE &
+#             is.na(delay_domain_scenario) == TRUE &
+#             is.na(closure_time_scenario) == TRUE &
+#             is.na(closure_domain_scenario) == TRUE &
+#             is.na(delay_approach) == TRUE &
+#             is.na(delay_redistribution) == TRUE
+#         )],
+#         pounds_under_statusquo = sum_DCRB_lbs[which(
+#           is.na(delay_time_scenario) == TRUE &
+#             is.na(delay_domain_scenario) == TRUE &
+#             is.na(closure_time_scenario) == TRUE &
+#             is.na(closure_domain_scenario) == TRUE &
+#             is.na(delay_approach) == TRUE &
+#             is.na(delay_redistribution) == TRUE
+#         )]
+#       ) %>%
+#       ungroup() %>%
+#       group_by(full_scenario_ID, crab.year) %>%
+#       summarise(
+#         relative_hump_risk = 100 *  (1 - (
+#           hump_risk_metric / hump_risk_under_statusquo
+#         )),
+#         relative_blwh_risk = 100 *  (1 - (
+#           blwh_risk_metric / blwh_risk_under_statusquo
+#         )),
+#         relative_pings = 100 *  (1 - (
+#           pings_metric / pings_under_statusquo
+#         )),
+#         relative_dollars = 100* (
+#           sum_DCRB_rev / dollars_under_statusquo
+#         ),
+#         relative_pounds = 100* (
+#           sum_DCRB_lbs / pounds_under_statusquo
+#         )
+#       ) %>%
+#       mutate(
+#         Scenario = unique(full_scenario_ID)
+#       )
+#   df.tradeoff
+#   
+#   }
 
 ####################################################################
 ####################################################################

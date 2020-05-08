@@ -9,6 +9,38 @@
 ####################################################################
 ####################################################################
 
+
+# quick try at a plot for new output 050820
+library(ggerr)
+
+ggplot(
+  df_tradeoff, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk,
+    #label=crab.year,
+    colour=scenario_df_name
+  )
+) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to humpbacks") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  #guides(color = guide_legend("Scenario"),  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    legend.position = "none"
+  )
+
 ### REMOVE THIS CHUNK ONCE IT IS LINKED WITH OUTPUTS FROM SW'S FUNCTIONS
 
 library(tidyverse)

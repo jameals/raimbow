@@ -147,6 +147,27 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 ###############################################################################
 
+### test function to make tradeoff df's
+source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function.R")
+start.time <- Sys.time()
+tradeoff_df_function(
+  risk_list = risk_out_list,
+  scenario_names_table = scenario_table,
+  annual_statewide_df_name = "annual_statewide_df",
+  df_tradeoff_name = "df_tradeoff"
+  )
+Sys.time() - start.time
+
+# is risk actually greater for whales under some scenarios? yes. 
+length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432
+
+# is $ or pounds actually greater for the fishery under some scenarios? yes
+length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432
+length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 432
+
+###############################################################################
+
 
 ##### test individual scenarios
 
