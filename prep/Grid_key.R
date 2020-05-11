@@ -5,7 +5,17 @@
 library(dplyr)
 library(sf)
 
-grid.5km.path <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+source("User_script_local.R")
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  grid.5km.path <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.out <- "../raimbow-local/RDATA_files/Grid_key_region.rds"
+  
+} else {
+  stop("Invlaid user")
+}
+
 
 grid.5km <- st_read(grid.5km.path)
 
@@ -28,5 +38,7 @@ grid.region <- grid.5km %>%
                             Region == "CA-SCen" ~ "CenCA", 
                             Region == "CA-S" ~ "CA-S")) %>% 
   select(GRID5KM_ID, region_ts, Region)
+
+saveRDS(grid.region, file = file.out)
 
 ###############################################################################
