@@ -3,8 +3,8 @@ title: "Compare original and overlaid blue whale predictions"
 author: "Sam Woodman"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +14,7 @@ if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = 
 
 ## Introduction
 
-In this document, we compare the original and overlaid (onto 5km grid) blue whale predictions. Specifically, we first look at the distribution and plots of a subset of daily predictions. Then we do a more in-depth comparison of the monthly average of the predictions, since these predictions are what we're using in the risk assessment. We do not currently compare the uncertainty values.
+In this document, we compare the original and overlaid (onto 5km grid) blue whale predictions. Specifically, we first look at the distribution and plots of a subset of daily predictions. Then we do a more in-depth comparison of the monthly average of the predictions, since these predictions are what we're using in the risk assessment. We do not currently compare the uncertainty values. See 'Conclusion' section at the end of the document for brief summary.
 
 ```{r, message=FALSE}
 library(dplyr)
@@ -211,3 +211,15 @@ for (i in 1:12) {
          main = paste("Overlaid - month", i))
 }
 ```
+
+## Conclusion
+
+This is a qualitative rather than quantitative comparison, but all signs pointed to the two sets of predictions being functionally equivalent (in addition to being functionally equivalent to 5km ngb predictions). This is particularly true at the large regional scale at which we are currently working; there likely would be difference between the overlay and ngb method if working at a smaller scale, particularly given the higher number of coastal cells that have NA values with the ngb method. 
+
+Sam's take on benefits of overlay method: 
+
+"""
+I would argue that the ngb method 'loses' some information from the original predictions because it takes a single value from the original predictions, even if the new grid cell intersects with original prediction cells with different values. It shouldn't lose a lot of information because adjacent grid cells are likely to have similar values, but the new predictions with have a bit of a 'rougher' surface. The overlay (areal interpolation) method (described in more detail below) avoids this information loss through its area-weighted average of the prediction values that intersect with the new grid cell, i.e. by taking into account all of the predictions that the new cell intersects with. If a new grid cell does span two original cells (say 60% with cell1 and 40% with cell2), it makes more sense to me that the prediction value for the new grid cell depends on the both values rather than only the value of cell1.
+
+From [ensemble paper](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13283): "The overlay function intersects the prediction polygons from an original SDM with the prediction polygons from the user‐selected base geometry (i.e. base geometry polygons). It then calculates the percentage of each base geometry polygon that overlaps with these intersected polygons, ignoring intersected polygons that have missing (i.e. ‘NA’) prediction values. If this percentage meets or exceeds the user‐specified percent overlap threshold, the function calculates the overlaid prediction as an area‐weighted average of the predictions of the intersected polygons (i.e. areal interpolation; Goodchild & Lam, 1980). Otherwise, the function assigns that base geometry polygon an overlaid prediction of ‘NA’, thereby excluding it from any ensembles. Associated uncertainty values and weights are also overlaid using an area‐weighted average."
+"""
