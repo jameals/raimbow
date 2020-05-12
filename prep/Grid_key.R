@@ -19,6 +19,8 @@ if (user == "JS") {
 
 grid.5km <- st_read(grid.5km.path)
 
+# Define boundaries used for whale risk time series - 
+#   CA-SCen and CA-CEn are combined for Region value
 reg.bound <- c(32.5, 34.4, 36.3, 38.76683, 42, 46.25, 50)
 reg.names <- c("CA-S", "CA-SCen", "CA-Cen", "CA-N", "OR", "WA")
 stopifnot(length(reg.names) == length(reg.bound) - 1)
