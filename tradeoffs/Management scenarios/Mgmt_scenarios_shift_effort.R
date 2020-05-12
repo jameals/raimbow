@@ -7,12 +7,12 @@
 # See 'Readme for Funcs_management_scenarios.docx' for pseudocode
 effort_mgmt <- function(x, early.data.method, 
                         delay.date = NULL, delay.region = NULL, 
-                        delay.method.shift = NULL, delay.method.fidelity = NULL, 
+                        delay.method = NULL, delay.method.fidelity = NULL, 
                         closure.date = NULL, closure.region = NULL, 
                         closure.method = NULL, closure.redist.percent = 100) {
   
   # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
-  #   Ideally this could be used in conjuncture with delayed openinga and early closures
+  #   Ideally this could be used in conjuncture with delayed opening and early closures
   
   ### Inputs
   # x: data.frame; expected to has same format at data frame from Jameal
@@ -22,9 +22,10 @@ effort_mgmt <- function(x, early.data.method,
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
   #   If NULL, then there is no delayed opening
   # delay.region: character; if not NULL, then one of "All", "CenCA", "BIA"
-  # delay.method.shift: character; if not NULL, either "pile" or "lag"
-  # delay.method.fidelity: character; method of redistribution, 
-  #   if used, either "spatial" (fidelity) or "temporal" (fidelity)
+  # delay.method: character; if not NULL, either "remove", "pile", or "lag"
+  # delay.method.fidelity: character; method of redistribution. 
+  #   if used, either "spatial" (fidelity) or "temporal" (fidelity). 
+  #   Ignored if delay.method = "remove"
   # closure.date: Date; date for which the fishery will close in 2009-10 crab season
   #   If NULL, then there is no early (e.g. spring) closure
   # closure.region: character; see 'delay.region'
@@ -53,18 +54,20 @@ effort_mgmt <- function(x, early.data.method,
   #----------------------------------------------------------------------------
   # Input checks
   
+  .func_val_check <- function(x, y) {
+    # Check that x is identical to a value in y
+    any(vapply(y, identical, as.logical(1), x))
+  }
+  
   # Basic checks
   stopifnot(
     inherits(x, "data.frame"), 
-    identical(early.data.method, "pile") | identical(early.data.method, "remove"), 
+    .func_val_check(early.data.method, c("pile", "remove")), 
     is.null(delay.date) | inherits(delay.date, "Date"), 
     is.null(closure.date) | inherits(closure.date, "Date"), 
-    is.null(delay.method.shift) | 
-      identical(delay.method.shift, "pile") | identical(delay.method.shift, "lag"), 
-    is.null(delay.method.fidelity) | 
-      identical(delay.method.fidelity, "spatial") | identical(delay.method.fidelity, "temporal"), 
-    is.null(closure.method) | 
-      identical(closure.method, "remove") |identical(closure.method, "temporal"), 
+    is.null(delay.method) | .func_val_check(delay.method, c("remove", "pile", "lag")), 
+    is.null(delay.method.fidelity) | .func_val_check(delay.method.fidelity, c("spatial", "temporal")), 
+    is.null(closure.method) | .func_val_check(closure.method, c("remove", "temporal")), 
     inherits(closure.redist.percent, c("numeric", "integer")), 
     dplyr::between(closure.redist.percent, 0, 100)
   )
@@ -81,29 +84,29 @@ effort_mgmt <- function(x, early.data.method,
     stop("x does not contain all required columns:\n", 
          paste(names.x.fish, collapse = ", "))
   
-  names.x.info <- c(
-    "crab_year", "year_month", "GRID5KM_ID", "Region", 
-    "BAND_25KM", "BAND_50KM", #"CA_OFFSHOR", 
-    "Blue_occurrence_mean", "Blue_occurrence_se",
-    "Humpback_dens_mean", "Humpback_dens_se"
-  )
-  if (!all(names.x.info %in% names(x))) {
-    x.info <- FALSE
-    names.x.info.no <- names.x.info[!(names.x.info %in% names(x))]
-    message("x does not contain the following info column(s), ", 
-            "and thus the shifted effort data will not have associated ", 
-            "information (e.g. whale predictions):\n", 
-            paste(names.x.info.no, collapse = ", "))
-    
-  } else {
-    x.info <- TRUE
-    if ("CA_OFFSHOR" %in% names(x))
-      warning("Column CA_OFFSHOR is ignored because some grid cells ", 
-              "are in two offshore regions, ", 
-              "which creates duplicate year_month - grid cell pairs ", 
-              "that cause issues when joining",
-              immediate. = TRUE)
-  }
+  # names.x.info <- c(
+  #   "crab_year", "year_month", "GRID5KM_ID", "Region", 
+  #   "BAND_25KM", "BAND_50KM", #"CA_OFFSHOR", 
+  #   "Blue_occurrence_mean", "Blue_occurrence_se",
+  #   "Humpback_dens_mean", "Humpback_dens_se"
+  # )
+  # if (!all(names.x.info %in% names(x))) {
+  #   x.info <- FALSE
+  #   names.x.info.no <- names.x.info[!(names.x.info %in% names(x))]
+  #   message("x does not contain the following info column(s), ", 
+  #           "and thus the shifted effort data will not have associated ", 
+  #           "information (e.g. whale predictions):\n", 
+  #           paste(names.x.info.no, collapse = ", "))
+  #   
+  # } else {
+  #   x.info <- TRUE
+  #   if ("CA_OFFSHOR" %in% names(x))
+  #     warning("Column CA_OFFSHOR is ignored because some grid cells ", 
+  #             "are in two offshore regions, ", 
+  #             "which creates duplicate year_month - grid cell pairs ", 
+  #             "that cause issues when joining",
+  #             immediate. = TRUE)
+  # }
   
   
   # Check for management scenarios
@@ -162,12 +165,12 @@ effort_mgmt <- function(x, early.data.method,
   #   This must be before 'early effort' processing
   x.id <- unique(paste(x$year_month, x$GRID5KM_ID, sep = "-"))
   
-  # Extract 'constant' data (data that won't be changed)
-  if (x.info) {
-    x.other <- x %>% 
-      select(!!names.x.info) %>% 
-      distinct()
-  }
+  # # Extract 'constant' data (data that won't be changed)
+  # if (x.info) {
+  #   x.other <- x %>% 
+  #     select(!!names.x.info) %>% 
+  #     distinct()
+  # }
   
   # Select for and do initial processing of effort data - shift or drop early data
   #browser() # baby steps for JS to understand function
@@ -215,8 +218,7 @@ effort_mgmt <- function(x, early.data.method,
     ungroup()
   
   if (any(x.fish.end.summ$season_date_end > x.fish.end.summ$region_date_end))
-    warning("In original data, ", 
-            "some season end dates come after the region end dates")
+    warning("In original data, some season end dates come after the region end dates")
   
   
   #####
@@ -275,25 +277,18 @@ effort_mgmt <- function(x, early.data.method,
     
     
     #------------------------------------------------------
-    # Step 3) shift dates/times as necessary
+    # Step 3) shift dates/times as necessary, or remove records fro "remove"
     x.fish.shifted <- delay_date_shift(
       left_join(x.d.fish.filter, season.mgmt.summ, by = c("crab_year", "Region")), 
-      delay.method.shift
+      delay.method
     )
-    
-    # Sanity check - all new date records are still in the proper crab year
-    check.int <- interval(
-      as.Date(paste0(substr(x.fish.shifted$crab_year, 1, 4), "-11-01")), 
-      as.Date(paste0(substr(x.fish.shifted$crab_year, 6, 9), "-10-31"))
-    )
-    if (!all(x.fish.shifted$date_record_old %within% check.int)) 
-      warning("Error in delayed opening date shifting - shifted out of crab season")
-    rm(check.int)
     
     
     #------------------------------------------------------
     # Step 4) redistribute effort using spatial or temporal fidelity
-    x.fish.redist <- if (delay.method.fidelity == "temporal") {
+    x.fish.redist <- if (delay.method == "remove") {
+      x.fish.shifted %>% select(-starts_with("season_")) 
+    } else if (delay.method.fidelity == "temporal") {
       redistribute_temporal(x.fish.shifted, Num_DCRB_VMS_pings, "delay", delay.region)
     } else if (delay.method.fidelity == "spatial") {
       x.fish.shifted %>% select(-starts_with("season_")) 
@@ -307,7 +302,7 @@ effort_mgmt <- function(x, early.data.method,
              DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, 
              Num_Unique_DCRB_Vessels)
     
-    # Check in case region was "All"
+    # If else is in case region was "All"
     x.fish.delay <- if (is.null(x.d.fish.nofilter)) {
       x.fish.redist
     } else {
@@ -317,7 +312,15 @@ effort_mgmt <- function(x, early.data.method,
         arrange(crab_year, Region, day(date_record), GRID5KM_ID)
     }
     
-    rm(x.fish.shifted, season.mgmt.summ, x.fish.redist, 
+    # Sanity check - all new date records are still in the proper crab year
+    check.int <- interval(
+      as.Date(paste0(substr(x.fish.delay$crab_year, 1, 4), "-11-01")), 
+      as.Date(paste0(substr(x.fish.delay$crab_year, 6, 9), "-10-31"))
+    )
+    if (!all(x.fish.delay$date_record %within% check.int)) 
+      warning("Error in delayed opening date shifting - shifted out of crab season")
+
+    rm(check.int, x.fish.shifted, season.mgmt.summ, x.fish.redist, 
        x.d.fish.filter, x.d.fish.nofilter)
   }
   
@@ -403,24 +406,24 @@ effort_mgmt <- function(x, early.data.method,
            day_of_year = yday(date_record), 
            id = paste(year_month, GRID5KM_ID, sep = "-")) 
   
-  if (x.info) {
-    x.out <- x.out %>% 
-      left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
-    
-    if (nrow(x.out) > nrow(x.fish.closure))
-      stop("Error when joining shifted effort and identifier variables")
-    
-    x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
-    x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
-    if (!all(x.out.id %in% x.id))
-      warning(paste0("Some of the effort was shifted into novel ", 
-                     "year_month - grid cell spaces, e.g. ", 
-                     head(x.out.id[!(x.out.id %in% x.id)], 1), 
-                     ", either by piling 'early' effort or ", 
-                     "using delayed opening/early closure shifts.", 
-                     "These rows will have NA identifier variables, ", 
-                     "such as whale prediction values or CA offshore region"))
-  }
+  # if (x.info) {
+  #   x.out <- x.out %>% 
+  #     left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
+  #   
+  #   if (nrow(x.out) > nrow(x.fish.closure))
+  #     stop("Error when joining shifted effort and identifier variables")
+  #   
+  #   x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
+  #   x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
+  #   if (!all(x.out.id %in% x.id))
+  #     warning(paste0("Some of the effort was shifted into novel ", 
+  #                    "year_month - grid cell spaces, e.g. ", 
+  #                    head(x.out.id[!(x.out.id %in% x.id)], 1), 
+  #                    ", either by piling 'early' effort or ", 
+  #                    "using delayed opening/early closure shifts.", 
+  #                    "These rows will have NA identifier variables, ", 
+  #                    "such as whale prediction values or CA offshore region"))
+  # }
   
   x.out
 }
@@ -428,21 +431,21 @@ effort_mgmt <- function(x, early.data.method,
 
 ###############################################################################
 ###############################################################################
-# Function for shifting date/time of effort and adding 'record_toshift' column
-delay_date_shift <- function(y, delay.method.shift) {
-  y <- y %>% 
-    rename(year_month_old = year_month, date_record_old = date_record)
-  
-  #--------------------------------------------------------
-  if (delay.method.shift == "lag") {
+# Function for shifting date/time of effort
+delay_date_shift <- function(y, delay.method) {
+  if (delay.method == "remove") {
+    y %>% filter(date_record >= season_open_mgmt)
+    
+  } else if (delay.method == "lag") {
     y %>% 
+      rename(year_month_old = year_month, date_record_old = date_record) %>% 
       mutate(days_tolag = ifelse(season_days_delayed > 0, season_days_delayed, 0), 
              date_record = date_record_old + days(days_tolag), 
              year_month = func_year_mo(date_record))
     
-    #------------------------------------------------------
-  } else if (delay.method.shift == "pile") {
+  } else if (delay.method == "pile") {
     y %>% 
+      rename(year_month_old = year_month, date_record_old = date_record) %>% 
       mutate(diff_days = as.numeric(difftime(date_record_old, season_open_mgmt, 
                                              units = "days")), 
              days_tolag = ifelse(diff_days > 0, 0, 
@@ -453,9 +456,8 @@ delay_date_shift <- function(y, delay.method.shift) {
              year_month = func_year_mo(date_record)) %>% 
       select(-diff_days)
     
-    #------------------------------------------------------
   } else {
-    stop("delay.method.shift is not either 'lag' or 'pile'")
+    stop("delay.method is not one of 'lag', 'pile', or 'remove'")
   }
 }
 

@@ -56,13 +56,13 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>%
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d.noinfo <- effort_mgmt(
   x = x.orig.noinfo,
-  early.data.method = "pile", 
-  delay.date = as.Date("2009-11-15"),
-  delay.region = "CenCA",
-  delay.method.shift = "pile",
-  delay.method.fidelity = "temporal",
-  closure.date = as.Date("2010-05-01"),
-  closure.region = "BIA",
+  early.data.method = "remove", 
+  delay.date = as.Date("2009-12-15"),
+  delay.region = "NorCA",
+  delay.method = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = NULL,
+  closure.region = "CenCA",
   closure.method = "temporal",
   closure.redist.percent = 10
 )
