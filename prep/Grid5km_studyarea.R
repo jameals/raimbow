@@ -17,7 +17,7 @@ if (user == "JS") {
   
   grid.5km.path <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   
-  file.out  <- "../raimbow-local/RDATA_files/Grid_studyarea.rds"
+  file.out  <- "../raimbow-local/RDATA_files/Grid5km_studyarea.rds"
   
 } else {
   stop("Invlaid user")

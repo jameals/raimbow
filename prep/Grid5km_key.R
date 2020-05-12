@@ -1,4 +1,9 @@
 # Create key(s) for grid cell ID and applicable info classifiers
+# TODO: CA_OFFSHOR and others as needed
+
+###############################################################################
+### Grid cell - BIA
+# Currently 
 
 ###############################################################################
 ### Grid cell - Region
@@ -10,7 +15,7 @@ if (user == "JS") {
   
 } else if (user == "SMW") {
   grid.5km.path <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
-  file.out <- "../raimbow-local/RDATA_files/Grid_key_region.rds"
+  file.out <- "../raimbow-local/RDATA_files/Grid5km_key_region.rds"
   
 } else {
   stop("Invlaid user")
