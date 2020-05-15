@@ -103,7 +103,8 @@ con_df_weekly_2009_2018_5km_CA %>%
     log10_Num_DCRB_VMS_pings = log10(Num_DCRB_VMS_pings + 1)
   ) %>%
   ggplot(aes(log10_Num_DCRB_VMS_pings))+
-  geom_density(fill='#33638DFF')+
+  geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=0.1)+
+  #geom_density(fill='#33638DFF')+
   labs(x='log10 DCRB VMS pings per 5km grid cell')
 
 # create a cubetransform

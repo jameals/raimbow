@@ -91,7 +91,7 @@ scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_tabl
     
     delay.region = if (scenario_table$delay.region[i] == "NULL") NULL else scenario_table$delay.region[i],
     
-    delay.method.shift = scenario_table$delay.method.shift[i],
+    delay.method = scenario_table$delay.method[i],
     
     delay.method.fidelity = scenario_table$delay.method.fidelity[i],
     
@@ -169,7 +169,7 @@ length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 432
 ###############################################################################
 
 
-##### test individual scenarios
+##### shift effort for individual scenarios
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
@@ -179,7 +179,7 @@ scenario.output.df.noinfo.sq <- effort_mgmt(
   early.data.method = "remove", 
   delay.date = NULL,
   delay.region = NULL,
-  delay.method.shift = NULL,
+  delay.method = NULL,
   delay.method.fidelity = NULL,
   closure.date = NULL,
   closure.region = NULL,
@@ -192,7 +192,7 @@ scenario.output.df.noinfo <- effort_mgmt(
   early.data.method = "remove", 
   delay.date = NULL,
   delay.region = NULL,
-  delay.method.shift = "lag",
+  delay.method = "lag",
   delay.method.fidelity = "spatial",
   closure.date = as.Date("2010-04-01"),
   closure.region = "BIA",
@@ -205,7 +205,7 @@ scenario.output.df <- effort_mgmt(
   early.data.method = "remove", 
   delay.date = NULL,
   delay.region = NULL,
-  delay.method.shift = "lag",
+  delay.method = "lag",
   delay.method.fidelity = "spatial",
   closure.date = as.Date("2010-04-01"),
   closure.region = "BIA",
@@ -223,6 +223,28 @@ head(data.frame(scenario.output.df))
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 risk_out_sq <- risk_mgmt(scenario.output.df.noinfo.sq, Num_DCRB_VMS_pings, x.whale)
 risk_out_sq
+
+
+### Calculate and summarize risk for sq scenario with normalized outputs
+
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk_normalize.R")
+risk_out_sq <- risk_mgmt(scenario.output.df.noinfo.sq, Num_DCRB_VMS_pings, x.whale)
+glimpse(risk_out_sq)
+
+# subset to march 2015 for trial run using prioritizr
+risk_out_sq_mar_2015 <- risk_out_sq %>% 
+  filter(year_month == "2015_03")
+glimpse(risk_out_sq_mar_2015)
+
+risk_5km_sq <- read_rds(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_","2020-05-15",".rds"))
+glimpse(risk_5km_sq)
+
+# subset to march 2015 for trial run using prioritizr
+risk_5km_sq_mar_2015 <- risk_5km_sq %>% 
+  filter(year_month == "2015_03")
+glimpse(risk_5km_sq_mar_2015)
+write_rds(risk_5km_sq_mar_2015, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_mar2015_",today(),".rds"))
+
 
 ### graveyard
 ##### Loop through scenarios of interest and create a list of output df's
@@ -251,7 +273,7 @@ risk_out_sq
 #       scenario_table$delay.region[i]
 #     ),
 #     
-#     delay.method.shift = scenario_table$delay.method.shift[i],
+#     delay.method = scenario_table$delay.method[i],
 #     
 #     delay.method.fidelity = scenario_table$delay.method.fidelity[i],
 #     

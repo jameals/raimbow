@@ -25,7 +25,7 @@ library(magrittr)
 # risk_humpback = Humpback_dens_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
 # risk_blue = Blue_occurrence_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
 
-# metadata for scenarios in scenario_table.RDS, see make_scenarios_table.R for descriptions: "scenario_df_name"       "delay_scenario"         "closure_scenario"       "early.data.method"      "delay.date", "delay.region", "delay.method.shift"     "delay.method.fidelity"  "closure.date"           "closure.region"         "closure.method"         "closure.redist.percent"
+# metadata for scenarios in scenario_table.RDS, see make_scenarios_table.R for descriptions: "scenario_df_name"       "delay_scenario"         "closure_scenario"       "early.data.method"      "delay.date", "delay.region", "delay.method"     "delay.method.fidelity"  "closure.date"           "closure.region"         "closure.method"         "closure.redist.percent"
 
 
 ####################################################################
