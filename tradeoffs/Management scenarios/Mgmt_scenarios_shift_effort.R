@@ -9,7 +9,9 @@ effort_mgmt <- function(x, early.data.method,
                         delay.date = NULL, delay.region = NULL, 
                         delay.method = NULL, delay.method.fidelity = NULL, 
                         closure.date = NULL, closure.region = NULL, 
-                        closure.method = NULL, closure.redist.percent = 100) {
+                        closure.method = NULL, closure.redist.percent = 100, 
+                        redist.early.date = NULL, redist.early.perc = NULL, 
+                        redist.late.date = NULL, redist.late.perc = NUL) {
   
   # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
   #   Ideally this could be used in conjuncture with delayed opening and early closures
@@ -32,6 +34,15 @@ effort_mgmt <- function(x, early.data.method,
   # closure.method: character; if not NULL, then either "remove" or "temporal (fidelity)
   # closure.redist.percent: numeric; default is 100. If used, 
   #   percentage of effort to redistribute that is kept
+  # redist.early.date: Date; if not NULL, then all effort values before this date
+  #   are multiplied by (redist.early.perc / 100)
+  # redist.early.perc: numeric; if not NULL, a numeric between 0 and 100. 
+  #   See redist.early.date
+  # redist.late.date: Date; if not NULL, then all effort values after this date
+  #   are multiplied by (redist.late.perc / 100)
+  # redist.late.perc: numeric; if not NULL, a numeric between 0 and 100. 
+  #   See redist.late.date
+  
   
   ### Output
   # Data frame with simulated shifts in effort for a scenario and the following columns added:
@@ -54,8 +65,7 @@ effort_mgmt <- function(x, early.data.method,
   #----------------------------------------------------------------------------
   # Input checks
   
-  .func_val_check <- function(x, y) {
-    # Check that x is identical to a value in y
+  .func_val_check <- function(x, y) { #Check that x is identical to any value in y
     any(vapply(y, identical, as.logical(1), x))
   }
   
@@ -160,17 +170,12 @@ effort_mgmt <- function(x, early.data.method,
   
   #----------------------------------------------------------------------------
   ### Initial processing
-  #browser()
-  # Determine year-month + GRID5KM_ID pairs in original data
-  #   This must be before 'early effort' processing
-  x.id <- unique(paste(x$year_month, x$GRID5KM_ID, sep = "-"))
-  
-  # # Extract 'constant' data (data that won't be changed)
-  # if (x.info) {
-  #   x.other <- x %>% 
-  #     select(!!names.x.info) %>% 
-  #     distinct()
-  # }
+  # Extract 'constant' data. Currently only CA_OFFSHOR
+  if ("CA_OFFSHOR" %in% names(x)) {
+    x.other <- x %>%
+      select(.data$GRID5KM_ID, .data$CA_OFFSHOR) %>%
+      distinct()
+  }
   
   # Select for and do initial processing of effort data - shift or drop early data
   #browser() # baby steps for JS to understand function
@@ -319,7 +324,7 @@ effort_mgmt <- function(x, early.data.method,
     )
     if (!all(x.fish.delay$date_record %within% check.int)) 
       warning("Error in delayed opening date shifting - shifted out of crab season")
-
+    
     rm(check.int, x.fish.shifted, season.mgmt.summ, x.fish.redist, 
        x.d.fish.filter, x.d.fish.nofilter)
   }
@@ -396,6 +401,8 @@ effort_mgmt <- function(x, early.data.method,
   #----------------------------------------------------------------------------
   # Final checks and formatting
   x.out <- x.fish.closure %>% 
+    left_join(x.other, by = "GRID5KM_ID") %>% 
+    select(crab_year, GRID5KM_ID, Region, CA_OFFSHOR, everything()) %>% 
     left_join(x.fish.end.summ, by = c("crab_year", "Region")) %>% 
     mutate(date_past_season_end = date_record > season_date_end, 
            date_past_region_end = date_record > region_date_end, 
@@ -403,27 +410,10 @@ effort_mgmt <- function(x, early.data.method,
            month_as_numeric = lubridate::month(date_record), 
            month = factor(lubridate::month(date_record, label = TRUE, abbr = FALSE), 
                           levels = levels(x$month)), 
-           day_of_year = yday(date_record), 
-           id = paste(year_month, GRID5KM_ID, sep = "-")) 
+           day_of_year = yday(date_record))
   
-  # if (x.info) {
-  #   x.out <- x.out %>% 
-  #     left_join(x.other, by = c("crab_year", "GRID5KM_ID", "Region", "year_month"))
-  #   
-  #   if (nrow(x.out) > nrow(x.fish.closure))
-  #     stop("Error when joining shifted effort and identifier variables")
-  #   
-  #   x.other.id <- unique(paste(x.other$year_month, x.other$GRID5KM_ID, sep = "-"))  
-  #   x.out.id <- unique(paste(x.out$year_month, x.out$GRID5KM_ID, sep = "-"))  
-  #   if (!all(x.out.id %in% x.id))
-  #     warning(paste0("Some of the effort was shifted into novel ", 
-  #                    "year_month - grid cell spaces, e.g. ", 
-  #                    head(x.out.id[!(x.out.id %in% x.id)], 1), 
-  #                    ", either by piling 'early' effort or ", 
-  #                    "using delayed opening/early closure shifts.", 
-  #                    "These rows will have NA identifier variables, ", 
-  #                    "such as whale prediction values or CA offshore region"))
-  # }
+  if (nrow(x.out) != nrow(x.fish.closure))
+    stop("Error - addition of extra rows when joining additional information")
   
   x.out
 }
@@ -632,6 +622,7 @@ redistribute_temporal <- function(z, z.col, z.type, z.reg, z.perc = 100) {
     ungroup() %>% 
     left_join(distinct(select(z, GRID5KM_ID, BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn)), 
               by = c("GRID5KM_ID")) %>% 
+    select(-.data$id) %>% 
     select(crab_year, GRID5KM_ID, Region, year_month, date_record, 
            BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn, 
            everything())

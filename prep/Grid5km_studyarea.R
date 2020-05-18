@@ -11,13 +11,13 @@ source("User_script_local.R")
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  path.fish <- "../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
-  path.hump <- "../raimbow-local/Outputs/Humpback_5km_long_monthly.rds"
-  path.blue <- "../raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds"
+  path.fish <- "C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
+  path.hump <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds"
+  path.blue <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds"
   
-  grid.5km.path <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  grid.5km.path <- "C:/SMW/RAIMBOW/raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   
-  file.out  <- "../raimbow-local/RDATA_files/Grid5km_studyarea.rds"
+  file.out  <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_studyarea.rds"
   
 } else {
   stop("Invlaid user")
@@ -36,6 +36,7 @@ x.blue <- readRDS(path.blue) %>%
   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 
 stopifnot(
+  !anyNA(x.fish$Num_DCRB_VMS_pings), 
   !anyNA(x.hump$Humpback_dens_mean), 
   !anyNA(x.blue$Blue_occurrence_mean)
 )
