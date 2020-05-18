@@ -18,7 +18,9 @@ x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_
 grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds") %>% 
   select(-region_ts)
 
-x.orig <- x.orig.noinfo %>% left_join(grid.key, by = "GRID5KM_ID")
+x.orig <- x.orig.noinfo %>% 
+  left_join(grid.key, by = "GRID5KM_ID") %>% 
+  mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
 

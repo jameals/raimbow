@@ -153,7 +153,7 @@ effort_mgmt <- function(x, early.data.method,
   
   # Check region names, if applicable
   region.acc <- c("All", "CenCA", "NorCA", "BIA") #TODO: add "OR", "WA", CA-SCen", etc
-  if (!all(names(x$Region) %in% region.acc))
+  if (!all(x$Region %in% region.acc))
     stop("All of x$Region must be one of:\n", 
          paste(region.acc, collapse = ", "))
   
