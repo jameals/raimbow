@@ -1,4 +1,17 @@
-### Make the scenario combinations 
+# Compare the effects of:
+# 1. CenCA delay (a) none, (b) remove, (c) pile up, (d) lag
+# 2. CenCA early closure, (a) none, (b) remove, (c) displace
+# 3. [1a,2a], [1a, 2b], [1a, 2c], [1b, 2a], [1b, 2b], [1b, 2c], [1c,2a], [1c, 2b], [1c, 2c], [1d, 2a], [1d, 2b], [1d, 2c]
+
+library(tidyverse)
+
+# set delayed opening and early closure dates for scenarios
+delayed.opening.date <- "2009-12-15"
+early.closure.date <- "2010-04-01"
+
+### Make the scenario combinations
+
+
 delay_scenarios_effort_comparison <- c(
   "No_Delay",
   "CenCA_Marine_Life_Delay"
@@ -27,51 +40,61 @@ scenario_table_effort_comparison <- expand.grid(
   "closure.method" = closure_methods_effort_comparison
 ) 
 
-# drop scenarios that don't include delays or early closures
+# eliminate all status quo scenarios
+scenario_table_effort_comparison <- scenario_table_effort_comparison[
+-which(scenario_table_effort_comparison$delay_scenario == "No_Delay" & 
+        scenario_table_effort_comparison$closure_scenario == "No_Early_Closure"
+      ), ]
+
+# add back in status quo scenario
 scenario_table_effort_comparison <- scenario_table_effort_comparison %>%
-  filter(
-    delay_scenario == "No_Delay" & closure_scenario == "No_Early_Closure"
+  bind_rows(data.frame(
+    delay_scenario="No_Delay", closure_scenario="No_Early_Closure", delay.method="NULL",closure.method="NULL"
   )
+  )
+
 
 # set delayed opening and early closure dates for scenarios
 delayed.opening.date <- "2009-12-15"
 early.closure.date <- "2010-04-01"
+
+# next step: create if_else statements to populate all relevant columns
 
 # 5th set of scenarios: just to compare effort redistribution
 
 # early.data.method: set as remove for all scenarios unless asked to do otherwise
 # delay.date: NULL or Dec 15
 # delay.region: NULL or "CenCA"
-# delay.method: "pile" or "remove". "lag" scenario captured above
-# delay.method.fidelity: develop 2 complete sets of scenarios, 1 with this setting as "spatial" and 1 as "temporal". JS preferred / main text scenario setting is "spatial"
+# delay.method: "pile","remove", "lag" 
+# delay.method.fidelity: "spatial"
 # closure.date: NULL or Apr 1
-# closure.region: NULL, "All", "CenCA", "BIA"
-# closure.method: set as "temporal" but compare to "remove"; must be "remove" when closure.region is "All"
-# closure.redist.percent: develop 2 complete sets of scenarios, 1 with this setting as 100 and 1 as 10. JS preferred / main text scenario setting is 10 for closure.region== "CenCA", 100 for closure.region=="BI
+# closure.region: NULL, "CenCA"
+# closure.method: set as "temporal" but compare to "remove"
+# closure.redist.percent: 100
 
 # delay.method.fidelity: "spatial"
 # closure.redist.percent: 100
-scenario_table_5 <- scenario_table %>%
+scenario_table_5 <- scenario_table_effort_comparison %>%
   mutate(
-    scenario_df_name = paste(delay_scenario,closure_scenario,"delay_method_fidelity_spatial","closure_redist_percent_100",sep="_"),
+    scenario_df_name = paste(delay_scenario,closure_scenario,delay.method,closure.method,sep="_"),
     early.data.method = "remove",
     delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
     delay.region = ifelse(delay_scenario == "No_Delay", "NULL", "CenCA"),
-    delay.method = "lag",
     delay.method.fidelity = "spatial",
     closure.date = ifelse(closure_scenario != "No_Early_Closure", early.closure.date, "NULL"),
     closure.region = ifelse(closure_scenario == "No_Early_Closure", "NULL",
-                            ifelse(substr(closure_scenario,1,3) == "Sta", 
-                                   "All",
-                                   ifelse(substr(closure_scenario,1,3) == "Cen",
-                                          "CenCA", "BIA"
-                                   )
-                            )
-    ),
-    closure.method = "temporal",
+                           "CenCA"),
     closure.redist.percent = 100
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
                 closure.method, closure.redist.percent)
+
+
+write_rds(scenario_table_5, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_effort_comparison.RDS"
+)
+)
 
