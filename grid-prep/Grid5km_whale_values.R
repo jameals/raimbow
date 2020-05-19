@@ -12,7 +12,7 @@ source("User_script_local.R")
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  path.key.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds"
+  # path.key.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds"
   # path.key.bia <- "../raimbow-local/RDATA_files/Grid5km_BIA_overlap.rds"
   path.grid.studyarea <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_studyarea.rds"
   path.grid.lno <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
@@ -66,7 +66,7 @@ sum(!(grid.studyarea %in% x.hump$GRID5KM_ID)) #3
 
 #------------------------------------------------------------------------------
 # Join whale datasets, join identifier variables, and save to file
-key.region <- readRDS(path.key.region) %>% select(-region_ts)
+# key.region <- readRDS(path.key.region) %>% select(-region_ts)
 # key.bia <- readRDS(path.key.bia) %>% 
 #   select(GRID5KM_ID, BIA_mn, BIA_bm)
 
@@ -74,7 +74,7 @@ key.region <- readRDS(path.key.region) %>% select(-region_ts)
 sum(!(x.blue$GRID5KM_ID %in% x.hump$GRID5KM_ID)) #254
 
 x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>% 
-  left_join(key.region, by = "GRID5KM_ID") %>%
+  # left_join(key.region, by = "GRID5KM_ID") %>%
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") %>% 
   mutate(normalized_humpback = as.vector(scale(Humpback_abund_mean, 
                                                center = min(Humpback_abund_mean, na.rm=TRUE), 
@@ -82,7 +82,7 @@ x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month")) %>%
          normalized_blue = as.vector(scale(Blue_occurrence_mean, 
                                            center = min(Blue_occurrence_mean, na.rm=TRUE), 
                                            scale = diff(range(Blue_occurrence_mean, na.rm=TRUE))))) %>% 
-  select(GRID5KM_ID, year_month, Region, CA_OFFSHOR, area_km_lno, everything())
+  select(GRID5KM_ID, year_month, area_km_lno, everything())
 
 saveRDS(x.whale, file = file.out)
 
