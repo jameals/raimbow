@@ -129,12 +129,34 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
   #                      Num_Unique_DCRB_Vessels = 0)) %>% 
   # arrange(year_month, GRID5KM_ID)
   
-  
-  # Add in whale predictions and calculate risk
+  #browser()
+  # Add in whale predictions, create normalized variables, and calculate risk
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
-    mutate(risk_humpback = effort_val * Humpback_dens_mean, 
-           risk_blue = effort_val * Blue_occurrence_mean)
+    mutate(
+      normalized_humpback = as.vector(
+        scale(
+          Humpback_dens_mean,center=min(Humpback_dens_mean, na.rm=TRUE),scale=diff(range(Humpback_dens_mean, na.rm=TRUE))
+        )
+      ),
+      normalized_blue = as.vector(
+        scale(
+          Blue_occurrence_mean,center=min(Blue_occurrence_mean, na.rm=TRUE),scale=diff(range(Blue_occurrence_mean, na.rm=TRUE))
+        )
+      ),        
+      normalized_effort = as.vector(
+        scale(
+          effort_val,center=min(effort_val, na.rm=TRUE),scale=diff(range(effort_val, na.rm=TRUE))
+        )
+      ),
+      risk_humpback = effort_val * Humpback_dens_mean, 
+      risk_blue = effort_val * Blue_occurrence_mean,
+      n_risk_humpback = normalized_effort * normalized_humpback, 
+      n_risk_blue = normalized_effort * normalized_blue
+    )
+  
+  # option to write out 5km grid cell risk values for each year_mo
+  #write_rds(x.ym.risk, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_",today(),".rds"))
   
   # Print messages if any whale predictions are NA
   if (any(is.na(x.ym.risk$risk_humpback)))
@@ -148,15 +170,19 @@ risk_mgmt <- function(x, x.col, y = NULL, ym.min = "2009_11", ym.max = "2018_06"
             "for at least some year_month/grid cell combos with fishing effort:\n", 
             paste(sort(unique(x.ym.risk$GRID5KM_ID[is.na(x.ym.risk$Blue_occurrence_mean)])), 
                   collapse = ", "))
-  
+}
+ 
+
+###############################################################################
+risk_mgmt_summ <- function(x) {
   # Summarize risk by year_month and Region
   #   To summarize whale preds, would need to complete() grid cells and year_months
-  if (any(is.na(x.ym.risk$Region))) 
+  if (any(is.na(x$Region))) 
     stop("NA regions - error in effort processing")
   
-  risk.summ <- x.ym.risk %>% 
+  risk.summ <- x %>% 
     group_by(year_month, Region) %>% 
-    summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:risk_blue), 
+    summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:n_risk_blue), 
                  sum, na.rm = TRUE) %>% 
     ungroup() %>% 
     # complete(year_month = ym.seq, 
