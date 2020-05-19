@@ -11,7 +11,7 @@ effort_mgmt <- function(x, early.data.method,
                         closure.date = NULL, closure.region = NULL, 
                         closure.method = NULL, closure.redist.percent = 100, 
                         redist.early.date = NULL, redist.early.perc = NULL, 
-                        redist.late.date = NULL, redist.late.perc = NUL) {
+                        redist.late.date = NULL, redist.late.perc = NULL) {
   
   # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
   #   Ideally this could be used in conjuncture with delayed opening and early closures
@@ -622,7 +622,6 @@ redistribute_temporal <- function(z, z.col, z.type, z.reg, z.perc = 100) {
     ungroup() %>% 
     left_join(distinct(select(z, GRID5KM_ID, BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn)), 
               by = c("GRID5KM_ID")) %>% 
-    select(-.data$id) %>% 
     select(crab_year, GRID5KM_ID, Region, year_month, date_record, 
            BIA_bm_noNAs, BIA_mn_noNAs, BIA_bm_or_mn, 
            everything())
