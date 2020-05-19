@@ -76,11 +76,11 @@ d <- effort_mgmt(
   early.data.method = "remove", 
   delay.date = as.Date("2009-12-15"),
   delay.region = "NorCA",
-  delay.method = "lag",
-  delay.method.fidelity = "spatial",
+  delay.method = "pile",
+  delay.method.fidelity = "temporal",
   closure.date = NULL,
-  closure.region = "CenCA",
-  closure.method = "temporal",
+  closure.region = "BIA",
+  closure.method = "remove",
   closure.redist.percent = 10
 )
 
@@ -99,7 +99,7 @@ d.risk <- risk_mgmt(
   x = d, x.col = Num_DCRB_VMS_pings, y = x.whale, # %>% select(-area_km_lno), #Don't have to remove area column
   risk.unit = "dens", area.key = area.key
   )
-d.risk.summ <- risk_mgmt_summ(d.risk)
+d.risk.summ <- risk_mgmt_summ(d.risk, summary.level = "Region")
 
 
 ###############################################################################

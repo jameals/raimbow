@@ -194,8 +194,10 @@ risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key,
 
 
 ###############################################################################
-risk_mgmt_summ <- function(x) {
+risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
   #----------------------------------------------------------------------------
+  summary.level <- match.arg(summary.level)
+  
   # Prep and Error checks
   names.x <- c(
     "year_month", "GRID5KM_ID", "Region", "area_km_lno", "effort_val", 
@@ -225,18 +227,20 @@ risk_mgmt_summ <- function(x) {
     stop("NA regions - error in effort processing")
   
   #----------------------------------------------------------------------------
-  # Summarize risk by year_month and Region
+  # Summarize risk by year_month and Region/BIA. Whale preds are separate
   #   To summarize whale preds, would need to complete() grid cells and year_months
-  risk.summ <- x %>% 
-    group_by(year_month, Region) %>% 
+  risk.summ <-  if (summary.level == "Region") {
+    x %>% group_by(year_month, Region)
+  } else if (summary.level == "BIA") {
+    x %>% group_by(year_month, BIA_bm_or_mn)
+  }
+  
+  risk.summ %>% 
     summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:n_risk_blue), 
                  sum, na.rm = TRUE) %>% 
     ungroup() %>% 
     mutate(crab_year = func_crab_year(year_month)) %>% 
     select(year_month, crab_year, everything())
-  
-  
-  risk.summ
 }
 
 
