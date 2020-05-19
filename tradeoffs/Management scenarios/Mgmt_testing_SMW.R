@@ -1,15 +1,15 @@
 library(dplyr)
 library(lubridate)
+library(sf)
 
 
-
-x.hump <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
-  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
-  select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
-
-x.blue <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds") %>%
-  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
-  select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
+# x.hump <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
+#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+#   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
+# 
+# x.blue <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds") %>%
+#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+#   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 
 x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
   select(-year_mo, -contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_"), 
@@ -22,6 +22,13 @@ x.orig <- x.orig.noinfo %>%
   left_join(grid.key, by = "GRID5KM_ID") %>% 
   mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
+
+
+x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
+
+# d.join <- left_join(x.orig, x.whale)
+# length(table(d.join$GRID5KM_ID[is.na(d.join$Blue_occurrence_mean)])) #24, as expected
+# length(table(d.join$GRID5KM_ID[is.na(d.join$Humpback_abund_mean)])) #3, as expected
 
 
 
@@ -57,7 +64,7 @@ stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_
 #   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
 
 
-x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
+# x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
 # left_join(x.reg.key)
 # rm(x.hump, x.blue)
 
@@ -78,10 +85,21 @@ d <- effort_mgmt(
 )
 
 
+# Load and prep grid cell - area key
+load("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.RDATA")
+area.key <- grid.5km.lno %>% 
+  st_drop_geometry() %>% 
+  select(GRID5KM_ID, area_km_lno) %>% 
+  distinct()
+
+
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-risk_mgmt(d.noinfo, Num_DCRB_VMS_pings, x.whale)
-
+d.risk <- risk_mgmt(
+  x = d, x.col = Num_DCRB_VMS_pings, y = x.whale, # %>% select(-area_km_lno), #Don't have to remove area column
+  risk.unit = "dens", area.key = area.key
+  )
+d.risk.summ <- risk_mgmt_summ(d.risk)
 
 
 ###############################################################################
