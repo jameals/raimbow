@@ -23,14 +23,14 @@ closure_scenarios_effort_comparison <- c(
 )
 
 delay_methods_effort_comparison <- c(
-  "Pile",
-  "Lag",
-  "Remove"
+  "pile",
+  "lag",
+  "remove"
 )
 
 closure_methods_effort_comparison <- c(
-  "Temporal",
-  "Remove"
+  "temporal",
+  "remove"
 )
 
 scenario_table_effort_comparison <- expand.grid(
