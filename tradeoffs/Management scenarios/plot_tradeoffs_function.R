@@ -9,7 +9,159 @@
 ####################################################################
 ####################################################################
 
+# quick try at a plot for new output 051920
+library(ggerr)
+library(viridis)
 
+
+# make nice scenario names
+unique(df_tradeoff_focal_scenarios$scenario_df_name)
+df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
+    rep("Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Status Quo", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year)))
+    )  
+# drop scenario 25 because it is status quo?
+
+# make summed normalized risk for both whales
+df_tradeoff_focal_scenarios <- df_tradeoff_focal_scenarios %>%
+  mutate(
+    mean_whale_risk_n = (relative_hump_risk_n + relative_blwh_risk_n)/2
+  )
+
+### normalized humpbacks
+png(paste0(here::here("tradeoffs",
+                      "Management scenarios",
+                      "figures"), 
+           "/Tradeoff plot - normalized humpbacks only.png"), 
+    width = 10, height = 8, units = "in", res = 300)
+
+to_hump_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    #label=crab_year,
+    #label=pretty_scenario_names,
+    colour=pretty_scenario_names
+  )
+) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  #geom_label_repel() +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis(option="B", discrete=TRUE) + #, begin=0.2, end=0.8)+
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-50,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+to_hump_n
+dev.off()
+
+### normalized blues
+png(paste0(here::here("tradeoffs",
+                      "Management scenarios",
+                      "figures"), 
+           "/Tradeoff plot - normalized blues only.png"), 
+    width = 10, height = 8, units = "in", res = 300)
+
+to_blue_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    #label=crab_year,
+    colour=pretty_scenario_names
+  )
+) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  #geom_label_repel() +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis(option="B", discrete=TRUE) + #, begin=0.2, end=0.8)+
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-50,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+to_blue_n
+dev.off()
+
+### normalized both
+png(paste0(here::here("tradeoffs",
+                      "Management scenarios",
+                      "figures"), 
+           "/Tradeoff plot - normalized humpbacks and blues.png"), 
+    width = 10, height = 8, units = "in", res = 300)
+
+to_both_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=mean_whale_risk_n,
+    #label=crab_year,
+    colour=pretty_scenario_names
+  )
+) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2, alpha=0.6) +
+  #geom_label_repel() +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis(option="B", discrete=TRUE) + #, begin=0.2, end=0.8)+
+  #geom_text() + 
+  #geom_point(data=df.tradeoff.annualmeans, size=10) +
+  ylab("Relative reduction in risk to\nhumpback and blue whales (normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-50,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+to_both_n
+dev.off()
+
+
+
+#############
 # quick try at a plot for new output 050820
 library(ggerr)
 

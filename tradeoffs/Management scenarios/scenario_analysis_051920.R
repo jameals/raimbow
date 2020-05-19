@@ -6,7 +6,7 @@ rm(list = ls())
 ### STEPS ###
 
 ### 1) Loop through scenarios of interest and create a list of output df's
-### 2) Calculate and summarize risk for multiple scenarios to evaluate different methods of shifting effort
+### 2) Calculate and summarize risk for multiple scenarios
 ### 3) make annual and tradeoff df's. 
 
 ###############################################################################
@@ -25,9 +25,8 @@ x.orig <- x.orig.noinfo %>%
   mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
-source("tradeoffs/Management scenarios/make_scenarios_table_effort_comparison.R")
-scenario_table_5[1,]
-scenario_table <- scenario_table_5
+source("tradeoffs/Management scenarios/make_scenarios_table.R")
+scenario_table[1,]
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
 scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
@@ -67,18 +66,18 @@ scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_tabl
 
 #rm()
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/effort_shift_scenariocomparisons_",today(),".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
 
 
 ###############################################################################
 
 
-### 2) Calculate and summarize risk for multiple scenarios to evaluate different methods of shifting effort
+### 2) Calculate and summarize risk for multiple scenarios
 
 # grab shifted effort fishing data
 
 # JS 
-load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/effort_shift_scenariocomparisons_","2020-05-18",".RData"))
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_","2020-05-19",".RData"))
 
 # grab whale data
 
@@ -134,9 +133,9 @@ risk_out_list_n <- lapply(1:nrow(scenario_table), function(i, scenario_table) { 
 )
 
 Sys.time() - start.time
-# Time difference of 2.269963 mins
+# Time difference of 5.617289 mins
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/effort_shift_scenariocomparisons_normalizedrisk_","2020-05-19",".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_normalizedrisk_","2020-05-19",".RData"))
 
 glimpse(risk_out_list_n[[1]])
 
@@ -147,35 +146,59 @@ glimpse(risk_out_list_n[[1]])
 # assign number IDs to scenarios
 scenario_table$number_id <- row.names(scenario_table)
 
-# source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function_effort_comparison.R")
-# start.time <- Sys.time()
-# tradeoff_df_function(
-#   risk_list = risk_out_list,
-#   scenario_names_table = scenario_table,
-#   annual_statewide_df_name = "annual_statewide_df",
-#   df_tradeoff_name = "df_tradeoff"
-#   )
-# Sys.time() - start.time
-# 
-# # is risk actually greater for whales under some scenarios? yes. 
-# dim(df_tradeoff)
-# length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432; for effort comparison, 6 out of 171
-# length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432; for effort comparison, 8 out of 171
-# 
-# # is $ or pounds actually greater for the fishery under some scenarios? yes
-# length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432; for effort comparison, 5 out of 171
-# length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 432; for effort comparison, 0 out of 171
-
 # could subset or map to region for regional summaries here
-source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function_effort_comparison.R")
+source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function.R")
 start.time <- Sys.time()
 tradeoff_df_function(
   risk_list = risk_out_list_n,
   scenario_names_table = scenario_table,
-  annual_statewide_df_name = "annual_statewide_df_n",
-  df_tradeoff_name = "df_tradeoff_n"
-)
+  annual_statewide_df_name = "annual_statewide_df",
+  df_tradeoff_name = "df_tradeoff"
+  )
 Sys.time() - start.time
 
+# is risk actually greater for whales under some scenarios? yes.
+dim(df_tradeoff)
+length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432; for effort comparison, 6 out of 171
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432; for effort comparison, 8 out of 171
+
+# is $ or pounds actually greater for the fishery under some scenarios? yes
+length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432; for effort comparison, 5 out of 171
+length(which(df_tradeoff$relative_pounds > 100)) # 4 out of 432; for effort comparison, 0 out of 171
+
+
 ###############################################################################
+
+###############################################################################
+
+### 4) Subset to focal scenarios
+
+# drop delay.method == "remove", delay.method.fidelity == "temporal", closure.method == "remove"
+annual_statewide_df_focal_scenarios <- annual_statewide_df %>%
+  filter(
+    delay.method != "remove") %>%
+  filter(
+      delay.method.fidelity != "temporal"
+  ) %>%
+  filter(
+      closure.method != "remove"
+    )
+# ifelse(closure.region == "BIA, drop closure.redist.percent == 10, drop closure.redist.percent == 100)
+annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which(
+  annual_statewide_df_focal_scenarios$closure.region == "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 10),]
+annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
+    annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
+
+unique(annual_statewide_df_focal_scenarios$number_id)
+# which scenario number is status quo? 25
+annual_statewide_df_focal_scenarios$number_id[which(annual_statewide_df_focal_scenarios$scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_10")]
+
+df_tradeoff_focal_scenarios <- df_tradeoff[which(
+  df_tradeoff$number_id %in% unique(annual_statewide_df_focal_scenarios$number_id)
+),]
+unique(df_tradeoff_focal_scenarios$number_id)
+
+###############################################################################
+
+### 5) Make some plots of focal scenarios. Use plot_tradeoffs_function.R
 
