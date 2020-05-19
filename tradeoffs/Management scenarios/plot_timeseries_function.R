@@ -6,6 +6,20 @@
 
 # making plots formatted for Word and Power Point: https://twitter.com/trevorabranch/status/1238163076215529474?s=12
 
+library(tidyverse)
+library(viridis)
+library(ggrepel)
+
+####################################################################
+####################################################################
+
+# 051820
+# start with comparison of scenarios 2, 4, 9:
+# 1) CenCA delay with spatial fidelity, Remove, Lag, Pile. scenario_table[c(1,4,7),]
+# 2) CenCA early closure with temporal fidelity, Remove, Displace. scenario_table[c(2,11),]
+# 3) #1 and #2. scenario_table[c(3, 6, 9, 12, 15, 18),]
+
+
 ####################################################################
 ####################################################################
 
