@@ -113,6 +113,10 @@ glimpse(risk_out_list[[1]])
 ###############################################################################
 
 ### test function to make tradeoff df's
+
+# assign number IDs to scenarios
+scenario_table$number_id <- row.names(scenario_table)
+
 source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function.R")
 start.time <- Sys.time()
 tradeoff_df_function(
@@ -124,12 +128,13 @@ tradeoff_df_function(
 Sys.time() - start.time
 
 # is risk actually greater for whales under some scenarios? yes. 
-length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432
+dim(df_tradeoff)
+length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432; for effort comparison, 6 out of 171
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432; for effort comparison, 8 out of 171
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
-length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432
-length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 432
+length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432; for effort comparison, 5 out of 171
+length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 432; for effort comparison, 0 out of 171
 
 ###############################################################################
 

@@ -60,6 +60,7 @@ library(magrittr)
 
 # 050520
 # 050820
+# 051820
 
 # may want to add functionality later using sym(), enquo(), etc. for scenario names, DCRB metrics, hump_risk_metric, blwh_risk_metric, pings_metric
 
@@ -105,7 +106,9 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
   #browser()
   assign(annual_statewide_df_name, annual_statewide_df_internal, envir=.GlobalEnv)
   
-  write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_ouputs_",today(),".rds"))
+  write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_",today(),".rds"))
+  
+  # write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_",today(),".rds"))
 
 # annual_statewide_df <- c()
 # 
@@ -143,18 +146,27 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
   
   #browser()
   
-  df_tradeoff_internal <- annual_statewide_df %>%
+  df_tradeoff_internal <- annual_statewide_df_internal %>%
     group_by(crab_year) %>%
     
     # STATUS QUO
     # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
     mutate(
+      
       hump_risk_under_statusquo = risk_humpback[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       blwh_risk_under_statusquo = risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       pings_under_statusquo = Num_DCRB_VMS_pings[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       dollars_under_statusquo = DCRB_rev[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")]
-    ) %>%
+      
+      # this is if the status quo scenario name has been changed, as in effort comparison
+      # hump_risk_under_statusquo = risk_humpback[which(scenario_df_name == "No_Delay_No_Early_Closure_NULL_NULL")],
+      # blwh_risk_under_statusquo = risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_NULL_NULL")],
+      # pings_under_statusquo = Num_DCRB_VMS_pings[which(scenario_df_name == "No_Delay_No_Early_Closure_NULL_NULL")],
+      # dollars_under_statusquo = DCRB_rev[which(scenario_df_name == "No_Delay_No_Early_Closure_NULL_NULL")],
+      # pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_NULL_NULL")]
+    
+      ) %>%
     
     ungroup() %>%
     
@@ -186,6 +198,8 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
   assign(df_tradeoff_name, df_tradeoff_internal, envir=.GlobalEnv)
 
   write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_",today(),".rds"))
+  
+  # write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_",today(),".rds"))
 
 }
 
