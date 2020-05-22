@@ -10,6 +10,10 @@ library(sf)
 
 source("User_script_local.R")
 if (user == "JS") {
+  file.grid5km <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  #file.land <- "C:/SMW/eSDM/Ensemble Case Study/GIS_files_forJVR/Shapefiles/World_countries.shp"
+  path.save1 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_lint.RDATA"
+  path.save2 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   
 } else if (user == "SMW") {
   file.grid5km <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"

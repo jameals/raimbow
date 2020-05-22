@@ -1,7 +1,7 @@
 # Function for calculating risk after shifting effort based on management scenarios
 
 risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key, 
-                      ym.min = "2009_11", ym.max = "2018_06") { # need to update ym.max to 2019_07
+                      ym.min = "2009_11", ym.max = "2019_07") { # updated ym.max to 2019_07; formerly 2018_06
   ### Inputs
   # x: data frame; e.g. output of effort_mgmt()
   # x.col: symbol (i.e. column name without quotes); 

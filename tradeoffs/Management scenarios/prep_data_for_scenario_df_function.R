@@ -1,56 +1,67 @@
-# 040320
-# 022820
-
 rm(list = ls())
 
-#library(foreign)
 library(lubridate)
 library(tidyverse)
 library(data.table)
-# library(reshape2)
-# library(scales)
-# library(zoo)
-# library(ggrepel)
 library(sf)
 library(magrittr)
 library(maps) # for map background
-# library(wesanderson)
 library(viridis)
 library(here)
-#library(ggerr)
 
-# load RDS with fish ticket informed VMS data
-dcrb_vms_tix_analysis <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd.RDS")
-glimpse(dcrb_vms_tix_analysis)
-
-# load vessel length keys and bind
-
-vessel_length_key_df <- list.files(path = "~/Documents/RAIMBOW/Processed Data/vessel length keys", full.names=TRUE, pattern = ".rds") %>%
-  map_dfr(read_rds)
+# #####################################################
+# 
+# ### load data if updating to include additional years of data and matching to vessel lengths
+# 
+# # load RDS with fish ticket informed VMS data
+# dcrb_vms_tix_analysis <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd.RDS")
+# glimpse(dcrb_vms_tix_analysis)
+# 
+# # load vessel length keys and bind
+# 
+# vessel_length_key_df <- list.files(path = "~/Documents/RAIMBOW/Processed Data/vessel length keys", full.names=TRUE, pattern = ".rds") %>%
+#   map_dfr(read_rds)
+# 
+# #####################################################
+# 
+# #####################################################
+# 
+# ### add vessel lengths. modified from "02_calculate_vessel_lengths.R"
+# # note this step take a minute or 2
+# 
+# dcrb_landings_length_all_years <-c()
+# for(y in unique(vessel_length_key_df$year)){
+#   dcrb_vms_tix_analysis_subset <- dcrb_vms_tix_analysis %>%
+#     filter(lubridate::year(westcoastdate_notime) == y)
+#   
+#   vessel_length_key_df_subset <- vessel_length_key_df %>%
+#     filter(year==y) #%>%
+#     #select(-year)
+#   
+#   dcrb_landings_length <- left_join(dcrb_vms_tix_analysis_subset,vessel_length_key_df_subset, by=c("drvid", "agency_code"))
+#   dcrb_landings_length_all_years <- bind_rows(dcrb_landings_length_all_years, dcrb_landings_length)
+# }
+# 
+# sum(is.na(dcrb_landings_length_all_years$FINAL_LENGTH))/nrow(dcrb_landings_length_all_years) # 7707 records, or 0.1% have NA for vessel length
+# 
+# write_rds(dcrb_landings_length_all_years, "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS")
+# 
+# dcrb_vms_tix_analysis <- dcrb_landings_length_all_years
+# 
+# #####################################################
 
 #####################################################
 
-# add vessel lengths. modified from "02_calculate_vessel_lengths.R"
-# note this step take a minute or 2
+### read in data with tickets/VMS/vlengths matched, if ready
 
-dcrb_landings_length_all_years <-c()
-for(y in unique(vessel_length_key_df$year)){
-  dcrb_vms_tix_analysis_subset <- dcrb_vms_tix_analysis %>%
-    filter(lubridate::year(westcoastdate_notime) == y)
-  
-  vessel_length_key_df_subset <- vessel_length_key_df %>%
-    filter(year==y) #%>%
-    #select(-year)
-  
-  dcrb_landings_length <- left_join(dcrb_vms_tix_analysis_subset,vessel_length_key_df_subset, by=c("drvid", "agency_code"))
-  dcrb_landings_length_all_years <- bind_rows(dcrb_landings_length_all_years, dcrb_landings_length)
-}
+dcrb_vms_tix_analysis <- read_rds(
+  "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS"
+  )
+glimpse(dcrb_vms_tix_analysis)
 
-sum(is.na(dcrb_landings_length_all_years$FINAL_LENGTH))/nrow(dcrb_landings_length_all_years) # 7707 records, or 0.1% have NA for vessel length
+# check years included
+unique(dcrb_vms_tix_analysis$year)
 
-write_rds(dcrb_landings_length_all_years, "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS")
-
-dcrb_vms_tix_analysis <- dcrb_landings_length_all_years
 
 #####################################################
 # filter the data using the control variables below
@@ -82,6 +93,7 @@ dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
   filter(removal_type_name %in% removal_types) %>%
   filter(CA_OFFSHOR != -999) %>%
   filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
+  #filter(NGDC_M <= 0 & NGDC_M >= -12000) %>% # considered adding 052220. also see "evaluate fishing depths.R". probably unnecessary because NGDC_M refers to centroid depth and we can match depths by 5km grid cell later
   filter(avg_speed_recalc <= max_speed & avg_speed_recalc >= min_speed) %>%
   #filter(is.na(in_port) == TRUE) %>% # only removes ~4000 records
   #filter(port_group_code %in% ports) %>%
@@ -114,6 +126,8 @@ dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
 
 glimpse(dcrb_ca_vms_tix_analysis)
 
+# check that on-land depths have been removed
+# range(dcrb_ca_vms_tix_analysis$NGDC_M)
 
 #####################################################
 
@@ -137,47 +151,9 @@ glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
 
 #####################################################
 
-### grab whale data
-
-###
-# blue whales
-
-# blue whale data within vms cells only, expanded from 10x10 ROMS grid to include coastal 5km grid cells (by OL 033020)
-
-BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_by_grd_mth_expanded.RDS")
-
-glimpse(BLWH_5km_year_mo)
-
-# rescale blwh values to have min=0, max=1
-BLWH_5km_year_mo <- BLWH_5km_year_mo %>%
-  mutate(
-    normalized_Blue_occurrence_mean = as.vector(scale(Blue_occurrence_mean,center=min(Blue_occurrence_mean),scale=diff(range(Blue_occurrence_mean))))
-  )
-
-# check how many blwh values have NA for the 5km grid cell
-sum(is.na(BLWH_5km_year_mo$GRID5KM_ID))
-#length(which(is.na(BLWH_5km_year_mo$Blue_occurrence_mean) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0
-
-###
-# humpbacks
-humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
-head(humpback.sum.long)
-#humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
-humpback.sum.long$Year_Month <- as.character(humpback.sum.long$Year_Month)
-
-# rescale hump values to have min=0, max=1
-humpback.sum.long <- humpback.sum.long %>%
-  mutate(
-    normalized_H_Avg_Abund = as.vector(scale(H_Avg_Abund,center=min(H_Avg_Abund),scale=diff(range(H_Avg_Abund))))
-  )
-
-#####################################################
-
-#####################################################
-
 ### at long last, make the df we want
 
-# can go back and make separate df's for small and large vessels
+### all vessels
 
 start.time <- Sys.time()
 
@@ -186,7 +162,7 @@ con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     yr= lubridate::year(westcoastdate_notime),
     mth = lubridate::month(westcoastdate_notime)
   ) %>%
-  group_by(year, yr, crab_year, year_month, season, month, mth, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
@@ -195,18 +171,125 @@ con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
   ) %>%
   ungroup() %>%
-  left_join(BLWH_5km_year_mo) %>%
-  left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
+  # left_join(BLWH_5km_year_mo) %>%
+  # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
   mutate(
     normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
-    normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
-    normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
-    blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
-    hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
-  ) %>%
-  select(-c(yr, mth, LONGITUDE, LATITUDE, area_km_lno))
+    # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
+    # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+    # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
+  )
 
 Sys.time() - start.time
+
+
+glimpse(con_df_daily_years_5km_CA)
+
+# subset to 2018 only since we don't have 2019 predictions yet
+# con_df_daily_2009_2018_5km_CA <- con_df_daily_years_5km_CA %>%
+#   filter(year != 2019)
+
+
+# glimpse(con_df_daily_2009_2018_5km_CA)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_daily_years_5km_CA, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS")
+
+
+# small vessels
+
+start.time <- Sys.time()
+
+con_df_daily_years_5km_CA_sm <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  filter(Vessel_Size != ">=40 ft") %>%
+  mutate(
+    yr= lubridate::year(westcoastdate_notime),
+    mth = lubridate::month(westcoastdate_notime)
+  ) %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, Vessel_Size) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup() %>%
+  # left_join(BLWH_5km_year_mo) %>%
+  # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
+  mutate(
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+    # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
+    # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+    # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
+  )
+
+Sys.time() - start.time
+
+
+glimpse(con_df_daily_years_5km_CA_sm)
+
+# subset to 2018 only since we don't have 2019 predictions yet
+# con_df_daily_2009_2018_5km_CA <- con_df_daily_years_5km_CA %>%
+#   filter(year != 2019)
+
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_daily_years_5km_CA_sm, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_small_vessels.RDS")
+
+# large vessels
+
+start.time <- Sys.time()
+
+con_df_daily_years_5km_CA_lg <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  filter(Vessel_Size == ">=40 ft") %>%
+  mutate(
+    yr= lubridate::year(westcoastdate_notime),
+    mth = lubridate::month(westcoastdate_notime)
+  ) %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, Vessel_Size) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup() %>%
+  # left_join(BLWH_5km_year_mo) %>%
+  # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
+  mutate(
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+    # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
+    # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
+    # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
+    # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
+  ) 
+
+Sys.time() - start.time
+
+
+glimpse(con_df_daily_years_5km_CA_lg)
+
+# subset to 2018 only since we don't have 2019 predictions yet
+# con_df_daily_2009_2018_5km_CA <- con_df_daily_years_5km_CA %>%
+#   filter(year != 2019)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_daily_years_5km_CA_lg, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_large_vessels.RDS")
+
+
+#####################################################
+
+# weekly summaries
 
 # con_df_weekly_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
 #   mutate(
@@ -235,36 +318,60 @@ Sys.time() - start.time
 
 
 #glimpse(con_df_weekly_years_5km_CA)
-glimpse(con_df_daily_years_5km_CA)
 
 # subset to 2018 only since we don't have 2019 predictions yet
 # con_df_weekly_2009_2018_5km_CA <- con_df_weekly_years_5km_CA %>%
 #   filter(year != 2019)
 # 
-# glimpse(con_df_weekly_2009_2018_5km_CA)
-
-# subset to 2018 only since we don't have 2019 predictions yet
-con_df_daily_2009_2018_5km_CA <- con_df_daily_years_5km_CA %>%
-  filter(year != 2019)
 
 # glimpse(con_df_weekly_2009_2018_5km_CA)
-glimpse(con_df_daily_2009_2018_5km_CA)
 
-### if and when satisfied, write out rds
 
-write_rds(con_df_daily_2009_2018_5km_CA, 
-          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+# write_rds(con_df_weekly_2009_2018_5km_CA, 
+#           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
+#           )
 
-#write_rds(con_df_weekly_2009_2018_5km_CA, 
-          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+
+
+
 
 #####################################################
 
+### grab whale data. not needed as of May 2020, whale data get brought in separately and later
 
+###
+# blue whales
 
+# blue whale data within vms cells only, expanded from 10x10 ROMS grid to include coastal 5km grid cells (by OL 033020)
+# 
+# BLWH_5km_year_mo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Matched to 5km Grid/blwh_by_grd_mth_expanded.RDS")
+# 
+# glimpse(BLWH_5km_year_mo)
+# 
+# # rescale blwh values to have min=0, max=1
+# BLWH_5km_year_mo <- BLWH_5km_year_mo %>%
+#   mutate(
+#     normalized_Blue_occurrence_mean = as.vector(scale(Blue_occurrence_mean,center=min(Blue_occurrence_mean),scale=diff(range(Blue_occurrence_mean))))
+#   )
+# 
+# # check how many blwh values have NA for the 5km grid cell
+# sum(is.na(BLWH_5km_year_mo$GRID5KM_ID))
+# #length(which(is.na(BLWH_5km_year_mo$Blue_occurrence_mean) == TRUE))/dim(BLWH_5km_year_mo)[1] # 0
+# 
+# ###
+# # humpbacks
+# humpback.sum.long <- read.csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Humpback whale abundance monthly abundance predictions 2009-2018.csv")
+# head(humpback.sum.long)
+# #humpback.sum.long$GRID5KM_ID <- as.character(humpback.sum.long$GRID5KM_ID)
+# humpback.sum.long$Year_Month <- as.character(humpback.sum.long$Year_Month)
+# 
+# # rescale hump values to have min=0, max=1
+# humpback.sum.long <- humpback.sum.long %>%
+#   mutate(
+#     normalized_H_Avg_Abund = as.vector(scale(H_Avg_Abund,center=min(H_Avg_Abund),scale=diff(range(H_Avg_Abund))))
+#   )
 
-
-
+#####################################################
 
 
 

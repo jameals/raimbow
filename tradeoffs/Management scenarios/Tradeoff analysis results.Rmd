@@ -1,0 +1,153 @@
+title: "Tradeoff analysis results"
+---
+author: "Jameal Samhouri"
+date: "5/22/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../../")
+if (Sys.info()["nodename"] == "NWCDM04178674") knitr::opts_knit$set(root.dir = "../../")
+```
+
+## Introduction
+
+This document provides an outline of figures and tables to include in the Samhouri et al. tradeoff analysis. It is based on the presentation I gave February 5, 2020, with improvements. See google doc: https://docs.google.com/document/d/15loTrgX2H7ZIArVmTIHVTNrinvHHui03CTLo1cdlbss/edit?pli=1.
+
+Current outline of figures:
+
+Entanglements are on the rise coastwide. Hump, blue, other entanglements by year
+
+The CA Dungeness crab fishery revenue and landings by year. Also do for VMS vessels only
+
+CA DCRB vessels over time
+
+Maps of long-term average during DCRB season of hump, blue, DCRB $, DCRB lbs, DCRB pings [DCRB do all, sm, lg]
+
+Time series of early season (Nov 15-Dec 15), mid season (Dec 16 - Mar 31), and late season (Apr 1 - July 31) long-term avg and SE in (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]
+
+Time series of risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions for each metric. [DCRB do all, sm, lg]
+
+Time series of risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs for each metric. [DCRB do all, sm, lg]
+
+Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
+
+Avg risk in 2009-13 v 2014-19 for blues and humps. 
+
+Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+
+Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
+
+Tradeoff plots for hump, blues, both. Full time period, 2009-13, 2014-19. all, sm, lg DCRB.
+
+Use "Full workflow for risk assessment and tradeoff analysis" google doc to prep data frames for making figures below. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
+
+x.whale <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds")
+
+
+## Figure 1
+
+
+
+## Initial processing
+
+Most of this code was copied from `effort_mgmt()`
+
+```{r}
+library(dplyr)
+
+source("User_script_local.R")
+file.path <- if (user == "SMW") {
+  file.path <- "../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
+} else if (user == "JS") {
+  NULL
+}
+
+
+x <- readRDS(file.path) %>%
+  select(-year_mo, -contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_")) 
+
+names.x.fish <- c(
+  "crab_year", "GRID5KM_ID", "Region", "year_month", "day_of_year",
+  "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", 
+  "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
+)
+
+x.fish.pre <- x %>% 
+  select(!!names.x.fish) %>%
+  mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
+                                            ifelse(Region == "CenCA", "11-15", "12-01"), 
+                                            sep = "-")), 
+         year = as.numeric(substr(year_month, 1, 4)), 
+         date_record_orig = as.Date(day_of_year - 1, 
+                                    origin = as.Date(paste0(year, "-01-01"))))
+
+
+# Use 'remove' method from function
+x.fish <- x.fish.pre %>% 
+  filter(date_record_orig >= season_date_st_min) %>% 
+  mutate(date_record = date_record_orig) %>% 
+  select(-year, -day_of_year, -date_record_orig)
+```
+
+## Explore different ways of calculating season start dates
+
+Now we want to compare different methods for determining the season start date. Specifically:
+
+1. The minimum date for that crab season
+2. The date that 1% (of the total value for that season) of a specified metric was reached
+3. The date from (2) minus some number of days
+
+First we do some prep
+
+```{r}
+# Set percent value for which to calculate date
+perc.val <- 0.01
+
+# Get sum of fishing effort values by season
+eff.summ <- x.fish %>% 
+  group_by(crab_year, Region) %>% 
+  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum)
+
+#
+exp.summ <- x.fish %>% 
+  arrange(Region, date_record) %>% 
+  group_by(crab_year, Region, date_record) %>%
+  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum) %>%
+  group_by(crab_year, Region) %>% 
+  mutate_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), cumsum) %>% 
+  left_join(eff.summ, by = c("crab_year", "Region")) %>% 
+  mutate(DCRB_lbs_perc = DCRB_lbs.x / DCRB_lbs.y, 
+         DCRB_rev_perc = DCRB_rev.x / DCRB_rev.y, 
+         Num_DCRB_VMS_pings_perc = Num_DCRB_VMS_pings.x / Num_DCRB_VMS_pings.y, 
+         Num_DCRB_Vessels_perc = Num_DCRB_Vessels.x / Num_DCRB_Vessels.y, 
+         Num_Unique_DCRB_Vessels_perc = Num_Unique_DCRB_Vessels.x / Num_Unique_DCRB_Vessels.y)
+
+exp.summ.first <- exp.summ %>% 
+  # already grouped
+  summarise(DCRB_lbs_dt = date_record[min(which(DCRB_lbs_perc > perc.val))], 
+            DCRB_rev_dt = date_record[min(which(DCRB_rev_perc > perc.val))], 
+            Num_DCRB_VMS_pings_dt = date_record[min(which(Num_DCRB_VMS_pings_perc > perc.val))], 
+            Num_DCRB_Vessels_dt = date_record[min(which(Num_DCRB_Vessels_perc > perc.val))], 
+            Num_Unique_DCRB_Vessels_dt = date_record[min(which(Num_Unique_DCRB_Vessels_perc > perc.val))])
+```
+
+And now we can get the start dates using the various methodologies
+
+```{r}
+# For each crab season and Region, get start dates
+x.fish.st.summ <- x.fish %>% 
+  group_by(crab_year, Region) %>% 
+  summarise(season_date_possible_min = unique(season_date_st_min), 
+            season_date_record_min = min(date_record)) %>% 
+  left_join(exp.summ.first, by = c("crab_year", "Region")) %>% 
+  mutate(diff_days = difftime(Num_DCRB_VMS_pings_dt, season_date_record_min, 
+                              unit = "days")) %>% 
+  select(crab_year, Region, season_date_possible_min, season_date_record_min, 
+         Num_DCRB_VMS_pings_dt, diff_days)
+
+x.fish.st.summ
+```

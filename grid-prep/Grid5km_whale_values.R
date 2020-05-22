@@ -10,6 +10,12 @@ library(sf)
 
 source("User_script_local.R")
 if (user == "JS") {
+  path.grid.studyarea <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_studyarea.rds"
+  path.grid.lno <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
+  path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+  
+  
   
 } else if (user == "SMW") {
   # path.key.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds"
@@ -22,7 +28,7 @@ if (user == "JS") {
   file.out <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds"
   
 } else {
-  stop("Invlaid user")
+  stop("Invalid user")
 }
 
 

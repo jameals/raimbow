@@ -10,8 +10,8 @@
 
 user <- switch(
   Sys.info()["nodename"],
-  "SWC-SWOODMAN-L" = "SMW"
-  # "Jameal nodename" = "JS"
+  "SWC-SWOODMAN-L" = "SMW",
+  "NWCDM04178674" = "JS"
 )
 
 
