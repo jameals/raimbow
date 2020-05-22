@@ -1,30 +1,35 @@
-# Function for calculating risk after shifting effort based on management scenarios
+# This file contains two functions for calculating risk after shifting effort based on management scenarios
+#   risk_mgmt: calculate risk on a grid cell/year-month basis. Does not group and summarize
+#   risk_mgmt_summ: takes output of risk_mgmt(), and summarizes (sums) based on 
+#     specified 'summary.level' argument, i.e. by in/out of BIA or Region
 
-risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key, 
-                      ym.min = "2009_11", ym.max = "2018_06") { # need to update ym.max to 2019_07
+risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key, 
+                      ym.min = "2009_11", ym.max = "2018_06") { #will need to update ym.max to 2019_07
   ### Inputs
   # x: data frame; e.g. output of effort_mgmt()
   # x.col: symbol (i.e. column name without quotes); 
   #   fishing metric (column of x) that will be used to calculate risk
-  # y: data frame with whale predictions. This data frame 
-  #   will be joined with x by "GRID5KM_ID" and "year_month". 
-  #   Exepceted columns will be selected (see names.y)
+  # y: data frame with whale predictions; whale prediction units are expected to be 
+  #   probability of occurrence and abundance for blues and humpbacks, 
+  #   respectively (see names.y object for required names).
+  #   This data frame will be joined with x by "GRID5KM_ID" and "year_month". 
   # risk.unit: character; either "orig" or "dens". 
   #   "dens" means that risk values will be divided by the grid cell area
   # area.key: data.frame; key for grid cell ID and grid cell area (with land removed)
+  #   Used to calculate 'risk density'
   # ym.min: character; minimum year_month value for which to calculate risk
   # ym.min: character; maximum year_month value for which to calculate risk
   
   ### Output
-  # TODO
-  # Data frame with effort data and risk values grouped by year_month/Region 
-  #   and summed. 
-  # For humpbacks, risk is whale density * effort_val, eg [pings * whales]/km^2
-  # For blues, risk is whale occurrence * effort_val, eg [pings * probability of occurrence]. Q for SW: do we want to divide by area to get a density metric?
+  # Data frame with risk values calculated by year_month/Region
+  #   Default humpback units: risk is whale abundance * effort_val, eg [pings * whales]
+  #   Default blue units:  risk is whale occurrence * effort_val, eg [pings * probability of occurrence].
+  #   Both of these units will be divided by km^2 if 'risk.unit = "dens"'
   # Whale predictions are not included because this function does not use 
   #   complete() to fill out year_months and grid cells, and thus the 
   #   whale predictions would not be comparable. If we want whale predictions in the output table
-  #  we should 1) determine all of the grid cells that have effort in them in any year/month, 2) filter the whale preds for those grid cells, and then 3) group and summarize the filtered whale preds.
+  #   we should 1) determine all of the grid cells that have effort in them in any year/month, 
+  #   2) filter the whale preds for those grid cells, and then 3) group and summarize the filtered whale preds.
   
   
   x.col <- enquo(x.col)
@@ -38,9 +43,10 @@ risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key,
     require(tidyr), 
     inherits(x, "data.frame"), 
     inherits(y, "data.frame"), 
-    risk.unit %in% c("orig", "dens"), 
     inherits(area.key, "data.frame")
   )
+  
+  risk.unit <- match.arg(risk.unit)
   
   
   # Check that x has required columns
@@ -94,9 +100,6 @@ risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key,
          paste(names.area.key, collapse = ", "))
   
   
-  
-  
-  #browser()
   #----------------------------------------------------------------------------
   ### Processing
   
@@ -143,7 +146,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key,
   
   #browser()
   # Add in whale predictions, calculate normalzied effort, and calculate risk
-  # TODO: feels a little better to calculate normalized whale values in here too for consistency?
+  # TODO: should we calculate normalized whale values in here too for consistency?
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(normalized_effort = as.vector(scale(effort_val, 
@@ -193,8 +196,16 @@ risk_mgmt <- function(x, x.col, y, risk.unit = "orig", area.key,
 }
 
 
+
+
 ###############################################################################
 risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
+  ### Inputs
+  # x: output data frame from risk_summ()
+  # summary.level: character; one of Region or BIA. Indicates how 
+  #   risk and effort are summarized, i.e. by Region or inside/outside of BIAs
+  #   TODO: should BIA option make things grouped by Region AND in/out of BIA instead of just in/out of BIA?
+  
   #----------------------------------------------------------------------------
   summary.level <- match.arg(summary.level)
   
@@ -244,6 +255,9 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
 }
 
 
+
+
+###############################################################################
 ###############################################################################
 # Helper functions
 
@@ -260,6 +274,5 @@ func_crab_year <- function(z) {
     paste(z.yr, z.yr + 1, sep = "_"), paste(z.yr - 1, z.yr, sep = "_")
   )
 }
-
 
 ###############################################################################
