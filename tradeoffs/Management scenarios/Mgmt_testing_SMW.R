@@ -22,8 +22,8 @@ grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rd
 
 x.orig <- x.orig.noinfo %>% 
   left_join(grid.key, by = "GRID5KM_ID") %>% 
-  left_join(grid.depth, by = "GRID5KM_ID") %>% 
-  mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
+  left_join(grid.depth, by = "GRID5KM_ID") #%>% 
+  # mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
 
@@ -42,13 +42,13 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
   x = x.orig,
-  early.data.method = "remove", 
-  delay.date = as.Date("2009-12-15"),
-  delay.region = "NorCA",
-  delay.method = "pile",
-  delay.method.fidelity = "temporal",
-  closure.date = NULL,
-  closure.region = "BIA",
+  early.data.method = "pile", 
+  delay.date = NULL,
+  delay.region = "OR",
+  delay.method = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = as.Date("2010-04-10"),
+  closure.region = c("OR", "NorCA"),
   closure.method = "remove",
   closure.redist.percent = 10
 )

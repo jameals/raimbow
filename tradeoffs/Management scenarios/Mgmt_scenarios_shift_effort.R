@@ -7,11 +7,11 @@
 # See 'Readme for Funcs_management_scenarios.docx' for pseudocode
 effort_mgmt <- function(x, early.data.method = c("pile", "remove"), 
                         delay.date = NULL, 
-                        delay.region = c("All", "CenCA", "NorCA"), 
+                        delay.region = c("All", "CenCA", "NorCA", "OR", "WA"), 
                         delay.method = c("remove", "pile", "lag"), 
                         delay.method.fidelity = c("spatial", "temporal"), 
                         closure.date = NULL, 
-                        closure.region = c("All", "CenCA", "NorCA", "BIA"), 
+                        closure.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
                         closure.method = c("remove", "temporal"), 
                         closure.redist.percent = 100, 
                         reduction.before.date = NULL, reduction.before.percent = 50, 
@@ -19,9 +19,11 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
   #   Ideally this could be used in conjuncture with delayed opening and early closures
-  # TODO: add "OR", "WA", CA-SCen", to regions
-  # TODO: some way to define season_st_date_min in input, i.e. not hard-coded
-  # TODO: how to determine 'natural season' start date?
+  # TODO: remove 'All' option and make user list out all regions?
+  # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded
+  # TODO: how to determine 'natural season' start date? Day 1? Day of 1% of season's effort?
+  
+  # Question for Jameal - what constraints should be put on multiple regions?
   
   ### Inputs
   # x: data.frame; expected to has same format at data frame from Jameal
@@ -73,23 +75,24 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   # Basic checks
   stopifnot(
     inherits(x, "data.frame"), 
-    is.null(delay.date) | inherits(delay.date, "Date"), 
-    is.null(closure.date) | inherits(closure.date, "Date"), 
+    is.null(delay.date) | (inherits(delay.date, "Date") & length(delay.date) == 1), 
+    is.null(closure.date) | (inherits(closure.date, "Date") & length(closure.date) == 1), 
     inherits(closure.redist.percent, c("numeric", "integer")), 
-    dplyr::between(closure.redist.percent, 0, 100), 
-    is.null(reduction.before.date) | inherits(reduction.before.date, "Date"), 
-    is.null(reduction.after.date) | inherits(reduction.after.date, "Date"), 
+    length(closure.redist.percent) & dplyr::between(closure.redist.percent, 0, 100), 
+    is.null(reduction.before.date) | (inherits(reduction.before.date, "Date") & length(reduction.before.date) == 1), 
+    is.null(reduction.after.date) | (inherits(reduction.after.date, "Date") & length(reduction.after.date) == 1), 
     inherits(reduction.before.percent, c("numeric", "integer")), 
     inherits(reduction.after.percent, c("numeric", "integer")), 
-    dplyr::between(reduction.before.percent, 0, 100), 
-    dplyr::between(reduction.after.percent, 0, 100)
+    length(reduction.before.percent) == 1 & dplyr::between(reduction.before.percent, 0, 100), 
+    length(reduction.after.percent) == 1 & dplyr::between(reduction.after.percent, 0, 100)
   )
   
   early.data.method <- match.arg(early.data.method)
-  if (!is.null(delay.date)) delay.region <- match.arg(delay.region)
+  if (!is.null(delay.date)) delay.region <- match.arg(delay.region, several.ok = TRUE)
   if (!is.null(delay.date)) delay.method <- match.arg(delay.method)
-  if (!is.null(delay.date)) delay.method.fidelity <- match.arg(delay.method.fidelity)
-  if (!is.null(closure.date)) closure.region <- match.arg(closure.region)
+  if (!is.null(delay.date) & !identical(delay.method, "remove")) 
+    delay.method.fidelity <- match.arg(delay.method.fidelity)
+  if (!is.null(closure.date)) closure.region <- match.arg(closure.region, several.ok = TRUE)
   if (!is.null(closure.date)) closure.method <- match.arg(closure.method)
   
   
@@ -106,29 +109,34 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   
   # Check dates - other checks are done by match.arg
+  
+  
+  
+  
+  
+  # Checks dealy/closure dates
+  date.message.common <- paste(
+    "must be for the 2009-10 fishing season,",
+    "meaning it must be between 2009-11-01 (1 Nov 2009)", 
+    "and 2010-10-31 (31 October 2010)"
+  )
   if (is.null(delay.date) & is.null(closure.date)) 
     message("Both delay.date and closure.date are NULL, ", 
             "and thus only 'early data' will be shifted")
+  
+  if (!is.null(delay.date))
+    if (!between(delay.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
+      stop("delay.date ", date.message.common)
+  
+  if (!is.null(closure.date))
+    if (!between(closure.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
+      stop("closure.date ", date.message.common)
   
   if (!is.null(delay.date) & !is.null(closure.date)) 
     if (delay.date >= closure.date)
       stop("delay.date must come before closure.date")
   
-  
-  # Check date values are for the 2009-10 fishing season
-  if (!is.null(delay.date)) {
-    if (!between(delay.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
-      stop("delay.date must be for the 2009-10 fishing season, ",
-           "meaning it must be between 2009-11-01 (1 Nov 2009) ", 
-           "and 2010-10-31 (31 October 2010)")
-  }
-
-  if (!is.null(closure.date)) {
-    if (!between(closure.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
-      stop("closure.date must be for the 2009-10 fishing season, ",
-           "meaning it must be between 2009-11-01 (1 Nov 2009) ", 
-           "and 2010-10-31 (31 October 2010)")
-  }
+  rm(date.message.common)
   
   
   #----------------------------------------------------------------------------
@@ -219,8 +227,8 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   } else {
     #------------------------------------------------------
     # Step 1) filter by region
-    if (delay.region == "BIA") {
-      stop("BIA delayed opening is not supported (yet?)")
+    if ("BIA" %in% delay.region) {
+      stop("A delayed opening in BIAs is not supported")
       
     } else if (identical(delay.region, "All")) {
       x.d.fish.filter <- x.fish
@@ -318,23 +326,17 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     
     
     #------------------------------------------------------
-    # Do region stuff..
-    if (closure.region == "All") {
-      if (closure.method == "temporal") {
-        closure.method <- "remove"
-        warning("closure.region is \"All\", and thus the \"Remove\"", 
-                " closure method must be used")
-      }
-      x.fish.c2 <- x.fish.c1 %>% 
-        mutate(record_closed = record_post_closure_date, 
-               region_toshiftto = NA)
-      
-    } else if (closure.region == "BIA") {
+    # Do region-specific stuff
+    #   identical() ensures that closure.region is of length 1
+    if (identical(closure.region, "BIA")) { 
+      # If BIAs, temporally redistribute effort to CA region that the cell is in
       x.fish.c2 <- x.fish.c1 %>% 
         mutate(record_closed = BIA_bm_or_mn == "Inside BIA" & record_post_closure_date, 
                region_toshiftto = ifelse(record_closed, Region, NA))
       
-    } else if (closure.region %in% c("CenCA", "NorCA")) {
+    } else if (identical(closure.region, "CenCA") | identical(closure.region, "NorCA")) {
+      # If one of CenCA or NorCA, prep to shift to the other region
+      #   region.toshift will be ignored below if closure.method == "remove:
       region.toshift <- ifelse(closure.region == "CenCA", "NorCA", "CenCA")
       x.fish.c2 <- x.fish.c1 %>% 
         mutate(record_closed = Region == closure.region & record_post_closure_date, 
@@ -342,9 +344,29 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
       rm(region.toshift)
       
     } else {
-      stop("Unrecognized value passed to closure.region")
+      # Otherwise can only remove, but from any combo of regions
+      if (closure.method == "temporal") {
+        warning("closure.region is not length one and one of 'BIA', 'CenCA', or 'NorCA'; ", 
+                "thus the 'remove' closure method will be used")
+        closure.method <- "remove"
+      }
+      
+      if ("All" %in% closure.region) {
+        # If All, check that no other regions are provided and then remove everything
+        if (length(closure.region) > 1)
+          stop("You cannot use 'All' in conjunction with other regions in closure.region")
+        
+        x.fish.c2 <- x.fish.c1 %>% 
+          mutate(record_closed = record_post_closure_date, 
+                 region_toshiftto = NA)
+        
+      } else {
+        # If not All, then do region-specific closure
+        x.fish.c2 <- x.fish.c1 %>% 
+          mutate(record_closed = ifelse(Region %in% closure.region, record_post_closure_date, FALSE), 
+                 region_toshiftto = NA)
+      }
     }
-    
     
     #------------------------------------------------------
     # Remove or redistribute closed effort in applicable region(s)
@@ -369,7 +391,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   #----------------------------------------------------------------------------
   # Final checks and formatting
-  if (exists("x.other")) {
+  if (exists("x.other")) { #it always should exist, but just in case
     x.fish.closure <- x.fish.closure %>% 
       left_join(x.other, by = "GRID5KM_ID") %>% 
       select(crab_year, year_month, date_record, 
@@ -377,10 +399,6 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   }
   
   x.out <- x.fish.closure %>% 
-    # left_join(x.other, by = "GRID5KM_ID") %>% 
-    # select(crab_year, GRID5KM_ID, Region, CA_OFFSHOR, everything()) %>% 
-    select(crab_year, year_month, date_record, GRID5KM_ID, Region, 
-           everything()) %>% #just in case
     left_join(x.fish.end.summ, by = c("crab_year", "Region")) %>% 
     mutate(date_past_season_end = date_record > season_date_end, 
            date_past_region_end = date_record > region_date_end, 
@@ -395,6 +413,8 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   x.out
 }
+
+
 
 
 ###############################################################################
@@ -437,13 +457,14 @@ delay_date_shift <- function(y, delay.method) {
 ###############################################################################
 # Temporal fidelity redistribution function
 redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"), 
-                                  z.reg = c("CenCA", "NorCA", "BIA", "All"), 
+                                  z.reg = c("BIA", "CenCA", "NorCA"), 
                                   z.perc = 100) {
   ### Inputs
   # z: data frame; Contains columns described in z.cols.nec
   # z.col: symbol, column name to use for redistribution percentages
   # z.type: character; either "delay" or "closure"
-  # z.reg: character; region that effort is being shifted out of
+  # z.reg: character; region that effort is being shifted out of. 
+  #   Must be one of BIA, CenCA, or NorCA
   # z.perc: numeric; default is 100. Percentage multiplier for effort
   #   to be redistributed
   
@@ -472,8 +493,6 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   
   stopifnot(
     all(c(z.cols.nec, z.cols.nec2, z.cols.dcrb, z.cols.other) %in% names(z)),
-    # z.type %in% c("delay", "closure"), 
-    # z.reg %in% c("CenCA", "NorCA", "BIA", "All"), 
     between(z.perc, 0, 100)
   )
   
