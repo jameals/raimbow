@@ -18,8 +18,11 @@ x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_
 grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds") %>% 
   select(-region_ts)
 
+grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rds")
+
 x.orig <- x.orig.noinfo %>% 
   left_join(grid.key, by = "GRID5KM_ID") %>% 
+  left_join(grid.depth, by = "GRID5KM_ID") %>% 
   mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
@@ -33,40 +36,6 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 
 
 
-# ##### TODO - discuss
-# x.reg.key.test <- x.orig.noinfo %>% 
-#   select(Region, GRID5KM_ID) %>% 
-#   distinct()
-# x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ]
-# paste(sort(x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
-#       collapse = ", ")
-# 
-# # ^ Shows that several grid cells have multiple 'Region' specifications - this is a temporary fix
-# x.orig.noinfo <- x.orig.noinfo %>% 
-#   mutate(Region = ifelse(GRID5KM_ID %in% c(63521:63524), "CenCA", Region))
-# x.reg.key <- x.orig.noinfo %>% 
-#   select(Region, GRID5KM_ID) %>% 
-#   distinct()
-# 
-# 
-# # ^ Shows that several grid cells have multiple 'CAOFFSHOR' specifications
-# x.off.key.test <- x.orig.noinfo %>% 
-#   select(CA_OFFSHOR, GRID5KM_ID) %>% 
-#   distinct()
-# x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ]
-# paste(sort(x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
-#       collapse = ", ")
-# #####
-
-
-# x.orig <- x.orig.noinfo %>%
-#   left_join(x.blue, by = c("year_month", "GRID5KM_ID")) %>% 
-#   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
-
-
-# x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
-# left_join(x.reg.key)
-# rm(x.hump, x.blue)
 
 
 ### Shift/redistributeeffort as specified
