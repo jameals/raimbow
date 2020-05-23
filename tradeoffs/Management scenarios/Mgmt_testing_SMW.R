@@ -38,21 +38,39 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 
 
 
-### Shift/redistributeeffort as specified
+### Shift/redistribute effort as specified
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
   x = x.orig,
   early.data.method = "pile", 
-  delay.date = NULL,
+  delay.date = as.Date("2009-12-15"),
   delay.region = "All",
-  delay.method = "pile",
+  delay.method = "depth",
   delay.method.fidelity = "temporal",
-  closure.date = as.Date("2010-04-10"),
-  closure.region = c("CenCA"),
-  closure.method = "temporal",
-  closure.redist.percent = 100, 
-  depth.val = -200
+  closure.date = as.Date("2010-04-01"),
+  closure.region = c("All"),
+  closure.method = "depth",
+  # closure.redist.percent = 100,
+  depth.val = -100,
+  reduction.before.date = as.Date("2009-12-15"), 
+  reduction.before.percent = 50, 
+  reduction.before.region = "All", 
+  reduction.after.date = as.Date("2010-04-01"), 
+  reduction.after.percent = 50, 
+  reduction.after.region = "All"
 )
+
+# source("C:/SMW/RAIMBOW/raimbow/tradeoffs/Management scenarios/Mgmt_scenarios_plot.R")
+# sum(x.orig$DCRB_lbs)
+# sum(d2$DCRB_lbs)
+# sum(d50$DCRB_lbs)
+# sum(d100$DCRB_lbs)
+# 
+# sum(x.orig$DCRB_lbs) - (sum(x.orig$DCRB_lbs) - sum(d50$DCRB_lbs)) * 2
+# 
+effort_plot_effort(x.orig, DCRB_lbs)
+effort_plot_effort(d, DCRB_lbs)
+# effort_plot_effort(d2, DCRB_lbs)
 
 
 # Load and prep grid cell - area key

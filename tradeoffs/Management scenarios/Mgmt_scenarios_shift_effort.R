@@ -15,15 +15,15 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                         closure.method = c("remove", "temporal", "depth"), 
                         closure.redist.percent = 100, depth.val = NULL, 
                         reduction.before.date = NULL, reduction.before.percent = 50, 
-                        reduction.after.date = NULL, reduction.after.percent = 50) {
+                        reduction.before.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
+                        reduction.after.date = NULL, reduction.after.percent = 50, 
+                        reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA")) {
   
-  # TODO: Allow for percent reduction (without fully closing areas) in both delayed opening and early closure scenarios
-  # TODO: Depth filtering
   # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded
   # TODO: how to determine 'natural season' start date? Day 1? Day of 1% of season's effort?
   
   # Question(s) for Jameal
-  #   what constraints should be put on multiple regions?
+  #   what constraints should be put on multiple regions, i.e. should any combination be allowed?
   #   Are the function arguments too unweildy?
   #     WE could turn them into delay.list, closure.list, and reduction.list
   #     The lists would have compenents names like function arguments
@@ -34,26 +34,31 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   #   to do with data that comes before minimum season start date, 
   #   e.g. data that comes before 15 Nov in Central CA
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
-  #   If NULL, then there is no delayed opening
-  # delay.region: character; if not NULL, then one of "All", "CenCA", "BIA"
-  # delay.method: character; if not NULL, either "remove", "pile", or "lag"
-  # delay.method.fidelity: character; method of redistribution. 
-  #   if used, either "spatial" (fidelity) or "temporal" (fidelity). 
-  #   Ignored if delay.method = "remove"
+  #   If NULL, then there is no delayed opening and 
+  #   other delay.. arguments are ignored
+  # delay.region: character; one of options listed above. Ignored if delay.date is NULL
+  # delay.method: character; one of options listed above. Ignored if delay.date is NULL
+  # delay.method.fidelity: one of options listed above. Ignored (only) if delay.date is NULL 
   # closure.date: Date; date for which the fishery will close in 2009-10 crab season
-  #   If NULL, then there is no early (e.g. spring) closure
-  # closure.region: character; see 'delay.region'
-  # closure.method: character; if not NULL, then either "remove" or "temporal (fidelity)
-  # closure.redist.percent: numeric; default is 100. If used, 
-  #   percentage of effort to redistribute that is kept
+  #   If NULL, then there is no early (e.g. spring) closure and 
+  #   other 'closure...' arguments are ignored
+  # closure.region: character; one of options listed above. Ignored if closure.date is NULL
+  # closure.method: character; one of options listed above. Ignored if closure.date is NULL
+  # closure.redist.percent: numeric; default is 100. 
+  #   Ignored if closure.method is not "temporal". Otherwise, 
+  #   values being redistributed are multiplied by (closure.redist.percent / 100) 
   # depth.val: numeric; if either delay.method or closure.method is "depth", 
   #   then all effort less than this value (i.e. with a higher absolute value) is removed
   # reduction.before.date: Date; if not NULL, then all effort values before this date
-  #   are multiplied by (reduction.before.percent / 100)
+  #   are multiplied by (1 - (reduction.before.percent / 100))
   # reduction.before.percent: numeric; between 0 and 100. Ignored if reduction.before.date is NULL
+  # reduction.before.region: character; one of options listed above. 
+  #   Ignored if reduction.before.date is NULL
   # reduction.after.date: Date; if not NULL, then all effort values after this date
-  #   are multiplied by (reduction.after.percent / 100)
+  #   are multiplied by (1- (reduction.after.percent / 100))
   # reduction.after.percent: numeric; between 0 and 100. Ignored if reduction.after.date is NULL
+  # reduction.after.region: character; one of options listed above. 
+  #   Ignored if reduction.after.date is NULL
   
   
   ### Output
@@ -95,10 +100,13 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   early.data.method <- match.arg(early.data.method)
   if (!is.null(delay.date)) delay.region <- match.arg(delay.region, several.ok = TRUE)
   if (!is.null(delay.date)) delay.method <- match.arg(delay.method)
-  if (!is.null(delay.date) & !(delay.method %in% c("remove", "depth"))) 
-    delay.method.fidelity <- match.arg(delay.method.fidelity)
+  if (!is.null(delay.date)) delay.method.fidelity <- match.arg(delay.method.fidelity)
   if (!is.null(closure.date)) closure.region <- match.arg(closure.region, several.ok = TRUE)
   if (!is.null(closure.date)) closure.method <- match.arg(closure.method)
+  if (!is.null(reduction.before.date)) 
+    reduction.before.region <- match.arg(reduction.before.region, several.ok = TRUE)
+  if (!is.null(reduction.after.date)) 
+    reduction.after.region <- match.arg(reduction.after.region, several.ok = TRUE)
   
   
   # Data frame name checks
@@ -112,7 +120,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     stop("x does not contain all required columns:\n", 
          paste(names.x.fish, collapse = ", "))
   
-  if (delay.method == "depth" | closure.method == "depth") {
+  if (identical(delay.method, "depth") | identical(closure.method, "depth")) {
     stopifnot(
       inherits(depth.val, c("integer", "numeric")), 
       depth.val < 0
@@ -123,20 +131,34 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
               immediate. = TRUE)
   }
   
-  # Check that reduction and non-depth closure methods are not being used at the same time  
+  
+  # Check that reduction and non-depth methods are not being used at the same time  
+  if ((!is.null(delay.date) & !identical(delay.method, "depth")) & !is.null(reduction.before.date))
+    stop("Effort reduction before some date and a delayed opening cannot be used ", 
+         "simultaneously unless delay.method is 'depth'")
+  
+  if ((!is.null(closure.date) & !identical(closure.method, "depth")) & !is.null(reduction.after.date))
+    stop("Effort reduction after some date and an early closure cannot be used ", 
+         "simultaneously unless closure.method is 'depth'")
   
   
+  # Checks delay/closure dates relative to each other
+  if (is.null(delay.date) & is.null(closure.date) & is.null(reduction.before.date) & 
+      is.null(reduction.after.date)) 
+    message("All of delay.date, closure.date, reduction.before.date, ", 
+            "and reduction.after.date are NULL, ", 
+            "and thus only 'early data' will be shifted")
   
+  if (!is.null(delay.date) & !is.null(closure.date)) 
+    if (delay.date >= closure.date)
+      stop("delay.date must come before closure.date")
   
-  # Checks dealy/closure dates
+  # Checks that non-NULL dates are within the correct ranges
   date.message.common <- paste(
     "must be for the 2009-10 fishing season,",
     "meaning it must be between 2009-11-01 (1 Nov 2009)", 
     "and 2010-10-31 (31 October 2010)"
   )
-  if (is.null(delay.date) & is.null(closure.date)) 
-    message("Both delay.date and closure.date are NULL, ", 
-            "and thus only 'early data' will be shifted")
   
   if (!is.null(delay.date))
     if (!between(delay.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
@@ -146,9 +168,13 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     if (!between(closure.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
       stop("closure.date ", date.message.common)
   
-  if (!is.null(delay.date) & !is.null(closure.date)) 
-    if (delay.date >= closure.date)
-      stop("delay.date must come before closure.date")
+  if (!is.null(reduction.before.date))
+    if (!between(reduction.before.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
+      stop("reduction.before.date ", date.message.common)
+  
+  if (!is.null(reduction.after.date))
+    if (!between(reduction.after.date, as.Date("2009-11-01"), as.Date("2010-10-31")))
+      stop("reduction.after.date ", date.message.common)
   
   rm(date.message.common)
   
@@ -179,7 +205,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     select(-.data$tmp)
   
   
-  if (early.data.method == "pile") {
+  x.fish <- if (early.data.method == "pile") {
     x.fish <- x.fish.pre %>% 
       mutate(decimal_record = ifelse(date_record_orig < season_date_st_min, 
                                      decimal_date(season_date_st_min), 
@@ -187,22 +213,21 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
              date_record = as.Date(
                round_date(date_decimal(decimal_record), unit = "day")), 
              year_month = func_year_mo(date_record)) %>% 
-      select(-decimal_record)
+      select(-decimal_record) %>% 
+      select(-year, -day_of_year, -date_record_orig, -season_date_st_min)
     
   } else if (early.data.method == "remove") {
     x.fish <- x.fish.pre %>% 
       filter(date_record_orig >= season_date_st_min) %>% 
-      mutate(date_record = date_record_orig)
+      mutate(date_record = date_record_orig) %>% 
+      select(-year, -day_of_year, -date_record_orig, -season_date_st_min)
     
   } else {
     stop("Invalid argument passed to early.data.method")
   }
   
-  x.fish <- x.fish %>% 
-    select(-year, -day_of_year, -date_record_orig, -season_date_st_min)
   
-  
-  # For each crab season and Region, get end dates
+  # For each crab season and Region, get end dates. Joined to df at the end
   x.fish.end.summ <- x.fish %>% 
     group_by(crab_year, Region) %>% 
     summarise(season_date_end = max(date_record), 
@@ -235,9 +260,44 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   
   #----------------------------------------------------------------------------
+  # Do percent reduction - early season
+  if (is.null(reduction.before.date)) {
+    x.fish.delay.reduct <- x.fish
+    
+  } else {
+    x.fish.delay.reduct <- x.fish %>% 
+      mutate(reduce_yr = if (year(reduction.before.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
+             reduce_mgmt = as.Date(paste(reduce_yr, lubridate::month(reduction.before.date), 
+                                         day(reduction.before.date), sep = "-")), 
+             reduce_date = date_record < reduce_mgmt)
+    
+    if ("All" %in% reduction.before.region) {
+      if (length(reduction.before.region) > 1)
+        stop("You cannot use 'All' in conjunction with other regions in reduction.before.region")
+      
+      x.fish.delay.reduct <- x.fish.delay.reduct %>% 
+        mutate(reduce_region = TRUE)
+      
+    } else {
+      x.fish.delay.reduct <- x.fish.delay.reduct %>% 
+        mutate(reduce_region = Region %in% reduction.before.region)
+    }
+    
+    x.fish.delay.reduct <- x.fish.delay.reduct %>% 
+      mutate(rec = reduce_region & reduce_date, 
+             rec_dec = 1 - (reduction.before.percent / 100), 
+             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_dec, DCRB_lbs), 
+             DCRB_rev = ifelse(rec, DCRB_rev * rec_dec, DCRB_rev), 
+             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_dec, Num_DCRB_VMS_pings), 
+             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_dec, Num_DCRB_Vessels), 
+             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_dec, Num_Unique_DCRB_Vessels)) %>% 
+      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_dec)
+  }
+  
+  #----------------------------------------------------------------------------
   # Do delayed opening stuff
   if (is.null(delay.date)) {
-    x.fish.delay <- x.fish
+    x.fish.delay <- x.fish.delay.reduct
     
   } else {
     #------------------------------------------------------
@@ -249,12 +309,12 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
       if (length(delay.region) > 1)
         stop("You cannot use 'All' in conjunction with other regions in delay.region")
       
-      x.d.fish.filter <- x.fish
+      x.d.fish.filter <- x.fish.delay.reduct
       x.d.fish.nofilter <- NULL
       
     } else {
-      x.d.fish.filter <- x.fish %>% filter(Region %in% delay.region)
-      x.d.fish.nofilter <- x.fish %>% filter(!(Region %in% delay.region))
+      x.d.fish.filter <- x.fish.delay.reduct %>% filter(Region %in% delay.region)
+      x.d.fish.nofilter <- x.fish.delay.reduct %>% filter(!(Region %in% delay.region))
     } 
     
     if (nrow(x.d.fish.filter) == 0) 
@@ -339,14 +399,50 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   
   #----------------------------------------------------------------------------
+  # Do percent reduction - late season
+  if (is.null(reduction.after.date)) {
+    x.fish.closure.reduct <- x.fish.delay
+    
+  } else {
+    x.fish.closure.reduct <- x.fish.delay %>% 
+      mutate(reduce_yr = if (year(reduction.after.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
+             reduce_mgmt = as.Date(paste(reduce_yr, lubridate::month(reduction.after.date), 
+                                         day(reduction.after.date), sep = "-")), 
+             reduce_date = date_record >= reduce_mgmt)
+    
+    if ("All" %in% reduction.after.region) {
+      if (length(reduction.after.region) > 1)
+        stop("You cannot use 'All' in conjunction with other regions in reduction.after.region")
+      
+      x.fish.closure.reduct <- x.fish.closure.reduct %>% 
+        mutate(reduce_region = TRUE)
+      
+    } else {
+      x.fish.closure.reduct <- x.fish.closure.reduct %>% 
+        mutate(reduce_region = Region %in% reduction.after.region)
+    }
+    
+    x.fish.closure.reduct <- x.fish.closure.reduct %>% 
+      mutate(rec = reduce_region & reduce_date, 
+             rec_dec = 1 - (reduction.after.percent / 100), #get decimal value
+             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_dec, DCRB_lbs), 
+             DCRB_rev = ifelse(rec, DCRB_rev * rec_dec, DCRB_rev), 
+             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_dec, Num_DCRB_VMS_pings), 
+             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_dec, Num_DCRB_Vessels), 
+             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_dec, Num_Unique_DCRB_Vessels)) %>% 
+      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_dec)
+  }
+  
+  
+  #----------------------------------------------------------------------------
   # Do early closure stuff
   if (is.null(closure.date)) {
-    x.fish.closure <- x.fish.delay
+    x.fish.closure <- x.fish.closure.reduct
     
   } else {
     #------------------------------------------------------
     # Determine which records come after closure date
-    x.fish.c1 <- x.fish.delay %>% 
+    x.fish.c1 <- x.fish.closure.reduct %>% 
       mutate(mgmt_yr = if (year(closure.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
              season_close_mgmt = as.Date(paste(mgmt_yr, lubridate::month(closure.date), day(closure.date), 
                                                sep = "-")), 
