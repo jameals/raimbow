@@ -120,6 +120,11 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     stop("x does not contain all required columns:\n", 
          paste(names.x.fish, collapse = ", "))
   
+  eff.regions <- c("CenCA", "NorCA", "OR", "WA")
+  if (!all(x$Region %in% eff.regions))
+    stop("All effort data must be in the following regions\n:", 
+         paste(eff.regions, collapse = ", "))
+  
   if (identical(delay.method, "depth") | identical(closure.method, "depth")) {
     stopifnot(
       inherits(depth.val, c("integer", "numeric")), 
