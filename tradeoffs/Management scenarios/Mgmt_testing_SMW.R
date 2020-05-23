@@ -44,13 +44,14 @@ d <- effort_mgmt(
   x = x.orig,
   early.data.method = "pile", 
   delay.date = NULL,
-  delay.region = "OR",
-  delay.method = "lag",
-  delay.method.fidelity = "spatial",
+  delay.region = "All",
+  delay.method = "pile",
+  delay.method.fidelity = "temporal",
   closure.date = as.Date("2010-04-10"),
-  closure.region = c("OR", "NorCA"),
-  closure.method = "remove",
-  closure.redist.percent = 10
+  closure.region = c("CenCA"),
+  closure.method = "temporal",
+  closure.redist.percent = 100, 
+  depth.val = -200
 )
 
 
