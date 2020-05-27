@@ -68,8 +68,8 @@ d <- effort_mgmt(
 # 
 # sum(x.orig$DCRB_lbs) - (sum(x.orig$DCRB_lbs) - sum(d50$DCRB_lbs)) * 2
 # 
-effort_plot_effort(x.orig, DCRB_lbs)
-effort_plot_effort(d, DCRB_lbs)
+# effort_plot_effort(x.orig, DCRB_lbs)
+# effort_plot_effort(d, DCRB_lbs)
 # effort_plot_effort(d2, DCRB_lbs)
 
 
