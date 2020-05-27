@@ -18,9 +18,12 @@ x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_
 grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds") %>% 
   select(-region_ts)
 
+grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rds")
+
 x.orig <- x.orig.noinfo %>% 
   left_join(grid.key, by = "GRID5KM_ID") %>% 
-  mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
+  left_join(grid.depth, by = "GRID5KM_ID") #%>% 
+  # mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
 
@@ -33,56 +36,41 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 
 
 
-# ##### TODO - discuss
-# x.reg.key.test <- x.orig.noinfo %>% 
-#   select(Region, GRID5KM_ID) %>% 
-#   distinct()
-# x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ]
-# paste(sort(x.reg.key.test[which(duplicated(x.reg.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
-#       collapse = ", ")
-# 
-# # ^ Shows that several grid cells have multiple 'Region' specifications - this is a temporary fix
-# x.orig.noinfo <- x.orig.noinfo %>% 
-#   mutate(Region = ifelse(GRID5KM_ID %in% c(63521:63524), "CenCA", Region))
-# x.reg.key <- x.orig.noinfo %>% 
-#   select(Region, GRID5KM_ID) %>% 
-#   distinct()
-# 
-# 
-# # ^ Shows that several grid cells have multiple 'CAOFFSHOR' specifications
-# x.off.key.test <- x.orig.noinfo %>% 
-#   select(CA_OFFSHOR, GRID5KM_ID) %>% 
-#   distinct()
-# x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ]
-# paste(sort(x.off.key.test[which(duplicated(x.off.key.test$GRID5KM_ID)), ][["GRID5KM_ID"]]), 
-#       collapse = ", ")
-# #####
 
 
-# x.orig <- x.orig.noinfo %>%
-#   left_join(x.blue, by = c("year_month", "GRID5KM_ID")) %>% 
-#   left_join(x.hump, by = c("year_month", "GRID5KM_ID"))
-
-
-# x.whale <- full_join(x.blue, x.hump, by = c("GRID5KM_ID", "year_month"))# %>% 
-# left_join(x.reg.key)
-# rm(x.hump, x.blue)
-
-
-### Shift/redistributeeffort as specified
+### Shift/redistribute effort as specified
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
   x = x.orig,
-  early.data.method = "remove", 
+  early.data.method = "pile", 
   delay.date = as.Date("2009-12-15"),
-  delay.region = "NorCA",
-  delay.method = "pile",
+  delay.region = "All",
+  delay.method = "depth",
   delay.method.fidelity = "temporal",
-  closure.date = NULL,
-  closure.region = "BIA",
-  closure.method = "remove",
-  closure.redist.percent = 10
+  closure.date = as.Date("2010-04-01"),
+  closure.region = c("All"),
+  closure.method = "depth",
+  # closure.redist.percent = 100,
+  depth.val = -100,
+  reduction.before.date = as.Date("2009-12-15"), 
+  reduction.before.percent = 50, 
+  reduction.before.region = "All", 
+  reduction.after.date = as.Date("2010-04-01"), 
+  reduction.after.percent = 50, 
+  reduction.after.region = "All"
 )
+
+# source("C:/SMW/RAIMBOW/raimbow/tradeoffs/Management scenarios/Mgmt_scenarios_plot.R")
+# sum(x.orig$DCRB_lbs)
+# sum(d2$DCRB_lbs)
+# sum(d50$DCRB_lbs)
+# sum(d100$DCRB_lbs)
+# 
+# sum(x.orig$DCRB_lbs) - (sum(x.orig$DCRB_lbs) - sum(d50$DCRB_lbs)) * 2
+# 
+effort_plot_effort(x.orig, DCRB_lbs)
+effort_plot_effort(d, DCRB_lbs)
+# effort_plot_effort(d2, DCRB_lbs)
 
 
 # Load and prep grid cell - area key
