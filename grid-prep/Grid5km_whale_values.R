@@ -15,6 +15,7 @@ if (user == "JS") {
   path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
   path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
+  file.out <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
   
   
 } else if (user == "SMW") {
@@ -111,8 +112,8 @@ saveRDS(x.whale, file = file.out)
 # table(blue.summ$count, blue.summ$Region)
 
 
-ggplot(hump.summ, aes(x = year_month, y = Humpback_dens_sum, color = Region, group = Region)) + 
-  geom_point() + 
-  geom_line()
+# ggplot(hump.summ, aes(x = year_month, y = Humpback_dens_sum, color = Region, group = Region)) + 
+#   geom_point() + 
+#   geom_line()
 
 ###############################################################################
