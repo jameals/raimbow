@@ -13,10 +13,13 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                         closure.date = NULL, 
                         closure.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
                         closure.method = c("remove", "temporal", "depth"), 
-                        closure.redist.percent = 100, depth.val = NULL, 
-                        reduction.before.date = NULL, reduction.before.percent = 50, 
+                        closure.redist.percent = 100, 
+                        depth.val = NULL, 
+                        reduction.before.date = NULL, 
+                        reduction.before.percent = 50, 
                         reduction.before.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
-                        reduction.after.date = NULL, reduction.after.percent = 50, 
+                        reduction.after.date = NULL, 
+                        reduction.after.percent = 50, 
                         reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA")) {
   
   # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded

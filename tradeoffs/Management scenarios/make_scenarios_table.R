@@ -1,50 +1,29 @@
 # make table of scenarios
-library(tidyverse)
 
-# columns need to include all arguments for the function described in Mgmt_scenarios_shift_effort.R
-# early.data.method: character; either "pile" or "remove". Represents what to
-#   to do with data that comes before minimum season start date, 
-#   e.g. data that comes before 15 Nov in Central CA
-# delay.date: Date; date for which the fishery will open in 2009-10 crab season.
-#   If NULL, then there is no delayed opening and 
-#   other delay.. arguments are ignored
-# delay.region: character; one of options listed above. Ignored if delay.date is NULL
-# delay.method: character; one of options listed above. Ignored if delay.date is NULL
-# delay.method.fidelity: one of options listed above. Ignored (only) if delay.date is NULL 
-# closure.date: Date; date for which the fishery will close in 2009-10 crab season
-#   If NULL, then there is no early (e.g. spring) closure and 
-#   other 'closure...' arguments are ignored
-# closure.region: character; one of options listed above. Ignored if closure.date is NULL
-# closure.method: character; one of options listed above. Ignored if closure.date is NULL
-# closure.redist.percent: numeric; default is 100. 
-#   Ignored if closure.method is not "temporal". Otherwise, 
-#   values being redistributed are multiplied by (closure.redist.percent / 100) 
-# depth.val: numeric; if either delay.method or closure.method is "depth", 
-#   then all effort less than this value (i.e. with a higher absolute value) is removed
-# reduction.before.date: Date; if not NULL, then all effort values before this date
-#   are multiplied by (1 - (reduction.before.percent / 100))
-# reduction.before.percent: numeric; between 0 and 100. Ignored if reduction.before.date is NULL
-# reduction.before.region: character; one of options listed above. 
-#   Ignored if reduction.before.date is NULL
-# reduction.after.date: Date; if not NULL, then all effort values after this date
-#   are multiplied by (1- (reduction.after.percent / 100))
-# reduction.after.percent: numeric; between 0 and 100. Ignored if reduction.after.date is NULL
-# reduction.after.region: character; one of options listed above. 
-#   Ignored if reduction.after.date is NULL
+# 1) table for delays and early closures, no effort reduction or depth restriction
+# 2) table for late season effort reduction, depth restriction, or both
+
+library(tidyverse)
 
 # 052720. settings. 
 
-########### PICK UP HERE 052720 ###############
-
+# 1) table for delays and early closures, no effort reduction or depth restriction 
 # early.data.method: set as remove for all scenarios unless asked to do otherwise
 # delay.date: NULL or Dec 15
 # delay.region: NULL, "All", "CenCA"
 # delay.method: set as "lag", but compare to "remove"
-# delay.method.fidelity: develop 2 complete sets of scenarios, 1 with this setting as "spatial" and 1 as "temporal". JS preferred / main text scenario setting is "spatial"
+# delay.method.fidelity: preferred / main text scenario setting is "spatial"
 # closure.date: NULL or Apr 1
 # closure.region: NULL, "All", "CenCA", "BIA"
 # closure.method: set as "temporal" but compare to "remove"; must be "remove" when closure.region is "All"
 # closure.redist.percent: develop 2 complete sets of scenarios, 1 with this setting as 100 and 1 as 10. JS preferred / main text scenario setting is 10 for closure.region== "CenCA", 100 for closure.region=="BIA
+# depth.val: NULL
+# reduction.before.date: NULL
+# reduction.before.percent= 50. this is the default but will be ignored because reduction.before.date is NULL
+# reduction.before.region: NULL
+# reduction.after.date: NULL
+# reduction.after.percent = 50. this is the default but will be ignored because reduction.after.date is NULL
+# reduction.after.region: NULL
 
 ### Make the scenario combinations 
 delay_scenarios <- c(
@@ -96,47 +75,23 @@ scenario_table_1 <- scenario_table %>%
                             )
     ),
     closure.method = ifelse(closure.region != "All", "temporal", "remove"),
-    closure.redist.percent = 100
+    closure.redist.percent = 100,
+    depth.val = "NULL",
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = "NULL",
+    reduction.after.percent = 50,
+    reduction.after.region = "NULL"
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
-                closure.method, closure.redist.percent)
+                closure.method, closure.redist.percent, depth.val, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
 
 # 2nd set of scenarios
-# delay.method.fidelity: "temporal"
-# closure.redist.percent: 100
-scenario_table_2 <- scenario_table %>%
-  mutate(
-    scenario_df_name = paste(delay_scenario,closure_scenario,"delay_method_fidelity_temporal","closure_redist_percent_100",sep="_"),
-    early.data.method = "remove",
-    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
-    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
-                          ifelse(substr(delay_scenario,1,5) == "State",
-                                 "All",
-                                 "CenCA")
-    ),
-    delay.method = "lag",
-    delay.method.fidelity = "temporal",
-    closure.date = ifelse(closure_scenario != "No_Early_Closure", early.closure.date, "NULL"),
-    closure.region = ifelse(closure_scenario == "No_Early_Closure", "NULL",
-                            ifelse(substr(closure_scenario,1,3) == "Sta", 
-                                   "All",
-                                   ifelse(substr(closure_scenario,1,3) == "Cen",
-                                          "CenCA", "BIA"
-                                   )
-                            )
-    ),
-    closure.method = "temporal",
-    closure.redist.percent = 100
-  ) %>%
-  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
-                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
-                closure.method, closure.redist.percent)
-
-# 3rd set of scenarios
 # delay.method.fidelity: "spatial"
 # closure.redist.percent: 10
-scenario_table_3 <- scenario_table %>%
+scenario_table_2 <- scenario_table %>%
   mutate(
     scenario_df_name = paste(delay_scenario,closure_scenario,"delay_method_fidelity_spatial","closure_redist_percent_10",sep="_"),
     early.data.method = "remove",
@@ -158,18 +113,77 @@ scenario_table_3 <- scenario_table %>%
                             )
     ),
     closure.method = "temporal",
-    closure.redist.percent = 10
+    closure.redist.percent = 10,
+    depth.val = "NULL",
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = "NULL",
+    reduction.after.percent = 50,
+    reduction.after.region = "NULL"
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
-                closure.method, closure.redist.percent)
+                closure.method, closure.redist.percent, depth.val, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
 
-# 4th set of scenarios
-# delay.method.fidelity: "temporal"
-# closure.redist.percent: 10
-scenario_table_4 <- scenario_table %>%
+scenario_table <- bind_rows(list(scenario_table_1,scenario_table_2))
+
+write_rds(scenario_table, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_spatial_lag_10_100.RDS"
+)
+)
+
+# 2) table for late season effort reduction, depth restriction, or both
+# early.data.method: set as remove for all scenarios unless asked to do otherwise
+# delay.date: NULL
+# delay.region: NULL
+# delay.method: NULL
+# delay.method.fidelity: NULL
+# closure.date: Apr 1
+# closure.region: "All", "CenCA"
+# closure.method: "temporal", "depth"
+# closure.redist.percent: 0
+# depth.val: NULL, -54.864; assuming units are meters this corresponds to 30 fathoms
+# reduction.before.date: NULL
+# reduction.before.percent= 50. this is the default but will be ignored because reduction.before.date is NULL
+# reduction.before.region: NULL
+# reduction.after.date: Apr 1
+# reduction.after.percent = 50. this is the default
+# reduction.after.region: "All", "CenCA"
+
+### Make the scenario combinations 
+delay_scenarios_edr <- c(
+  "No_Delay"
+)
+
+closure_scenarios_edr <- c(
+  "No_Early_Closure"
+)
+
+restriction_scenarios_edr <- c(
+  "Statewide",
+  "CenCA"
+)
+
+scenario_table_edr <- expand.grid(
+  "delay_scenario" = delay_scenarios_edr,
+  "closure_scenario" = closure_scenarios_edr,
+  "restriction_scenario" = restriction_scenarios_edr
+) 
+
+# set delayed opening and early closure dates for scenarios
+#delayed.opening.date <- "2009-12-15"
+restriction_after_date <- "2010-04-01"
+
+### Add columns to match arguments in Mgmt_scenarios_shift_effort.R
+
+# 3rd set of scenarios
+# reduction.after.percent: 50
+scenario_table_3 <- scenario_table_edr %>%
   mutate(
-    scenario_df_name = paste(delay_scenario,closure_scenario,"delay_method_fidelity_temporal","closure_redist_percent_10",sep="_"),
+    scenario_df_name = paste(delay_scenario, closure_scenario, restriction_scenario,"reduction_after_percent_50",sep="_"),
     early.data.method = "remove",
     delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
     delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
@@ -178,32 +192,113 @@ scenario_table_4 <- scenario_table %>%
                                  "CenCA")
     ),
     delay.method = "lag",
-    delay.method.fidelity = "temporal",
-    closure.date = ifelse(closure_scenario != "No_Early_Closure", early.closure.date, "NULL"),
-    closure.region = ifelse(closure_scenario == "No_Early_Closure", "NULL",
-                            ifelse(substr(closure_scenario,1,3) == "Sta", 
-                                   "All",
-                                   ifelse(substr(closure_scenario,1,3) == "Cen",
-                                          "CenCA", "BIA"
-                                   )
-                            )
-    ),
-    closure.method = "temporal",
-    closure.redist.percent = 10
+    delay.method.fidelity = "spatial",
+    closure.date = "NULL",
+    closure.region = "NULL",
+    closure.method = "remove",
+    closure.redist.percent = 0,
+    depth.val = "NULL",
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                           "All",
+                                           "CenCA"
+                                    )
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
-                closure.method, closure.redist.percent)
+                closure.method, closure.redist.percent, depth.val, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
 
-scenario_table <- bind_rows(list(scenario_table_1,scenario_table_2, scenario_table_3, scenario_table_4))
+# 4th set of scenarios
+# depth.val = -54.864
+scenario_table_4 <- scenario_table_edr %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"depth_val_30fathom",sep="_"),
+    early.data.method = "remove",
+    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
+    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
+                          ifelse(substr(delay_scenario,1,5) == "State",
+                                 "All",
+                                 "CenCA")
+    ),
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = ifelse(restriction_scenario != "No_Early_Closure", restriction_after_date, "NULL"),
+    closure.region = ifelse(restriction_scenario == "No_Early_Closure", "NULL",
+                            ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                   "All",
+                                   "CenCA"
+                                   )
+                            ),
+    closure.method = "depth",
+    closure.redist.percent = 0,
+    depth.val = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = "NULL",
+    reduction.after.percent = 50,
+    reduction.after.region = "NULL"
+    ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
+                closure.method, closure.redist.percent, depth.val, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
 
-write_rds(scenario_table, here::here(
+
+
+# 5th set of scenarios
+# reduction.after.percent: 50
+# depth.val = -54.864
+scenario_table_5 <- scenario_table_edr %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"reduction_after_percent_50","depth_val_30fathom",sep="_"),
+    early.data.method = "remove",
+    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
+    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
+                          ifelse(substr(delay_scenario,1,5) == "State",
+                                 "All",
+                                 "CenCA")
+    ),
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = ifelse(restriction_scenario != "No_Early_Closure", restriction_after_date, "NULL"),
+    closure.region = ifelse(restriction_scenario == "No_Early_Closure", "NULL",
+                            ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                   "All",
+                                   "CenCA"
+                            )
+    ),
+    closure.method = "depth",
+    closure.redist.percent = 0,
+    depth.val = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                    "All",
+                                    "CenCA"
+    )
+  ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region, 
+                closure.method, closure.redist.percent, depth.val, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
+
+
+scenario_table_edr <- bind_rows(list(scenario_table_3, scenario_table_4, scenario_table_5))
+
+write_rds(scenario_table_edr, here::here(
   "tradeoffs",
   "Management scenarios",
-  "scenario_table.RDS"
+  "scenario_table_effort_depth_restrictions.RDS"
 )
 )
 
+########### STOPPED HERE 052720 ###############
 
 
 ################################################
