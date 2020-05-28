@@ -112,7 +112,7 @@ scenario_table_2 <- scenario_table %>%
                                    )
                             )
     ),
-    closure.method = "temporal",
+    closure.method = ifelse(closure.region != "All", "temporal", "remove"),
     closure.redist.percent = 10,
     depth.val = "NULL",
     reduction.before.date = "NULL",

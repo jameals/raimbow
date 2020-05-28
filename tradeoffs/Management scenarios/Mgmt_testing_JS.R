@@ -130,6 +130,38 @@ scenario.output.df.noinfo.sq <- effort_mgmt(
   closure.redist.percent = 100
 )
 
+# effort and depth restrictions statewide in spring
+
+x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels_regions_depths.RDS") 
+glimpse(x.orig)
+
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+scenario.output.df <- effort_mgmt(
+  x = x.orig,
+  
+  early.data.method = "remove",
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method = "lag",
+  delay.method.fidelity = "spatial",
+  closure.date = as.Date("2010-04-01"),
+  closure.region = "All",
+  closure.method = "depth",
+  closure.redist.percent = 0,
+  depth.val = as.numeric(-54.864),
+  reduction.before.date = NULL,
+  reduction.before.percent = 50,
+  reduction.before.region = NULL,
+  reduction.after.date = as.Date("2010-04-01"),
+  reduction.after.percent = 50,
+  reduction.after.region = "All"
+  
+  )
+
+tail(data.frame(scenario.output.df))
+head(data.frame(scenario.output.df))
+
+#####
 scenario.output.df.noinfo <- effort_mgmt(
   x = x.orig.noinfo,
   early.data.method = "remove", 
