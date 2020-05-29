@@ -1,0 +1,293 @@
+---
+title: "RAIMBOW grid prep"
+author: "Sam Woodman and Jameal Samhouri"
+date: "5/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This docuemnt creates keys and other data frames related to the base 5km grid used in RAIMBOW analyses. It serves as a single 'crank to turn' when new fishing data or whale predictions are added to the analyses to ensure that specific data are formatted as expected for the various functions used in the analyses. Specifically, this function:
+
+1) Determines the IDs of grid cells in humpback (Mn) and/or Blue (Bm) BIAs
+
+2) Determines the study area, aka which 5km grid cells have (ever) had fishing effort
+
+3) Determines the associated CDFW large block number and region for each 5km grid cell in the study area
+
+4) Extracts the depth value for each grid cell in the study area
+
+5) Prepares whale data to be passed as an argument to risk_mgmt(), etc.
+
+See the specific sections for more details. Each section saves an individual RDS file (TODO can/should we simplify this?). Also note that this document does not clip land from the 5km grid for area calculations and mapping purposes. Because this process takes a while, it is done in 'Grid5km_landerase.R', and the output RDATA file is read into this document.
+
+```{r prep, message=FALSE}
+library(dplyr)
+library(here)
+library(lubridate)
+library(rnaturalearth)
+library(sf)
+
+# Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
+#   Thus, please ensure that file paths are complete rather than relative
+
+source(here::here("User_script_local.R"))
+if (user == "JS") {
+  path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS"
+  path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
+  path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+  
+  path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path.cdfw <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/CDFW/MAN_CA_largeOffshoreblocks[1]/MAN_CA_largeOffshoreblocks.shp"
+  path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+  path.bia.shp <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/BIAs/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp"
+  
+  # file.out <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_studyarea.rds"
+  
+  
+} else if (user == "SMW") {
+  local.smw <- "C:/SMW/RAIMBOW/raimbow-local/"
+  
+  path.fish <- paste0(local.smw, "Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+  path.hump <- paste0(local.smw, "Outputs/Humpback_5km_long_monthly.rds")
+  path.blue <- paste0(local.smw, "Outputs/BlueWhale_5km_long_monthly.rds")
+  
+  path.grid.5km <- paste0(local.smw, "Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp")
+  path.grid.5km.lno <- paste0(local.smw, "RDATA_files/Grid_5km_landerased.RDATA")
+  
+  path.cdfw <- paste0(local.smw, "Data/CDFW/MAN_CA_largeOffshoreblocks[1]/MAN_CA_largeOffshoreblocks.shp")
+  path.grid.depth <- paste0(local.smw, "Data/5x5 km grid shapefile/weighted_mean_NGDC_depths_for_5km_gridcells.csv")
+  path.bia.shp <- paste0(local.smw, "Data/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp")
+  
+  # file.out  <- paste0(local.smw, "RDATA_files/Grid5km_studyarea.rds")
+  
+  
+} else {
+  stop("Invalid user")
+}
+```
+
+### Prep - load 5km grid, fishing data, and whale data
+
+```{r}
+grid.5km <- st_read(path.grid.5km, quiet = TRUE)
+load(path.grid.5km.lno) #TODO - make this into an Rmd
+
+x.fish <- readRDS(path.fish)
+
+x.hump <- readRDS(path.hump) %>%
+  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+  select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
+
+x.blue <- readRDS(path.blue) %>%
+  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+  select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
+```
+
+## Grid study area
+
+First, we get the IDs of all of the grid cells that have had any fishing activity over the entire time series.
+
+```{r}
+### Get grid cells with non-NA values for all, and save that of fishing data
+grid.studyarea.id <- sort(unique(x.fish$GRID5KM_ID))
+
+# Unnecessary sanity checks
+stopifnot(
+  all(grid.studyarea.id %in% grid.5km.lno$GRID5KM_ID), 
+  all(x.fish$GRID5KM_ID %in% grid.studyarea.id)
+)
+
+# saveRDS(grid.studyarea.id, file = file.out)
+```
+
+If desired, you can visualize the areas that these grid overlap (and don't) with the whale predictions
+
+```{r, eval=FALSE}
+# Code not run
+stopifnot(
+  !anyNA(x.fish$Num_DCRB_VMS_pings), 
+  !anyNA(x.hump$Humpback_dens_mean), 
+  !anyNA(x.blue$Blue_occurrence_mean)
+)
+
+hump.id <- sort(unique(x.hump$GRID5KM_ID))
+blue.id <- sort(unique(x.blue$GRID5KM_ID))
+
+#------------------------------------------------------------------------------
+### Examine and plot the grid cells that have non-NA fishing values but NA whale preds
+sum(!(grid.studyarea.id %in% hump.id))
+sum(!(grid.studyarea.id %in% blue.id))
+
+z.hump <- grid.studyarea.id[(!(grid.studyarea.id %in% hump.id))]
+z.blue <- grid.studyarea.id[(!(grid.studyarea.id %in% blue.id))]
+
+grid.5km.na <- grid.5km %>% filter(GRID5KM_ID %in% c(z.hump, z.blue))
+grid.5km.fishnona <- grid.5km %>% filter(GRID5KM_ID %in% c(grid.studyarea.id))
+
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")), 
+  ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
+    filter(admin %in% c("Canada", "Mexico")) %>% 
+    st_geometry()
+)
+
+# Could save these using png() and dev.off()
+# Plot - grid is blue, grid with non-NA fishing and NA whale is red
+plot(st_geometry(grid.5km), axes = TRUE, border = NA, col = "blue")
+plot(st_geometry(grid.5km.na), add = TRUE, border = NA, col = "red")
+plot(rmap.base, add = TRUE, border = "tan", col = NA)
+
+# Plot - grid is blue, grid with non-NA fishing is green
+plot(st_geometry(grid.5km), axes = TRUE, border = NA, col = "blue")
+plot(st_geometry(grid.5km.fishnona), add = TRUE, border = NA, col = "green")
+plot(rmap.base, add = TRUE, border = "tan", col = NA)
+```
+
+## Grid key - Region and CDFW blocks
+
+Once we have our study area (the grid cell IDs with fishing effort), then we want to get relevant spatial information for those grid cells. First up is Region and CDFW block number. We determine these using latitudinal bins rather than polygon intersection 1) for speed and 2) because some of the CDFW polygons do not intersect with coastal grid cells. We use the latitude values of the centroids of the original 5km gird cells (note not of the land-erased grid cells), to determine the bin of each grid cell in the study area. 
+
+The two different region columns are to accomadate both the time series and tradeoff analyses. These analyses both use the same major boundaries for their regions; the main difference is that the time series analysis splits the Central Ca region into Central and South-Central.
+
+The main latitude boundaries for the regions were determined using the CDFW block coordinates. Specifically, NorCA (CA-N) consists of CDFW blocks 1040, 1041, and 1042, while CenCA (CA-Cen and CA-SCen) consists of CDFW blocks 1036, 1037, 1038. CDFW block 1035 has very little fishing effort, but is considered CA-S for the time series analysis and CenCA for the tradeoff analysis.
+
+First we do CDFW block pre-processing...
+
+```{r}
+# st_make_valid is a GIS to R translation issue - SMW did checks to ensure that the output is basically the same
+cdfw.block <- st_read(path.cdfw, quiet = TRUE) %>%
+  st_make_valid() %>% 
+  st_transform(4326) %>% #transform to WGS84 coordinates
+  mutate(BLOCK10_ID_fac = as.factor(BLOCK10_ID))
+
+# st_bbox(cdfw.block)
+plot(cdfw.block["BLOCK10_ID_fac"], axes = TRUE, main = "CDFW blocks", key.width = lcm(2.5))
+
+cdfw.block.summ <- cdfw.block %>% 
+  group_by(BLOCK10_ID) %>% #unnecessary, oh whale
+  summarise(xmin = round(st_bbox(.data$geometry)["xmin"], 3), 
+            xmax = round(st_bbox(.data$geometry)["xmax"], 3), 
+            ymin = round(st_bbox(.data$geometry)["ymin"], 3), 
+            ymax = round(st_bbox(.data$geometry)["ymax"], 3))
+
+st_drop_geometry(cdfw.block.summ)
+
+# Create vector of latitude boundaries for CDFW blocks
+cdfw.bound <- c(cdfw.block.summ$ymin, 42)
+```
+
+...then region pre-processing...
+
+```{r}
+reg.bound <- c(32.5, 34.5, 36.3, 38.833, 42, 46.25, 50)
+reg.names <- c("CA-S", "CA-SCen", "CA-Cen", "CA-N", "OR", "WA")
+stopifnot(length(reg.names) == length(reg.bound) - 1)
+```
+
+...and finally we determine the values for each grid cell. With the current `findInterval` arguments, a grid cell is included in a latitude band if it is greater than or equal to the minimum value and less than the max value, e.g. a [, ) interval
+
+```{r}
+grid.idx.region.cdfw <- grid.5km %>% 
+  filter(GRID5KM_ID %in% grid.studyarea.id) %>% 
+  st_drop_geometry() %>% 
+  mutate(region_idx = findInterval(LATITUDE, reg.bound, left.open = TRUE), 
+         block_idx = findInterval(LATITUDE, cdfw.bound, left.open = TRUE)) 
+
+# Sanity check that all study area grid cells were assigned a region
+stopifnot(
+  all(between(grid.idx.region.cdfw$region_idx, 1, length(reg.names))), 
+  all(between(grid.idx.region.cdfw$block_idx, 1, 11)) 
+  # ^ 4 cells are in OR, hence the 11 even with 10 regions
+)
+
+grid.key <- grid.idx.region.cdfw %>% 
+  filter(region_idx != 0) %>% 
+  mutate(region_ts = factor(reg.names[region_idx], levels = rev(reg.names)), 
+         Region = as.character(region_ts), 
+         Region = case_when(Region == "WA" ~ "WA", 
+                            Region == "OR" ~ "OR", 
+                            Region == "CA-N" ~ "NorCA", 
+                            Region == "CA-Cen" ~ "CenCA", 
+                            Region == "CA-SCen" ~ "CenCA", 
+                            Region == "CA-S" ~ "CenCA"), 
+         CA_OFFSHOR = cdfw.block.summ$BLOCK10_ID[block_idx]) %>% 
+  select(GRID5KM_ID, region_ts, Region, CA_OFFSHOR)
+stopifnot(nrow(grid.key) == length(grid.studyarea.id))
+
+# saveRDS(grid.region, file = file.out)
+```
+
+## Grid key - depth
+
+We also need depth values for each grid cell in the study area. These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
+
+```{r}
+grid.depth <- read.csv(path.grid.depth) %>% 
+  rename(GRID5KM_ID = Gridcell_ID, depth_m = AWM_depth_m)
+
+stopifnot(all(grid.studyarea.id %in% grid.depth$GRID5KM_ID))
+
+grid.key <- left_join(grid.key, grid.depth, by = "GRID5KM_ID")
+# saveRDS(grid.depth, file = file.out)
+```
+
+## Whale predictions
+
+b.	Filter whale predictions for grid cell IDs in the study area, and convert humpback values to abundance. Full join   the whale data, by grid cell ID and year-month
+c.	Output contains column area_km_lno (for calculating density, etc.)
+d.	Output does not include info columns, e.g. Region, to not cause issues when joining with fishing data. The user must join the output with Grid_key_region.rds themself
+e.	Use the output from this script 1) to look at monthly whale values by region (post-joining), 2) to plug into risk_mgmt(), etc.
+
+Convert humpback preds to abundance for consistency
+
+```{r}
+x.blue.filt <- x.blue %>% filter(GRID5KM_ID %in% grid.studyarea.id)
+x.hump.filt <- x.hump %>% 
+  filter(GRID5KM_ID %in% grid.studyarea.id) %>% 
+  left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") %>% 
+  mutate(Humpback_abund_mean = Humpback_dens_mean * area_km_lno, 
+         Humpback_abund_se = Humpback_dens_se * area_km_lno) %>% 
+  select(-area_km_lno, -Humpback_dens_mean, -Humpback_dens_se)
+
+# ### Sanity checks
+# # All grid cells are present 127 times, which is the number of unique year-months
+# table(table(x.blue.filt$GRID5KM_ID))
+# table(table(x.hump.filt$GRID5KM_ID))
+# length(unique(x.blue.filt$year_month))
+# 
+# # No NA values in individual files
+# sum(is.na(x.blue.filt$Blue_occurrence_mean)) #0
+# sum(is.na(x.hump.filt$Humpback_abund_mean)) #0
+# 
+# # Confirms the 24 and 3, respectivley, study area grid cells not in whale data
+# sum(!(grid.studyarea.id %in% x.blue.filt$GRID5KM_ID)) #24
+# sum(!(grid.studyarea.id %in% x.hump.filt$GRID5KM_ID)) #3
+# 
+# # When joining the whale datasets, 254 rows will be added to the number from the humpback data
+# sum(!(x.blue.filt$GRID5KM_ID %in% x.hump.filt$GRID5KM_ID)) #254
+
+x.whale <- full_join(x.blue.filt, x.hump.filt, 
+                     by = c("GRID5KM_ID", "year_month")) %>% 
+  left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") %>% 
+  mutate(normalized_humpback = as.vector(scale(Humpback_abund_mean, 
+                                               center = min(Humpback_abund_mean, na.rm=TRUE), 
+                                               scale = diff(range(Humpback_abund_mean, na.rm=TRUE)))),
+         normalized_blue = as.vector(scale(Blue_occurrence_mean, 
+                                           center = min(Blue_occurrence_mean, na.rm=TRUE), 
+                                           scale = diff(range(Blue_occurrence_mean, na.rm=TRUE))))) %>% 
+  select(GRID5KM_ID, year_month, area_km_lno, everything())
+```
+
+## Outputs
+
+No we save the things we need
+
+```{r}
+# TODO
+```
