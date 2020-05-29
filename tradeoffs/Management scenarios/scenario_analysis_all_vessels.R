@@ -177,9 +177,6 @@ x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 G
 # 
 # glimpse(risk_out_list[[1]])
 
-### pick up here and try code below for calculating risk 052820 ###
-# what about normalizing?
-
 scenario_table_all <- scenario_table %>%
   bind_rows(scenario_table_edr)
 
@@ -192,7 +189,11 @@ area.key <- grid.5km.lno %>%
 
 
 ### Calculate and summarize risk
-source("tradeoffs/Management scenarios/Mgmt_scenarios_risk_normalize.R")
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+# what about normalizing? added in. need to decide about normalizing within/across years and regions issue
+
+### pick up here and try code below for calculating risk 052920 ###
+# if it works, re-run all of the above for sm and lg vessels
 
 start.time <- Sys.time()
 
@@ -215,8 +216,9 @@ Sys.time() - start.time
 
 glimpse(risk_out_list_n[[1]])
 
-start.time <- Sys.time()
+# summarize risk by region or BIA
 
+start.time <- Sys.time()
 risk_out_summ_list_n <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
   print(paste("Summarizing risk for Scenario", i))
   #browser()
@@ -230,7 +232,7 @@ risk_out_summ_list_n <- lapply(1:nrow(scenario_table_all), function(i, scenario_
 
 Sys.time() - start.time
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-28",".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-29",".RData"))
 
 glimpse(risk_out_summ_list_n[[1]])
 

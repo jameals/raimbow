@@ -145,23 +145,23 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   
   
   #browser()
-  # Add in whale predictions, calculate normalzied effort, and calculate risk
-  # TODO: should we calculate normalized whale values in here too for consistency?
+  # Add in whale predictions, calculate normalized effort, and calculate risk
+  # TODO: should we calculate normalized whale values in here too for consistency? JS: yes
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(normalized_effort = as.vector(scale(effort_val, 
                                                center = min(effort_val, na.rm=TRUE), 
                                                scale = diff(range(effort_val, na.rm=TRUE)))),
-           # normalized_humpback = as.vector(
-           #   scale(
-           #     Humpback_dens_mean,center=min(Humpback_dens_mean, na.rm=TRUE),scale=diff(range(Humpback_dens_mean, na.rm=TRUE))
-           #   )
-           # ),
-           # normalized_blue = as.vector(
-           #   scale(
-           #     Blue_occurrence_mean,center=min(Blue_occurrence_mean, na.rm=TRUE),scale=diff(range(Blue_occurrence_mean, na.rm=TRUE))
-           #   )
-           # ),    
+           normalized_humpback = as.vector(
+             scale(
+               Humpback_abund_mean,center=min(Humpback_abund_mean, na.rm=TRUE),scale=diff(range(Humpback_abund_mean, na.rm=TRUE))
+             )
+           ),
+           normalized_blue = as.vector(
+             scale(
+               Blue_occurrence_mean,center=min(Blue_occurrence_mean, na.rm=TRUE),scale=diff(range(Blue_occurrence_mean, na.rm=TRUE))
+             )
+           ),
            risk_humpback = effort_val * Humpback_abund_mean, 
            risk_blue = effort_val * Blue_occurrence_mean,
            n_risk_humpback = normalized_effort * normalized_humpback, 
