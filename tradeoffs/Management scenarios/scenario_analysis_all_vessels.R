@@ -192,8 +192,7 @@ area.key <- grid.5km.lno %>%
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 # what about normalizing? added in. need to decide about normalizing within/across years and regions issue
 
-### pick up here and try code below for calculating risk 052920 ###
-# if it works, re-run all of the above for sm and lg vessels
+# will need to re-run all of the above and below for sm and lg vessels
 
 start.time <- Sys.time()
 
@@ -212,14 +211,18 @@ risk_out_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) 
 )
 
 Sys.time() - start.time
-# Time difference of 5.617289 mins
+# Time difference of 19.11915 secs
+# save status quo scenario as its own df
+#scenario_table_all$scenario_df_name # can use 1 or 13
+glimpse(risk_out_list[[1]])
+risk_5km_yr_mth_sq_all <- risk_out_list[[1]]
 
-glimpse(risk_out_list_n[[1]])
+write_rds(risk_5km_yr_mth_sq_all, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_",today(),".rds"))
 
-# summarize risk by region or BIA
+# summarize risk by region
 
 start.time <- Sys.time()
-risk_out_summ_list_n <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
+risk_out_summ_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
   print(paste("Summarizing risk for Scenario", i))
   #browser()
   
@@ -231,58 +234,75 @@ risk_out_summ_list_n <- lapply(1:nrow(scenario_table_all), function(i, scenario_
 )
 
 Sys.time() - start.time
+#Time difference of 0.725035 secs
+
+glimpse(risk_out_summ_list[[1]])
+
+
+# summarize risk by BIA
+
+# start.time <- Sys.time()
+# risk_out_summ_list_BIA <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) { # for testing. nrow(scenario_table[1:3,])
+#   print(paste("Summarizing risk for Scenario", i))
+#   #browser()
+#   
+#   risk_out_summ <- risk_mgmt_summ(
+#     x = risk_out_list[[i]], 
+#     summary.level = "BIA"
+#   )
+# }, scenario_table = scenario_table
+# )
+# 
+# Sys.time() - start.time
+#Time difference of 0.725035 secs
 
 save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-29",".RData"))
 
-glimpse(risk_out_summ_list_n[[1]])
+
 
 ###############################################################################
 
 ### 3) make annual and tradeoff df's
 
 # assign number IDs to scenarios
-scenario_table$number_id <- row.names(scenario_table)
+scenario_table_all$number_id <- row.names(scenario_table_all)
 
 # could subset or map to region for regional summaries here
 source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function.R")
 start.time <- Sys.time()
 tradeoff_df_function(
-  risk_list = risk_out_list_n,
-  scenario_names_table = scenario_table,
-  annual_statewide_df_name = "annual_statewide_df",
-  df_tradeoff_name = "df_tradeoff"
+  risk_list = risk_out_summ_list,
+  scenario_names_table = scenario_table_all,
+  annual_statewide_df_name = "annual_statewide_df", # this ensures df is available in the globalEnv after running function
+  df_tradeoff_name = "df_tradeoff" # this ensures df is available in the globalEnv after running function
   )
 Sys.time() - start.time
+#Time difference of 1.041596 secs
 
 # is risk actually greater for whales under some scenarios? yes.
 dim(df_tradeoff)
-length(which(df_tradeoff$relative_hump_risk < 0)) # 48 out of 432; for effort comparison, 6 out of 171
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 83 out of 432; for effort comparison, 8 out of 171
+length(which(df_tradeoff$relative_hump_risk < 0)) # 23 out of 300
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 36 out of 300
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
-length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 432; for effort comparison, 5 out of 171
-length(which(df_tradeoff$relative_pounds > 100)) # 4 out of 432; for effort comparison, 0 out of 171
+length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 300
+length(which(df_tradeoff$relative_pounds > 100)) # 5 out of 300
 
 
 ###############################################################################
 
 ###############################################################################
 
-### 4) Subset to focal scenarios
+### 4) Subset to focal scenarios for main text
 
-# drop delay.method == "remove", delay.method.fidelity == "temporal", closure.method == "remove"
-annual_statewide_df_focal_scenarios <- annual_statewide_df %>%
-  filter(
-    delay.method != "remove") %>%
-  filter(
-      delay.method.fidelity != "temporal"
-  ) %>%
-  filter(
-      closure.method != "remove"
-    )
-# ifelse(closure.region == "BIA, drop closure.redist.percent == 10, drop closure.redist.percent == 100)
-annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which(
-  annual_statewide_df_focal_scenarios$closure.region == "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 10),]
+# drop closure.redist.percent == 10
+# annual_statewide_df_focal_scenarios <- annual_statewide_df %>%
+#   filter(
+#     closure.redist.percent == 100) 
+
+# drop closure.redist.percent == 10 for BIA early closure, drop closure.redist.percent == 100 for CenCa early closure. i.e., ifelse(closure.region == "BIA, drop closure.redist.percent == 10, drop closure.redist.percent == 100)
+annual_statewide_df_focal_scenarios <- annual_statewide_df[-which(
+  annual_statewide_df$closure.region == "BIA" & annual_statewide_df$closure.redist.percent == 10),]
 annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
     annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
 

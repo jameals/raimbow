@@ -9,7 +9,7 @@
 ####################################################################
 ####################################################################
 
-# quick try at a plot for new output 051920
+# quick try at a plot for new output 051920, 052920
 library(ggerr)
 library(viridis)
 
@@ -28,11 +28,17 @@ df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
     rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
     rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
     rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
-    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year)))
+    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year)))
     )  
-# drop scenario 25 because it is status quo?
+# drop status quo scenario or is it helpful?
 
-# make summed normalized risk for both whales
+# make summed normalized risk for both whales. may want to add in option for weighting each species
 df_tradeoff_focal_scenarios <- df_tradeoff_focal_scenarios %>%
   mutate(
     mean_whale_risk_n = (relative_hump_risk_n + relative_blwh_risk_n)/2
@@ -42,7 +48,7 @@ df_tradeoff_focal_scenarios <- df_tradeoff_focal_scenarios %>%
 png(paste0(here::here("tradeoffs",
                       "Management scenarios",
                       "figures"), 
-           "/Tradeoff plot - normalized humpbacks only.png"), 
+           "/Tradeoff plot - normalized humpbacks only_",today(),".png"), 
     width = 10, height = 8, units = "in", res = 300)
 
 to_hump_n <- ggplot(
@@ -83,7 +89,7 @@ dev.off()
 png(paste0(here::here("tradeoffs",
                       "Management scenarios",
                       "figures"), 
-           "/Tradeoff plot - normalized blues only.png"), 
+           "/Tradeoff plot - normalized blues only_",today(),".png"), 
     width = 10, height = 8, units = "in", res = 300)
 
 to_blue_n <- ggplot(
@@ -123,7 +129,7 @@ dev.off()
 png(paste0(here::here("tradeoffs",
                       "Management scenarios",
                       "figures"), 
-           "/Tradeoff plot - normalized humpbacks and blues.png"), 
+           "/Tradeoff plot - normalized humpbacks and blues_",today(),".png"), 
     width = 10, height = 8, units = "in", res = 300)
 
 to_both_n <- ggplot(

@@ -12,6 +12,7 @@ library(magrittr)
 ####################################################################
 
 #050520
+# 052920
 
 # the SW functions effort_mgmt() and risk_mgmt() together generate summary df's with the metrics below for time-areas open to fishing
 
@@ -25,7 +26,7 @@ library(magrittr)
 # risk_humpback = Humpback_dens_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
 # risk_blue = Blue_occurrence_mean * effort_val (defined in risk_mgmt() function) in areas and times open to fishing
 
-# metadata for scenarios in scenario_table.RDS, see make_scenarios_table.R for descriptions: "scenario_df_name"       "delay_scenario"         "closure_scenario"       "early.data.method"      "delay.date", "delay.region", "delay.method"     "delay.method.fidelity"  "closure.date"           "closure.region"         "closure.method"         "closure.redist.percent"
+# metadata for scenarios in scenario_table.RDS, see make_scenarios_table.R for descriptions: "scenario_df_name"       "delay_scenario"         "closure_scenario"       "early.data.method"      "delay.date", "delay.region", "delay.method"     "delay.method.fidelity"  "closure.date"           "closure.region"         "closure.method"         "closure.redist.percent" "depth.val" "reduction.before.date" "reduction.before.percent" "reduction.before.region" "reduction.after.date" "reduction.after.percent" "reduction.after.region" 
 
 
 ####################################################################
@@ -61,8 +62,10 @@ library(magrittr)
 # 050520
 # 050820
 # 051820
+# 052920
 
 # may want to add functionality later using sym(), enquo(), etc. for scenario names, DCRB metrics, hump_risk_metric, blwh_risk_metric, pings_metric
+# current status quo has scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100"
 
 tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewide_df_name, df_tradeoff_name) { 
 
