@@ -11,23 +11,24 @@ library(sf)
 #   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
 #   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 
-x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS") %>%
-  select(-year_mo, -contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_"), 
+x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishDataCA/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS") %>%
+  select(-contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_"), #-year_mo, 
          -Region, -CA_OFFSHOR)
 
-grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key_region.rds") %>% 
+grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key.rds") %>% 
   select(-region_ts)
 
-grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rds")
+# grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rds")
 
 x.orig <- x.orig.noinfo %>% 
-  left_join(grid.key, by = "GRID5KM_ID") %>% 
-  left_join(grid.depth, by = "GRID5KM_ID") #%>% 
-  # mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
+  left_join(grid.key, by = "GRID5KM_ID")
+# left_join(grid.depth, by = "GRID5KM_ID") #%>% 
+# mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
 
-x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
+x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds") %>% 
+  select(-area_km_lno) #area.key object takes care of this in risk_mgmt()
 
 # d.join <- left_join(x.orig, x.whale)
 # length(table(d.join$GRID5KM_ID[is.na(d.join$Blue_occurrence_mean)])) #24, as expected
@@ -74,7 +75,7 @@ d <- effort_mgmt(
 
 
 # Load and prep grid cell - area key
-load("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.RDATA")
+grid.5km.lno <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds")
 area.key <- grid.5km.lno %>% 
   st_drop_geometry() %>% 
   select(GRID5KM_ID, area_km_lno) %>% 
@@ -86,8 +87,9 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 d.risk <- risk_mgmt(
   x = d, x.col = Num_DCRB_VMS_pings, y = x.whale, # %>% select(-area_km_lno), #Don't have to remove area column
   risk.unit = "dens", area.key = area.key
-  )
+)
 d.risk.summ <- risk_mgmt_summ(d.risk, summary.level = "Region")
+
 
 
 ###############################################################################
@@ -99,7 +101,7 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 scenario.output.list <- lapply(1:nrow(scenario_table), function(i, scenario_table) {
   print(i)
   # browser()
-
+  
   # i=1 # testing. breaks because "At least one of delay.date or closure.date must not be NULL"
   # i=2 # testing. breaks because when switch() is used and does not return NULL, it returns nothing
   scenario.output.df.noinfo <- effort_mgmt(

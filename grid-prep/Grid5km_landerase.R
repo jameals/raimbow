@@ -6,20 +6,21 @@
 
 ###############################################################################
 library(dplyr)
+library(here)
 library(sf)
 
-source("User_script_local.R")
+source(here::here("User_script_local.R"))
 if (user == "JS") {
   file.grid5km <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   #file.land <- "C:/SMW/eSDM/Ensemble Case Study/GIS_files_forJVR/Shapefiles/World_countries.shp"
   path.save1 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_lint.RDATA"
-  path.save2 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path.save2 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
   
 } else if (user == "SMW") {
-  file.grid5km <- "../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
+  file.grid5km <- "C:/SMW/RAIMBOW/raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
   file.land <- "C:/SMW/eSDM/Ensemble Case Study/GIS_files_forJVR/Shapefiles/World_countries.shp"
-  path.save1 <- "../raimbow-local/RDATA_files/Grid_5km_lint.RDATA"
-  path.save2 <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+  path.save1 <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_lint.RDATA"
+  path.save2 <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds"
 }
 
 
@@ -63,7 +64,8 @@ grid.5km.lno <- rbind(grid.5km.ea[-int.idx.which, ], grid.5km.lint) %>%
 # Visualize
 plot(grid.5km.lno["area_km_lno"], axes = TRUE, border = NA)
 
-save(grid.5km.lno, file = path.save2)
+saveRDS(grid.5km.lno, file = path.save2)
+# save(grid.5km.lno, file = path.save2)
 # st_write(grid.5km.lno, "Data/5x5 km grid shapefile/five_km_grid_landerased.shp")
 
 ###############################################################################

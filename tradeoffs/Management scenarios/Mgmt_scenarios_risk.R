@@ -71,21 +71,10 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   names.y <- c(
     "GRID5KM_ID", "year_month", #"area_km_lno", 
     "Blue_occurrence_mean", "Blue_occurrence_se", 
-    "Humpback_abund_mean", "Humpback_abund_se", 
-    "normalized_humpback", "normalized_blue" 
+    "Humpback_abund_mean", "Humpback_abund_se"
+    # "normalized_humpback", "normalized_blue" 
   )
-  # if (is.null(y)) {
-  #   if (!all(names.y %in% names(x)))
-  #     stop("Since y is NULL, x must contain all of the following columns:\n", 
-  #          paste(names.y, collapse = ", "))
-  #   
-  #   y <- x %>% select(!!names.y)
-  #   if (any(is.na(y$Blue_occurrence_mean) | is.na(y$Humpback_dens_mean)))
-  #     warning("Some of the blue/humpback prediction values in x are NA; ", 
-  #             "is this expected?", 
-  #             immediate. = TRUE)
-  #   
-  # } else {
+  
   if (!all(names.y %in% names(y)))
     stop("y must contain all of the following columns:\n", 
          paste(names.y, collapse = ", "))
@@ -103,7 +92,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   #----------------------------------------------------------------------------
   ### Processing
   
-  # Extract ;'other' data to be joined back in at the end
+  # Extract 'other' data to be joined back in at the end
   x.other <- x %>% 
     select(GRID5KM_ID, !!names.x.other) %>% 
     distinct()
@@ -145,8 +134,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   
   
   #browser()
-  # Add in whale predictions, calculate normalized effort, and calculate risk
-  # TODO: should we calculate normalized whale values in here too for consistency? JS: yes
+  # Add in whale predictions, calculate normalized values, and calculate risk
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(normalized_effort = as.vector(scale(effort_val, 
@@ -178,20 +166,6 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   # option to write out 5km grid cell risk values for each year_mo
   #write_rds(x.ym.risk, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_",today(),".rds"))
   
-  # # Should not be necessary given that whale values have to be passed in separately
-  # # Print messages if any whale predictions are NA
-  # if (any(is.na(x.ym.risk$risk_humpback)))
-  #   message("Note that the following grid cells have NA humpback predictions ", 
-  #           "for at least some year_month/grid cell combos with fishing effort:\n", 
-  #           paste(sort(unique(x.ym.risk$GRID5KM_ID[is.na(x.ym.risk$Humpback_abund_mean)])), 
-  #                 collapse = ", "))
-  # 
-  # if (any(is.na(x.ym.risk$risk_blue)))
-  #   message("Note that the following grid cells have NA blue whale predictions ", 
-  #           "for at least some year_month/grid cell combos with fishing effort:\n", 
-  #           paste(sort(unique(x.ym.risk$GRID5KM_ID[is.na(x.ym.risk$Blue_occurrence_mean)])), 
-  #                 collapse = ", "))
-  
   x.ym.risk
 }
 
@@ -215,7 +189,7 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
     "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels", 
     "CA_OFFSHOR", "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", 
     "Blue_occurrence_mean", "Blue_occurrence_se", "Humpback_abund_mean", "Humpback_abund_se", 
-    "normalized_humpback", "normalized_blue", "normalized_effort", 
+    "normalized_effort", "normalized_humpback", "normalized_blue", 
     "risk_humpback", "risk_blue", "n_risk_humpback", "n_risk_blue"
   )
   if (!identical(names(x), names.x))

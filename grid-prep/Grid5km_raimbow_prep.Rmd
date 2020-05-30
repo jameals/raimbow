@@ -1,7 +1,7 @@
 ---
 title: "RAIMBOW grid prep"
 author: "Sam Woodman and Jameal Samhouri"
-date: "5/28/2020"
+date: "5/29/2020"
 output: html_document
 ---
 
@@ -11,19 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This docuemnt creates keys and other data frames related to the base 5km grid used in RAIMBOW analyses. It serves as a single 'crank to turn' when new fishing data or whale predictions are added to the analyses to ensure that specific data are formatted as expected for the various functions used in the analyses. Specifically, this function:
+This docuemnt creates keys and other data frames related to the base 5km grid used in RAIMBOW analyses. It serves as a single 'crank to turn' when new fishing data or whale predictions are added to the analyses to ensure that specific data are formatted as expected for the various functions used in the analyses. Specifically, in this document we:
 
-1) Determines the IDs of grid cells in humpback (Mn) and/or Blue (Bm) BIAs
+1) determine the study area, aka which 5km grid cells have (ever) had fishing effort
 
-2) Determines the study area, aka which 5km grid cells have (ever) had fishing effort
+2) create a grid key. For each grid cell in the study area, we determine the associated CDFW large block number, region, and depth value.
 
-3) Determines the associated CDFW large block number and region for each 5km grid cell in the study area
+3) prepare whale data to be passed as an argument to risk_mgmt(), etc.
 
-4) Extracts the depth value for each grid cell in the study area
-
-5) Prepares whale data to be passed as an argument to risk_mgmt(), etc.
-
-See the specific sections for more details. Each section saves an individual RDS file (TODO can/should we simplify this?). Also note that this document does not clip land from the 5km grid for area calculations and mapping purposes. Because this process takes a while, it is done in 'Grid5km_landerase.R', and the output RDATA file is read into this document.
+See the specific sections for more details. RDS files with useful output are saved at the end of the document. Also note that this document does not clip land from the 5km grid for area calculations and mapping purposes (done in 'Grid5km_landerase.R') or determine which grid cells are in BIAs (done in 'Grid5km_BIA_overlap.R'). This is because these processes are 'one-time runs', and because the BIA information is already (consistently) incorporated into the fishing data.
 
 ```{r prep, message=FALSE}
 library(dplyr)
@@ -37,34 +33,40 @@ library(sf)
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
+  flag.save <- TRUE
+  
   path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS"
   path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
   path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
   path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
-  path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
   path.cdfw <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/CDFW/MAN_CA_largeOffshoreblocks[1]/MAN_CA_largeOffshoreblocks.shp"
   path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
   path.bia.shp <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/BIAs/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp"
   
   # file.out <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_studyarea.rds"
+  # TODO: file.out.key <- "Grid5km_key.rds"
+  # TODO: file.out.whale <- "Grid5km_whale.rds"
   
   
 } else if (user == "SMW") {
   local.smw <- "C:/SMW/RAIMBOW/raimbow-local/"
+  flag.save <- TRUE
   
-  path.fish <- paste0(local.smw, "Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS")
+  path.fish <- paste0(local.smw, "Data/fishDataCA/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS")
   path.hump <- paste0(local.smw, "Outputs/Humpback_5km_long_monthly.rds")
   path.blue <- paste0(local.smw, "Outputs/BlueWhale_5km_long_monthly.rds")
   
   path.grid.5km <- paste0(local.smw, "Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp")
-  path.grid.5km.lno <- paste0(local.smw, "RDATA_files/Grid_5km_landerased.RDATA")
+  path.grid.5km.lno <- paste0(local.smw, "RDATA_files/Grid_5km_landerased.rds")
   
   path.cdfw <- paste0(local.smw, "Data/CDFW/MAN_CA_largeOffshoreblocks[1]/MAN_CA_largeOffshoreblocks.shp")
   path.grid.depth <- paste0(local.smw, "Data/5x5 km grid shapefile/weighted_mean_NGDC_depths_for_5km_gridcells.csv")
   path.bia.shp <- paste0(local.smw, "Data/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp")
   
-  # file.out  <- paste0(local.smw, "RDATA_files/Grid5km_studyarea.rds")
+  file.out.key <- paste0(local.smw, "RDATA_files/Grid5km_key.rds")
+  file.out.whale <- paste0(local.smw, "RDATA_files/Grid5km_whale.rds")
   
   
 } else {
@@ -76,7 +78,7 @@ if (user == "JS") {
 
 ```{r}
 grid.5km <- st_read(path.grid.5km, quiet = TRUE)
-load(path.grid.5km.lno) #TODO - make this into an Rmd
+grid.5km.lno <- readRDS(path.grid.5km.lno)
 
 x.fish <- readRDS(path.fish)
 
@@ -225,11 +227,11 @@ stopifnot(nrow(grid.key) == length(grid.studyarea.id))
 
 ## Grid key - depth
 
-We also need depth values for each grid cell in the study area. These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
+We also need depth values for each grid cell in the study area. These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Also from Blake: using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
 
 ```{r}
 grid.depth <- read.csv(path.grid.depth) %>% 
-  rename(GRID5KM_ID = Gridcell_ID, depth_m = AWM_depth_m)
+  rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 stopifnot(all(grid.studyarea.id %in% grid.depth$GRID5KM_ID))
 
@@ -239,12 +241,17 @@ grid.key <- left_join(grid.key, grid.depth, by = "GRID5KM_ID")
 
 ## Whale predictions
 
-b.	Filter whale predictions for grid cell IDs in the study area, and convert humpback values to abundance. Full join   the whale data, by grid cell ID and year-month
-c.	Output contains column area_km_lno (for calculating density, etc.)
-d.	Output does not include info columns, e.g. Region, to not cause issues when joining with fishing data. The user must join the output with Grid_key_region.rds themself
-e.	Use the output from this script 1) to look at monthly whale values by region (post-joining), 2) to plug into risk_mgmt(), etc.
+Here we process the whale predictions as needed to determine risk (e.g. be able to pass them to risk_mgmt). This involves several steps:
 
-Convert humpback preds to abundance for consistency
+a) Filter whale predictions for grid cell IDs in the study area
+
+b) Convert humpback values to abundance for consistency. This way, both the blue whale and humpback values are an absolute value, and the units do not have 'km2' in the denominator.
+
+c) Do a full join of the whale data, by grid cell ID and year-month, to ensure that the output contains all of the grid cells within the study area with any non-NA whale predictions.
+
+This output is intended to be used 1) to look at monthly whale values by region, and 2) to plug into `risk_mgmt`. However, the output does not include info columns such as Region to avoid issues when joining with fishing data in `risk_mgmt`. Thus, the user must join the output with Grid5km_key.rds themself if they wish to summarize the whale predictions by Region (or some other spatial domain).
+
+A couple of notes: the output contains the column 'area_km_lno' for calculating density if needed. Also, this output does not contain normalzied whale values - these are calculated if needed in `risk_mgmt`. 
 
 ```{r}
 x.blue.filt <- x.blue %>% filter(GRID5KM_ID %in% grid.studyarea.id)
@@ -275,19 +282,23 @@ x.hump.filt <- x.hump %>%
 x.whale <- full_join(x.blue.filt, x.hump.filt, 
                      by = c("GRID5KM_ID", "year_month")) %>% 
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") %>% 
-  mutate(normalized_humpback = as.vector(scale(Humpback_abund_mean, 
-                                               center = min(Humpback_abund_mean, na.rm=TRUE), 
-                                               scale = diff(range(Humpback_abund_mean, na.rm=TRUE)))),
-         normalized_blue = as.vector(scale(Blue_occurrence_mean, 
-                                           center = min(Blue_occurrence_mean, na.rm=TRUE), 
-                                           scale = diff(range(Blue_occurrence_mean, na.rm=TRUE))))) %>% 
+  # # Normalizing happens in risk_mgmt()
+  # mutate(normalized_humpback = as.vector(scale(Humpback_abund_mean,
+  #                                              center = min(Humpback_abund_mean, na.rm=TRUE), 
+  #                                              scale = diff(range(Humpback_abund_mean, na.rm=TRUE)))),
+  #        normalized_blue = as.vector(scale(Blue_occurrence_mean, 
+  #                                          center = min(Blue_occurrence_mean, na.rm=TRUE), 
+  #                                          scale = diff(range(Blue_occurrence_mean, na.rm=TRUE))))) %>% 
   select(GRID5KM_ID, year_month, area_km_lno, everything())
 ```
 
 ## Outputs
 
-No we save the things we need
+Now we save the things we need (if desired)
 
 ```{r}
-# TODO
+if (flag.save) {
+  saveRDS(grid.key, file = file.out.key)
+  saveRDS(x.whale, file = file.out.whale)
+}
 ```
