@@ -1,7 +1,7 @@
 title: "Tradeoff analysis results"
 ---
 author: "Jameal Samhouri"
-date: "5/22/2020"
+date: "5/22/2020, 6/1/2020"
 output:
   pdf_document: default
   html_document: default
@@ -15,15 +15,13 @@ if (Sys.info()["nodename"] == "NWCDM04178674") knitr::opts_knit$set(root.dir = "
 
 ## Introduction
 
-This document provides an outline of figures and tables to include in the Samhouri et al. tradeoff analysis. It is based on the presentation I gave February 5, 2020, with improvements. See google doc: https://docs.google.com/document/d/15loTrgX2H7ZIArVmTIHVTNrinvHHui03CTLo1cdlbss/edit?pli=1.
+This document provides an outline of figures and tables to include in the Samhouri et al. tradeoff analysis. It is based on the presentation I gave February 5, 2020, with improvements. See google doc: https://docs.google.com/document/d/15loTrgX2H7ZIArVmTIHVTNrinvHHui03CTLo1cdlbss/edit?pli=1. Use "Full workflow for risk assessment and tradeoff analysis" google doc to prep data frames for making figures below. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
 Current outline of figures:
 
 Entanglements are on the rise coastwide. Hump, blue, other entanglements by year
 
-The CA Dungeness crab fishery revenue and landings by year. Also do for VMS vessels only
-
-CA DCRB vessels over time
+The CA Dungeness crab fishery revenue, landings, and vessels by year. Also do for VMS vessels only
 
 Maps of long-term average during DCRB season of hump, blue, DCRB $, DCRB lbs, DCRB pings [DCRB do all, sm, lg]
 
@@ -43,111 +41,202 @@ Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by sc
 
 Tradeoff plots for hump, blues, both. Full time period, 2009-13, 2014-19. all, sm, lg DCRB.
 
-Use "Full workflow for risk assessment and tradeoff analysis" google doc to prep data frames for making figures below. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
-
-x.whale <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds")
 
 
-## Figure 1
+```{r, include=FALSE}
+# just getting libraries loaded and file paths sorted
 
-
-
-## Initial processing
-
-Most of this code was copied from `effort_mgmt()`
-
-```{r}
-library(dplyr)
+library(tidyverse)
+library(foreign) # read.dbf()
 
 source("User_script_local.R")
 file.path <- if (user == "SMW") {
-  file.path <- "../raimbow-local/Data/fishing/CA_DCRB_vms_fishing_daily_2009-2018_fishtix_humpback_blue_whales_grids.RDS"
-} else if (user == "JS") {
   NULL
+} else if (user == "JS") {
+  entanglement_file_path <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
 }
 
+```
+<br>
 
-x <- readRDS(file.path) %>%
-  select(-year_mo, -contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_")) 
+## Entanglement time series
 
-names.x.fish <- c(
-  "crab_year", "GRID5KM_ID", "Region", "year_month", "day_of_year",
-  "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", 
-  "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
+Entanglements are on the rise coastwide. Hump, blue, other entanglements by year
+
+
+```{r, include=FALSE}
+
+# most code from Make time series of entanglements.Rmd
+#Initial processing
+entanglement_df <- read.dbf(entanglement_file_path)
+glimpse(entanglement_df)
+
+#Subset entanglement data frame to include only blue whales  
+entanglement_df_blue <- entanglement_df[which(entanglement_df$Common_Nam == "Blue Whale" | entanglement_df$Common_Nam == "Blue whale"),]
+
+#Subset entanglement data frame to include only humpback whales 
+entanglement_df_hump <- entanglement_df[which(entanglement_df$Common_Nam == "Humpback Whale"),]
+
+
+#x.whale <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds")
+
+```
+<br>
+
+### Get annual entanglements
+
+Blue and humpback whales
+```{r, include=FALSE}
+entanglement_df_blue_annual <- entanglement_df_blue %>%
+  group_by(Year) %>%
+  tally()
+
+zeroes <- data.frame(
+  seq(1982,2014,1),
+  rep(0,length(seq(1982,2014,1)))
 )
+names(zeroes) <- c("Year","n")
 
-x.fish.pre <- x %>% 
-  select(!!names.x.fish) %>%
-  mutate(season_date_st_min = as.Date(paste(substr(crab_year, 1, 4), 
-                                            ifelse(Region == "CenCA", "11-15", "12-01"), 
-                                            sep = "-")), 
-         year = as.numeric(substr(year_month, 1, 4)), 
-         date_record_orig = as.Date(day_of_year - 1, 
-                                    origin = as.Date(paste0(year, "-01-01"))))
+entanglement_df_blue_annual_complete <-rbind(zeroes, entanglement_df_blue_annual)
+
+# Determine annual entanglement rate for humps
+entanglement_df_hump_annual <- entanglement_df_hump %>%
+  group_by(Year) %>%
+  tally() %>%
+  mutate(Year.as.date = as.Date(paste(Year, 1, 1, sep = "-")) ) %>%
+  complete(Year.as.date = seq.Date(as.Date(paste(1982, 1, 1, sep = "-")), max(Year.as.date), by="year"),
+           fill = list(n=0))
+entanglement_df_hump_annual$Year <- ifelse(is.na(entanglement_df_hump_annual$Year),year(entanglement_df_hump_annual$Year.as.date),entanglement_df_hump_annual$Year)
 
 
-# Use 'remove' method from function
-x.fish <- x.fish.pre %>% 
-  filter(date_record_orig >= season_date_st_min) %>% 
-  mutate(date_record = date_record_orig) %>% 
-  select(-year, -day_of_year, -date_record_orig)
 ```
+<br>
 
-## Explore different ways of calculating season start dates
+### Determine how many humpback entanglements occurred before 2014 vs 2014-2018
+```{r}
 
-Now we want to compare different methods for determining the season start date. Specifically:
+entanglement_df_hump_prepost2014 <- entanglement_df_hump_annual %>%
+  mutate(prepost2014 = ifelse(Year < 2014, "pre", "post")) %>%
+  group_by(prepost2014) %>%
+  tally() 
+entanglement_df_hump_prepost2014
+  
 
-1. The minimum date for that crab season
-2. The date that 1% (of the total value for that season) of a specified metric was reached
-3. The date from (2) minus some number of days
+```
+<br>
 
-First we do some prep
+### Make some figures
+Time series, blue whales
+```{r}
+
+myplot <- ggplot(entanglement_df_blue_annual_complete, aes(x=Year, y=n, group=1)) + # group=1 tells ggplot that there is only 1 group
+  geom_point(size=2) +
+  geom_line() + 
+  ylab("Number of entanglements") +
+  xlab("Year") +
+  #xlim(1980,2020) +
+  labs(caption = "Data from NMFS WRO, Lauren Saez") +
+  ggtitle("Number of Blue Whale Entanglements,\nUS West Coast") +
+  #scale_x_continuous(breaks = scales::pretty_breaks(n = 10))+
+  #scale_x_continuous(breaks = seq(1978,2022, by = 5)) +
+  scale_x_continuous(breaks=seq(1980, 20202,5),limits=c(1980,2020))+
+  theme_classic() +
+  #scale_fill_manual(values=c("lightskyblue", "coral")) +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 32),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 90),
+        axis.text.y = element_text(size = 18),
+        axis.title = element_text(size = 24),
+        strip.text = element_text(size=18))
+# print(myplot)
+# #png("../RAship/vessel_profiles_final/yearly_DCRB_landings_revenue_CA_rawdat.png")
+# png(paste0(root.dir, "Figures/yearly_DCRB_revenue_CA_rawdat.png"))
+# print(myplot)
+# dev.off()
+myplot
+ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
+
+```
+<br>
+
+## The CA Dungeness crab fishery revenue, landings, and vessels by year. Also do for VMS vessels only
 
 ```{r}
-# Set percent value for which to calculate date
-perc.val <- 0.01
 
-# Get sum of fishing effort values by season
-eff.summ <- x.fish %>% 
-  group_by(crab_year, Region) %>% 
-  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum)
 
-#
-exp.summ <- x.fish %>% 
-  arrange(Region, date_record) %>% 
-  group_by(crab_year, Region, date_record) %>%
-  summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), sum) %>%
-  group_by(crab_year, Region) %>% 
-  mutate_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels), cumsum) %>% 
-  left_join(eff.summ, by = c("crab_year", "Region")) %>% 
-  mutate(DCRB_lbs_perc = DCRB_lbs.x / DCRB_lbs.y, 
-         DCRB_rev_perc = DCRB_rev.x / DCRB_rev.y, 
-         Num_DCRB_VMS_pings_perc = Num_DCRB_VMS_pings.x / Num_DCRB_VMS_pings.y, 
-         Num_DCRB_Vessels_perc = Num_DCRB_Vessels.x / Num_DCRB_Vessels.y, 
-         Num_Unique_DCRB_Vessels_perc = Num_Unique_DCRB_Vessels.x / Num_Unique_DCRB_Vessels.y)
 
-exp.summ.first <- exp.summ %>% 
-  # already grouped
-  summarise(DCRB_lbs_dt = date_record[min(which(DCRB_lbs_perc > perc.val))], 
-            DCRB_rev_dt = date_record[min(which(DCRB_rev_perc > perc.val))], 
-            Num_DCRB_VMS_pings_dt = date_record[min(which(Num_DCRB_VMS_pings_perc > perc.val))], 
-            Num_DCRB_Vessels_dt = date_record[min(which(Num_DCRB_Vessels_perc > perc.val))], 
-            Num_Unique_DCRB_Vessels_dt = date_record[min(which(Num_Unique_DCRB_Vessels_perc > perc.val))])
+
+
 ```
+<br>
 
-And now we can get the start dates using the various methodologies
+## Maps of long-term average during DCRB season of hump, blue, DCRB $, DCRB lbs, DCRB pings [DCRB do all, sm, lg] 
+
 
 ```{r}
-# For each crab season and Region, get start dates
-x.fish.st.summ <- x.fish %>% 
-  group_by(crab_year, Region) %>% 
-  summarise(season_date_possible_min = unique(season_date_st_min), 
-            season_date_record_min = min(date_record)) %>% 
-  left_join(exp.summ.first, by = c("crab_year", "Region")) %>% 
-  mutate(diff_days = difftime(Num_DCRB_VMS_pings_dt, season_date_record_min, 
-                              unit = "days")) %>% 
-  select(crab_year, Region, season_date_possible_min, season_date_record_min, 
-         Num_DCRB_VMS_pings_dt, diff_days)
 
-x.fish.st.summ
 ```
+<br>
+
+## Time series of early season (Nov 15-Dec 15), mid season (Dec 16 - Mar 31), and late season (Apr 1 - July 31) long-term avg and SE in (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]
+
+
+```{r}
+
+```
+<br>
+
+## Time series of risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions for each metric. [DCRB do all, sm, lg]
+
+
+```{r}
+
+```
+<br>
+
+## Time series of risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs for each metric. [DCRB do all, sm, lg]
+
+```{r}
+
+```
+<br>
+
+## Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
+
+
+```{r}
+
+```
+<br>
+
+## Avg risk in 2009-13 v 2014-19 for blues and humps.
+
+
+```{r}
+
+```
+<br>
+
+## Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+
+
+```{r}
+
+```
+<br>
+
+## Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
+
+
+```{r}
+
+```
+<br>
+
+## Tradeoff plots for hump, blues, both. Full time period, 2009-13, 2014-19. all, sm, lg DCRB.
+
+
+```{r}
+
+```
+<br>
