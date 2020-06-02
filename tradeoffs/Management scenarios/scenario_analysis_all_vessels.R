@@ -6,7 +6,7 @@ rm(list = ls())
 ### STEPS ###
 
 ### 1) Loop through scenarios of interest and create a list of output df's
-### 2) Calculate and summarize risk for multiple scenarios
+### 2) Calculate and summarize risk for multiple scenarios, including status quo
 ### 3) make annual and tradeoff df's. 
 
 ###############################################################################
@@ -142,7 +142,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 ###############################################################################
 
 
-### 2) Calculate and summarize risk for multiple scenarios
+### 2) Calculate and summarize risk for multiple scenarios, including status quo
 
 # grab shifted effort fishing data
 
@@ -217,8 +217,11 @@ risk_out_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) 
 
 Sys.time() - start.time
 # Time difference of 19.11915 secs
-# save status quo scenario as its own df
+
+
+### save status quo scenario as its own df ###
 #scenario_table_all$scenario_df_name # can use 1 or 13
+
 glimpse(risk_out_list[[1]])
 risk_5km_yr_mth_sq_all <- risk_out_list[[1]]
 

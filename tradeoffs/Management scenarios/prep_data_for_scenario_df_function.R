@@ -158,10 +158,10 @@ glimpse(dcrb_ca_vms_tix_analysis_TripInfo)
 start.time <- Sys.time()
 
 con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  mutate(
-    yr= lubridate::year(westcoastdate_notime),
-    mth = lubridate::month(westcoastdate_notime)
-  ) %>%
+  # mutate(
+  #   yr= lubridate::year(westcoastdate_notime),
+  #   mth = lubridate::month(westcoastdate_notime)
+  # ) %>%
   group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
@@ -170,16 +170,16 @@ con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
   ) %>%
-  ungroup() %>%
+  ungroup() #%>%
   # left_join(BLWH_5km_year_mo) %>%
   # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
-  mutate(
-    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+  
+    
     # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
     # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
     # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
     # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
-  )
+#  )
 
 Sys.time() - start.time
 
@@ -198,13 +198,59 @@ glimpse(con_df_daily_years_5km_CA)
 write_rds(con_df_daily_years_5km_CA, 
           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS")
 
+### make output aggregated to year_month
+
+con_df_year_month_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    
+    # rescale pings to 0-1
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
+    
+    # above rescaling converts 1 ping to 0, so change it so that 1 ping, after re-scaling, has a scaled value equal to one half of the rescaled value of 2 pings
+    
+    normalized_Num_DCRB_VMS_pings = ifelse(
+      normalized_Num_DCRB_VMS_pings == 0, 
+      0.5 * min( normalized_Num_DCRB_VMS_pings[normalized_Num_DCRB_VMS_pings!=min(normalized_Num_DCRB_VMS_pings)] ),
+      normalized_Num_DCRB_VMS_pings
+    )
+  )
+
+glimpse(con_df_year_month_5km_CA)
+range(con_df_year_month_5km_CA$Num_DCRB_VMS_pings)
+range(con_df_year_month_5km_CA$normalized_Num_DCRB_VMS_pings)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_year_month_5km_CA, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_year_month_2009-2019_all_vessels.RDS")
+
+# and save objects for use downstream
+CA_fishing_metrics_range <- sapply(c("DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"), function(i, j) {
+  range(j[[i]])
+}, j = con_df_year_month_5km_CA, simplify = FALSE, USE.NAMES = TRUE)
+
+write_rds(CA_fishing_metrics_range, here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
+
 
 # small vessels
 
 start.time <- Sys.time()
 
 con_df_daily_years_5km_CA_sm <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  filter(Vessel_Size != ">=40 ft") %>%
+  filter(Vessel_Size != paste0(">=",vessel_size_category_break, " ft") ) %>%
   mutate(
     yr= lubridate::year(westcoastdate_notime),
     mth = lubridate::month(westcoastdate_notime)
@@ -217,16 +263,7 @@ con_df_daily_years_5km_CA_sm <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
   ) %>%
-  ungroup() %>%
-  # left_join(BLWH_5km_year_mo) %>%
-  # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
-  mutate(
-    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
-    # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
-    # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
-    # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
-    # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
-  )
+  ungroup() 
 
 Sys.time() - start.time
 
@@ -243,17 +280,11 @@ glimpse(con_df_daily_years_5km_CA_sm)
 write_rds(con_df_daily_years_5km_CA_sm, 
           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_small_vessels.RDS")
 
-# large vessels
+### make output aggregated to year_month
 
-start.time <- Sys.time()
-
-con_df_daily_years_5km_CA_lg <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  filter(Vessel_Size == ">=40 ft") %>%
-  mutate(
-    yr= lubridate::year(westcoastdate_notime),
-    mth = lubridate::month(westcoastdate_notime)
-  ) %>%
-  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, Vessel_Size) %>% 
+con_df_year_month_5km_CA_sm <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  filter(Vessel_Size != paste0(">=",vessel_size_category_break, " ft") ) %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
@@ -262,15 +293,46 @@ con_df_daily_years_5km_CA_lg <- dcrb_ca_vms_tix_analysis_TripInfo %>%
     Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
   ) %>%
   ungroup() %>%
-  # left_join(BLWH_5km_year_mo) %>%
-  # left_join(humpback.sum.long, by = c("GRID5KM_ID"="GRID5KM_ID", "year_month"="Year_Month"))  %>%
   mutate(
-    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(Num_DCRB_VMS_pings),scale=diff(range(Num_DCRB_VMS_pings)))),
-    # normalized_blue_risk = normalized_Blue_occurrence_mean * normalized_Num_DCRB_VMS_pings,
-    # normalized_hump_risk = normalized_H_Avg_Abund * normalized_Num_DCRB_VMS_pings,
-    # blue_risk = Blue_occurrence_mean * Num_DCRB_VMS_pings,
-    # hump_risk = H_Avg_Abund * Num_DCRB_VMS_pings,
-  ) 
+    
+    # rescale pings to 0-1, based on all vessels
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(con_df_year_month_5km_CA$Num_DCRB_VMS_pings),scale=diff(range(con_df_year_month_5km_CA$Num_DCRB_VMS_pings)))),
+    
+    # above rescaling converts 1 ping to 0, so change it so that 1 ping, after re-scaling, has a scaled value equal to one half of the rescaled value of 2 pings
+    
+    normalized_Num_DCRB_VMS_pings = ifelse(
+      normalized_Num_DCRB_VMS_pings == 0, 
+      0.5 * min( normalized_Num_DCRB_VMS_pings[normalized_Num_DCRB_VMS_pings!=min(normalized_Num_DCRB_VMS_pings)] ),
+      normalized_Num_DCRB_VMS_pings
+    )
+  )
+
+glimpse(con_df_year_month_5km_CA_sm)
+range(con_df_year_month_5km_CA_sm$Num_DCRB_VMS_pings)
+range(con_df_year_month_5km_CA_sm$normalized_Num_DCRB_VMS_pings)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_year_month_5km_CA_sm, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_year_month_2009-2019_small_vessels.RDS")
+
+
+
+# large vessels
+
+start.time <- Sys.time()
+
+con_df_daily_years_5km_CA_lg <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  filter(Vessel_Size == paste0(">=",vessel_size_category_break, " ft")) %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, Vessel_Size) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup()
 
 Sys.time() - start.time
 
@@ -285,6 +347,43 @@ glimpse(con_df_daily_years_5km_CA_lg)
 
 write_rds(con_df_daily_years_5km_CA_lg, 
           "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_large_vessels.RDS")
+
+### make output aggregated to year_month
+
+con_df_year_month_5km_CA_lg <- dcrb_ca_vms_tix_analysis_TripInfo %>%
+  filter(Vessel_Size == paste0(">=",vessel_size_category_break, " ft") ) %>%
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  summarise(
+    DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
+    DCRB_rev =sum(DCRB_rev_per_VMSlocation),
+    Num_DCRB_VMS_pings = n(),
+    Num_DCRB_Vessels = sum(Num_DCRB_Vessels_per_VMSlocation),
+    Num_Unique_DCRB_Vessels = length(unique(as.character(drvid)))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    
+    # rescale pings to 0-1, based on all vessels
+    normalized_Num_DCRB_VMS_pings = as.vector(scale(Num_DCRB_VMS_pings,center=min(con_df_year_month_5km_CA$Num_DCRB_VMS_pings),scale=diff(range(con_df_year_month_5km_CA$Num_DCRB_VMS_pings)))),
+    
+    # above rescaling converts 1 ping to 0, so change it so that 1 ping, after re-scaling, has a scaled value equal to one half of the rescaled value of 2 pings
+    
+    normalized_Num_DCRB_VMS_pings = ifelse(
+      normalized_Num_DCRB_VMS_pings == 0, 
+      0.5 * min( normalized_Num_DCRB_VMS_pings[normalized_Num_DCRB_VMS_pings!=min(normalized_Num_DCRB_VMS_pings)] ),
+      normalized_Num_DCRB_VMS_pings
+    )
+  )
+
+glimpse(con_df_year_month_5km_CA_lg)
+range(con_df_year_month_5km_CA_lg$Num_DCRB_VMS_pings)
+range(con_df_year_month_5km_CA_lg$normalized_Num_DCRB_VMS_pings)
+
+### if and when satisfied, write out rds
+
+write_rds(con_df_year_month_5km_CA_lg, 
+          "~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_year_month_2009-2019_large_vessels.RDS")
+
 
 
 #####################################################
