@@ -43,9 +43,8 @@ if (user == "JS") {
   path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
   path.bia.shp <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/BIAs/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp"
   
-  # file.out <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_studyarea.rds"
-  # TODO: file.out.key <- "Grid5km_key.rds"
-  # TODO: file.out.whale <- "Grid5km_whale.rds"
+  file.out.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds"
+  file.out.whale <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
   
   
 } else if (user == "SMW") {
