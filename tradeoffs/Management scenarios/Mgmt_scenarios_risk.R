@@ -34,6 +34,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   
   x.col <- enquo(x.col)
   
+  
   #----------------------------------------------------------------------------
   ### Input checks
   stopifnot(
@@ -70,8 +71,8 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   names.y <- c(
     "GRID5KM_ID", "year_month", #"area_km_lno", 
     "Blue_occurrence_mean", "Blue_occurrence_se", 
-    "Humpback_abund_mean", "Humpback_abund_se", 
-    "normalized_blue", "normalized_humpback"
+    "Humpback_abund_mean", "Humpback_abund_se"
+    # "normalized_humpback", "normalized_blue" 
   )
   
   if (!all(names.y %in% names(y)))
@@ -79,7 +80,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
          paste(names.y, collapse = ", "))
   
   y <- y %>% select(!!names.y)
-  
+  # }
   
   # Check area.key
   names.area.key <- c("GRID5KM_ID", "area_km_lno")
@@ -127,20 +128,28 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
               DCRB_rev = sum(DCRB_rev), 
               Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), 
               Num_DCRB_Vessels = sum(Num_DCRB_Vessels), 
-              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% #, .groups = "drop"
-    ungroup() %>%
+              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% 
+    ungroup() %>% 
     left_join(x.other, by = "GRID5KM_ID")
   
   
   #browser()
-  # Add in whale predictions, calculate normalized EFFORT value, and calculate risk
-  # Normalized whale values are calcualted in Grid5km_raimbow_prep.Rmd to ensure
-  #   they're calculated with all of the values in the study area
+  # Add in whale predictions, calculate normalized values, and calculate risk
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(normalized_effort = as.vector(scale(effort_val, 
                                                center = min(effort_val, na.rm=TRUE), 
                                                scale = diff(range(effort_val, na.rm=TRUE)))),
+           normalized_humpback = as.vector(
+             scale(
+               Humpback_abund_mean,center=min(Humpback_abund_mean, na.rm=TRUE),scale=diff(range(Humpback_abund_mean, na.rm=TRUE))
+             )
+           ),
+           normalized_blue = as.vector(
+             scale(
+               Blue_occurrence_mean,center=min(Blue_occurrence_mean, na.rm=TRUE),scale=diff(range(Blue_occurrence_mean, na.rm=TRUE))
+             )
+           ),
            risk_humpback = effort_val * Humpback_abund_mean, 
            risk_blue = effort_val * Blue_occurrence_mean,
            n_risk_humpback = normalized_effort * normalized_humpback, 
@@ -180,7 +189,7 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
     "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels", 
     "CA_OFFSHOR", "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", 
     "Blue_occurrence_mean", "Blue_occurrence_se", "Humpback_abund_mean", "Humpback_abund_se", 
-    "normalized_blue", "normalized_humpback", "normalized_effort", 
+    "normalized_effort", "normalized_humpback", "normalized_blue", 
     "risk_humpback", "risk_blue", "n_risk_humpback", "n_risk_blue"
   )
   if (!identical(names(x), names.x))

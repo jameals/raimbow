@@ -11,15 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This document creates keys and other data frames related to the base 5km grid used in RAIMBOW analyses. It serves as a single 'crank to turn' when new fishing data or whale predictions are added to the analyses to ensure that specific data are formatted as expected for the various functions used in the analyses. Specifically, in this document we:
+This docuemnt creates keys and other data frames related to the base 5km grid used in RAIMBOW analyses. It serves as a single 'crank to turn' when new fishing data or whale predictions are added to the analyses to ensure that specific data are formatted as expected for the various functions used in the analyses. Specifically, in this document we:
 
-1) Determine the study area. The study area is defined as the 5km grid cells have (ever) had fishing effort
+1) determine the study area, aka which 5km grid cells have (ever) had fishing effort
 
-2) Create a grid key. For each grid cell in the study area, we determine the associated CDFW large block number, region, and depth value. **NOTE:** For this CA-centric analysis, the 4 cells that partially overlap with both NorCA and OR are manually assigned values of 'NorCA'. This code would need to be updated for an analysis spanning on the whole coast.
+2) create a grid key. For each grid cell in the study area, we determine the associated CDFW large block number, region, and depth value.
 
-3) Prepare whale data to be passed as an argument to risk_mgmt(), etc. Preparing consists of making a single data frame of all of the whale data within the study area. Note that this includes calculating the normalized whale values; these values are calculated here rather than in the risk_mgmt() function so that the values are normalized with respect to all of the whale values in the study area, rather than just the whale values that have corresponding effort data.
+3) prepare whale data to be passed as an argument to risk_mgmt(), etc.
 
-See the specific sections for more details. RDS files with useful output are saved at the end of the document. This document does not a) clip land from the 5km grid for area calculations and mapping purposes (done in 'Grid5km_landerase.R') or b) determine which grid cells are in BIAs (done in 'Grid5km_BIA_overlap.R'). This is because these processes are 'one-time runs', meaning their values will never change (land area will be the same, as will grid cell centroids that overlap with BIAs. In addition, the BIA information is already (consistently, i.e. on a grid-cell level basis) incorporated into the fishing data.
+See the specific sections for more details. RDS files with useful output are saved at the end of the document. Also note that this document does not clip land from the 5km grid for area calculations and mapping purposes (done in 'Grid5km_landerase.R') or determine which grid cells are in BIAs (done in 'Grid5km_BIA_overlap.R'). This is because these processes are 'one-time runs', and because the BIA information is already (consistently) incorporated into the fishing data.
 
 ```{r prep, message=FALSE}
 library(dplyr)
@@ -33,6 +33,8 @@ library(sf)
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
+  flag.save <- TRUE
+  
   path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS"
   path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
   path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
@@ -50,6 +52,8 @@ if (user == "JS") {
   
 } else if (user == "SMW") {
   local.smw <- "C:/SMW/RAIMBOW/raimbow-local/"
+  flag.save <- TRUE
+  
   path.fish <- paste0(local.smw, "Data/fishDataCA/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS")
   path.hump <- paste0(local.smw, "Outputs/Humpback_5km_long_monthly.rds")
   path.blue <- paste0(local.smw, "Outputs/BlueWhale_5km_long_monthly.rds")
@@ -89,7 +93,7 @@ x.blue <- readRDS(path.blue) %>%
 
 ## Grid study area
 
-First, we get the IDs of all of the grid cells that have had any fishing activity over the entire time series
+First, we get the IDs of all of the grid cells that have had any fishing activity over the entire time series.
 
 ```{r}
 ### Get grid cells with non-NA values for all, and save that of fishing data
@@ -100,9 +104,11 @@ stopifnot(
   all(grid.studyarea.id %in% grid.5km.lno$GRID5KM_ID), 
   all(x.fish$GRID5KM_ID %in% grid.studyarea.id)
 )
+
+# saveRDS(grid.studyarea.id, file = file.out)
 ```
 
-If desired, you can visualize the study area extent, as well as where the study area does and does not overlap with the whale predictions
+If desired, you can visualize the areas that these grid overlap (and don't) with the whale predictions
 
 ```{r, eval=FALSE}
 # Code not run
@@ -149,7 +155,7 @@ plot(rmap.base, add = TRUE, border = "tan", col = NA)
 
 Once we have our study area (the grid cell IDs with fishing effort), then we want to get relevant spatial information for those grid cells. First up is Region and CDFW block number. We determine these using latitudinal bins rather than polygon intersection 1) for speed and 2) because some of the CDFW polygons do not intersect with coastal grid cells. We use the latitude values of the centroids of the original 5km gird cells (note not of the land-erased grid cells), to determine the bin of each grid cell in the study area. 
 
-The two different region columns are to accommodate both the time series and tradeoff analyses. These analyses both use the same major boundaries for their regions; the main difference is that the time series analysis splits the Central Ca region into Central and South-Central.
+The two different region columns are to accomadate both the time series and tradeoff analyses. These analyses both use the same major boundaries for their regions; the main difference is that the time series analysis splits the Central Ca region into Central and South-Central.
 
 The main latitude boundaries for the regions were determined using the CDFW block coordinates. Specifically, NorCA (CA-N) consists of CDFW blocks 1040, 1041, and 1042, while CenCA (CA-Cen and CA-SCen) consists of CDFW blocks 1036, 1037, 1038. CDFW block 1035 has very little fishing effort, but is considered CA-S for the time series analysis and CenCA for the tradeoff analysis.
 
@@ -199,18 +205,8 @@ grid.idx.region.cdfw <- grid.5km %>%
 stopifnot(
   all(between(grid.idx.region.cdfw$region_idx, 1, length(reg.names))), 
   all(between(grid.idx.region.cdfw$block_idx, 1, 11)) 
-  # ^ 4 cells are in OR, hence the 11 even with 10 blocks
+  # ^ 4 cells are in OR, hence the 11 even with 10 regions
 )
-table(grid.idx.region.cdfw$region_idx)
-table(grid.idx.region.cdfw$block_idx)
-
-##### 4 OR cells are assigned back to CA
-grid.idx.region.cdfw$region_idx[grid.idx.region.cdfw$region_idx == 5] <- 4
-grid.idx.region.cdfw$block_idx[grid.idx.region.cdfw$block_idx == 11] <- 10
-#####
-
-table(grid.idx.region.cdfw$region_idx)
-table(grid.idx.region.cdfw$block_idx)
 
 grid.key <- grid.idx.region.cdfw %>% 
   filter(region_idx != 0) %>% 
@@ -225,6 +221,8 @@ grid.key <- grid.idx.region.cdfw %>%
          CA_OFFSHOR = cdfw.block.summ$BLOCK10_ID[block_idx]) %>% 
   select(GRID5KM_ID, region_ts, Region, CA_OFFSHOR)
 stopifnot(nrow(grid.key) == length(grid.studyarea.id))
+
+# saveRDS(grid.region, file = file.out)
 ```
 
 ## Grid key - depth
@@ -238,6 +236,7 @@ grid.depth <- read.csv(path.grid.depth) %>%
 stopifnot(all(grid.studyarea.id %in% grid.depth$GRID5KM_ID))
 
 grid.key <- left_join(grid.key, grid.depth, by = "GRID5KM_ID")
+# saveRDS(grid.depth, file = file.out)
 ```
 
 ## Whale predictions
@@ -250,11 +249,9 @@ b) Convert humpback values to abundance for consistency. This way, both the blue
 
 c) Do a full join of the whale data, by grid cell ID and year-month, to ensure that the output contains all of the grid cells within the study area with any non-NA whale predictions.
 
-d) Calculate normalized whale values for both species for use when comparing risk to humpbacks with risk to blues.
+This output is intended to be used 1) to look at monthly whale values by region, and 2) to plug into `risk_mgmt`. However, the output does not include info columns such as Region to avoid issues when joining with fishing data in `risk_mgmt`. Thus, the user must join the output with Grid5km_key.rds themself if they wish to summarize the whale predictions by Region (or some other spatial domain).
 
-This output is intended to be used 1) to look at monthly whale values by region, and 2) to plug into `risk_mgmt`. However, the output does not include info columns such as Region to avoid issues when joining with fishing data in `risk_mgmt`. Thus, the user must join the output with Grid5km_key.rds themselves if they wish to summarize the whale predictions by Region (or some other spatial domain).
-
-The output also contains the column 'area_km_lno' for calculating density if needed. 
+A couple of notes: the output contains the column 'area_km_lno' for calculating density if needed. Also, this output does not contain normalzied whale values - these are calculated if needed in `risk_mgmt`. 
 
 ```{r}
 x.blue.filt <- x.blue %>% filter(GRID5KM_ID %in% grid.studyarea.id)
@@ -264,9 +261,6 @@ x.hump.filt <- x.hump %>%
   mutate(Humpback_abund_mean = Humpback_dens_mean * area_km_lno, 
          Humpback_abund_se = Humpback_dens_se * area_km_lno) %>% 
   select(-area_km_lno, -Humpback_dens_mean, -Humpback_dens_se)
-
-hist(x.blue.filt$Blue_occurrence_mean, main = "Blue whale prob of occurrence in study area")
-hist(x.hump.filt$Humpback_abund_mean, main = "Humpback abundance in study area")
 
 # ### Sanity checks
 # # All grid cells are present 127 times, which is the number of unique year-months
@@ -278,7 +272,7 @@ hist(x.hump.filt$Humpback_abund_mean, main = "Humpback abundance in study area")
 # sum(is.na(x.blue.filt$Blue_occurrence_mean)) #0
 # sum(is.na(x.hump.filt$Humpback_abund_mean)) #0
 # 
-# # Confirms the 24 and 3, respectively, study area grid cells not in whale data
+# # Confirms the 24 and 3, respectivley, study area grid cells not in whale data
 # sum(!(grid.studyarea.id %in% x.blue.filt$GRID5KM_ID)) #24
 # sum(!(grid.studyarea.id %in% x.hump.filt$GRID5KM_ID)) #3
 # 
@@ -288,21 +282,23 @@ hist(x.hump.filt$Humpback_abund_mean, main = "Humpback abundance in study area")
 x.whale <- full_join(x.blue.filt, x.hump.filt, 
                      by = c("GRID5KM_ID", "year_month")) %>% 
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") %>% 
-  #Normalizing happens here to ensure we're using all of the values in the study area and time period
-  mutate(normalized_blue = as.vector(scale(Blue_occurrence_mean,
-                                           center = min(Blue_occurrence_mean, na.rm = TRUE),
-                                           scale = diff(range(Blue_occurrence_mean, na.rm = TRUE)))), 
-         normalized_humpback = as.vector(scale(Humpback_abund_mean,
-                                               center = min(Humpback_abund_mean, na.rm = TRUE),
-                                               scale = diff(range(Humpback_abund_mean, na.rm = TRUE))))) %>%
+  # # Normalizing happens in risk_mgmt()
+  # mutate(normalized_humpback = as.vector(scale(Humpback_abund_mean,
+  #                                              center = min(Humpback_abund_mean, na.rm=TRUE), 
+  #                                              scale = diff(range(Humpback_abund_mean, na.rm=TRUE)))),
+  #        normalized_blue = as.vector(scale(Blue_occurrence_mean, 
+  #                                          center = min(Blue_occurrence_mean, na.rm=TRUE), 
+  #                                          scale = diff(range(Blue_occurrence_mean, na.rm=TRUE))))) %>% 
   select(GRID5KM_ID, year_month, area_km_lno, everything())
 ```
 
 ## Outputs
 
-Now we save the things we need
+Now we save the things we need (if desired)
 
 ```{r}
-saveRDS(grid.key, file = file.out.key)
-saveRDS(x.whale, file = file.out.whale)
+if (flag.save) {
+  saveRDS(grid.key, file = file.out.key)
+  saveRDS(x.whale, file = file.out.whale)
+}
 ```

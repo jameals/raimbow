@@ -12,14 +12,18 @@ library(sf)
 #   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 
 x.orig.noinfo <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Data/fishDataCA/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS") %>%
-  select(-contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_"), 
+  select(-contains("risk"), -contains("H_Avg_Abund"), -contains("Blue_"), #-year_mo, 
          -Region, -CA_OFFSHOR)
 
 grid.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key.rds") %>% 
   select(-region_ts)
 
+# grid.depth <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_depth.rds")
+
 x.orig <- x.orig.noinfo %>% 
   left_join(grid.key, by = "GRID5KM_ID")
+# left_join(grid.depth, by = "GRID5KM_ID") #%>% 
+# mutate(Region = ifelse(Region == "OR", "NorCA", Region)) #TODO: discuss these/update effort_mgmt to handle other regions
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
 
@@ -29,6 +33,8 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 # d.join <- left_join(x.orig, x.whale)
 # length(table(d.join$GRID5KM_ID[is.na(d.join$Blue_occurrence_mean)])) #24, as expected
 # length(table(d.join$GRID5KM_ID[is.na(d.join$Humpback_abund_mean)])) #3, as expected
+
+
 
 
 
@@ -46,8 +52,7 @@ d <- effort_mgmt(
   closure.region = c("All"),
   closure.method = "depth",
   # closure.redist.percent = 100,
-  depth.min = -100,
-  depth.max = -500,
+  depth.val = -100,
   reduction.before.date = as.Date("2009-12-15"), 
   reduction.before.percent = 50, 
   reduction.before.region = "All", 
@@ -89,7 +94,7 @@ d.risk.summ <- risk_mgmt_summ(d.risk, summary.level = "Region")
 
 ###############################################################################
 source("tradeoffs/Management scenarios/make_scenarios_table.R")
-scenario_table[1, ]
+scenario_table[1,]
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
 # for(i in 1:nrow(scenario_table)) {
