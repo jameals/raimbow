@@ -217,7 +217,7 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
   risk.summ <-  if (summary.level == "Region") {
     x %>% group_by(year_month, Region)
   } else if (summary.level == "BIA") {
-    x %>% group_by(year_month, BIA_bm_or_mn)
+    x %>% group_by(year_month, BIA_bm_or_mn) # could add Region if we wanted region-specific BIA summaries
   }
   
   risk.summ %>% 

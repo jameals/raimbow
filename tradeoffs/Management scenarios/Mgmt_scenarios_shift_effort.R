@@ -22,7 +22,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                         reduction.after.percent = 50, 
                         reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA")) {
   
-  # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded
+  # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded. See lines 206-252
   # TODO: how to determine 'natural season' start date? Day 1? Day of 1% of season's effort?
   
   # Question(s) for Jameal
