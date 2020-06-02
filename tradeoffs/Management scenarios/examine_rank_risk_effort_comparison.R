@@ -38,7 +38,94 @@ View(cbind(
   )
 )
 
-# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario
+# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
+tradeoff_df_bp <- tradeoff_df_effort_shift_scenariocomparisons_n %>% 
+  left_join(scenario_table_5) %>%
+  mutate(
+    scenario_category = ifelse(
+      delay_scenario == "No_Delay" & closure_scenario == "No_Early_Closure",
+      "Status Quo",
+      ifelse(
+        delay_scenario == "No_Delay" & closure_scenario == "CenCA_Early_Closure",
+        "CenCA_Early_Closure",
+        ifelse(
+          delay_scenario == "CenCA_Marine_Life_Delay" & closure_scenario == "No_Early_Closure",
+          "CenCA_Delay",
+          "CenCA_Early_Closure_And_Delay"
+        )
+      )
+    )
+  )
+
+View(tradeoff_df_bp)
+
+### by delay.method, boxplot ###
+
+ggplot(tradeoff_df_bp %>% filter(scenario_category != "Status Quo")) +
+  geom_boxplot(aes(
+    x = delay.method,
+    y = relative_hump_risk_n,
+    fill = scenario_category
+  ),
+  #stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+       "tradeoffs",
+       "Management scenarios",
+       "figures",
+       "Humpback_risk_reduction_effort_comparison_groupby_delay_method_boxplot.jpg"
+       )
+)
+
+ggplot(tradeoff_df_bp %>% filter(scenario_category != "Status Quo")) +
+  geom_boxplot(aes(
+    x = delay.method,
+    y = relative_blwh_risk_n,
+    fill = scenario_category
+  ),
+  #stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "Blue_risk_reduction_effort_comparison_groupby_delay_method_boxplot.jpg"
+)
+)
+
+ggplot(tradeoff_df_bp %>% filter(scenario_category != "Status Quo")) +
+  geom_boxplot(aes(
+    x = delay.method,
+    y = relative_dollars,
+    fill = scenario_category
+  ),
+  #stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "DCRB_dollars_reduction_effort_comparison_groupby_delay_method_boxplot.jpg"
+)
+)
+
+
+###################
+###################
+
+# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_bar
 tradeoff_df_annual <- tradeoff_df_effort_shift_scenariocomparisons_n %>% 
   group_by(
   scenario_df_name 
@@ -76,6 +163,8 @@ View(tradeoff_df_annual)
 
 # pull out scenario components of interest, starting with remove/pile/lag and then with temporal/spatial fidelity. make a plot, facet by closure.method. drop SQ
 
+### by scenario category, barplot ###
+
 ggplot(tradeoff_df_annual[-1,]) +
   geom_bar(aes(
     x = scenario_category,
@@ -88,6 +177,13 @@ ggplot(tradeoff_df_annual[-1,]) +
   #coord_flip() +
   facet_wrap(~closure.method) +
   theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "Humpback_risk_reduction_effort_comparison_groupby_scenario_category_barplot.jpg"
+)
+)
 
 ggplot(tradeoff_df_annual[-1,]) +
   geom_bar(aes(
@@ -101,6 +197,13 @@ ggplot(tradeoff_df_annual[-1,]) +
   #coord_flip() +
   facet_wrap(~closure.method) +
   theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "Blue_risk_reduction_effort_comparison_groupby_scenario_category_barplot.jpg"
+)
+)
 
 ggplot(tradeoff_df_annual[-1,]) +
   geom_bar(aes(
@@ -114,8 +217,83 @@ ggplot(tradeoff_df_annual[-1,]) +
   #coord_flip() +
   facet_wrap(~closure.method) +
   theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "DCRB_dollars_reduction_effort_comparison_groupby_scenario_category_barplot.jpg"
+)
+)
 
-# Conclusion: with scenario of interest = temporal for closure method:
+### by delay.method, barplot ###
+
+ggplot(tradeoff_df_annual[-1,]) +
+  geom_bar(aes(
+    x = delay.method,
+    y = mean_relative_hump_risk_n,
+    fill = scenario_category
+  ),
+  stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "Humpback_risk_reduction_effort_comparison_groupby_delay_method_barplot.jpg"
+)
+)
+
+ggplot(tradeoff_df_annual[-1,]) +
+  geom_bar(aes(
+    x = delay.method,
+    y = mean_relative_blwh_risk_n,
+    fill = scenario_category
+  ),
+  stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "Blue_risk_reduction_effort_comparison_groupby_delay_method_barplot.jpg"
+)
+)
+
+ggplot(tradeoff_df_annual[-1,]) +
+  geom_bar(aes(
+    x = delay.method,
+    y = mean_relative_dollars,
+    fill = scenario_category
+  ),
+  stat="identity",
+  position = position_dodge(width = 0.8)
+  ) +
+  #coord_flip() +
+  facet_wrap(~closure.method) +
+  theme_bw()
+ggsave(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "figures",
+  "DCRB_dollars_reduction_effort_comparison_groupby_delay_method_barplot.jpg"
+)
+)
+
+###################
+###################
+
+
+# Conclusion: differences in risk and $ reduction among scenarios are preserved, regardless of use of remove/lag/pile method for delays or remove/temporal methods for early closures. the one exception is that the scenario ranking is slightly different for blue and hump risk reduction when we compare delay.method == lag and closure.method == remove
+
+# with scenario of interest = temporal for closure method:
 # rank risk reduction greatest for humps with remove early, then with lag early, then pile early.
 # rank risk reduction greatest for blues with remove early, then with pile early, then lag early.
 # rank $ changes don't vary much between pile and lag methods
