@@ -179,6 +179,11 @@ x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 G
 
 scenario_table_all <- scenario_table %>%
   bind_rows(scenario_table_edr)
+write_rds(scenario_table_all, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_all.rds")
+)
 
 # Load and prep grid cell - area key
 load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
@@ -264,6 +269,9 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 ### 3) make annual and tradeoff df's
 
+# if needed, load data
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-29",".RData"))
+
 # assign number IDs to scenarios
 scenario_table_all$number_id <- row.names(scenario_table_all)
 
@@ -306,6 +314,18 @@ annual_statewide_df_focal_scenarios <- annual_statewide_df[-which(
 annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
     annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
 
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_","2020-05-29",".rds"))
+
+scenario_table_focal_scenarios <- scenario_table_all[-which(
+  scenario_table_all$closure.region == "BIA" & scenario_table_all$closure.redist.percent == 10),]
+scenario_table_focal_scenarios <- scenario_table_focal_scenarios[-which( 
+  scenario_table_focal_scenarios$closure.region != "BIA" & scenario_table_focal_scenarios$closure.redist.percent == 100),]
+write_rds(scenario_table_focal_scenarios, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_focal_scenarios.rds")
+)
+
 unique(annual_statewide_df_focal_scenarios$number_id)
 # which scenario number is status quo? 25
 annual_statewide_df_focal_scenarios$number_id[which(annual_statewide_df_focal_scenarios$scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_10")]
@@ -314,6 +334,8 @@ df_tradeoff_focal_scenarios <- df_tradeoff[which(
   df_tradeoff$number_id %in% unique(annual_statewide_df_focal_scenarios$number_id)
 ),]
 unique(df_tradeoff_focal_scenarios$number_id)
+
+write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_","2020-05-29",".rds"))
 
 ###############################################################################
 

@@ -9,8 +9,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../../")
-if (Sys.info()["nodename"] == "NWCDM04178674") knitr::opts_knit$set(root.dir = "../../")
 ```
 
 ## Introduction
@@ -43,17 +41,41 @@ Tradeoff plots for hump, blues, both. Full time period, 2009-13, 2014-19. all, s
 
 
 
-```{r, include=FALSE}
+```{r prep, message=FALSE}
 # just getting libraries loaded and file paths sorted
 
 library(tidyverse)
 library(foreign) # read.dbf()
+library(here)
+library(lubridate)
+library(sf)
 
-source("User_script_local.R")
-file.path <- if (user == "SMW") {
+# Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
+#   Thus, please ensure that file paths are complete rather than relative
+
+source(here::here("User_script_local.R"))
+if (user == "SMW") {
   NULL
 } else if (user == "JS") {
-  entanglement_file_path <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
+  #flag.save = TRUE # option to save all outputs or not
+  
+  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
+  
+  path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds"
+  
+  path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
+  
+  path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all.rds"
+  
+  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios.rds"
+  
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-05-29.rds"
+  
+  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-05-29.rds"
+  
+  
+} else {
+  stop("Invalid user")
 }
 
 ```
@@ -230,6 +252,73 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 
 ```{r}
 
+
+#annual_statewide_df_focal_scenarios <- read_rds(path_annual_statewide_df_focal_scenarios)
+df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios)
+scenario_table_all <- read_rds(path_scenario_table_all)
+
+#unique(sort(scenario_table_focal_scenarios$scenario_df_name)) == unique(sort(df_tradeoff_focal_scenarios$scenario_df_name))
+
+# make nice scenario names
+#unique(df_tradeoff_focal_scenarios$scenario_df_name)
+df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
+    rep("Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Status Quo", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+    rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year)))
+    )  
+
+### PICK UP HERE 060220. NEED TO ORDER SCENARIOS BY REL RISK REDUCTION
+
+# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
+df_tradeoff_focal_scenarios_bp <- df_tradeoff_focal_scenarios %>% 
+  left_join(scenario_table_focal_scenarios) %>%
+  group_by(number_id, scenario_df_name) %>%
+  arrange(
+    relative_hump_risk_n,
+    relative_blwh_risk_n,
+    relative_dollars,
+    .by_group = TRUE
+  ) %>%
+  ungroup() %>%
+  mutate(scenario_rank = factor(number_id, levels=number_id))
+
+#View(df_tradeoff_focal_scenarios_bp)
+
+ggplot(df_tradeoff_focal_scenarios_bp) + #  %>% filter(scenario_category != "Status Quo")
+  geom_boxplot(aes(
+    x = scenario_rank,
+    y = relative_hump_risk_n,
+    fill = pretty_scenario_names
+    )
+  )  +
+    
+    
+  #coord_flip() +
+  #facet_wrap(~closure.method) +
+  theme_bw()
+# ggsave(here::here(
+#        "tradeoffs",
+#        "Management scenarios",
+#        "figures",
+#        "Humpback_risk_reduction_effort_comparison_groupby_delay_method_boxplot.jpg"
+#        )
+# )
+
 ```
 <br>
 
@@ -237,6 +326,8 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 
 
 ```{r}
+
+
 
 ```
 <br>
