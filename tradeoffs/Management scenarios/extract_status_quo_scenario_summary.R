@@ -13,6 +13,8 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 # STATUS QUO
 scenario.output.df.noinfo.sq <- effort_mgmt(
   x = x.orig.noinfo,
+  season.st.key = NULL, 
+  season.st.backstop = NULL, 
   early.data.method = "remove", 
   delay.date = NULL,
   delay.region = NULL,
@@ -22,7 +24,8 @@ scenario.output.df.noinfo.sq <- effort_mgmt(
   closure.region = NULL,
   closure.method = NULL,
   closure.redist.percent = 100,
-  depth.val = NULL,
+  depth.shallow = NULL, 
+  depth.deep = NULL, 
   reduction.before.date = NULL,
   reduction.before.percent = 50,
   reduction.before.region = NULL,
@@ -44,6 +47,11 @@ area.key <- grid.5km.lno %>%
   distinct()
 
 ### Calculate and summarize risk for sq scenario with normalized outputs
+CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
 
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 risk_out_sq <- risk_mgmt(
@@ -51,11 +59,14 @@ risk_out_sq <- risk_mgmt(
   x.col = Num_DCRB_VMS_pings, 
   y = x.whale,
   risk.unit = "dens", 
-  area.key = area.key
+  area.key = area.key,
+  scale.list = CA_fishing_metrics_range_2009_2019, 
+  ym.min = "2009_11", 
+  ym.max = "2019_07"
 )
 glimpse(risk_out_sq)
 
-range(risk_out_sq$Num_DCRB_VMS_pings) # 1048 is max, which is different than the input into this function
+range(risk_out_sq$Num_DCRB_VMS_pings) # 1354 is max, which is different than the input into this function
 
 risk_out_sq_list_by_yr_mth <- risk_out_sq %>% split(.$year_month)
 
