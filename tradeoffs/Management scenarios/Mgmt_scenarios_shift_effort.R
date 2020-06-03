@@ -55,10 +55,11 @@ effort_mgmt <- function(x, season.st.key = NULL,
   #   Ignored if closure.method is not "temporal". Otherwise, 
   #   values being redistributed are multiplied by (closure.redist.percent / 100) 
   # depth.shallow and depth.deep: numerics; if either delay.method or closure.method is "depth", 
-  #   than 1) both values cannot be NULL and 2) all effort between these values 
-  #   (code: `between(depth, depth.shallow, depth.deep)`) will be KEPT.
+  #   then 1) both values cannot be NULL and 2) all effort between these values 
+  #   (code: `between(depth, depth.deep, depth.shallow)`) will be KEPT
   #   If one value is NULL, then that value is 'ignored', 
-  #   i.e it is set as the min/max value (as applicable) from the data
+  #   i.e it is set as the applicable min/max extreme from the data
+  #   These values are both in meters, as is the depth for the fishing effort data.
   # reduction.before.date: Date; if not NULL, then all effort values before this date
   #   are multiplied by (1 - (reduction.before.percent / 100))
   # reduction.before.percent: numeric; between 0 and 100. Ignored if reduction.before.date is NULL
