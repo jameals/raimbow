@@ -4,7 +4,7 @@
 #     specified 'summary.level' argument, i.e. by in/out of BIA or Region
 
 risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key, 
-                      ym.min = "2009_11", ym.max = "2019_07") { # updated ym.max to 2019_07; formerly 2018_06
+                      scale.list, ym.min = "2009_11", ym.max = "2019_07") {
   ### Inputs
   # x: data frame; e.g. output of effort_mgmt()
   # x.col: symbol (i.e. column name without quotes); 
@@ -17,6 +17,8 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
   #   "dens" means that risk values will be divided by the grid cell area
   # area.key: data.frame; key for grid cell ID and grid cell area (with land removed)
   #   Used to calculate 'risk density'
+  # scale.list: list of the ranges of status quo fishing metrics, which are passed to 
+  #   the scale() function when rescaling the effort values
   # ym.min: character; minimum year_month value for which to calculate risk
   # ym.min: character; maximum year_month value for which to calculate risk
   
@@ -42,7 +44,8 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
     require(tidyr), 
     inherits(x, "data.frame"), 
     inherits(y, "data.frame"), 
-    inherits(area.key, "data.frame")
+    inherits(area.key, "data.frame"), 
+    inherits(scale.list, "list")
   )
   
   risk.unit <- match.arg(risk.unit)
@@ -59,10 +62,14 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
     stop("x must contain the following columns:\n", 
          paste(c(names.x.info, names.x.fish), collapse = ", "))
   
-  
   # Check fishing effort column names
   if (!(quo_name(x.col) %in% names.x.fish)) 
-    stop("x.col must be one of the following:\n", 
+    stop("x.col must be one of the following (unquoted):\n", 
+         paste(names.x.fish, collapse = ", "))
+  
+  # Check scale.list
+  if (!identical(names(scale.list), names.x.fish))
+    stop("The names of scale.list must be (in order):\n", 
          paste(names.x.fish, collapse = ", "))
   
   
@@ -97,6 +104,10 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
     distinct()
   
   
+  # Extract needed scale.list element
+  scale.range <- scale.list[[quo_name(x.col)]]
+  
+  
   # Get all year_months for which to calculate risk
   ym.seq.date <- seq(
     as.Date(paste0(ym.min, "_01"), format = "%Y_%m_%d"), 
@@ -127,20 +138,21 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
               DCRB_rev = sum(DCRB_rev), 
               Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings), 
               Num_DCRB_Vessels = sum(Num_DCRB_Vessels), 
-              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% #, .groups = "drop"
-    ungroup() %>%
+              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels), 
+              .groups = "drop") %>% 
+    # ungroup() %>%
     left_join(x.other, by = "GRID5KM_ID")
   
   
-  #browser()
-  # Add in whale predictions, calculate normalized EFFORT value, and calculate risk
+  # Add in whale predictions, calculate normalized EFFORT value using scale.list values, 
+  #   and calculate risk
   # Normalized whale values are calcualted in Grid5km_raimbow_prep.Rmd to ensure
-  #   they're calculated with all of the values in the study area
+  #   they're calculated with all of the whale values in the study area
   x.ym.risk <- x.ym %>% 
     left_join(y, by = c("GRID5KM_ID", "year_month")) %>%
     mutate(normalized_effort = as.vector(scale(effort_val, 
-                                               center = min(effort_val, na.rm=TRUE), 
-                                               scale = diff(range(effort_val, na.rm=TRUE)))),
+                                               center = min(scale.range), 
+                                               scale = diff(scale.range))),
            risk_humpback = effort_val * Humpback_abund_mean, 
            risk_blue = effort_val * Blue_occurrence_mean,
            n_risk_humpback = normalized_effort * normalized_humpback, 
@@ -154,7 +166,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
              n_risk_blue = n_risk_blue / area_km_lno)
   }
   
-  # option to write out 5km grid cell risk values for each year_mo
+  # option to write out 5km grid cell risk values for each year_mo - not needed since this is it's own function
   #write_rds(x.ym.risk, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_",today(),".rds"))
   
   x.ym.risk
@@ -190,7 +202,7 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
   # Test that grid cells only are assigned to one region
   test.df <- x %>% 
     group_by(GRID5KM_ID) %>% 
-    summarise(reg_count = length(unique(Region)))
+    summarise(reg_count = length(unique(Region)), .groups = "drop")
   if (!all(test.df$reg_count == 1)) {
     grid.mult <- test.df$GRID5KM_ID[test.df$reg_count > 1]
     stop("The following grid cell(s) in x are assigned to multiple regions\n:", 
@@ -211,10 +223,13 @@ risk_mgmt_summ <- function(x, summary.level = c("Region", "BIA")) {
     x %>% group_by(year_month, BIA_bm_or_mn) # could add Region if we wanted region-specific BIA summaries
   }
   
-  risk.summ %>% 
-    summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:n_risk_blue), 
-                 sum, na.rm = TRUE) %>% 
-    ungroup() %>% 
+risk.summ %>% 
+    # summarise_at(vars(DCRB_lbs:Num_Unique_DCRB_Vessels, risk_humpback:n_risk_blue), sum,
+    #              na.rm = TRUE) %>%
+    summarise(across(DCRB_lbs:Num_Unique_DCRB_Vessels, sum, na.rm = TRUE), 
+              across(risk_humpback:n_risk_blue, sum, na.rm = TRUE), 
+              .groups = "drop") %>% 
+    # ungroup() %>% 
     mutate(crab_year = func_crab_year(year_month)) %>% 
     select(year_month, crab_year, everything())
 }

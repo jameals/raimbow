@@ -87,6 +87,11 @@ d.noshift <- effort_mgmt(
 all.equal(x.orig %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels), 
           d.noshift %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels))
 
+s1 <- x.orig %>% group_by(Region, year_month) %>% summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+s2 <- d.noshift %>% group_by(Region, year_month) %>% summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+max(s1$ping_sum)
+max(s2$ping_sum)
+
 
 
 ###############################################################################
@@ -97,14 +102,17 @@ area.key <- grid.5km.lno %>%
   select(GRID5KM_ID, area_km_lno) %>% 
   distinct()
 
+# Load saved scale vars
+ca.effort.scale.vals.list <- readRDS("C:/SMW/RAIMBOW/raimbow/grid-prep/CA_fishing_metrics_range_2009_2019.rds")
+
 
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
 d.risk <- risk_mgmt(
-  x = d, x.col = Num_DCRB_VMS_pings, y = x.whale, # %>% select(-area_km_lno), #Don't have to remove area column
-  risk.unit = "dens", area.key = area.key
+  x = d, x.col = Num_DCRB_VMS_pings, y = x.whale, 
+  risk.unit = "dens", area.key = area.key, scale.list = ca.effort.scale.vals.list
 )
-d.risk.summ <- risk_mgmt_summ(d.risk, summary.level = "Region")
+d.risk.summ <- risk_mgmt_summ(d.risk, summary.level = "BIA")
 
 
 
