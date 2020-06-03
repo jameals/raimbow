@@ -5,7 +5,10 @@
 
 # Implement effect of management scenarios on fishing effort
 # See 'Readme for Funcs_management_scenarios.docx' for pseudocode
-effort_mgmt <- function(x, early.data.method = c("pile", "remove"), 
+# Note that this function does NOT include normalized effort in the output
+effort_mgmt <- function(x, season.st.key = NULL, 
+                        season.st.backstop = NULL, 
+                        early.data.method = c("pile", "remove"), 
                         delay.date = NULL, 
                         delay.region = c("All", "CenCA", "NorCA", "OR", "WA"), 
                         delay.method = c("remove", "pile", "lag", "depth"), 
@@ -14,7 +17,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                         closure.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
                         closure.method = c("remove", "temporal", "depth"), 
                         closure.redist.percent = 100, 
-                        depth.val = NULL, 
+                        depth.shallow = NULL, depth.deep = NULL, 
                         reduction.before.date = NULL, 
                         reduction.before.percent = 50, 
                         reduction.before.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
@@ -22,20 +25,21 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                         reduction.after.percent = 50, 
                         reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA")) {
   
-  # TODO: some way to define season_st_date_min and region_date_end in input, i.e. not hard-coded. See lines 206-252
-  # TODO: how to determine 'natural season' start date? Day 1? Day of 1% of season's effort?
-  
-  # Question(s) for Jameal
-  #   what constraints should be put on multiple regions, i.e. should any combination be allowed?
-  #   Are the function arguments too unweildy?
-  #     WE could turn them into delay.list, closure.list, and reduction.list
-  #     The lists would have compenents names like function arguments
-  
   ### Inputs
-  # x: data.frame; expected to has same format at data frame from Jameal
+  # x: data.frame; expected to have same format at data frame from Jameal
+  # season.st.key: data frame with 3 columns; specifies the season start dates for each region. 
+  #   The columns must be (in order): crab year, region, and start date. Names don't matter
+  #   Data before these dates are handled as specified in early.data.method
+  #   If NULL, then the season start dates are determined as 
+  #   the first day with histroical effort (from x) in that region for that crab year
+  # season.st.backstop: data frame with the same format as season.st.key.
+  #   This data serves as a 'backstop' minimum season start date. 
+  #   A message is printed if any dates from season.st.key are before the corresponding backstop date, 
+  #   and the corresponding backstop date is used in place of the season.st.key date.
+  #   If NULL, these minimum values default to: Nov 10 for CenCA, and Nov 26 for NorCA.
   # early.data.method: character; either "pile" or "remove". Represents what to
   #   to do with data that comes before minimum season start date, 
-  #   e.g. data that comes before 15 Nov in Central CA
+  #   specified by season.st.key and season.st.backstop
   # delay.date: Date; date for which the fishery will open in 2009-10 crab season.
   #   If NULL, then there is no delayed opening and 
   #   other delay.. arguments are ignored
@@ -50,8 +54,11 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   # closure.redist.percent: numeric; default is 100. 
   #   Ignored if closure.method is not "temporal". Otherwise, 
   #   values being redistributed are multiplied by (closure.redist.percent / 100) 
-  # depth.val: numeric; if either delay.method or closure.method is "depth", 
-  #   then all effort less than this value (i.e. with a higher absolute value) is removed
+  # depth.shallow and depth.deep: numerics; if either delay.method or closure.method is "depth", 
+  #   than 1) both values cannot be NULL and 2) all effort between these values 
+  #   (code: `between(depth, depth.shallow, depth.deep)`) will be KEPT.
+  #   If one value is NULL, then that value is 'ignored', 
+  #   i.e it is set as the min/max value (as applicable) from the data
   # reduction.before.date: Date; if not NULL, then all effort values before this date
   #   are multiplied by (1 - (reduction.before.percent / 100))
   # reduction.before.percent: numeric; between 0 and 100. Ignored if reduction.before.date is NULL
@@ -88,16 +95,29 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   # Basic checks
   stopifnot(
     inherits(x, "data.frame"), 
-    is.null(delay.date) | (inherits(delay.date, "Date") & length(delay.date) == 1), 
-    is.null(closure.date) | (inherits(closure.date, "Date") & length(closure.date) == 1), 
+    "season.st.key must be NULL or a data frame with 3 columns" = 
+      is.null(season.st.key) | inherits(season.st.key, "data.frame") & ncol(season.st.key) == 3, 
+    "season.st.backstop must be NULL or a data frame with 3 columns" = 
+      is.null(season.st.backstop) | inherits(season.st.backstop, "data.frame") & ncol(season.st.backstop) == 3, 
+    "delay.date must be NULL or a Date object of length 1" = 
+      is.null(delay.date) | (inherits(delay.date, "Date") & length(delay.date) == 1), 
+    "closure.date must be NULL or a Date object of length 1" = 
+      is.null(closure.date) | (inherits(closure.date, "Date") & length(closure.date) == 1), 
     inherits(closure.redist.percent, c("numeric", "integer")), 
-    length(closure.redist.percent) & dplyr::between(closure.redist.percent, 0, 100), 
-    is.null(reduction.before.date) | (inherits(reduction.before.date, "Date") & length(reduction.before.date) == 1), 
-    is.null(reduction.after.date) | (inherits(reduction.after.date, "Date") & length(reduction.after.date) == 1), 
+    "closure.redist.percent must a numeric of length 1 between 0 and 100" = 
+      length(closure.redist.percent) == 1 & dplyr::between(closure.redist.percent, 0, 100), 
+    "reduction.before.date must be NULL or a Date object of length 1" = 
+      is.null(reduction.before.date) | (inherits(reduction.before.date, "Date") & length(reduction.before.date) == 1), 
+    "reduction.after.date must be NULL or a Date object of length 1" = 
+      is.null(reduction.after.date) | (inherits(reduction.after.date, "Date") & length(reduction.after.date) == 1), 
     inherits(reduction.before.percent, c("numeric", "integer")), 
     inherits(reduction.after.percent, c("numeric", "integer")), 
-    length(reduction.before.percent) == 1 & dplyr::between(reduction.before.percent, 0, 100), 
-    length(reduction.after.percent) == 1 & dplyr::between(reduction.after.percent, 0, 100)
+    "reduction.before.percent must a numeric of length 1 between 0 and 100" = 
+      length(reduction.before.percent) == 1 & dplyr::between(reduction.before.percent, 0, 100), 
+    "reduction.after.percent must a numeric of length 1 between 0 and 100" = 
+      length(reduction.after.percent) == 1 & dplyr::between(reduction.after.percent, 0, 100), 
+    is.null(depth.shallow) | inherits(depth.shallow, c("integer", "numeric")), 
+    is.null(depth.deep) | inherits(depth.deep, c("integer", "numeric"))
   )
   
   early.data.method <- match.arg(early.data.method)
@@ -114,8 +134,8 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   # Data frame name checks
   names.x.fish <- c(
-    "crab_year", "year_month", "day_of_year", "GRID5KM_ID", "Region", 
-    "depth", "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", 
+    "crab_year", "year_month", "day_of_year", "GRID5KM_ID", "Region", "depth", 
+    "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", 
     "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", 
     "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"
   )
@@ -129,13 +149,15 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
          paste(eff.regions, collapse = ", "))
   
   if (identical(delay.method, "depth") | identical(closure.method, "depth")) {
-    stopifnot(
-      inherits(depth.val, c("integer", "numeric")), 
-      depth.val < 0
-    )
+    if (is.null(depth.shallow)) depth.shallow <- max(x$depth)
+    if (is.null(depth.deep)) depth.deep <- min(x$depth)
+    if (!(depth.shallow <= 0 & depth.deep < depth.shallow))
+      stop("depth.shallow and depth.deep must be less than 0,", 
+           "and depth.deep must be less than depth.shallow", 
+           "(i.e. have a greater absolute value)")
     
-    if (!any(x$depth < depth.val))
-      warning("No depth values will be removed with the given depth.val value", 
+    if (!any(x$depth < depth.shallow))
+      warning("No depth values will be removed with the given depth.shallow value", 
               immediate. = TRUE)
   }
   
@@ -188,9 +210,8 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   
   
   #----------------------------------------------------------------------------
-  ### Initial processing
-  # Extract 'constant' data. Currently 'CA_OFFSHOR' 
-  #   depth is used for depth restriction, and thus is required
+  # Initial processing - extract 'constant' data
+  # Currently 'CA_OFFSHOR' - depth required due to depth restriction method
   names.constant <- c("CA_OFFSHOR")
   if (all(names.constant %in% names(x))) {
     x.other <- x %>%
@@ -201,70 +222,118 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
       stop("Error extracting constant data - duplicated grid cell IDs")
   }
   
-  # Select for and do initial processing of effort data - shift or drop early data
-  # browser() # baby steps for JS to understand function
+  
+  #----------------------------------------------------------------------------
+  # Get season start dates, adjust early data as necessary
+  
+  x.crabyear <- sort(unique(x$crab_year))
+  x.region <- sort(unique(x$Region))
+  
+  ### Create date column for fishing effort
   x.fish.pre <- x %>% 
     select(!!names.x.fish) %>%
-    mutate(tmp = ifelse(Region == "CenCA", "-11-15", "-12-01"), # JS: we want to define this above so it is easy to modify
-           season_date_st_min = as.Date(paste0(substr(crab_year, 1, 4), tmp)), 
-           year = as.numeric(substr(year_month, 1, 4)), 
-           date_record_orig = as.Date(
-             day_of_year - 1, origin = as.Date(paste0(year, "-01-01")))) %>% 
-    select(-.data$tmp)
+    mutate(yr_origin = make_date(substr(.data$year_month, 1, 4), 1, 1), 
+           #`day_of_year - 1` because origin is considered day 1, not day 0
+           date_record = as.Date(.data$day_of_year - 1, origin = yr_origin)) %>% 
+    select(-.data$yr_origin)
   
   
+  ### Process season start date key
+  if (is.null(season.st.key)) {
+    # Default is minimum date (by crab year and Region) in fishing data
+    season.st.key <- x.fish.pre %>% 
+      group_by(crab_year, Region) %>% 
+      summarise(season_st_date_key = min(date_record), .groups = "drop")
+    
+  } else {
+    stopifnot(
+      "All of the crab years in x must be in the first column of season.st.key" = 
+        all(x.crabyear %in% season.st.key[[1]]), 
+      "All of the regions in x must be in the second column of season.st.key" = 
+        all(x.region %in% season.st.key[[2]]), 
+      "The third column of season.st.key must be of class Date" = 
+        inherits(season.st.key[[3]], "Date")
+    )
+    season.st.key <- season.st.key %>% 
+      select(crab_year = 1, Region = 2, season_st_date_key = 3) %>% 
+      filter(crab_year %in% x.crabyear, Region %in% x.region)
+  }
+  
+  
+  ### Process season start backstop key
+  if (is.null(season.st.backstop)) {
+    # Default is Nov 10 for CenCA, and Nov 26 otherwise
+    season.st.backstop <- data.frame(expand.grid(crab_year = x.crabyear, Region = x.region, 
+                                                 stringsAsFactors = FALSE)) %>% 
+      mutate(season_st_yr = as.numeric(substr(.data$crab_year, 1, 4)), 
+             season_st_day = ifelse(.data$Region == "CenCA", 10, 26), 
+             season_st_date_min = make_date(season_st_yr, 11, season_st_day)) %>% 
+      select(crab_year, Region, season_st_date_min)
+    
+  } else {
+    stopifnot(
+      "All of the crab years in x must be in the first column of season.st.backstop" = 
+        all(x.crabyear %in% season.st.backstop[[1]]), 
+      "All of the regions in x must be in the second column of season.st.backstop" = 
+        all(x.region %in% season.st.backstop[[2]]), 
+      "The third column of season.st.backstop must be of class Date" = 
+        inherits(season.st.backstop[[3]], "Date")
+    )
+    season.st.backstop <- season.st.backstop %>% 
+      select(crab_year = 1, Region = 2, season_st_date_min = 3) %>% 
+      filter(crab_year %in% x.crabyear, Region %in% x.region)
+  }
+  
+  
+  ### Chose maximum date of season.st.key and season.st.backstop to be the used season start date
+  stopifnot(nrow(season.st.key) == nrow(season.st.backstop))
+  season.st <- season.st.key %>% 
+    left_join(season.st.backstop, by = c("crab_year", "Region")) %>% 
+    mutate(season_date_st = pmax(season_st_date_key, season_st_date_min)) %>% 
+    select(crab_year, Region, season_date_st)
+  
+  
+  ### Pile or remove early data
   x.fish <- if (early.data.method == "pile") {
-    x.fish <- x.fish.pre %>% 
-      mutate(decimal_record = ifelse(date_record_orig < season_date_st_min, 
-                                     decimal_date(season_date_st_min), 
-                                     decimal_date(date_record_orig)), 
-             date_record = as.Date(
-               round_date(date_decimal(decimal_record), unit = "day")), 
+    x.fish.pre %>% 
+      left_join(season.st, by = c("crab_year", "Region")) %>% 
+      mutate(date_record = pmax(date_record, season_date_st), 
              year_month = func_year_mo(date_record)) %>% 
-      select(-decimal_record) %>% 
-      select(-year, -day_of_year, -date_record_orig, -season_date_st_min)
+      select(-day_of_year)
     
   } else if (early.data.method == "remove") {
-    x.fish <- x.fish.pre %>% 
-      filter(date_record_orig >= season_date_st_min) %>% 
-      mutate(date_record = date_record_orig) %>% 
-      select(-year, -day_of_year, -date_record_orig, -season_date_st_min)
+    x.fish.pre %>% 
+      left_join(season.st, by = c("crab_year", "Region")) %>% 
+      filter(date_record >= season_date_st) %>% 
+      select(-day_of_year)
     
   } else {
     stop("Invalid argument passed to early.data.method")
   }
+  rm(x.fish.pre)
   
   
   # For each crab season and Region, get end dates. Joined to df at the end
   x.fish.end.summ <- x.fish %>% 
     group_by(crab_year, Region) %>% 
     summarise(season_date_end = max(date_record), 
-              region_date_end = as.Date(paste0(
-                substr(unique(crab_year), 6, 9), 
-                ifelse(unique(Region) == "CenCA", "-07-15", "-07-31")
-              ))
-    ) %>% 
-    ungroup()
+              region_date_end = make_date(
+                substr(unique(crab_year), 6, 9), 7 ,
+                ifelse(unique(Region) == "CenCA", 15, 31)), 
+              .groups = "drop")
   
   if (any(x.fish.end.summ$season_date_end > x.fish.end.summ$region_date_end))
-    warning("In original data, some season end dates come after the region end dates")
+    warning("In original data, some season end dates come after the region end dates", 
+            immediate. = TRUE)
   
-  
-  #####
-  # # With pile method for early.data.method
-  # sum(x.fish$date_record != x.fish$date_record_orig) #1797
-  # identical(
-  #   which(x.fish$date_record_orig < x.fish$season_date_st_min), 
-  #   which(x.fish$date_record != x.fish$date_record_orig)
-  # ) #TRUE
-  
-  # sum(x.fish$date_record < x.fish$season_date_st_min) #1797
-  # x.fish %>%
-  #   group_by(crab_year, Region) %>%
-  #   summarise(season_date_st_min = unique(season_date_st_min),
-  #             date_record_min = min(date_record), 
-  #             count_date_oob = sum(date_record < unique(season_date_st_min)))
-  #####
+  # Sanity check
+  stopifnot(
+    identical(c("crab_year", "year_month", "GRID5KM_ID", "Region", "depth", 
+                "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", "DCRB_lbs", 
+                "DCRB_rev", "Num_DCRB_VMS_pings", "Num_DCRB_Vessels", 
+                "Num_Unique_DCRB_Vessels", "date_record", "season_date_st"), 
+              names(x.fish))
+  )
   
   
   #----------------------------------------------------------------------------
@@ -274,13 +343,13 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     
   } else {
     x.fish.delay.reduct <- x.fish %>% 
-      mutate(reduce_yr = if (year(reduction.before.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             reduce_mgmt = as.Date(paste(reduce_yr, lubridate::month(reduction.before.date), 
-                                         day(reduction.before.date), sep = "-")), 
+      mutate(reduce_yr = func_year_extract(reduction.before.date, crab_year), 
+             reduce_mgmt = make_date(reduce_yr, lubridate::month(reduction.before.date), 
+                                     day(reduction.before.date)), 
              reduce_date = date_record < reduce_mgmt)
     
     if ("All" %in% reduction.before.region) {
-      if (length(reduction.before.region) > 1)
+      if (!identical(reduction.before.region, "All"))
         stop("You cannot use 'All' in conjunction with other regions in reduction.before.region")
       
       x.fish.delay.reduct <- x.fish.delay.reduct %>% 
@@ -305,7 +374,9 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
   #----------------------------------------------------------------------------
   # Do delayed opening stuff
   if (is.null(delay.date)) {
-    x.fish.delay <- x.fish.delay.reduct
+    x.fish.delay <- x.fish.delay.reduct %>% 
+      select(-season_date_st) %>% 
+      select(crab_year, year_month, date_record, everything())
     
   } else {
     #------------------------------------------------------
@@ -314,7 +385,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
       stop("A delayed opening in BIAs is not supported")
       
     } else if ("All" %in% delay.region) {
-      if (length(delay.region) > 1)
+      if (!identical(delay.region, "All"))
         stop("You cannot use 'All' in conjunction with other regions in delay.region")
       
       x.d.fish.filter <- x.fish.delay.reduct
@@ -331,30 +402,34 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     
     #------------------------------------------------------
     # Step 2) determine the number of days each season would have been delayed
+    #   Use already-added 'season_date_st'
     season.mgmt.summ <- x.d.fish.filter %>% 
-      mutate(mgmt_yr = if (year(delay.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             season_open_mgmt = as.Date(paste(mgmt_yr, lubridate::month(delay.date), day(delay.date), 
-                                              sep = "-"))) %>% 
+      mutate(mgmt_yr = func_year_extract(delay.date, crab_year), 
+             # if (year(delay.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
+             season_open_mgmt = make_date(mgmt_yr, lubridate::month(delay.date), 
+                                          day(delay.date))) %>% 
       group_by(crab_year, Region) %>% 
-      summarise(season_date_st = min(date_record), #Ok since date_records altered above
-                season_open_mgmt = unique(season_open_mgmt), 
-                season_days_delayed = as.numeric(difftime(season_open_mgmt, season_date_st, 
-                                                          units = "days"))) %>% 
-      ungroup()
+      summarise(season_open_mgmt = unique(season_open_mgmt), 
+                #season_date_st is already in x.d.fish.filter
+                season_days_delayed = as.numeric(
+                  difftime(season_open_mgmt, unique(season_date_st), units = "days")
+                ), 
+                .groups = "drop")
     
     x.d.fish.filter.mgmt <- x.d.fish.filter %>% 
       left_join(season.mgmt.summ, by = c("crab_year", "Region"))
     
     
     #------------------------------------------------------
-    # Step 3) shift dates/times as necessary, or remove records from "remove"
+    # Step 3) shift dates/times as necessary, remove records from "remove", 
+    #   or keep records either after season open date or within the depth restrictions
     x.fish.shifted <- if (delay.method == "remove") {
       x.d.fish.filter.mgmt %>% 
         filter(date_record >= season_open_mgmt)
       
     } else if (delay.method == "depth") {
       x.d.fish.filter.mgmt %>% 
-        filter((date_record >= season_open_mgmt) | (.data$depth >= depth.val))
+        filter((date_record >= season_open_mgmt) | between(.data$depth, depth.deep, depth.shallow))
       
     } else {
       delay_date_shift(x.d.fish.filter.mgmt, delay.method)
@@ -383,7 +458,7 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
              DCRB_lbs, DCRB_rev, Num_DCRB_VMS_pings, Num_DCRB_Vessels, 
              Num_Unique_DCRB_Vessels)
     
-    # If else is in case region was "All"
+    # If-else is in case region was "All"
     x.fish.delay <- if (is.null(x.d.fish.nofilter)) {
       x.fish.redist
     } else {
@@ -395,8 +470,8 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     
     # Sanity check - all new date records are still in the proper crab year
     check.int <- interval(
-      as.Date(paste0(substr(x.fish.delay$crab_year, 1, 4), "-11-01")), 
-      as.Date(paste0(substr(x.fish.delay$crab_year, 6, 9), "-10-31"))
+      make_date(substr(x.fish.delay$crab_year, 1, 4), 11, 1), 
+      make_date(substr(x.fish.delay$crab_year, 6, 9), 10, 31)
     )
     if (!all(x.fish.delay$date_record %within% check.int)) 
       warning("Error in delayed opening date shifting - shifted out of crab season")
@@ -413,9 +488,10 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     
   } else {
     x.fish.closure.reduct <- x.fish.delay %>% 
-      mutate(reduce_yr = if (year(reduction.after.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             reduce_mgmt = as.Date(paste(reduce_yr, lubridate::month(reduction.after.date), 
-                                         day(reduction.after.date), sep = "-")), 
+      mutate(reduce_yr = func_year_extract(reduction.after.date, crab_year), 
+             # if (year(reduction.after.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
+             reduce_mgmt = make_date(reduce_yr, lubridate::month(reduction.after.date), 
+                                     day(reduction.after.date)), 
              reduce_date = date_record >= reduce_mgmt)
     
     if ("All" %in% reduction.after.region) {
@@ -451,9 +527,9 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
     #------------------------------------------------------
     # Determine which records come after closure date
     x.fish.c1 <- x.fish.closure.reduct %>% 
-      mutate(mgmt_yr = if (year(closure.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
-             season_close_mgmt = as.Date(paste(mgmt_yr, lubridate::month(closure.date), day(closure.date), 
-                                               sep = "-")), 
+      mutate(mgmt_yr = func_year_extract(closure.date, crab_year), 
+             # if (year(closure.date) == 2009) substr(crab_year, 1, 4) else substr(crab_year, 6, 9), 
+             season_close_mgmt = make_date(mgmt_yr, lubridate::month(closure.date), day(closure.date)), 
              record_post_closure_date = date_record >= season_close_mgmt) %>% 
       select(-mgmt_yr)
     
@@ -508,8 +584,9 @@ effort_mgmt <- function(x, early.data.method = c("pile", "remove"),
                -record_closed, -region_toshiftto)
       
     } else if (closure.method == "depth") {
+      # Keep effort not in closed time OR that is in accepted depth band
       x.fish.c2 %>% 
-        filter(!record_closed | (.data$depth >= depth.val)) %>% 
+        filter(!record_closed | between(.data$depth, depth.deep, depth.shallow)) %>% 
         select(-season_close_mgmt, -record_post_closure_date, 
                -record_closed, -region_toshiftto)
       
@@ -687,8 +764,7 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   # z.id.shift[which(!(z.id.shift %in% z.id.base))]
   
   
-  # 1) Get sums of effort to be redistributed, grouped by region and year-month,
-  #   that has a base
+  # 1) Get sums of effort to be redistributed, grouped by region and year-month, that has a base
   stopifnot(!any(is.na(filter(z.use, record_toshift)$region_toshiftto)))
   z.summ.toredistribute <- z.use %>% 
     filter(record_toshift, id %in% z.id.base) %>%
@@ -697,8 +773,9 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
               DCRB_rev_sum_toadd = sum(DCRB_rev) * z.perc, 
               Num_DCRB_VMS_pings_sum_toadd = sum(Num_DCRB_VMS_pings) * z.perc, 
               Num_DCRB_Vessels_sum_toadd = sum(Num_DCRB_Vessels) * z.perc, 
-              Num_Unique_DCRB_Vessels_sum_toadd = sum(Num_Unique_DCRB_Vessels) * z.perc) %>%
-    ungroup()
+              Num_Unique_DCRB_Vessels_sum_toadd = sum(Num_Unique_DCRB_Vessels) * z.perc, 
+              .groups = "drop") #%>%
+  # ungroup()
   
   # ...and get list to feed to tidyr::replace_na later
   list.nas.names <- names(select(z.summ.toredistribute, -region_toshiftto, -year_month))
@@ -728,7 +805,7 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   z.summ.col.old.sum <- z.use %>% 
     filter(record_base) %>% 
     group_by(Region, year_month_old) %>% 
-    summarise(eff_sum = sum(!!z.col))
+    summarise(eff_sum = sum(!!z.col), .groups = "drop")
   
   # a) Join with z.col sums, and calculate percentages
   # b) Join with effort to redistribute, and redistribute
@@ -771,8 +848,9 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
               DCRB_rev = sum(DCRB_rev),
               Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings),
               Num_DCRB_Vessels = sum(Num_DCRB_Vessels),
-              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels)) %>% 
-    ungroup() %>% 
+              Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels), 
+              .groups = "drop") %>% 
+    # ungroup() %>% 
     left_join(distinct(select(z, GRID5KM_ID, !!z.cols.other)), 
               by = c("GRID5KM_ID")) %>% 
     select(!!z.new.names)
@@ -797,9 +875,14 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
 
 ###############################################################################
 # Random helper functions
-func_year_mo <- function(x) {
-  stopifnot(inherits(x, "Date"))
-  paste(lubridate::year(x), sprintf("%02d", lubridate::month(x)), sep = "_")
+func_year_mo <- function(i) {
+  stopifnot(inherits(i, "Date"))
+  paste(lubridate::year(i), sprintf("%02d", lubridate::month(i)), sep = "_")
+}
+
+func_year_extract <- function (i, j) {
+  stopifnot(inherits(i, "Date"), nchar(j) == 9)
+  if (lubridate::year(i) == 2009) substr(j, 1, 4) else substr(j, 6, 9)
 }
 
 ###############################################################################

@@ -2,7 +2,15 @@ library(dplyr)
 library(lubridate)
 library(sf)
 
+# https://stackoverflow.com/questions/6364783/capitalize-the-first-letter-of-both-words-in-a-two-word-string
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
 
+
+###############################################################################
 # x.hump <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>%
 #   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
 #   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
@@ -22,7 +30,6 @@ x.orig <- x.orig.noinfo %>%
   left_join(grid.key, by = "GRID5KM_ID")
 stopifnot(nrow(grid.key) == nrow(distinct(select(x.orig, GRID5KM_ID, Region, CA_OFFSHOR))))
 
-
 x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds") %>% 
   select(-area_km_lno) #area.key object takes care of this in risk_mgmt()
 
@@ -31,44 +38,58 @@ x.whale <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds")
 # length(table(d.join$GRID5KM_ID[is.na(d.join$Humpback_abund_mean)])) #3, as expected
 
 
+# Formatting for effort_mgmt()
+season.st.date.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
 
 
+
+
+###############################################################################
 ### Shift/redistribute effort as specified
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
   x = x.orig,
-  early.data.method = "pile", 
-  delay.date = as.Date("2009-12-15"),
-  delay.region = "All",
+  season.st.key = season.st.date.key, 
+  # season.st.backstop = NULL,
+  early.data.method = "remove", 
+  delay.date = as.Date("2010-01-01"),
+  delay.region = "CenCA",
   delay.method = "depth",
-  delay.method.fidelity = "temporal",
+  delay.method.fidelity = NULL, #"temporal",
   closure.date = as.Date("2010-04-01"),
-  closure.region = c("All"),
-  closure.method = "depth",
-  # closure.redist.percent = 100,
-  depth.min = -100,
-  depth.max = -500,
-  reduction.before.date = as.Date("2009-12-15"), 
-  reduction.before.percent = 50, 
-  reduction.before.region = "All", 
-  reduction.after.date = as.Date("2010-04-01"), 
-  reduction.after.percent = 50, 
-  reduction.after.region = "All"
+  closure.region = c("BIA"),
+  closure.method = "temporal",
+  closure.redist.percent = 10,
+  depth.shallow = -100, depth.deep = -500,
+  # reduction.before.date = as.Date("2009-12-15"),
+  # reduction.before.percent = 50,
+  # reduction.before.region = "All",
+  # reduction.after.date = as.Date("2010-04-01"),
+  # reduction.after.percent = 50,
+  # reduction.after.region = "All"
 )
 
-# source("C:/SMW/RAIMBOW/raimbow/tradeoffs/Management scenarios/Mgmt_scenarios_plot.R")
-# sum(x.orig$DCRB_lbs)
-# sum(d2$DCRB_lbs)
-# sum(d50$DCRB_lbs)
-# sum(d100$DCRB_lbs)
-# 
-# sum(x.orig$DCRB_lbs) - (sum(x.orig$DCRB_lbs) - sum(d50$DCRB_lbs)) * 2
-# 
-# effort_plot_effort(x.orig, DCRB_lbs)
-# effort_plot_effort(d, DCRB_lbs)
-# effort_plot_effort(d2, DCRB_lbs)
+# Look at date distribution by Region
+d.summ.date <- d %>% group_by(crab_year, Region) %>% summarise(min(date_record), max(date_record))
+
+# Look at depth distribution by year-month
+d.summ.depth <- d %>% group_by(crab_year, year_month) %>% summarise(min(date_record), max(date_record), min(depth), max(depth))
 
 
+
+### Check that effort values are the not shifting anything
+d.noshift <- effort_mgmt(
+  x = x.orig, season.st.key = season.st.date.key,  early.data.method = "pile"
+)
+all.equal(x.orig %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels), 
+          d.noshift %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels))
+
+
+
+###############################################################################
 # Load and prep grid cell - area key
 grid.5km.lno <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds")
 area.key <- grid.5km.lno %>% 
