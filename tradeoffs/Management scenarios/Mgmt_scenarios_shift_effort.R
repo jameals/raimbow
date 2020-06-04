@@ -6,7 +6,7 @@
 # Implement effect of management scenarios on fishing effort
 # See 'Readme for Funcs_management_scenarios.docx' for pseudocode
 # Note that this function does NOT include normalized effort in the output
-effort_mgmt <- function(x, season.st.key = NULL, 
+effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3, 
                         season.st.backstop = NULL, 
                         early.data.method = c("pile", "remove"), 
                         delay.date = NULL, 
@@ -27,6 +27,10 @@ effort_mgmt <- function(x, season.st.key = NULL,
   
   ### Inputs
   # x: data.frame; expected to have same format at data frame from Jameal
+  # preseason.days: numeric; number of days before the provided season start date
+  #   definied by season.st.key for which effort will be kept, i.e. not affected by early.data.method.
+  #   For instance, is 3, than all data up to 3 days before the season start is kept, 
+  #   and not processed by early.data.method
   # season.st.key: data frame with 3 columns; specifies the season start dates for each region. 
   #   The columns must be (in order): crab year, region, and start date. Names don't matter
   #   Data before these dates are handled as specified in early.data.method
@@ -98,6 +102,8 @@ effort_mgmt <- function(x, season.st.key = NULL,
     inherits(x, "data.frame"), 
     "season.st.key must be NULL or a data frame with 3 columns" = 
       is.null(season.st.key) | inherits(season.st.key, "data.frame") & ncol(season.st.key) == 3, 
+    inherits(preseason.days, c("numeric", "integer")), 
+    preseason.days >= 0,
     "season.st.backstop must be NULL or a data frame with 3 columns" = 
       is.null(season.st.backstop) | inherits(season.st.backstop, "data.frame") & ncol(season.st.backstop) == 3, 
     "delay.date must be NULL or a Date object of length 1" = 
@@ -242,9 +248,11 @@ effort_mgmt <- function(x, season.st.key = NULL,
   ### Process season start date key
   if (is.null(season.st.key)) {
     # Default is minimum date (by crab year and Region) in fishing data
+    #   Here we're already at the min date, so subtracting days is extra
     season.st.key <- x.fish.pre %>% 
       group_by(crab_year, Region) %>% 
-      summarise(season_st_date_key = min(date_record), .groups = "drop")
+      summarise(season_st_date_key = min(date_record) - lubridate::days(preseason.days),
+                .groups = "drop")
     
   } else {
     stopifnot(
@@ -257,7 +265,8 @@ effort_mgmt <- function(x, season.st.key = NULL,
     )
     season.st.key <- season.st.key %>% 
       select(crab_year = 1, Region = 2, season_st_date_key = 3) %>% 
-      filter(crab_year %in% x.crabyear, Region %in% x.region)
+      filter(crab_year %in% x.crabyear, Region %in% x.region) %>% 
+      mutate(season_st_date_key = season_st_date_key - lubridate::days(preseason.days))
   }
   
   
@@ -290,7 +299,7 @@ effort_mgmt <- function(x, season.st.key = NULL,
   stopifnot(nrow(season.st.key) == nrow(season.st.backstop))
   season.st <- season.st.key %>% 
     left_join(season.st.backstop, by = c("crab_year", "Region")) %>% 
-    mutate(season_date_st = pmax(season_st_date_key, season_st_date_min)) %>% 
+    mutate(season_date_st = pmax(.data$season_st_date_key, .data$season_st_date_min)) %>% 
     select(crab_year, Region, season_date_st)
   
   

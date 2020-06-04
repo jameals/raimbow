@@ -53,6 +53,7 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
   x = x.orig,
   season.st.key = season.st.date.key, 
+  preseason.days = 3, 
   # season.st.backstop = NULL,
   early.data.method = "remove", 
   delay.date = as.Date("2010-01-01"),
@@ -82,15 +83,47 @@ d.summ.depth <- d %>% group_by(crab_year, year_month) %>% summarise(min(date_rec
 
 ### Check that effort values are the not shifting anything
 d.noshift <- effort_mgmt(
-  x = x.orig, season.st.key = season.st.date.key,  early.data.method = "pile"
+  x = x.orig, season.st.key = season.st.date.key, preseason.days = 3, 
+  early.data.method = "pile"
 )
 all.equal(x.orig %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels), 
           d.noshift %>% select(DCRB_lbs:Num_Unique_DCRB_Vessels))
 
-s1 <- x.orig %>% group_by(Region, year_month) %>% summarise(ping_sum = sum(Num_DCRB_VMS_pings))
-s2 <- d.noshift %>% group_by(Region, year_month) %>% summarise(ping_sum = sum(Num_DCRB_VMS_pings))
-max(s1$ping_sum)
-max(s2$ping_sum)
+
+# s0 <- x.orig %>% group_by(year_month, GRID5KM_ID) %>% 
+#   summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+# s1 <- d.noshift %>% group_by(year_month, GRID5KM_ID) %>% 
+#   summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+# s2 <- effort_mgmt(
+#   x = x.orig, season.st.key = season.st.date.key, preseason.days = 3, 
+#   early.data.method = "remove"
+# ) %>%
+#   group_by(year_month, GRID5KM_ID) %>% 
+#   summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+# s2b <- effort_mgmt(
+#   x = x.orig, season.st.key = NULL, preseason.days = 3, 
+#   early.data.method = "remove"
+# ) %>%
+#   group_by(year_month, GRID5KM_ID) %>% 
+#   summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+# s2c <- effort_mgmt(
+#   x = x.orig, season.st.key = season.st.date.key, preseason.days = 100, 
+#   early.data.method = "remove"
+# ) %>%
+#   group_by(year_month, GRID5KM_ID) %>% 
+#   summarise(ping_sum = sum(Num_DCRB_VMS_pings))
+# 
+# max(s0$ping_sum)
+# max(s1$ping_sum)
+# max(s2$ping_sum)
+# max(s2b$ping_sum)
+# max(s2c$ping_sum)
+# 
+# sum(s0$ping_sum)
+# sum(s1$ping_sum)
+# sum(s2$ping_sum)
+# sum(s2b$ping_sum)
+# sum(s2c$ping_sum)
 
 
 
