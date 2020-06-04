@@ -162,7 +162,7 @@ con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
   #   yr= lubridate::year(westcoastdate_notime),
   #   mth = lubridate::month(westcoastdate_notime)
   # ) %>%
-  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  group_by(year, crab_year, year_month, season, month, month_as_numeric, week_of_year, day_of_year, GRID5KM_ID, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% #BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),
@@ -183,7 +183,16 @@ con_df_daily_years_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
 
 Sys.time() - start.time
 
-
+# year = unique(year),
+# crab_year = unique(crab_year),
+# season = unique(season),
+# month = unique(month),
+# month_as_numeric = unique(month_as_numeric),
+# week_of_year = unique(week_of_year),
+# day_of_year = unique(day_of_year),
+# BIA_mn_noNAs = unique(BIA_mn_noNAs),
+# BIA_bm_noNAs = unique(BIA_bm_noNAs),
+# BIA_bm_or_mn = unique(BIA_bm_or_mn),
 glimpse(con_df_daily_years_5km_CA)
 
 # subset to 2018 only since we don't have 2019 predictions yet
@@ -201,7 +210,8 @@ write_rds(con_df_daily_years_5km_CA,
 ### make output aggregated to year_month
 
 con_df_year_month_5km_CA <- dcrb_ca_vms_tix_analysis_TripInfo %>%
-  group_by(year, crab_year, year_month, season, month, month_as_numeric, GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% 
+  group_by(year_month, GRID5KM_ID) %>%
+  #group_by(year, crab_year, year_month, season, month, month_as_numeric, GRID5KM_ID, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn) %>% # BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, 
   summarise(
     DCRB_lbs = sum(DCRB_lbs_per_VMSlocation),
     DCRB_rev =sum(DCRB_rev_per_VMSlocation),

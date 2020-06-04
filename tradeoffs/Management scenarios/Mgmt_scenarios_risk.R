@@ -127,6 +127,7 @@ risk_mgmt <- function(x, x.col, y, risk.unit = c("orig", "dens"), area.key,
             paste(setdiff(sort(unique(x$year_month)), ym.seq), collapse = ", "), 
             immediate. = TRUE)
   
+  #browser()
   x.ym <- x %>% 
     left_join(area.key, by = "GRID5KM_ID") %>%
     filter(year_month %in% ym.seq) %>% 

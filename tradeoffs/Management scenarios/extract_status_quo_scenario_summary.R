@@ -1,10 +1,24 @@
 # pull out sq summaries
+rm(list = ls())
 
 library(tidyverse)
 library(sf)
 
+# https://stackoverflow.com/questions/6364783/capitalize-the-first-letter-of-both-words-in-a-two-word-string
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+
 # read in sq data
 x.orig.noinfo <- read_rds("~/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels_regions_depths.RDS")
+
+# read in season start date key
+season.st.date.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
 
 ##### summarize effort for sq scenario
 
@@ -13,7 +27,8 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 # STATUS QUO
 scenario.output.df.noinfo.sq <- effort_mgmt(
   x = x.orig.noinfo,
-  season.st.key = NULL, 
+  season.st.key = season.st.date.key, 
+  preseason.days = 3,
   season.st.backstop = NULL, 
   early.data.method = "remove", 
   delay.date = NULL,
@@ -66,7 +81,8 @@ risk_out_sq <- risk_mgmt(
 )
 glimpse(risk_out_sq)
 
-range(risk_out_sq$Num_DCRB_VMS_pings) # 1354 is max, which is different than the input into this function
+
+range(risk_out_sq$Num_DCRB_VMS_pings) # 1354 is max
 
 risk_out_sq_list_by_yr_mth <- risk_out_sq %>% split(.$year_month)
 
