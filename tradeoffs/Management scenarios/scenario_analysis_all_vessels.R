@@ -1,4 +1,4 @@
-library(dplyr)
+library(tidyverse)
 library(lubridate)
 
 rm(list = ls())
@@ -23,12 +23,27 @@ scenario_table_edr[1,]
 # scenario_table_all <- scenario_table %>%
 #   bind_rows(scenario_table_edr)
 
+
+# read in season start date key
+# grab helper function. https://stackoverflow.com/questions/6364783/capitalize-the-first-letter-of-both-words-in-a-two-word-string
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+season.st.date.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
+
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
 # for some strange reason i did not think to create scenario_table_all before writing the 2 sets of code below for the effort_mgmt() function. ah, well
 
+### 060520: THERE IS STILL A PROBLEM WITH THE effort_mgmt() function. IT CANNOT READ THE scenario_table ENTRIES AND RUN PROPERLY. I THINK IT HAS TO DO WITH season.st.date.key
+
 ### just the early and late season closure scenarios
-scenario.output.list.closures <- lapply(1:nrow(scenario_table), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
+scenario.output.list.closures <- lapply(1:nrow(scenario_table[1:2,]), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
   print(i)
   #browser()
   
@@ -37,6 +52,17 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table), function(i, scen
   
   scenario.output.df <- effort_mgmt(
     x = x.orig,
+    
+    season.st.key = season.st.date.key,
+    
+    preseason.days = scenario_table$preseason.days,
+    
+    season.st.backstop = if (scenario_table$season.st.backstop[i] == "NULL") {
+      NULL
+      }
+    else {
+      as.Date(scenario_table$season.st.backstop[i])
+      },
     
     early.data.method = scenario_table$early.data.method[i], 
     
@@ -60,7 +86,9 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table), function(i, scen
     
     closure.redist.percent = scenario_table$closure.redist.percent[i],
     
-    depth.val = as.numeric(scenario_table$depth.val),
+    depth.shallow = as.numeric(scenario_table$depth.shallow),
+    
+    depth.deep = as.numeric(scenario_table$depth.deep),
     
     reduction.before.date = if (scenario_table$reduction.before.date[i] == "NULL") NULL else scenario_table$reduction.before.date[i],
     
