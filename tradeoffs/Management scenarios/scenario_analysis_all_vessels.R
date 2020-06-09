@@ -86,9 +86,9 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table[1:2,]), function(i
     
     closure.redist.percent = scenario_table$closure.redist.percent[i],
     
-    depth.shallow = as.numeric(scenario_table$depth.shallow),
+    depth.shallow = if (scenario_table$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table$depth.shallow[i]), 
     
-    depth.deep = as.numeric(scenario_table$depth.deep),
+    depth.deep = if (scenario_table$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table$depth.deep[i]),
     
     reduction.before.date = if (scenario_table$reduction.before.date[i] == "NULL") NULL else scenario_table$reduction.before.date[i],
     

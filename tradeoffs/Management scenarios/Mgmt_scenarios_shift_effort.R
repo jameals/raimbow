@@ -85,7 +85,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   #     lawful end date (July 15 for central CA and July 31 otherwise) 
   #     for this Region in this crab year
   
-  #browser()
+  browser()
   stopifnot(
     require(dplyr), 
     require(lubridate), 
