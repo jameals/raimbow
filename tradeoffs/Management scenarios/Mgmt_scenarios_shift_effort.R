@@ -85,7 +85,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   #     lawful end date (July 15 for central CA and July 31 otherwise) 
   #     for this Region in this crab year
   
-  browser()
+  #browser()
   stopifnot(
     require(dplyr), 
     require(lubridate), 
@@ -215,7 +215,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   
   rm(date.message.common)
   
-  
+  #browser()
   #----------------------------------------------------------------------------
   # Initial processing - extract 'constant' data
   # Currently 'CA_OFFSHOR' - depth required due to depth restriction method
@@ -266,7 +266,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     season.st.key <- season.st.key %>% 
       select(crab_year = 1, Region = 2, season_st_date_key = 3) %>% 
       filter(crab_year %in% x.crabyear, Region %in% x.region) %>% 
-      mutate(season_st_date_key = season_st_date_key - lubridate::days(preseason.days))
+      mutate(season_st_date_key = season_st_date_key - lubridate::days(preseason.days)) # this is the source of the error msg
   }
   
   
@@ -543,7 +543,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
              record_post_closure_date = date_record >= season_close_mgmt) %>% 
       select(-mgmt_yr)
     
-    
+    #browser()
     #------------------------------------------------------
     # Do region-specific stuff
     #   identical() ensures that closure.region is of length 1

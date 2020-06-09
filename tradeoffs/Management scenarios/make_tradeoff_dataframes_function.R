@@ -101,7 +101,8 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
         risk_humpback = sum(risk_humpback, na.rm=TRUE),
         risk_blue = sum(risk_blue, na.rm=TRUE),
         n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
-        n_risk_blue = sum(n_risk_blue, na.rm=TRUE)
+        n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+        .groups = "drop"
       ) %>%
       add_column(
         scenario_names_table[i,]
@@ -164,11 +165,11 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
       n_risk_blue_under_statusquo = n_risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       pings_under_statusquo = Num_DCRB_VMS_pings[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       dollars_under_statusquo = DCRB_rev[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
-      pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")]
+      pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       
-      ) %>%
+      .groups = "drop") %>%
     
-    ungroup() %>%
+    #ungroup() %>%
     
     group_by(number_id, scenario_df_name, crab_year) %>%
     
@@ -193,7 +194,8 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
       ),
       relative_pounds = 100* (
         DCRB_lbs / pounds_under_statusquo
-      )
+      ),
+      .groups = "drop"
     ) #%>%
     
     # mutate(

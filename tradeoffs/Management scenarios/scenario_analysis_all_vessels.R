@@ -1,5 +1,7 @@
 library(tidyverse)
 library(lubridate)
+library(here)
+library(sf)
 
 rm(list = ls())
 
@@ -17,6 +19,12 @@ x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/C
 glimpse(x.orig)
 
 source("tradeoffs/Management scenarios/make_scenarios_table.R")
+# convert factors to characters
+scenario_table$delay_scenario <- as.character(scenario_table$delay_scenario)
+scenario_table_edr$delay_scenario <- as.character(scenario_table_edr$delay_scenario)
+scenario_table$closure_scenario <- as.character(scenario_table$closure_scenario)
+scenario_table_edr$closure_scenario <- as.character(scenario_table_edr$closure_scenario)
+
 scenario_table[1,]
 scenario_table_edr[1,]
 
@@ -40,10 +48,8 @@ source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 
 # for some strange reason i did not think to create scenario_table_all before writing the 2 sets of code below for the effort_mgmt() function. ah, well
 
-### 060520: THERE IS STILL A PROBLEM WITH THE effort_mgmt() function. IT CANNOT READ THE scenario_table ENTRIES AND RUN PROPERLY. I THINK IT HAS TO DO WITH season.st.date.key
-
 ### just the early and late season closure scenarios
-scenario.output.list.closures <- lapply(1:nrow(scenario_table[1:2,]), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
+scenario.output.list.closures <- lapply(1:nrow(scenario_table), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
   print(i)
   #browser()
   
@@ -55,7 +61,7 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table[1:2,]), function(i
     
     season.st.key = season.st.date.key,
     
-    preseason.days = scenario_table$preseason.days,
+    preseason.days = scenario_table$preseason.days[i],
     
     season.st.backstop = if (scenario_table$season.st.backstop[i] == "NULL") {
       NULL
@@ -108,6 +114,8 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table[1:2,]), function(i
 
 #rm()
 
+### 060920 CHECKING THAT THE MSG "Adding missing grouping variables: `region_toshiftto`" IS NOT PROBLEMATIC. OTHERWISE, ABOVE SEEMS TO WORK. WAS AN ISSUE, NEEDED TO UPDATE TO DPLYR 1.0.0
+
 ### just the late season effort and depth restriction scenarios
 
 scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
@@ -119,6 +127,17 @@ scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scena
   
   scenario.output.df.edr <- effort_mgmt(
     x = x.orig,
+    
+    season.st.key = season.st.date.key,
+    
+    preseason.days = scenario_table$preseason.days[i],
+    
+    season.st.backstop = if (scenario_table$season.st.backstop[i] == "NULL") {
+      NULL
+    }
+    else {
+      as.Date(scenario_table$season.st.backstop[i])
+    },
     
     early.data.method = scenario_table$early.data.method[i], 
     
@@ -142,7 +161,9 @@ scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scena
     
     closure.redist.percent = scenario_table$closure.redist.percent[i],
     
-    depth.val = as.numeric(scenario_table$depth.val),
+    depth.shallow = if (scenario_table$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table$depth.shallow[i]), 
+    
+    depth.deep = if (scenario_table$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table$depth.deep[i]),
     
     reduction.before.date = if (scenario_table$reduction.before.date[i] == "NULL") NULL else scenario_table$reduction.before.date[i],
     
@@ -158,7 +179,7 @@ scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scena
     
   )
   
-}, scenario_table = scenario_table)
+}, scenario_table = scenario_table_edr)
 
 #glimpse(scenario.output.list.edr[[6]])
 
@@ -175,7 +196,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 # grab shifted effort fishing data
 
 # JS 
-load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_","2020-05-28",".RData"))
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_","2020-06-09",".RData"))
 
 # grab whale data
 
@@ -210,7 +231,7 @@ scenario_table_all <- scenario_table %>%
 write_rds(scenario_table_all, here::here(
   "tradeoffs",
   "Management scenarios",
-  "scenario_table_all.rds")
+  "scenario_table_all_2020-06-09.rds")
 )
 
 # Load and prep grid cell - area key
@@ -220,10 +241,15 @@ area.key <- grid.5km.lno %>%
   select(GRID5KM_ID, area_km_lno) %>% 
   distinct()
 
+### grab fishing metrics range to make sure normalizations are conducted properly (deals with normalizing within/across years and regions issue)
+CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
 
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-# what about normalizing? added in. need to decide about normalizing within/across years and regions issue
 
 # will need to re-run all of the above and below for sm and lg vessels
 
@@ -238,13 +264,16 @@ risk_out_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) 
     x.col = Num_DCRB_VMS_pings, 
     y = x.whale,
     risk.unit = "dens", 
-    area.key = area.key
+    area.key = area.key,
+    scale.list = CA_fishing_metrics_range_2009_2019, 
+    ym.min = "2009_11", 
+    ym.max = "2019_07"
   )
-}, scenario_table = scenario_table
+}, scenario_table = scenario_table_all
 )
 
 Sys.time() - start.time
-# Time difference of 19.11915 secs
+# Time difference of 19 secs
 
 
 ### save status quo scenario as its own df ###
@@ -266,11 +295,11 @@ risk_out_summ_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_ta
     x = risk_out_list[[i]], 
     summary.level = "Region"
   )
-}, scenario_table = scenario_table
+}, scenario_table = scenario_table_all
 )
 
 Sys.time() - start.time
-#Time difference of 0.725035 secs
+#Time difference of 5 secs
 
 glimpse(risk_out_summ_list[[1]])
 
@@ -292,7 +321,7 @@ glimpse(risk_out_summ_list[[1]])
 # Sys.time() - start.time
 #Time difference of 0.725035 secs
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-29",".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_",today(),".RData"))
 
 
 
@@ -301,7 +330,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 ### 3) make annual and tradeoff df's
 
 # if needed, load data
-load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-05-29",".RData"))
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-06-09",".RData"))
 
 # assign number IDs to scenarios
 scenario_table_all$number_id <- row.names(scenario_table_all)
@@ -316,16 +345,16 @@ tradeoff_df_function(
   df_tradeoff_name = "df_tradeoff" # this ensures df is available in the globalEnv after running function
   )
 Sys.time() - start.time
-#Time difference of 1.041596 secs
+#Time difference of 0.24 secs
 
 # is risk actually greater for whales under some scenarios? yes.
 dim(df_tradeoff)
-length(which(df_tradeoff$relative_hump_risk < 0)) # 23 out of 300
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 36 out of 300
+length(which(df_tradeoff$relative_hump_risk < 0)) # 25 out of 300
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 33 out of 300
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
 length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 300
-length(which(df_tradeoff$relative_pounds > 100)) # 5 out of 300
+length(which(df_tradeoff$relative_pounds > 100)) # 0 out of 300
 
 
 ###############################################################################
@@ -345,7 +374,7 @@ annual_statewide_df_focal_scenarios <- annual_statewide_df[-which(
 annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
     annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
 
-write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_","2020-05-29",".rds"))
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_","2020-06-09",".rds"))
 
 scenario_table_focal_scenarios <- scenario_table_all[-which(
   scenario_table_all$closure.region == "BIA" & scenario_table_all$closure.redist.percent == 10),]
@@ -354,7 +383,7 @@ scenario_table_focal_scenarios <- scenario_table_focal_scenarios[-which(
 write_rds(scenario_table_focal_scenarios, here::here(
   "tradeoffs",
   "Management scenarios",
-  "scenario_table_focal_scenarios.rds")
+  "scenario_table_focal_scenarios_2020-06-09.rds")
 )
 
 unique(annual_statewide_df_focal_scenarios$number_id)
@@ -366,7 +395,7 @@ df_tradeoff_focal_scenarios <- df_tradeoff[which(
 ),]
 unique(df_tradeoff_focal_scenarios$number_id)
 
-write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_","2020-05-29",".rds"))
+write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_","2020-06-09",".rds"))
 
 ###############################################################################
 
