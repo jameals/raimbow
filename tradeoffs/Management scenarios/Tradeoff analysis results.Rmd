@@ -65,13 +65,13 @@ if (user == "SMW") {
   
   path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
   
-  path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all.rds"
+  path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
   
-  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios.rds"
+  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-09.rds"
   
-  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-05-29.rds"
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-09.rds"
   
-  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-05-29.rds"
+  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-09.rds"
   
   
 } else {
@@ -256,6 +256,7 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 #annual_statewide_df_focal_scenarios <- read_rds(path_annual_statewide_df_focal_scenarios)
 df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios)
 scenario_table_all <- read_rds(path_scenario_table_all)
+scenario_table_focal_scenarios <- read_rds(path_scenario_table_focal_scenarios)
 
 #unique(sort(scenario_table_focal_scenarios$scenario_df_name)) == unique(sort(df_tradeoff_focal_scenarios$scenario_df_name))
 
@@ -285,30 +286,43 @@ df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
 ### PICK UP HERE 060220. NEED TO ORDER SCENARIOS BY REL RISK REDUCTION
 
 # consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
-df_tradeoff_focal_scenarios_bp <- df_tradeoff_focal_scenarios %>% 
+df_tradeoff_focal_scenarios_means <- df_tradeoff_focal_scenarios %>% 
+  filter(pretty_scenario_names != "Status Quo") %>%
   left_join(scenario_table_focal_scenarios) %>%
   group_by(number_id, scenario_df_name) %>%
-  arrange(
-    relative_hump_risk_n,
-    relative_blwh_risk_n,
-    relative_dollars,
-    .by_group = TRUE
+  summarise(
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    .groups = "drop"
   ) %>%
-  ungroup() %>%
-  mutate(scenario_rank = factor(number_id, levels=number_id))
+  arrange(
+    -mean_relative_hump_risk_n,
+    -mean_relative_blwh_risk_n,
+    -mean_relative_dollars
+  ) %>%
+  mutate(scenario_rank = row_number())
 
+df_tradeoff_focal_scenarios_bp <- df_tradeoff_focal_scenarios %>% 
+  filter(pretty_scenario_names != "Status Quo") %>%
+  left_join(scenario_table_focal_scenarios) %>%
+  left_join(df_tradeoff_focal_scenarios_means) %>%
+  arrange(
+    scenario_rank
+  )
 #View(df_tradeoff_focal_scenarios_bp)
 
-ggplot(df_tradeoff_focal_scenarios_bp) + #  %>% filter(scenario_category != "Status Quo")
+ggplot(df_tradeoff_focal_scenarios_bp) + #%>% filter(pretty_scenario_names != "Status Quo") ) +
   geom_boxplot(aes(
     x = scenario_rank,
     y = relative_hump_risk_n,
     fill = pretty_scenario_names
     )
   )  +
-    
-    
-  #coord_flip() +
+  # geom_text(aes(x = scenario_rank,
+  #               y = relative_hump_risk_n,
+  #               label = pretty_scenario_names)) +
+  coord_flip() +
   #facet_wrap(~closure.method) +
   theme_bw()
 # ggsave(here::here(
