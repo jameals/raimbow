@@ -49,6 +49,7 @@ library(foreign) # read.dbf()
 library(here)
 library(lubridate)
 library(sf)
+library(viridis)
 
 # Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
 #   Thus, please ensure that file paths are complete rather than relative
@@ -72,6 +73,8 @@ if (user == "SMW") {
   path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-09.rds"
   
   path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-09.rds"
+  
+  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
   
 } else {
@@ -312,19 +315,100 @@ df_tradeoff_focal_scenarios_bp <- df_tradeoff_focal_scenarios %>%
   )
 #View(df_tradeoff_focal_scenarios_bp)
 
-ggplot(df_tradeoff_focal_scenarios_bp) + #%>% filter(pretty_scenario_names != "Status Quo") ) +
+plot_rank_hump_risk <- ggplot(df_tradeoff_focal_scenarios_bp) +
   geom_boxplot(aes(
-    x = scenario_rank,
+    x = reorder(pretty_scenario_names,scenario_rank),
     y = relative_hump_risk_n,
-    fill = pretty_scenario_names
+    colour = factor(scenario_rank)
     )
   )  +
-  # geom_text(aes(x = scenario_rank,
-  #               y = relative_hump_risk_n,
-  #               label = pretty_scenario_names)) +
   coord_flip() +
-  #facet_wrap(~closure.method) +
-  theme_bw()
+  scale_y_continuous(limits = c(-26,100),
+                     breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Relative reduction in risk to humpback whales") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+png(paste0(path_figures, "/plot_rank_hump_risk.png"), width = 10, height = 8, units = "in", res = 300)
+plot_rank_hump_risk
+dev.off()
+
+plot_rank_blue_risk <- ggplot(df_tradeoff_focal_scenarios_bp) +
+  geom_boxplot(aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = relative_blwh_risk_n,
+    colour = factor(scenario_rank)
+    )
+  )  +
+  coord_flip() +
+  scale_y_continuous(limits = c(-26,100),
+                     breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Relative reduction in risk to blue whales") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+png(paste0(path_figures, "/plot_rank_blue_risk.png"), width = 10, height = 8, units = "in", res = 300)
+plot_rank_blue_risk
+dev.off()
+
+plot_rank_DCRB_rev <- ggplot(df_tradeoff_focal_scenarios_bp) +
+  geom_boxplot(aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = relative_dollars,
+    colour = factor(scenario_rank)
+    )
+  )  +
+  coord_flip() +
+  scale_y_continuous(limits = c(-26,100),
+                     breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Relative reduction in revenue to\nthe Dungeness crab fishery") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+png(paste0(path_figures, "/plot_rank_DCRB_rev.png"), width = 10, height = 8, units = "in", res = 300)
+plot_rank_DCRB_rev
+dev.off()
+
+plot_rank_hump_risk
+plot_rank_blue_risk
+plot_rank_DCRB_rev
+
+# df_tradeoff_focal_scenarios_bp_pivot <- df_tradeoff_focal_scenarios_bp %>% 
+#   pivot_longer(cols = c(
+#     relative_hump_risk_n, relative_blwh_risk_n, relative_dollars
+#     ), 
+#     names_to = "response_metric", values_to = "relative_response") %>%
+#   reorder(response_metric)
+# 
+# #response_names <- c("Risk to humpback whales", "Risk to blue whales", "Revenue to fishery")
+# 
+# plot_rank_rel_response <- ggplot(df_tradeoff_focal_scenarios_bp_pivot) +
+#   geom_boxplot(aes(
+#     x = reorder(pretty_scenario_names,scenario_rank),
+#     y = relative_response,
+#     colour = factor(scenario_rank)
+#     )
+#   )  +
+#   facet_wrap(~response_metric) + #, labeller = response_names) +
+#   coord_flip() +
+#   xlab("Scenario") + 
+#   ylab("Relative Reduction") +
+#   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+#   theme_bw() +
+#   theme(legend.position = "none",
+#         strip.background = element_rect(fill = "white", color = "white")
+#      )
+# plot_rank_rel_response
+
+
+
+
 # ggsave(here::here(
 #        "tradeoffs",
 #        "Management scenarios",
