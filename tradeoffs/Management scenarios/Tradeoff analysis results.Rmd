@@ -286,8 +286,6 @@ df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
     rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year)))
     )  
 
-### PICK UP HERE 060220. NEED TO ORDER SCENARIOS BY REL RISK REDUCTION
-
 # consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
 df_tradeoff_focal_scenarios_means <- df_tradeoff_focal_scenarios %>% 
   filter(pretty_scenario_names != "Status Quo") %>%
@@ -378,6 +376,8 @@ dev.off()
 plot_rank_hump_risk
 plot_rank_blue_risk
 plot_rank_DCRB_rev
+
+# NEVER GOT THE FACETING TO WORK WITH THE FACETS ORDERED AS HUMP, BLUE, DCRB
 
 # df_tradeoff_focal_scenarios_bp_pivot <- df_tradeoff_focal_scenarios_bp %>% 
 #   pivot_longer(cols = c(
