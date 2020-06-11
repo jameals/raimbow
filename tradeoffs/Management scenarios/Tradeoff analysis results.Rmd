@@ -554,5 +554,115 @@ plot_ts_DCRB_rev
 
 ```{r}
 
+# make summed normalized risk for both whales. may want to add in option for weighting each species
+weight_hump <- 0.5
+weight_blue <- 1 - weight_hump
+df_tradeoff_focal_scenarios <- df_tradeoff_focal_scenarios %>%
+  mutate(
+    both_whale_risk_n = (weight_hump*relative_hump_risk_n + weight_blue*relative_blwh_risk_n)
+  )
+
+### normalized humpbacks
+to_hump_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/Tradeoff plot - normalized humpbacks only_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_hump_n
+dev.off()
+
+### normalized blues
+
+to_blue_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    )
+
+png(paste0(path_figures,"/Tradeoff plot - normalized blues only_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_blue_n
+dev.off()
+
+### normalized both
+
+to_both_n <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=both_whale_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to\nhumpback and blue whales (normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+   )
+png(paste0(path_figures,"/Tradeoff plot - normalized humpbacks and blues_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_both_n
+dev.off()
+
+to_hump_n
+to_blue_n
+to_both_n
+
 ```
 <br>
