@@ -1,7 +1,7 @@
 title: "Tradeoff analysis results"
 ---
 author: "Jameal Samhouri"
-date: "5/22/2020, 6/1/2020"
+date: "initiated 5/22/2020, modified 6/12/2020"
 output:
   pdf_document: default
   html_document: default
@@ -71,11 +71,13 @@ if (user == "SMW") {
   
   path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
   
-  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-09.rds"
+  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
   
-  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-09.rds"
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds"
   
-  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-09.rds"
+  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds"
+  
+  path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
@@ -297,12 +299,20 @@ df_tradeoff_focal_scenarios_means <- df_tradeoff_focal_scenarios %>%
   summarise(
     mean_relative_hump_risk_n = mean(relative_hump_risk_n),
     mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
     mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
     .groups = "drop"
   ) %>%
   arrange(
     -mean_relative_hump_risk_n,
     -mean_relative_blwh_risk_n,
+    -mean_relative_both_risk_n,
     -mean_relative_dollars
   ) %>%
   mutate(scenario_rank = row_number())
@@ -360,6 +370,26 @@ png(paste0(path_figures, "/plot_rank_blue_risk.png"), width = 10, height = 8, un
 plot_rank_blue_risk
 dev.off()
 
+plot_rank_both_risk <- ggplot(df_tradeoff_focal_scenarios_bp) +
+  geom_boxplot(aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = relative_both_risk_n,
+    colour = factor(scenario_rank)
+    )
+  )  +
+  coord_flip() +
+  scale_y_continuous(limits = c(-26,100),
+                     breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Relative reduction in risk to humpback and blue whales") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  theme_classic() +
+  theme(legend.position = "none")
+
+png(paste0(path_figures, "/plot_rank_both_risk.png"), width = 10, height = 8, units = "in", res = 300)
+plot_rank_both_risk
+dev.off()
+
 plot_rank_DCRB_rev <- ggplot(df_tradeoff_focal_scenarios_bp) +
   geom_boxplot(aes(
     x = reorder(pretty_scenario_names,scenario_rank),
@@ -371,7 +401,7 @@ plot_rank_DCRB_rev <- ggplot(df_tradeoff_focal_scenarios_bp) +
   scale_y_continuous(limits = c(-26,100),
                      breaks = c(-25,0,25,50,75,100)) +
   xlab("Scenario") +
-  ylab("Relative reduction in revenue to\nthe Dungeness crab fishery") +
+  ylab("Relative revenue to\nthe Dungeness crab fishery") +
   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
   theme_classic() +
   theme(legend.position = "none")
@@ -382,6 +412,7 @@ dev.off()
 
 plot_rank_hump_risk
 plot_rank_blue_risk
+plot_rank_both_risk
 plot_rank_DCRB_rev
 
 # NEVER GOT THE FACETING TO WORK WITH THE FACETS ORDERED AS HUMP, BLUE, DCRB
@@ -506,6 +537,43 @@ png(paste0(path_figures, "/plot_ts_blue_risk.png"), width = 10, height = 8, unit
 plot_ts_blue_risk
 dev.off()
 
+plot_ts_both_risk <- 
+  ggplot(df_tradeoff_focal_scenarios_bp,
+         aes(
+           x = factor(year),
+           y = relative_both_risk_n,
+           colour = factor(pretty_scenario_names),
+           group = factor(pretty_scenario_names)
+           )
+         ) +
+  geom_line()  +
+  geom_point() +
+  geom_label_repel(aes(label = scenario_label),
+                  nudge_x = -10,
+                  hjust=0,
+                  nudge_y = 100 - df_tradeoff_focal_scenarios_bp[which(is.na(df_tradeoff_focal_scenarios_bp$scenario_label) == FALSE),]$relative_both_risk_n,
+                  direction = "y",
+                  #xlim = c(0,50),
+                  segment.color = "grey50",
+                  segment.size  = 0.2,
+                  na.rm = TRUE) +
+  scale_y_continuous(limits = c(-26,100),
+                     breaks = c(-25,0,25,50,75,100)) +
+  scale_x_discrete(
+    labels = unique(df_tradeoff_focal_scenarios_bp$crab_year),
+    expand = expansion(add = c(10,0.6))
+    ) + 
+  xlab("Crab Season") +
+  ylab("Relative reduction in risk to humpback and blue whales") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 30, hjust=1),
+        legend.position = "none")
+
+png(paste0(path_figures, "/plot_ts_both_risk.png"), width = 10, height = 8, units = "in", res = 300)
+plot_ts_both_risk
+dev.off()
+
 plot_ts_DCRB_rev <- 
   ggplot(df_tradeoff_focal_scenarios_bp,
          aes(
@@ -533,7 +601,7 @@ plot_ts_DCRB_rev <-
     expand = expansion(add = c(10,0.6))
     ) + 
   xlab("Crab Season") +
-  ylab("Relative reduction in revenue to\nthe Dungeness crab fishery") +
+  ylab("Relative revenue to\nthe Dungeness crab fishery") +
   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 30, hjust=1),
@@ -545,6 +613,7 @@ dev.off()
 
 plot_ts_hump_risk
 plot_ts_blue_risk
+plot_ts_both_risk
 plot_ts_DCRB_rev
 
 ```
@@ -554,13 +623,7 @@ plot_ts_DCRB_rev
 
 ```{r}
 
-# make summed normalized risk for both whales. may want to add in option for weighting each species
-weight_hump <- 0.5
-weight_blue <- 1 - weight_hump
-df_tradeoff_focal_scenarios <- df_tradeoff_focal_scenarios %>%
-  mutate(
-    both_whale_risk_n = (weight_hump*relative_hump_risk_n + weight_blue*relative_blwh_risk_n)
-  )
+### 061220. summed normalized risk for both whales is calculated from the year_month df as part of the make_tradeoff_dataframes_function.R. this allows us to sum risk across year_months for each crab season and each scenario first, then calculate combined risk relative to sq
 
 ### normalized humpbacks
 to_hump_n <- ggplot(
@@ -634,7 +697,7 @@ to_both_n <- ggplot(
   df_tradeoff_focal_scenarios, #df
   aes(
     x=relative_dollars,
-    y=both_whale_risk_n,
+    y=relative_both_risk_n,
     colour=pretty_scenario_names
   )
 ) + 
@@ -655,6 +718,7 @@ to_both_n <- ggplot(
     axis.title = element_text(size = 20),
     strip.text = element_text(size=18)#,
    )
+
 png(paste0(path_figures,"/Tradeoff plot - normalized humpbacks and blues_",today(),".png"), 
     width = 10, height = 8, units = "in", res = 300)
 to_both_n
@@ -663,6 +727,371 @@ dev.off()
 to_hump_n
 to_blue_n
 to_both_n
+
+```
+<br>
+
+
+## Add in prioritzr outputs to tradeoff plot.
+
+```{r}
+
+prioritzr_outputs_all <- read_rds(path_prioritizr_all)
+glimpse(prioritzr_outputs_all)
+
+# 1) summarize outputs for each crab season, 
+# 2) calculate risk relative to status quo
+# 3) add result to tradeoff df and plot
+
+  ### STEP 1
+  
+  # for each scenario df, (1) sum by crab_year (over year_month and Region) to get annual values for each crab_year, (2) join to metadata for scenario
+
+prioritzr_annual <- prioritzr_outputs_all %>%
+  group_by(year, month, target_rev) %>%
+  mutate(
+    crab_year = ifelse(month >= 11, paste0(year,"_",year+1),
+                        paste0(year-1,"_",year)),
+    risk_humpback_n = tot_risk_humpback*(1-ifelse(
+      is.na(humpback_risk_reduction)==FALSE,
+      humpback_risk_reduction,
+      0)
+    ),
+    risk_blue_n = tot_risk_blue*(1-ifelse(
+      is.na(blue_risk_reduction)==FALSE,
+      blue_risk_reduction,
+      0)
+    ),
+    risk_both_n = (risk_humpback_n+risk_blue_n),
+    
+    .groups = "drop"
+    
+  ) %>%
+    group_by(crab_year, target_rev) %>%
+    summarise(
+      #target_rev = unique(target_rev),
+      tot_risk_hump_n = sum(risk_humpback_n),
+      tot_risk_blue_n = sum(risk_blue_n),
+      combined_risk_n = sum(risk_both_n),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      pretty_scenario_names = paste0("Prioritizr target revenue = ", 100*target_rev, "%")
+    )
+
+# any(is.na(prioritzr_annual$tot_risk_hump_n))
+# any(is.na(prioritzr_annual$tot_risk_blue_n))
+# any(is.na(prioritzr_annual$combined_risk_n))
+
+### grab status quo
+
+annual_sq <- annual_statewide_df_focal_scenarios[31:40,]
+
+### STEP 2 make tradeoff df
+  
+df_tradeoff_prioritizr <- prioritzr_annual %>%
+  arrange(target_rev, crab_year) %>%
+  
+  # STATUS QUO
+  # define status quo values for outputs of interest for crab.year (note status quo value should be the same for each scenario)
+  mutate(
+    
+    # hump_risk_under_statusquo = rep(annual_sq$risk_humpback, length(unique(target_rev))),
+    # blwh_risk_under_statusquo = rep(annual_sq$risk_blue, length(unique(target_rev))),
+    # risk_both_under_statusquo = rep(annual_sq$risk_both, length(unique(target_rev))),
+    
+    n_risk_humpback_under_statusquo = rep(annual_sq$n_risk_humpback, length(unique(target_rev))),
+    n_risk_blue_under_statusquo = rep(annual_sq$n_risk_blue, length(unique(target_rev))),
+    n_risk_both_under_statusquo = rep(annual_sq$n_risk_both, length(unique(target_rev))),
+    
+    # pings_under_statusquo = rep(annual_sq$Num_DCRB_VMS_pings, length(unique(target_rev))),
+    # dollars_under_statusquo = rep(annual_sq$DCRB_rev, length(unique(target_rev))),
+    # pounds_under_statusquo = rep(annual_sq$DCRB_lbs, length(unique(target_rev))),
+    
+    .groups = "drop") %>%
+  
+  #ungroup() %>%
+  
+  group_by(crab_year, target_rev, pretty_scenario_names) %>%
+  
+  summarise(
+    
+    relative_hump_risk_n = 100 *  (1 - (
+      tot_risk_hump_n / n_risk_humpback_under_statusquo
+    )),
+    relative_blwh_risk_n = 100 *  (1 - (
+      tot_risk_blue_n / n_risk_blue_under_statusquo
+    )),
+    relative_both_risk_n = 100 *  (1 - (
+      combined_risk_n / n_risk_both_under_statusquo
+    )),
+    relative_dollars = target_rev * 100,
+    mean_relative_dollars = target_rev * 100,
+    
+        .groups = "drop"
+  ) %>%
+  arrange(target_rev, crab_year) 
+
+# add result to tradeoff df and plot
+
+#glimpse(df_tradeoff_focal_scenarios_bp)
+#glimpse(df_tradeoff_prioritizr)
+
+df_tradeoff_focal_scenarios_bp_prioritizr <- df_tradeoff_focal_scenarios_bp %>%
+  bind_rows(df_tradeoff_prioritizr) %>%
+  mutate(
+    prioritizr_scenario = ifelse(is.na(target_rev)==TRUE, "No", "Yes")
+  )
+#glimpse(df_tradeoff_focal_scenarios_bp_prioritizr)
+
+df_tradeoff_focal_scenarios_means_prioritizr <- df_tradeoff_focal_scenarios_bp_prioritizr %>% 
+  filter(pretty_scenario_names != "Status Quo") %>%
+  group_by(pretty_scenario_names, prioritizr_scenario) %>%
+  summarise(
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    -mean_relative_hump_risk_n,
+    -mean_relative_blwh_risk_n,
+    -mean_relative_both_risk_n,
+    -mean_relative_dollars
+  ) 
+
+### normalized humpbacks, means only
+to_hump_n_pzr_means <- ggplot(
+  data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "No"), 
+             aes(
+               x=mean_relative_dollars,
+               y=mean_relative_hump_risk_n,
+               colour=pretty_scenario_names
+               )
+  ) + 
+  geom_point(size=5, alpha=0.6) +
+  geom_errorbar(
+    aes(ymin = mean_relative_hump_risk_n - se_relative_hump_risk_n, ymax = mean_relative_hump_risk_n + se_relative_hump_risk_n),
+    width=.1
+  ) +
+  geom_errorbarh(
+    aes(xmin = mean_relative_dollars - se_relative_dollars, xmax = mean_relative_dollars + se_relative_dollars)
+  ) +
+  geom_label_repel(
+    aes(label = pretty_scenario_names),
+                  nudge_x = -10,
+                  hjust=0,
+                  nudge_y = -20 + df_tradeoff_focal_scenarios_means_prioritizr[which(df_tradeoff_focal_scenarios_means_prioritizr$prioritizr_scenario == "No"),]$mean_relative_hump_risk_n,
+                  direction = "y",
+                  xlim = c(0,70),
+                  segment.color = "grey50",
+                  segment.size  = 0.2,
+                  na.rm = TRUE
+  ) +
+  geom_smooth(
+    data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "Yes"), 
+             aes(
+               x=mean_relative_dollars,
+               y=mean_relative_hump_risk_n
+             ),
+    se = FALSE,
+    colour="black"
+    ) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  #scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  #guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    legend.position = "none"
+  ) 
+
+png(paste0(path_figures, "/Tradeoff plot with prioritizr, means only- normalized humpbacks only_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_hump_n_pzr_means
+dev.off()
+
+# ### normalized humpbacks
+# to_hump_n_pzr <- ggplot(
+#   data = df_tradeoff_focal_scenarios_bp_prioritizr %>% filter(prioritizr_scenario == "No"), 
+#              aes(
+#                x=relative_dollars,
+#                y=relative_hump_risk_n,
+#                colour=pretty_scenario_names
+#                )
+#   ) + 
+#   geom_point(size=2, alpha=0.6) +
+#   geom_smooth(
+#     data = df_tradeoff_focal_scenarios_bp_prioritizr %>% filter(prioritizr_scenario == "Yes"), 
+#              aes(
+#                x=relative_dollars,
+#                y=relative_hump_risk_n,
+#                group=crab_year
+#              ),
+#     se = FALSE,
+#     colour="black"
+#     ) +
+#   stat_err(spread = "se", mult = 2, width=.1) + 
+#   stat_err(geom="point", size=7, alpha = 0.8) + 
+#   stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+#   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+#   #scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+#   ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+#   xlab("Relative revenue to the Dungeness crab fishery") +
+#   ylim(-26,100) +
+#   guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+#   theme_classic() +
+#   theme(
+#     title = element_text(size = 26),
+#     axis.text.x = element_text(size = 18),
+#     axis.text.y = element_text(size = 18),
+#     axis.title = element_text(size = 20),
+#     strip.text = element_text(size=18)#,
+#     #legend.position = "none"
+#   ) 
+# 
+# png(paste0(path_figures, "/Tradeoff plot with prioritizr- normalized humpbacks only_",today(),".png"), 
+#     width = 10, height = 8, units = "in", res = 300)
+# to_hump_n_pzr
+# dev.off()
+
+### normalized blues, means only
+to_blue_n_pzr_means <- ggplot(
+  data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "No"), 
+             aes(
+               x=mean_relative_dollars,
+               y=mean_relative_blwh_risk_n,
+               colour=pretty_scenario_names
+               )
+  ) + 
+  geom_point(size=5, alpha=0.6) +
+  geom_errorbar(
+    aes(ymin = mean_relative_blwh_risk_n - se_relative_blwh_risk_n, ymax = mean_relative_blwh_risk_n + se_relative_blwh_risk_n),
+    width=.1
+  ) +
+  geom_errorbarh(
+    aes(xmin = mean_relative_dollars - se_relative_dollars, xmax = mean_relative_dollars + se_relative_dollars)
+  ) +
+  geom_label_repel(
+    aes(label = pretty_scenario_names),
+                  nudge_x = -10,
+                  hjust=0,
+                  nudge_y = -20 + df_tradeoff_focal_scenarios_means_prioritizr[which(df_tradeoff_focal_scenarios_means_prioritizr$prioritizr_scenario == "No"),]$mean_relative_blwh_risk_n,
+                  direction = "y",
+                  xlim = c(0,70),
+                  segment.color = "grey50",
+                  segment.size  = 0.2,
+                  na.rm = TRUE
+  ) +
+  geom_smooth(
+    data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "Yes"), 
+             aes(
+               x=mean_relative_dollars,
+               y=mean_relative_blwh_risk_n
+             ),
+    se = FALSE,
+    colour="black"
+    ) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  #scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  #guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    legend.position = "none"
+  ) 
+
+png(paste0(path_figures, "/Tradeoff plot with prioritizr, means only- normalized blues only_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_blue_n_pzr_means
+dev.off()
+
+### 061220. something is wrong (?) with the frontier created by prioritizr for both whales. it is way interior to the scenario expectations. might be due to the way i calculated combined risk above
+
+### normalized both, means only
+# to_both_n_pzr_means <- ggplot(
+#   data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "No"), 
+#              aes(
+#                x=mean_relative_dollars,
+#                y=mean_relative_both_risk_n,
+#                colour=pretty_scenario_names
+#                )
+#   ) + 
+#   geom_point(size=5, alpha=0.6) +
+#   geom_errorbar(
+#     aes(ymin = mean_relative_both_risk_n - se_relative_both_risk_n, ymax = mean_relative_both_risk_n + se_relative_both_risk_n),
+#     width=.1
+#   ) +
+#   geom_errorbarh(
+#     aes(xmin = mean_relative_dollars - se_relative_dollars, xmax = mean_relative_dollars + se_relative_dollars)
+#   ) +
+#   geom_label_repel(
+#     aes(label = pretty_scenario_names),
+#                   nudge_x = -10,
+#                   hjust=0,
+#                   nudge_y = -20 + df_tradeoff_focal_scenarios_means_prioritizr[which(df_tradeoff_focal_scenarios_means_prioritizr$prioritizr_scenario == "No"),]$mean_relative_both_risk_n,
+#                   direction = "y",
+#                   xlim = c(0,70),
+#                   segment.color = "grey50",
+#                   segment.size  = 0.2,
+#                   na.rm = TRUE
+#   ) +
+#   geom_smooth(
+#     data = df_tradeoff_focal_scenarios_means_prioritizr %>% filter(prioritizr_scenario == "Yes"), 
+#              aes(
+#                x=mean_relative_dollars,
+#                y=mean_relative_both_risk_n
+#              ),
+#     se = FALSE,
+#     colour="black"
+#     ) +
+#   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+#   #scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+#   ylab("Relative reduction in risk to\nhumpbacks and blues (normalized)") +
+#   xlab("Relative revenue to the Dungeness crab fishery") +
+#   ylim(-26,100) +
+#   #guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+#   theme_classic() +
+#   theme(
+#     title = element_text(size = 26),
+#     axis.text.x = element_text(size = 18),
+#     axis.text.y = element_text(size = 18),
+#     axis.title = element_text(size = 20),
+#     strip.text = element_text(size=18),
+#     legend.position = "none"
+#   ) 
+# 
+# png(paste0(path_figures, "/Tradeoff plot with prioritizr, means only- normalized humpbacks and blues_",today(),".png"), 
+#     width = 10, height = 8, units = "in", res = 300)
+# to_both_n_pzr_means
+# dev.off()
+
+
+to_hump_n_pzr_means
+to_blue_n_pzr_means
+#to_both_n_pzr_means
+
 
 ```
 <br>

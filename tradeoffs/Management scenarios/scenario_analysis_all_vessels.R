@@ -351,6 +351,7 @@ Sys.time() - start.time
 dim(df_tradeoff)
 length(which(df_tradeoff$relative_hump_risk < 0)) # 25 out of 300
 length(which(df_tradeoff$relative_blwh_risk < 0)) # 33 out of 300
+length(which(df_tradeoff$relative_both_risk < 0)) # 24 out of 300
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
 length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 300
@@ -374,7 +375,7 @@ annual_statewide_df_focal_scenarios <- annual_statewide_df[-which(
 annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
     annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
 
-write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_","2020-06-09",".rds"))
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_",today(),".rds"))
 
 scenario_table_focal_scenarios <- scenario_table_all[-which(
   scenario_table_all$closure.region == "BIA" & scenario_table_all$closure.redist.percent == 10),]
@@ -383,7 +384,7 @@ scenario_table_focal_scenarios <- scenario_table_focal_scenarios[-which(
 write_rds(scenario_table_focal_scenarios, here::here(
   "tradeoffs",
   "Management scenarios",
-  "scenario_table_focal_scenarios_2020-06-09.rds")
+  paste0("scenario_table_focal_scenarios_",today(),".rds"))
 )
 
 unique(annual_statewide_df_focal_scenarios$number_id)
@@ -395,7 +396,7 @@ df_tradeoff_focal_scenarios <- df_tradeoff[which(
 ),]
 unique(df_tradeoff_focal_scenarios$number_id)
 
-write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_","2020-06-09",".rds"))
+write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_",today(),".rds"))
 
 ###############################################################################
 

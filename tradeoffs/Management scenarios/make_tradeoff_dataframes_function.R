@@ -67,6 +67,9 @@ library(magrittr)
 # may want to add functionality later using sym(), enquo(), etc. for scenario names, DCRB metrics, hump_risk_metric, blwh_risk_metric, pings_metric
 # current status quo has scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100"
 
+weight_hump <- 0.5
+weight_blue <- 1 - weight_hump
+
 tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewide_df_name, df_tradeoff_name) { 
 
   
@@ -96,12 +99,13 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
         DCRB_lbs = sum(DCRB_lbs, na.rm=TRUE),
         DCRB_rev = sum(DCRB_rev, na.rm=TRUE),
         Num_DCRB_Vessels = sum(Num_DCRB_Vessels, na.rm=TRUE),
-        
         Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings, na.rm=TRUE),
         risk_humpback = sum(risk_humpback, na.rm=TRUE),
         risk_blue = sum(risk_blue, na.rm=TRUE),
+        risk_both = (weight_hump*risk_humpback) + (weight_blue*risk_blue),
         n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
         n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+        n_risk_both = (weight_hump*n_risk_humpback) + (weight_blue*n_risk_blue),
         .groups = "drop"
       ) %>%
       add_column(
@@ -161,8 +165,12 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
       #note that if sq scenario name changes these objects need to be redefined
       hump_risk_under_statusquo = risk_humpback[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       blwh_risk_under_statusquo = risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      risk_both_under_statusquo = hump_risk_under_statusquo + blwh_risk_under_statusquo,
+      
       n_risk_humpback_under_statusquo = n_risk_humpback[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       n_risk_blue_under_statusquo = n_risk_blue[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
+      n_risk_both_under_statusquo = n_risk_humpback_under_statusquo + n_risk_blue_under_statusquo,
+      
       pings_under_statusquo = Num_DCRB_VMS_pings[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       dollars_under_statusquo = DCRB_rev[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
       pounds_under_statusquo = DCRB_lbs[which(scenario_df_name == "No_Delay_No_Early_Closure_delay_method_fidelity_spatial_closure_redist_percent_100")],
@@ -180,12 +188,19 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
       relative_blwh_risk = 100 *  (1 - (
         risk_blue / blwh_risk_under_statusquo
       )),
+      relative_both_risk = 100 * (1 - (
+        (risk_humpback + risk_blue)/ risk_both_under_statusquo
+      )),
       relative_hump_risk_n = 100 *  (1 - (
         n_risk_humpback / n_risk_humpback_under_statusquo
       )),
       relative_blwh_risk_n = 100 *  (1 - (
         n_risk_blue / n_risk_blue_under_statusquo
       )),
+      relative_both_risk_n = 100 * (1 - (
+        (n_risk_humpback + n_risk_blue)/ n_risk_both_under_statusquo
+      )),
+      
       relative_pings = 100 *  (1 - (
         Num_DCRB_VMS_pings / pings_under_statusquo
       )),
