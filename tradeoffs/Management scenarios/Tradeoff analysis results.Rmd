@@ -63,12 +63,10 @@ library(scales)
 #   Thus, please ensure that file paths are complete rather than relative
 
 source(here::here("User_script_local.R"))
-if (user == "SMW") {
-  NULL
-} else if (user == "JS") {
+if (user == "JS") {
   #flag.save = TRUE # option to save all outputs or not
   
-  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
+  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
@@ -89,6 +87,8 @@ if (user == "SMW") {
   path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
 
+} else if (user == "SMW") {
+  NULL
 } else {
   stop("Invalid user")
 }
@@ -105,7 +105,7 @@ Entanglements are on the rise coastwide. Hump, blue, other entanglements by year
 
 # most code from Make time series of entanglements.Rmd
 #Initial processing
-entanglement_df <- read.dbf(entanglement_file_path)
+entanglement_df <- foreign::read.dbf(path_entanglement_file)
 glimpse(entanglement_df)
 
 #Subset entanglement data frame to include only blue whales  
