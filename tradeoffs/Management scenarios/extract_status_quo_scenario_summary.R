@@ -81,8 +81,10 @@ risk_out_sq <- risk_mgmt(
 )
 glimpse(risk_out_sq)
 
-
 range(risk_out_sq$Num_DCRB_VMS_pings) # 1354 is max
+
+# write out for use in tradeoff figures Rmd
+write_rds(risk_out_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_",today(),".rds"))
 
 risk_out_sq_list_by_yr_mth <- risk_out_sq %>% split(.$year_month)
 

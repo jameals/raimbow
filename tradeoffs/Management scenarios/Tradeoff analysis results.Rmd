@@ -23,11 +23,13 @@ The CA Dungeness crab fishery revenue, landings, and vessels by year. Also do fo
 
 Maps of long-term average during DCRB season of hump, blue, DCRB $, DCRB lbs, DCRB pings [DCRB do all, sm, lg]
 
-Time series of early season (Nov 15-Dec 15), mid season (Dec 16 - Mar 31), and late season (Apr 1 - July 31) long-term avg and SE in (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]
+Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. [DCRB do all, sm, lg].
 
-Time series of risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions for each metric. [DCRB do all, sm, lg]
+Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]. 
 
-Time series of risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs for each metric. [DCRB do all, sm, lg]
+Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. [DCRB do all, sm, lg]
+
+Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. [DCRB do all, sm, lg]
 
 Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
 
@@ -53,6 +55,7 @@ library(lubridate)
 library(sf)
 library(viridis)
 library(ggrepel)
+library(magrittr)
 
 # Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
 #   Thus, please ensure that file paths are complete rather than relative
@@ -65,6 +68,10 @@ if (user == "SMW") {
   
   path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
   
+  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
+  
+  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds")
+    
   path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds"
   
   path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
@@ -79,9 +86,7 @@ if (user == "SMW") {
   
   path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
-  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
-  
-  
+
 } else {
   stop("Invalid user")
 }
@@ -208,28 +213,554 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 ```
 <br>
 
-## Time series of early season (Nov 15-Dec 15), mid season (Dec 16 - Mar 31), and late season (Apr 1 - July 31) long-term avg and SE in (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]
-
+## Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. [DCRB do all, sm, lg].
 
 ```{r}
+
+risk_out_sq <- read_rds(path_status_quo)
+names(risk_out_sq)
+glimpse(risk_out_sq)
+
+### Function to calculate crab year
+func_crab_year <- function(z) {
+  # z: character; year_month
+  
+  stopifnot(require(lubridate))
+  z.yr <- as.numeric(substr(z, 1, 4))
+  z.mon <- as.numeric(substr(z, 6, 7))
+  
+  ifelse(
+    z.mon %in% 11:12, 
+    paste(z.yr, z.yr + 1, sep = "_"), paste(z.yr - 1, z.yr, sep = "_")
+  )
+}
+
+
+# add month, crab_year, plotting_year
+
+risk_out_sq %<>% mutate(
+  month = as.numeric(substr(year_month,6,7)),
+  crab_year = func_crab_year(year_month),
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  )
+glimpse(risk_out_sq)
+
+# summarise cumulative sum of $ and risk by crab_year
+annual_risk_out_sq <- risk_out_sq %>%
+  group_by(crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq)
+  
+
+# check against annual_sq <- annual_statewide_df_focal_scenarios[31:40,]
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq <- ggplot(
+  data = annual_risk_out_sq, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq.png"), width = 10, height = 8, units = "in", res = 300)
+ts_sq
+dev.off()
+
+# summarise cumulative sum of $ and risk by crab_year, region
+annual_risk_out_sq_region <- risk_out_sq %>%
+  group_by(crab_year, Region) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_region)
+  
+
+# check against annual_sq <- annual_statewide_df_focal_scenarios[31:40,]
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_region <- ggplot(
+  data = annual_risk_out_sq_region, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=Region)) + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.1, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_region.png"), width = 10, height = 8, units = "in", res = 300)
+ts_sq_region
+dev.off()
+
+# summarise cumulative sum of $ and risk by crab_year, BIA
+annual_risk_out_sq_bia <- risk_out_sq %>%
+  group_by(crab_year, BIA_bm_or_mn) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_bia)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_bia <- ggplot(
+  data = annual_risk_out_sq_bia, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=BIA_bm_or_mn)) + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .25),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_bia.png"), width = 10, height = 8, units = "in", res = 300)
+ts_sq_bia
+dev.off()
+
+
+# # calculate average annual cumulative risk per 5km grid cell
+# annual_risk_out_sq_mean_sd <- risk_out_sq %>%
+#   group_by(crab_year, GRID5KM_ID) %>%
+#   summarise(
+#     
+#     plotting_year = unique(plotting_year),
+#     DCRB_rev = sum(DCRB_rev),
+#     risk_humpback = sum(risk_humpback, na.rm=TRUE),
+#     n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+#     risk_blue = sum(risk_blue, na.rm=TRUE),
+#     n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+#     
+#     .groups = "drop"
+#     ) %>%
+#   group_by(crab_year) %>%
+#   summarise(
+#     plotting_year = unique(plotting_year),
+#     
+#     mean_DCRB_rev = mean(DCRB_rev),
+#     sd_DCRB_rev = sd(DCRB_rev),
+#     
+#     mean_risk_humpback = mean(risk_humpback, na.rm=TRUE),
+#     sd_risk_humpback = sd(risk_humpback, na.rm=TRUE),
+#     
+#     mean_n_risk_humpback = mean(n_risk_humpback, na.rm=TRUE),
+#     sd_n_risk_humpback = sd(n_risk_humpback, na.rm=TRUE),
+#     
+#     mean_risk_blue = mean(risk_blue, na.rm=TRUE),
+#     sd_risk_blue = sd(risk_blue, na.rm=TRUE),
+#     
+#     mean_n_risk_blue = mean(n_risk_blue, na.rm=TRUE),
+#     sd_n_risk_blue = sd(n_risk_blue, na.rm=TRUE),
+#     
+#         .groups = "drop"
+#   )
+# 
+# glimpse(annual_risk_out_sq_mean_sd)
+# 
+# # attempt to plot average annual cumulative risk per 5km grid cell
+# # sd is wrong metric, as risk can only range [0,1]
+# ggplot(
+#   data = annual_risk_out_sq_mean_sd, 
+#   aes(
+#     x = plotting_year, 
+#     y= mean_n_risk_humpback
+#   )
+# ) +
+#   geom_point(size=4) +
+#   geom_errorbar(
+#         aes(ymin = mean_n_risk_humpback - sd_n_risk_humpback, ymax = mean_n_risk_humpback + sd_n_risk_humpback),
+#     width=.1
+#   ) + 
+#   geom_line() + 
+#   scale_x_continuous(breaks = seq(2010, 2019),
+#                      labels = annual_risk_out_sq$crab_year) + 
+#   ylab("Mean risk to humpback whales\n(normalized)") + 
+#   xlab("Dungeness crab season") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+#         axis.text.y = element_text(size = 18),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=18)
+#         )
+
+ts_sq
+ts_sq_region
+ts_sq_bia
 
 ```
 <br>
 
-## Time series of risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions for each metric. [DCRB do all, sm, lg]
-
+## Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]. 
 
 ```{r}
+
+# add early/mid/late season, plotting.year
+early_season_begin <- 11 # if 11, early season begins in Nov
+early_season_end <- 12 # if 12, early season ends in Dec
+mid_season_begin <- 1 # if 1, mid season begins in Jan
+mid_season_end <- 3 # if 3, mid season ends in Mar
+late_season_begin <- 4 # if 4, late season begins in Apr
+late_season_end <- 7 # if 7, late season ends in Jul
+
+risk_out_sq %<>% mutate(
+  time_of_crab_year = factor(
+    ifelse(month >= early_season_begin & month <= early_season_end, "Early",
+                             ifelse(month >= mid_season_begin & month <= mid_season_end, "Mid",
+                                    "Late")
+    ),
+    levels = c("Early", "Mid", "Late")
+  )
+)
+glimpse(risk_out_sq)
+
+# summarise cumulative sum of $ and risk by crab_year, time_period within each crab_year
+annual_risk_out_sq_time_period <- risk_out_sq %>%
+  group_by(crab_year, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_time_period)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_time_of_crab_year <- ggplot(
+  data = annual_risk_out_sq_time_period, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_time_of_crab_year.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_time_of_crab_year
+dev.off()
+
+ts_sq_time_of_crab_year
 
 ```
 <br>
 
-## Time series of risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs for each metric. [DCRB do all, sm, lg]
+## Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. [DCRB do all, sm, lg]
 
 ```{r}
 
+# summarise cumulative sum of $ and risk by crab_year, region, time_of_crab_year
+annual_risk_out_sq_region_time_period <- risk_out_sq %>%
+  group_by(crab_year, Region, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_region_time_period)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_region_time_period <- ggplot(
+  data = annual_risk_out_sq_region_time_period, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=Region)) + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.1, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_region_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_region_time_period
+dev.off()
+
+ts_sq_region_time_period
+
 ```
 <br>
+
+## Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. [DCRB do all, sm, lg]
+
+```{r}
+
+# summarise cumulative sum of $ and risk by crab_year, region, time_of_crab_year
+annual_risk_out_sq_bia_time_period <- risk_out_sq %>%
+  group_by(crab_year, BIA_bm_or_mn, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_bia_time_period)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_bia_time_period <- ggplot(
+  data = annual_risk_out_sq_bia_time_period, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=BIA_bm_or_mn)) + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.1, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_bia_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_bia_time_period
+dev.off()
+
+ts_sq_bia_time_period
+
+```
+<br>
+
 
 ## Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
 
