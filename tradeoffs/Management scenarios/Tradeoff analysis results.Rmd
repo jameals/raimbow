@@ -56,6 +56,8 @@ library(sf)
 library(viridis)
 library(ggrepel)
 library(magrittr)
+library(ggerr)
+library(scales)
 
 # Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
 #   Thus, please ensure that file paths are complete rather than relative
@@ -306,7 +308,7 @@ ts_sq <- ggplot(
         strip.placement = "left"
         )
 
-png(paste0(path_figures, "/plot_ts_sq.png"), width = 10, height = 8, units = "in", res = 300)
+png(paste0(path_figures, "/plot_ts_sq.png"), width = 14, height = 10, units = "in", res = 300)
 ts_sq
 dev.off()
 
@@ -775,29 +777,19 @@ ts_sq_bia_time_period
 
 ```{r}
 
-```
-<br>
+annual_statewide_df_focal_scenarios <- read_rds(path_annual_statewide_df_focal_scenarios)
+glimpse(annual_statewide_df_focal_scenarios)
 
-## Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+# add pre/post 2014, plotting_year
+annual_statewide_df_focal_scenarios %<>% mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  pre_post = ifelse(plotting_year >=2015, "2014-2019","2009-2014")
+) 
+glimpse(annual_statewide_df_focal_scenarios)
 
-
-```{r}
-
-```
-<br>
-
-## Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
-
-
-```{r}
-
-
-#annual_statewide_df_focal_scenarios <- read_rds(path_annual_statewide_df_focal_scenarios)
+# read in tradeoff df, make pretty scenario names, and join with annual df
 df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios)
-scenario_table_all <- read_rds(path_scenario_table_all)
-scenario_table_focal_scenarios <- read_rds(path_scenario_table_focal_scenarios)
-
-#unique(sort(scenario_table_focal_scenarios$scenario_df_name)) == unique(sort(df_tradeoff_focal_scenarios$scenario_df_name))
+glimpse(df_tradeoff_focal_scenarios)
 
 # make nice scenario names
 #unique(df_tradeoff_focal_scenarios$scenario_df_name)
@@ -821,6 +813,207 @@ df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
     rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
     rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year)))
     )  
+
+# join to annual df
+annual_statewide_df_focal_scenarios %<>%
+  left_join(df_tradeoff_focal_scenarios)
+
+# arrange scenarios by risk to humpbacks
+
+# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
+annual_statewide_df_focal_scenarios_means <- annual_statewide_df_focal_scenarios %>% 
+  group_by(number_id, scenario_df_name, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    pre_post,
+    -mean_relative_hump_risk_n,
+    -mean_relative_blwh_risk_n,
+    -mean_relative_both_risk_n,
+    -mean_relative_dollars
+  ) %>%
+  mutate(scenario_rank = row_number())
+glimpse(annual_statewide_df_focal_scenarios_means)
+
+annual_statewide_df_focal_scenarios_means_bp <- annual_statewide_df_focal_scenarios %>% 
+  left_join(annual_statewide_df_focal_scenarios_means) %>%
+  mutate(
+    scenario_label = if_else(plotting_year == min(plotting_year), as.character(pretty_scenario_names), NA_character_)
+  ) %>%
+  arrange(
+    scenario_rank
+  )
+#View(annual_statewide_df_focal_scenarios_means_bp)
+
+# normalized humpbacks
+plot_hump_risk_prepost <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Risk to humpback whales\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost
+dev.off()
+
+# normalized blues
+plot_blue_risk_prepost <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Risk to blue whales\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost
+dev.off()
+
+
+plot_hump_risk_prepost
+plot_blue_risk_prepost
+
+```
+<br>
+
+## Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+
+
+```{r}
+
+# DCRB revenue
+plot_DCRB_rev_prepost <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = DCRB_rev/10^5,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab(bquote("Dungeness crab fishery revenue ($, x"*10^5*")")) +
+  #bquote(Vc[max](mu~mol ~CO[2]~ m^-2~s^-1)))
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev_prepost.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost
+dev.off()
+
+plot_DCRB_rev_prepost
+
+```
+<br>
+
+## Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
+
+
+```{r}
+
+
+#annual_statewide_df_focal_scenarios <- read_rds(path_annual_statewide_df_focal_scenarios)
+#df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios)
+scenario_table_all <- read_rds(path_scenario_table_all)
+scenario_table_focal_scenarios <- read_rds(path_scenario_table_focal_scenarios)
+
+#unique(sort(scenario_table_focal_scenarios$scenario_df_name)) == unique(sort(df_tradeoff_focal_scenarios$scenario_df_name))
+
+# make nice scenario names
+#unique(df_tradeoff_focal_scenarios$scenario_df_name)
+# df_tradeoff_focal_scenarios$pretty_scenario_names <- c(
+#     rep("Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay Statewide, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay CenCA, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Status Quo", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay Statewide, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Statewide 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("CenCA 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Statewide <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("CenCA <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year))),
+#     rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios$crab_year)))
+#     )  
 
 # consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
 df_tradeoff_focal_scenarios_means <- df_tradeoff_focal_scenarios %>% 
