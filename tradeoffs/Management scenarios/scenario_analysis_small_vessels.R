@@ -15,7 +15,7 @@ rm(list = ls())
 
 ##### 1) Loop through scenarios of interest and create a list of output df's
 
-x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels_regions_depths.RDS") 
+x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_small_vessels_regions_depths.RDS") 
 glimpse(x.orig)
 
 source("tradeoffs/Management scenarios/make_scenarios_table.R")
@@ -114,8 +114,6 @@ scenario.output.list.closures <- lapply(1:nrow(scenario_table), function(i, scen
 
 #rm()
 
-### 060920 CHECKING THAT THE MSG "Adding missing grouping variables: `region_toshiftto`" IS NOT PROBLEMATIC. OTHERWISE, ABOVE SEEMS TO WORK. WAS AN ISSUE, NEEDED TO UPDATE TO DPLYR 1.0.0
-
 ### just the late season effort and depth restriction scenarios
 
 scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scenario_table) { # for testing. nrow(scenario_table[1:2,])
@@ -186,7 +184,7 @@ scenario.output.list.edr <- lapply(1:nrow(scenario_table_edr), function(i, scena
 scenario.output.list <- c(scenario.output.list.closures,scenario.output.list.edr)
 #length(scenario.output.list)
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_small_vessels_",today(),".RData"))
 
 ###############################################################################
 
@@ -196,7 +194,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 # grab shifted effort fishing data
 
 # JS 
-load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_","2020-06-09",".RData"))
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_small_vessels_","2020-06-16",".RData"))
 
 # grab whale data
 
@@ -228,11 +226,11 @@ x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 G
 
 scenario_table_all <- scenario_table %>%
   bind_rows(scenario_table_edr)
-write_rds(scenario_table_all, here::here(
-  "tradeoffs",
-  "Management scenarios",
-  "scenario_table_all_2020-06-09.rds")
-)
+# write_rds(scenario_table_all, here::here(
+#   "tradeoffs",
+#   "Management scenarios",
+#   "scenario_table_all_2020-06-09.rds")
+# )
 
 # Load and prep grid cell - area key
 load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
@@ -250,8 +248,6 @@ CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
 
 ### Calculate and summarize risk
 source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
-
-# will need to re-run all of the above and below for sm and lg vessels
 
 start.time <- Sys.time()
 
@@ -273,7 +269,7 @@ risk_out_list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table) 
 )
 
 Sys.time() - start.time
-# Time difference of 19 secs
+# Time difference of 10 secs
 
 
 ### save status quo scenario as its own df ###
@@ -282,7 +278,7 @@ Sys.time() - start.time
 glimpse(risk_out_list[[1]])
 risk_5km_yr_mth_sq_all <- risk_out_list[[1]]
 
-write_rds(risk_5km_yr_mth_sq_all, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_",today(),".rds"))
+write_rds(risk_5km_yr_mth_sq_all, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_small_",today(),".rds"))
 
 # summarize risk by region
 
@@ -321,7 +317,7 @@ glimpse(risk_out_summ_list[[1]])
 # Sys.time() - start.time
 #Time difference of 0.725035 secs
 
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_",today(),".RData"))
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_small_vessels_",today(),".RData"))
 
 
 
@@ -330,12 +326,15 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 ### 3) make annual and tradeoff df's
 
 # if needed, load data
-load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-06-09",".RData"))
+load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_small_vessels_","2020-06-16",".RData"))
 
 # assign number IDs to scenarios
 scenario_table_all$number_id <- row.names(scenario_table_all)
 
 # could subset or map to region for regional summaries here
+
+# note need to change names of .rds files in make_tradeoff_dataframes_function.R
+
 source("tradeoffs/Management scenarios/make_tradeoff_dataframes_function.R")
 start.time <- Sys.time()
 tradeoff_df_function(
@@ -345,16 +344,16 @@ tradeoff_df_function(
   df_tradeoff_name = "df_tradeoff" # this ensures df is available in the globalEnv after running function
   )
 Sys.time() - start.time
-#Time difference of 0.24 secs
+#Time difference of 0.33 secs
 
 # is risk actually greater for whales under some scenarios? yes.
 dim(df_tradeoff)
-length(which(df_tradeoff$relative_hump_risk < 0)) # 25 out of 300
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 33 out of 300
-length(which(df_tradeoff$relative_both_risk < 0)) # 24 out of 300
+length(which(df_tradeoff$relative_hump_risk < 0)) # 20 out of 300
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 42 out of 300
+length(which(df_tradeoff$relative_both_risk < 0)) # 31 out of 300
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
-length(which(df_tradeoff$relative_dollars > 100)) # 0 out of 300
+length(which(df_tradeoff$relative_dollars > 100)) # 10 out of 300
 length(which(df_tradeoff$relative_pounds > 100)) # 0 out of 300
 
 
@@ -375,7 +374,7 @@ annual_statewide_df_focal_scenarios <- annual_statewide_df[-which(
 annual_statewide_df_focal_scenarios <- annual_statewide_df_focal_scenarios[-which( 
     annual_statewide_df_focal_scenarios$closure.region != "BIA" & annual_statewide_df_focal_scenarios$closure.redist.percent == 100),]
 
-write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_",today(),".rds"))
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_",today(),".rds"))
 
 scenario_table_focal_scenarios <- scenario_table_all[-which(
   scenario_table_all$closure.region == "BIA" & scenario_table_all$closure.redist.percent == 10),]
@@ -384,7 +383,7 @@ scenario_table_focal_scenarios <- scenario_table_focal_scenarios[-which(
 write_rds(scenario_table_focal_scenarios, here::here(
   "tradeoffs",
   "Management scenarios",
-  paste0("scenario_table_focal_scenarios_",today(),".rds"))
+  paste0("scenario_table_focal_scenarios_small_vessels_",today(),".rds"))
 )
 
 unique(annual_statewide_df_focal_scenarios$number_id)
@@ -396,7 +395,7 @@ df_tradeoff_focal_scenarios <- df_tradeoff[which(
 ),]
 unique(df_tradeoff_focal_scenarios$number_id)
 
-write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_",today(),".rds"))
+write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_",today(),".rds"))
 
 ###############################################################################
 

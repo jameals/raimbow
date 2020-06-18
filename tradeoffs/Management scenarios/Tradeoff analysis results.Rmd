@@ -1,13 +1,14 @@
 title: "Tradeoff analysis results"
 ---
 author: "Jameal Samhouri"
-date: "initiated 5/22/2020, modified 6/12/2020"
+date: "initiated 5/22/2020, modified 6/17/2020"
 output:
   pdf_document: default
   html_document: default
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -66,13 +67,15 @@ source(here::here("User_script_local.R"))
 if (user == "JS") {
   #flag.save = TRUE # option to save all outputs or not
   
-  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf"
+  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/Whale Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
-  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds")
+  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
+  
+  path_status_quo_small_vessels <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds") # from extract_status_quo_scenario_summary_small.R 
     
-  path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds"
+  path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
   
   path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
   
@@ -80,9 +83,13 @@ if (user == "JS") {
   
   path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
   
-  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds"
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds" 
   
-  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds"
+  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds" 
+  
+  path_annual_statewide_df_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_2020-06-16.rds"
+  
+  path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_2020-06-16.rds"
   
   path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
@@ -215,7 +222,7 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 ```
 <br>
 
-## Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. [DCRB do all, sm, lg].
+## Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. All vessels.
 
 ```{r}
 
@@ -516,7 +523,239 @@ ts_sq_bia
 ```
 <br>
 
-## Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]. 
+## Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. Small vessels.
+
+```{r}
+
+risk_out_sq_small_vessels <- read_rds(path_status_quo_small_vessels)
+names(risk_out_sq_small_vessels)
+glimpse(risk_out_sq_small_vessels)
+
+### Function to calculate crab year
+func_crab_year <- function(z) {
+  # z: character; year_month
+  
+  stopifnot(require(lubridate))
+  z.yr <- as.numeric(substr(z, 1, 4))
+  z.mon <- as.numeric(substr(z, 6, 7))
+  
+  ifelse(
+    z.mon %in% 11:12, 
+    paste(z.yr, z.yr + 1, sep = "_"), paste(z.yr - 1, z.yr, sep = "_")
+  )
+}
+
+
+# add month, crab_year, plotting_year
+
+risk_out_sq_small_vessels %<>% mutate(
+  month = as.numeric(substr(year_month,6,7)),
+  crab_year = func_crab_year(year_month),
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  )
+glimpse(risk_out_sq_small_vessels)
+
+# summarise cumulative sum of $ and risk by crab_year
+annual_risk_out_sq_small_vessels <- risk_out_sq_small_vessels %>%
+  group_by(crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_small_vessels)
+  
+
+# check against annual_sq <- annual_statewide_df_focal_scenarios[31:40,]
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_small_vessels <- ggplot(
+  data = annual_risk_out_sq_small_vessels, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_small_vessels
+dev.off()
+
+# summarise cumulative sum of $ and risk by crab_year, region
+annual_risk_out_sq_small_vessels_region <- risk_out_sq_small_vessels %>%
+  group_by(crab_year, Region) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_small_vessels_region)
+  
+
+# check against annual_sq <- annual_statewide_df_focal_scenarios[31:40,]
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_region_small_vessels <- ggplot(
+  data = annual_risk_out_sq_small_vessels_region, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=Region)) + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.1, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_region_small_vessels.png"), width = 10, height = 8, units = "in", res = 300)
+ts_sq_region_small_vessels
+dev.off()
+
+# summarise cumulative sum of $ and risk by crab_year, BIA
+annual_risk_out_sq_small_vessels_bia <- risk_out_sq_small_vessels %>%
+  group_by(crab_year, BIA_bm_or_mn) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_small_vessels_bia)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_bia_small_vessels <- ggplot(
+  data = annual_risk_out_sq_small_vessels_bia, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=BIA_bm_or_mn)) + 
+  facet_grid(rows = vars(response_metric),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .25),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_bia_small_vessels.png"), width = 10, height = 8, units = "in", res = 300)
+ts_sq_bia_small_vessels
+dev.off()
+
+ts_sq_small_vessels
+ts_sq_region_small_vessels
+ts_sq_bia_small_vessels
+
+```
+<br>
+
+## Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. All vessels
 
 ```{r}
 
@@ -611,7 +850,102 @@ ts_sq_time_of_crab_year
 ```
 <br>
 
-## Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. [DCRB do all, sm, lg]
+## Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. Small vessels
+
+```{r}
+
+# add early/mid/late season, plotting.year
+early_season_begin <- 11 # if 11, early season begins in Nov
+early_season_end <- 12 # if 12, early season ends in Dec
+mid_season_begin <- 1 # if 1, mid season begins in Jan
+mid_season_end <- 3 # if 3, mid season ends in Mar
+late_season_begin <- 4 # if 4, late season begins in Apr
+late_season_end <- 7 # if 7, late season ends in Jul
+
+risk_out_sq_small_vessels %<>% mutate(
+  time_of_crab_year = factor(
+    ifelse(month >= early_season_begin & month <= early_season_end, "Early",
+                             ifelse(month >= mid_season_begin & month <= mid_season_end, "Mid",
+                                    "Late")
+    ),
+    levels = c("Early", "Mid", "Late")
+  )
+)
+glimpse(risk_out_sq_small_vessels)
+
+# summarise cumulative sum of $ and risk by crab_year, time_period within each crab_year
+annual_risk_out_sq_small_vessels_time_period <- risk_out_sq_small_vessels %>%
+  group_by(crab_year, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_small_vessels_time_period)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_time_of_crab_year_small_vessels <- ggplot(
+  data = annual_risk_out_sq_small_vessels_time_period, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_time_of_crab_year_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_time_of_crab_year_small_vessels
+dev.off()
+
+ts_sq_time_of_crab_year_small_vessels
+
+```
+<br>
+
+## Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. All vessels
 
 ```{r}
 
@@ -687,7 +1021,83 @@ ts_sq_region_time_period
 ```
 <br>
 
-## Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. [DCRB do all, sm, lg]
+## Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. Small vessels
+
+```{r}
+
+# summarise cumulative sum of $ and risk by crab_year, region, time_of_crab_year
+annual_risk_out_sq_region_time_period_small_vessels <- risk_out_sq_small_vessels %>%
+  group_by(crab_year, Region, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_region_time_period_small_vessels)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_region_time_period_small_vessels <- ggplot(
+  data = annual_risk_out_sq_region_time_period_small_vessels, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=Region)) + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.2, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_region_time_period_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_region_time_period_small_vessels
+dev.off()
+
+ts_sq_region_time_period_small_vessels
+
+```
+<br>
+
+## Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. All vessels
 
 ```{r}
 
@@ -763,6 +1173,82 @@ ts_sq_bia_time_period
 ```
 <br>
 
+## Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. Small vessels
+
+```{r}
+
+# summarise cumulative sum of $ and risk by crab_year, region, time_of_crab_year
+annual_risk_out_sq_bia_time_period_small_vessels <- risk_out_sq_small_vessels %>%
+  group_by(crab_year, BIA_bm_or_mn, time_of_crab_year) %>%
+  summarise(
+    
+    plotting_year = unique(plotting_year),
+    DCRB_rev = sum(DCRB_rev)/10^5,
+    #risk_humpback = sum(risk_humpback, na.rm=TRUE),
+    n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    #risk_blue = sum(risk_blue, na.rm=TRUE),
+    n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_bia_time_period_small_vessels)
+  
+
+# plot normalized humpbacks, normalized blues, $
+
+ts_sq_bia_time_period_small_vessels <- ggplot(
+  data = annual_risk_out_sq_bia_time_period_small_vessels, 
+  aes(
+    x = plotting_year, 
+    y= response
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(linetype=BIA_bm_or_mn)) + 
+  facet_grid(rows = vars(response_metric),
+             cols = vars(time_of_crab_year),
+             scales = "free_y",
+             labeller = as_labeller ( c(
+               `DCRB_rev` = "Dungeness crab\nfishery revenue\n(cumulative $, x10^5)",
+               `n_risk_blue` = "Risk to blue whales\n(cumulative, normalized)",
+               `n_risk_humpback` = "Risk to humpback whales\n(cumulative, normalized)",
+               `Early` = "November-December",
+               `Mid` = "January-March",
+               `Late` = "April-July"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019),
+                     labels = unique(annual_risk_out_sq_small_vessels$crab_year)) + 
+  ylab("") + 
+  xlab("Dungeness crab season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.2, .95),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(paste0(path_figures, "/plot_ts_sq_bia_time_period_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+ts_sq_bia_time_period_small_vessels
+dev.off()
+
+ts_sq_bia_time_period_small_vessels
+
+```
+<br>
+
 
 ## Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
 
@@ -772,7 +1258,7 @@ ts_sq_bia_time_period
 ```
 <br>
 
-## Avg risk in 2009-13 v 2014-19 for blues and humps.
+## Avg risk in 2009-13 v 2014-19 for blues and humps. All vessels
 
 
 ```{r}
@@ -933,7 +1419,209 @@ plot_blue_risk_prepost
 ```
 <br>
 
-## Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+## Avg risk in 2009-13 v 2014-19 for blues and humps. Small vessels
+
+
+```{r}
+
+annual_statewide_df_focal_scenarios_small_vessels <- read_rds(path_annual_statewide_df_focal_scenarios_small_vessels)
+glimpse(annual_statewide_df_focal_scenarios_small_vessels)
+
+# which scenarios lead to zero small vessels? scenarios 16, 17, 18 in 2015_16
+with(annual_statewide_df_focal_scenarios_small_vessels, table(crab_year,number_id))
+
+# add in zero years
+annual_statewide_df_focal_scenarios_small_vessels %<>%
+  add_row(
+    number_id = c("16", "17", "18"),
+    scenario_df_name = unique(annual_statewide_df_focal_scenarios_small_vessels$scenario_df_name[which(annual_statewide_df_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    crab_year = "2015_2016",
+    DCRB_lbs = 0,
+    DCRB_rev = 0,
+    Num_DCRB_Vessels = 0,
+    Num_DCRB_VMS_pings = 0,
+    risk_humpback = 0,
+    risk_blue = 0,
+    risk_both = 0,
+    n_risk_humpback = 0,
+    n_risk_blue = 0,
+    n_risk_both = 0
+    )
+
+# add pre/post 2014, plotting_year
+annual_statewide_df_focal_scenarios_small_vessels %<>% mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  pre_post = ifelse(plotting_year >=2015, "2014-2019","2009-2014")
+) 
+glimpse(annual_statewide_df_focal_scenarios_small_vessels)
+
+# read in tradeoff df, make pretty scenario names, and join with annual df
+df_tradeoff_focal_scenarios_small_vessels <- read_rds(path_df_tradeoff_focal_scenarios_small_vessels)
+glimpse(df_tradeoff_focal_scenarios_small_vessels)
+
+# which scenarios lead to zero small vessels? scenarios 16, 17, 18 in 2015_16
+with(df_tradeoff_focal_scenarios_small_vessels, table(crab_year,number_id))
+
+# add in zero years
+df_tradeoff_focal_scenarios_small_vessels %<>%
+  add_row(
+    number_id = c("16", "17", "18"),
+    scenario_df_name = unique(df_tradeoff_focal_scenarios_small_vessels$scenario_df_name[which(df_tradeoff_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    crab_year = "2015_2016",
+    relative_hump_risk = 0,
+    relative_blwh_risk = 0,
+    relative_both_risk = 0,
+    relative_hump_risk_n = 0,
+    relative_blwh_risk_n = 0,
+    relative_both_risk_n = 0,
+    relative_pings = 0,
+    relative_dollars = 0,
+    relative_pounds = 0
+    )
+
+# make nice scenario names
+#unique(df_tradeoff_focal_scenarios$scenario_df_name)
+df_tradeoff_focal_scenarios_small_vessels$pretty_scenario_names <- c(
+    rep("Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Status Quo", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year)))
+    )  
+
+# join to annual df
+annual_statewide_df_focal_scenarios_small_vessels %<>%
+  left_join(df_tradeoff_focal_scenarios_small_vessels)
+
+# arrange scenarios by risk to humpbacks
+
+# consider mean_relative_hump_risk_n, which is the expected reduction in risk relative to sq for each scenario. set up for geom_boxplot
+annual_statewide_df_focal_scenarios_means_small_vessels <- annual_statewide_df_focal_scenarios_small_vessels %>% 
+  group_by(number_id, scenario_df_name, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    pre_post,
+    -mean_relative_hump_risk_n,
+    -mean_relative_blwh_risk_n,
+    -mean_relative_both_risk_n,
+    -mean_relative_dollars
+  ) %>%
+  mutate(scenario_rank = row_number())
+glimpse(annual_statewide_df_focal_scenarios_means_small_vessels)
+
+annual_statewide_df_focal_scenarios_means_bp_small_vessels <- annual_statewide_df_focal_scenarios_small_vessels %>% 
+  left_join(annual_statewide_df_focal_scenarios_means_small_vessels) %>%
+  mutate(
+    scenario_label = if_else(plotting_year == min(plotting_year), as.character(pretty_scenario_names), NA_character_)
+  ) %>%
+  arrange(
+    scenario_rank
+  )
+#View(annual_statewide_df_focal_scenarios_means_bp)
+
+# normalized humpbacks
+plot_hump_risk_prepost_small_vessels <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp_small_vessels,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Risk to humpback whales\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_small_vessels
+dev.off()
+
+# normalized blues
+plot_blue_risk_prepost_small_vessels <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp_small_vessels,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab("Risk to blue whales\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_small_vessels.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_small_vessels
+dev.off()
+
+
+plot_hump_risk_prepost_small_vessels
+plot_blue_risk_prepost_small_vessels
+
+```
+<br>
+
+## Avg $ in 2009-13 v 2014-19 for all DCRB vessels.
 
 
 ```{r}
@@ -975,6 +1663,52 @@ plot_DCRB_rev_prepost
 dev.off()
 
 plot_DCRB_rev_prepost
+
+```
+<br>
+
+## Avg $ in 2009-13 v 2014-19 for small DCRB vessels.
+
+
+```{r}
+
+# DCRB revenue
+plot_DCRB_rev_prepost_small_vessels <- ggplot(
+  data = annual_statewide_df_focal_scenarios_means_bp_small_vessels,
+  aes(
+    x = reorder(pretty_scenario_names,scenario_rank),
+    y = DCRB_rev/10^5,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+  stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+  stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+  #coord_flip() +
+  # scale_y_continuous(limits = c(-26,100),
+  #                    breaks = c(-25,0,25,50,75,100)) +
+  xlab("Scenario") +
+  ylab(bquote("Dungeness crab fishery revenue\nsmall vessels only\n($, x"*10^5*")")) +
+  #bquote(Vc[max](mu~mol ~CO[2]~ m^-2~s^-1)))
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev__small_vessels_prepost.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost_small_vessels
+dev.off()
+
+plot_DCRB_rev_prepost_small_vessels
 
 ```
 <br>
@@ -1451,6 +2185,256 @@ dev.off()
 to_hump_n
 to_blue_n
 to_both_n
+
+```
+<br>
+
+## Tradeoff plots for early and late time period separately for hump, blues, both. Full time period, 2009-13, 2014-19. All DCRB vessels.
+
+```{r}
+
+### 061220. summed normalized risk for both whales is calculated from the year_month df as part of the make_tradeoff_dataframes_function.R. this allows us to sum risk across year_months for each crab season and each scenario first, then calculate combined risk relative to sq
+
+# add pre_post
+df_tradeoff_focal_scenarios %<>% 
+  mutate(
+    plotting_year = as.numeric(substr(crab_year,6,9)),
+    pre_post = ifelse(plotting_year >=2015, "2014-2019","2009-2014")
+  )
+
+
+
+### normalized humpbacks, by pre_post
+to_hump_n_pre_post <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    colour=pretty_scenario_names#, 
+    #shape = pre_post
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/Tradeoff plot - normalized humpbacks only by pre_post _",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_hump_n_pre_post
+dev.off()
+
+### normalized blues, by pre_post
+
+to_blue_n_pre_post <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    )
+
+png(paste0(path_figures,"/Tradeoff plot - normalized blues only by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_blue_n_pre_post
+dev.off()
+
+### normalized both, by pre_post
+
+to_both_n_pre_post <- ggplot(
+  df_tradeoff_focal_scenarios, #df
+  aes(
+    x=relative_dollars,
+    y=relative_both_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to\nhumpback and blue whales (normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+   )
+
+png(paste0(path_figures,"/Tradeoff plot - normalized humpbacks and blues by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_both_n_pre_post
+dev.off()
+
+to_hump_n_pre_post
+to_blue_n_pre_post
+to_both_n_pre_post
+
+```
+<br>
+
+## Tradeoff plots for early and late time period separately for hump, blues, both. Full time period, 2009-13, 2014-19. Small DCRB vessels.
+
+```{r}
+
+### 061220. summed normalized risk for both whales is calculated from the year_month df as part of the make_tradeoff_dataframes_function.R. this allows us to sum risk across year_months for each crab season and each scenario first, then calculate combined risk relative to sq
+
+# add pre_post
+df_tradeoff_focal_scenarios_small_vessels %<>% 
+  mutate(
+    plotting_year = as.numeric(substr(crab_year,6,9)),
+    pre_post = ifelse(plotting_year >=2015, "2014-2019","2009-2014")
+  )
+
+
+
+### normalized humpbacks, by pre_post
+to_hump_n_pre_post_small_vessels <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    colour=pretty_scenario_names#, 
+    #shape = pre_post
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to small Dungeness crab fishing vessels") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + #,  shape = guide_legend("Scenario")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/Tradeoff plot small vessels- normalized humpbacks only by pre_post _",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_hump_n_pre_post_small_vessels
+dev.off()
+
+### normalized blues, by pre_post
+
+to_blue_n_pre_post_small_vessels <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to small Dungeness crab fishing vessels") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18),
+    )
+
+png(paste0(path_figures,"/Tradeoff plot small vessels - normalized blues only by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_blue_n_pre_post_small_vessels
+dev.off()
+
+### normalized both, by pre_post
+
+to_both_n_pre_post_small_vessels <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_both_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to\nhumpback and blue whales (normalized)") +
+  xlab("Relative revenue to small Dungeness crab fishing vessels") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+   )
+
+png(paste0(path_figures,"/Tradeoff plot small vessels - normalized humpbacks and blues by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_both_n_pre_post_small_vessels
+dev.off()
+
+to_hump_n_pre_post_small_vessels
+to_blue_n_pre_post_small_vessels
+to_both_n_pre_post_small_vessels
 
 ```
 <br>
