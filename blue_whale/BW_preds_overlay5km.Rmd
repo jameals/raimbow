@@ -66,17 +66,15 @@ bm.sf <- st_as_sf(bm.stars) %>% #~20s
 
 ## Overlay and write output
 
-The overlay takes ~1.5hrs on Sam's computer; it takes so much longer than the humpback overlay because the blue whale predictions go so much farther offshore. If desired, you can copy the code sections from this document, up through tmp.over, into an R script to run as a job in the background.
+The overlay takes ~1.5hrs on Sam's computer; it takes so much longer than the humpback overlay because the blue whale predictions go so much farther offshore. If desired, you can copy the code sections from this document into an R script to run as a job in the background.
 
 ```{r}
 # Load 5km ea grid, with land erased
-grid.5km.lno <- readRDS(path.grid.5km.lno) %>% 
-  st_geometry() %>% 
-  st_transform(4326)
+grid.5km.lno <- readRDS(path.grid.5km.lno)
 
 # Do overlay
 preds.names <- names(st_drop_geometry(bm.sf))
-tmp.over <- overlay_sdm(grid.5km.lno, bm.sf, preds.names, overlap.perc = 0)
+tmp.over <- overlay_sdm(st_geometry(grid.5km.lno), bm.sf, preds.names, overlap.perc = 0)
 
 # saveRDS(tmp.over, file = file.out.tmp)
 # tmp.over <- readRDS(file.out.tmp)

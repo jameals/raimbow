@@ -33,7 +33,7 @@ if (user == "JS") {
 
 ## Aggregate by month and tidy
 
-User TODO: update `date.max`
+User TODO: update `date.max`. This section can take a few minutes to run
 
 ```{r}
 bm.raw <- readRDS(path.bwpreds.rds)
@@ -60,7 +60,7 @@ bm.aggr <- whalepreds_aggregate(
 #   group_by(yr, mon)
 ```
 
-Now we make the data long, extract means and SEs, and save
+Now we make the data long, extract means and SEs, ...
 
 ```{r}
 bm.proc <- bm.aggr %>% 
@@ -72,6 +72,10 @@ bm.proc.long <- bm.proc %>%
   select(-key) %>%
   pivot_wider(names_from = type, values_from = value) %>% 
   rename(Blue_occurrence_mean = pred, Blue_occurrence_se = se)
+```
 
+...and save
+
+```{r}
 saveRDS(bm.proc.long, file = file.out)
 ```
