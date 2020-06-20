@@ -9,88 +9,77 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
 
-In this document, blue whale predictions from Abrahms et al. 2019 are overlaid onto the 5km, equal area grid using the overlay method (areal interpolation). This is done to minimize the amount of information lost, particularly in coastal grid cells.
+In this document, blue whale predictions from Abrahms et al. 2019 are overlaid onto the 5km equal area grid using the 'overlay' method (areal interpolation). This is done to minimize the amount of information lost, particularly in coastal grid cells. Processing includes reading in the original raster predictions, converting these rasters to sf objects, and then doing the overlay.
 
 ```{r, message=FALSE}
 library(dplyr)
+# devtools::install_github("smwoodman/eSDM") #Currently need dev version of eSDM
 library(eSDM)
 library(sf)
 library(stars)
 
 
-source("User_script_local.R")
-
+source(here::here("User_script_local.R"))
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  path.preds <- "../raimbow-local/Data/"
-  file.grid5kmlno <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
+  path.bw.preds <- "C:/SMW/RAIMBOW/raimbow-local/Data/Blue whale predictions/"
+  path.grid.5km.lno <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds"
+  
+  file.out.tmp <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Bm_tmp_over.rds"
+  
+  file.out.csv <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_wide_daily.csv"
+  file.out.rds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_wide_daily.rds"
 }
 ```
 
 ## Import blue whale predictions
 
-First we must import the blue whale predictions from 2009 - 2018
+First we must import the blue whale predictions, expected to be from 2009 to present. These predictions have been saved as rasters; we read them in as stars objects because it is more straightforward to convert stars objects to sf objects
 
 ```{r}
-path.preds1 <- paste0(path.preds, "Blue whale predictions - 2009-18")
-file.count <- length(list.files(path.preds1))
-files.grd1 <- list.files(path.preds1, pattern = ".grd")
+file.count <- length(list.files(path.bw.preds))
+files.grd1 <- list.files(path.bw.preds, pattern = ".grd")
 files.grd <- files.grd1[!grepl("aux", files.grd1)]
+table(substr(files.grd, 1, 4)) #See the number of files for each year
 
-list.stars <- lapply(paste(path.preds1, files.grd, sep = "/"), read_stars) #~120s
+list.stars <- lapply(paste0(path.bw.preds, files.grd), read_stars) #~30s
 names(list.stars) <- paste0("Bm_", files.grd)
 
-stopifnot(
-  all.equal(list.stars[[1]], read_stars(paste(path.preds1, files.grd[1], sep = "/")))
+stopifnot( #unnecessary sanity check
+  all.equal(list.stars[[1]], read_stars(paste(path.bw.preds, files.grd[1], sep = "/")))
 )
 ```
 
-Now we import predictions from 2019, combine the lists, convert the list to a stars object, and convert the stars object to an sf object.
+After importing, we convert the stars objects to sf objects
 
 ```{r}
-path.preds2 <- paste0(path.preds, "Blue whale predictions - 2018-19")
-file.count2 <- length(list.files(path.preds2))
-files.grd2 <- list.files(path.preds2, pattern = ".grd")
-files.grd2.noaux <- files.grd2[!grepl("aux", files.grd2)]
-files.grd2019 <- files.grd2.noaux[grepl("2019", files.grd2.noaux)]
-stopifnot(length(files.grd2019) == 227)
-
-list.stars2019 <- lapply(paste(path.preds2, files.grd2019, sep = "/"), read_stars) #
-names(list.stars2019) <- paste0("Bm_", files.grd2019)
-
-
-bm.list <- c(list.stars, list.stars2019)
-bm.stars<- do.call(c, bm.list)
-bm.sf <- st_as_sf(bm.stars) %>% 
+bm.stars <- do.call(c, list.stars) #convert to actual stars object
+bm.sf <- st_as_sf(bm.stars) %>% #~20s
   purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% 
   st_set_crs(4326)
-
-# saveRDS(bm.sf, file = "../raimbow-local/Outputs/BlueWhale_orig_sf.rds")
-
-# bm.sf.area <- as.numeric(units::set_units(st_area(bm.sf), "km^2"))
-# summary(bm.sf.area)
 ```
 
 ## Overlay and write output
 
-The overlay takes ~1.5hrs on Sam's computer; it takes so much longer than the humpback overlay because the blue whale predictions go so much farther offshore. 
+The overlay takes ~1.5hrs on Sam's computer; it takes so much longer than the humpback overlay because the blue whale predictions go so much farther offshore. If desired, you can copy the code sections from this document, up through tmp.over, into an R script to run as a job in the background.
 
 ```{r}
 # Load 5km ea grid, with land erased
-load(file.grid5kmlno)
+grid.5km.lno <- readRDS(path.grid.5km.lno) %>% 
+  st_geometry() %>% 
+  st_transform(4326)
 
 # Do overlay
 preds.names <- names(st_drop_geometry(bm.sf))
-system.time(tmp.over <- overlay_sdm( #~94min
-  st_geometry(grid.5km.lno), bm.sf, preds.names, 0
-))
-# save(tmp.over, file = "../raimbow-local/RDATA_files/Bm_tmp_over.RDATA")
+tmp.over <- overlay_sdm(grid.5km.lno, bm.sf, preds.names, overlap.perc = 0)
+
+# saveRDS(tmp.over, file = file.out.tmp)
+# tmp.over <- readRDS(file.out.tmp)
 
 bm.preds.lno.5kmover <- tmp.over %>% 
   mutate(GRID5KM_ID = grid.5km.lno$GRID5KM_ID, 
@@ -116,14 +105,9 @@ bm.preds.lno.5kmover.nona <- bm.preds.lno.5kmover %>%
   st_drop_geometry()
 ```
 
-Write to output. Also write as an RDS for the sake of reading it back in later.
+Write to output. Also save as an RDS for the sake of reading it back in later (aka faster)
 
 ```{r}
-readr::write_csv(
-  bm.preds.lno.5kmover.nona, 
-  path = "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.csv"
-)
-saveRDS(bm.preds.lno.5kmover.nona, 
-        file = "../raimbow-local/Outputs/BlueWhale_5km_2009-01-01to2019-08-15.rds")
-
+readr::write_csv(bm.preds.lno.5kmover.nona, path = file.out.csv)
+saveRDS(bm.preds.lno.5kmover.nona, file = file.out.rds)
 ```
