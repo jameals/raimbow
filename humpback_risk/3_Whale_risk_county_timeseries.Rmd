@@ -9,7 +9,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -18,7 +17,7 @@ README: This document is the same as 'Whale_risk_timeseries.Rmd', except using c
 
 This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and sums them by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
 
-The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk). 
+The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd'.
 
 This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
@@ -28,24 +27,24 @@ library(lubridate)
 library(sf)
 library(tidyverse)
 
-source("humpback_risk/funcs_whale_risk_timeseries.R")
+source(here::here("humpback_risk/funcs_whale_risk_timeseries.R"))
 fig.h <- 14
 ```
 
 Set file paths depending on user. The user should also specifies `flag.save`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
 
 ```{r}
-source("User_script_local.R")
+source(here::here("User_script_local.R"))
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  flag.save <- FALSE
-  file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
-  file.risk <- "../raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
-  file.grid.region <- "../raimbow-local/RDATA_files/Grid_region_county.Rdata"
+  flag.save <- TRUE
+  file.landerased.rds <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds"
+  file.risk <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
+  file.grid.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region_county.Rdata"
   
-  path.plots <- "../raimbow-local/Plots/Whale_risk_timeseries/"
-  path.rdata <- "../raimbow-local/RDATA_files/"
+  path.plots <- "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries/"
+  file.out.timeseries <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_county_timeseries.Rdata"
   
 } else {
   stop("User not recognized")
@@ -54,7 +53,7 @@ if (user == "JS") {
 
 ## Data processing
 
-Load humpback, fishing, and risk absolute values from "2_Whale_risk.Rmd", and the grid cell ID - region key from "0_Grid_region.R"
+Load humpback, fishing, and risk absolute values from "2_Whale_risk.Rmd", and the grid cell ID - region key from "2b_Grid_region.R"
 
 ```{r}
 load(file.risk)
@@ -72,7 +71,7 @@ rmap.base <- c(
     st_geometry()
 )
 
-load(file.landerased)
+grid.5km.lno <- readRDS(file.landerased.rds)
 grid.region.sf <- grid.region.county %>% 
   mutate(region = factor(region, levels = reg.names.county)) %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
@@ -113,7 +112,7 @@ all.df.summ <- all.df %>%
          risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
   replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
 
-if (flag.save) save(all.df, all.df.summ, file = paste0(path.rdata, "Whale_risk_county_timeseries.Rdata"))
+if (flag.save) save(all.df, all.df.summ, file = file.out.timeseries)
 
 all.df.summ %>% 
   filter(!duplicated(region)) %>% 
@@ -141,8 +140,8 @@ p3 <- raimbow_ggplot_region(
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 
 if (flag.save) 
-  ggsave(filename = "Linear_humpback_risk_regional.png", p123, path = path.plots, 
-         height = 10, width = 10)
+  ggsave(filename = "County_linear_humpback_risk_regional.png", p123, path = path.plots, 
+         height = fig.h, width = 10)
 ```
 
 Next we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for the whole time series
@@ -164,8 +163,8 @@ p3 <- raimbow_ggplot_region(
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 
 if (flag.save)
-  ggsave(filename = "Linear_humpback_risk_regional_areanorm.png", p123, path = path.plots, 
-         height = 10, width = 10)
+  ggsave(filename = "County_linear_humpback_risk_regional_areanorm.png", p123, path = path.plots, 
+         height = fig.h, width = 10)
 ```
 
 Finally, we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for that specific month
@@ -187,6 +186,6 @@ p3 <- raimbow_ggplot_region(
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 
 if (flag.save) 
-  ggsave(filename = "Linear_humpback_risk_regional_monthlydens.png", p123, path = path.plots, 
-         height = 10, width = 10)
+  ggsave(filename = "County_linear_humpback_risk_regional_monthlydens.png", p123, path = path.plots, 
+         height = fig.h, width = 10)
 ```

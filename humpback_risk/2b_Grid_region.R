@@ -1,20 +1,37 @@
 ### Define and save regions used in other parts of humpback_risk
-# Uses a file from "2_Whale_risk.Rmd", hence the 2b
+# Uses the output from "2_Whale_risk.Rmd", hence the 2b
 
-# These regions are visualized in "3_Whale_risk_timeseries.Rmd" and 
+# These regions are visualized (plotted) in "3_Whale_risk_timeseries.Rmd" and 
 #   "3_Whale_risk_county_timeseries.Rmd"
 
 ###############################################################################
 library(dplyr)
 
-path.rdata <- "../raimbow-local/RDATA_files/"
-load(paste0(path.rdata, "Whale_risk_long_nona.Rdata"))
+source(here::here("User_script_local.R"))
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  file.risk <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
+  file.out.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region.Rdata"
+  file.out.region.county <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region_county.Rdata"
+  
+} else {
+  stop("User not recognized")
+}
+
+# path.rdata <- "../raimbow-local/RDATA_files/"
+
+
+# load(paste0(path.rdata, "Whale_risk_long_nona.Rdata"))
 # load(paste0(path.rdata, "Grid_5km_landerased.RDATA"))
 
 
 ###############################################################################
+load(file.risk)
+
 # Large regions: WA, OR, CA-N, CA-Cen, CA-SCen, CA-S
-reg.bound <- c(32.5, 34.4, 36.3, 38.76683, 42, 46.25, 50)
+# These region boundaries must match those in 'grid-prep/Grid5km_raimbow_prep.Rmd'
+reg.bound <- c(32.5, 34.4, 36.3, 38.833, 42, 46.25, 50)
 reg.names <- c("CA-S", "CA-SCen", "CA-Cen", "CA-N", "OR", "WA")
 stopifnot(length(reg.names) == length(reg.bound) - 1)
 
@@ -25,10 +42,9 @@ grid.region <- all.df %>%
          region = factor(reg.names[region.idx], levels = rev(reg.names))) %>% 
   select(GRID5KM_ID, region)
 
-save(
-  reg.bound, reg.names, grid.region, 
-  file = paste0(path.rdata, "Grid_region.Rdata")
-)
+save(reg.bound, reg.names, grid.region, file = file.out.region)
+# file = paste0(path.rdata, "Grid_region.Rdata")
+# )
 
 
 ###############################################################################
@@ -76,7 +92,8 @@ grid.region.county <- all.df %>%
 
 save(
   reg.bound.county, reg.names.county, grid.region.county, 
-  file = paste0(path.rdata, "Grid_region_county.Rdata")
+  file = file.out.region.county
+  # file = paste0(path.rdata, "Grid_region_county.Rdata")
 )
 
 ###############################################################################

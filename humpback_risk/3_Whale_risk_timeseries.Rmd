@@ -9,16 +9,15 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
 
 This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and sums them by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
 
-The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd' from the [raimbow-whaleRisk GitHub repo](https://github.com/smwoodman/raimbow-whaleRisk). 
+The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd'. This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
 
-This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
+The user should also specifies `flag.save`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
 
 ```{r, message=FALSE}
 library(gridExtra)
@@ -26,27 +25,23 @@ library(lubridate)
 library(sf)
 library(tidyverse)
 
-source("humpback_risk/funcs_whale_risk_timeseries.R")
-```
+source(here::here("humpback_risk/funcs_whale_risk_timeseries.R"))
 
-Set file paths depending on user. The user should also specifies `flag.save`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
-
-```{r}
-source("User_script_local.R")
+source(here::here("User_script_local.R"))
 if (user == "JS") {
   
 } else if (user == "SMW") {
   flag.save <- TRUE
   wa.inc <- TRUE
-  file.landerased <- "../raimbow-local/RDATA_files/Grid_5km_landerased.RDATA"
-  file.risk <- "../raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
-  file.grid.region <- "../raimbow-local/RDATA_files/Grid_region.Rdata"
+  file.landerased.rds <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds"
+  file.risk <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
+  file.grid.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region.Rdata"
   
-  path.rdata <- "../raimbow-local/RDATA_files/"
+  file.out.timeseries <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata"
   path.plots <- if (wa.inc) {
-    "../raimbow-local/Plots/Whale_risk_timeseries/"
+    "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries/"
   } else {
-    "../raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+    "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries_noWA/"
   }
   
 } else {
@@ -74,7 +69,7 @@ rmap.base <- c(
     st_geometry()
 )
 
-load(file.landerased)
+grid.5km.lno <- readRDS(file.landerased.rds)
 grid.region.sf <- grid.region %>% 
   mutate(region = factor(region, levels = reg.names)) %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
@@ -114,7 +109,7 @@ all.df.summ <- all.df %>%
          risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
   replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
 
-if (flag.save) save(all.df, all.df.summ, file = paste0(path.rdata, "Whale_risk_timeseries.Rdata"))
+if (flag.save) save(all.df, all.df.summ, file = file.out.timeseries)
 
 all.df.summ %>% 
   filter(!duplicated(region)) %>% 

@@ -1,7 +1,7 @@
 ---
 title: "Compare humpback predictions with entanglement reports"
 author: "Sam Woodman"
-date: "1/9/2020"
+date: "6/22/2020"
 output:
   html_document: default
   pdf_document: default
@@ -9,7 +9,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -25,11 +24,13 @@ library(readxl)
 library(tidyverse)
 library(sf)
 
-source("humpback_risk/plot_raimbow.R")
+source(here::here("humpback_risk/plot_raimbow.R"))
+file.ent <- "C:/SMW/RAIMBOW/raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx"
+file.grid <- "C:/SMW/RAIMBOW/raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
 
 # flag1 = 1: Only used CA-DC, know-set records (Sheet 1). 
 # flag1 = 2: Use all humpack entanglement records, regardless of fishery (Sheet 2)
-flag1 <- 2
+flag1 <- 1
 
 # Save plots to file
 flag.save <- FALSE
@@ -41,8 +42,8 @@ Also of note - currently we are using the Mn predictions overlaid on Blake's 5km
 
 ```{r load}
 # Load Mn preds and convert to long form
-load("../raimbow-local/RDATA_files/Whale_risk.Rdata")
-rm(df.key, fish.all.num, risk.all.dens)
+load("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk.Rdata")
+rm(df.key) #, fish.all.num, risk.all.dens)
 
 z <- humpback.abund %>% #humpback.all.dens %>% 
   gather(key = "col_name", value = "H_Abund", 
@@ -56,9 +57,9 @@ z <- humpback.abund %>% #humpback.all.dens %>%
 # z2 <- read_csv("../raimbow-local/Data/Humpback 3km models/Model1_PredictionGrids/WEAR3km_76_2005-01-01to2019-08-14_daily_dens.csv")
 
 
-x.orig1 <- read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 1)
-x.orig2 <- read_xlsx("../raimbow-local/Data/Entanglements/Entanglements_known_gear_set_location.xlsx", sheet = 2) %>% 
-  mutate(CA_DC_kgsl = CaseID %in% x.orig1$CaseID)
+x.orig1 <- read_xlsx(file.ent, sheet = 1)
+x.orig2 <- read_xlsx(file.ent, sheet = 2) %>% mutate(CA_DC_kgsl = CaseID %in% x.orig1$CaseID)
+
 stopifnot(
   sum(x.orig2$CA_DC_kgsl) == nrow(x.orig1), 
   all(x.orig1$CaseID %in% x.orig2$CaseID)
@@ -74,16 +75,14 @@ x <- x.orig2 %>%
 Load 5km grid, make `sf` objects of the Mn preds and entanglement data, and visualize entanglement report locations
 
 ```{r, message=FALSE}
-grid.5km <- st_read("../raimbow-local/Data/5x5 km grid shapefile/five_km_grid_polys_geo.shp") %>% 
-  select(GRID5KM_ID)
+grid.5km <- st_read(file.grid) %>% select(GRID5KM_ID)
 
 humpback.sf <- humpback.abund %>% 
   left_join(grid.5km, by = "GRID5KM_ID") %>% 
   select(starts_with("Mn_"), geometry) %>% 
   st_as_sf(agr = "constant")
 
-x.sf <- x %>% 
-  st_as_sf(coords = c("Report_Long", "Report_Lat"), crs = 4326)
+x.sf <- st_as_sf(x, coords = c("Report_Long", "Report_Lat"), crs = 4326)
 
 plot(st_geometry(humpback.sf), axes = TRUE, main = "Confirmed CA-DC entanglement reports")
 plot(st_geometry(filter(x.sf, !CA_DC_kgsl)), add = TRUE, col = "orange")
@@ -124,7 +123,7 @@ h.br[1] <- 0
 h.br[n.breakpts + 1] <- max(h.vals.all, na.rm = TRUE)
 
 # Get other objects as needed
-map.contours <- st_read("../raimbow-local/Data/West_coast_bathy/West_Coast_geo.shp")
+map.contours <- st_read("C:/SMW/RAIMBOW/raimbow-local/Data/West_coast_bathy/West_Coast_geo.shp")
 map.contours.100m <- map.contours %>% filter(Contour == -100) %>% st_geometry()
 map.contours.200m <- map.contours %>% filter(Contour == -200) %>% st_geometry()
 
@@ -132,10 +131,10 @@ map.base <- st_geometry(st_as_sf(maps::map('world', plot = FALSE, fill = TRUE)))
 
 
 if (flag1 == 1) {
-  path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_CADC_Mnpreds/"
+  path.plots <- "C:/SMW/RAIMBOW/raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_CADC_Mnpreds/"
   x.sf.int <- x.sf.int %>% filter(CA_DC_kgsl)
 } else if (flag1 == 2) {
-  path.plots <- "../raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_allMn_Mnpreds/"
+  path.plots <- "C:/SMW/RAIMBOW/raimbow-local/Plots/Entanglementreport_Mnpreds/Entanglement_allMn_Mnpreds/"
 }
 
 
@@ -156,13 +155,13 @@ for(i in sort(unique(x.sf.int$Year_Month))) {
       map.b1 = map.contours.100m, map.b2 = map.contours.200m, 
       col.pal = col.pal, col.breaks = h.br, 
       asp = 0, ylim = c(32, 48), xaxt = "n", 
-      main = paste("Humpback density", i)
+      main = paste("Humpback abundance", i)
     )
-    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2, title = "Whales/km2")
+    legend_raimbow(h.br, "%0.2f", fill = rev(col.pal), cex = 1.2, title = "Whales")
     legend.raimbow.bathy()
     
     plot(st_geometry(x.curr), add = TRUE, col = "red", cex = 1.5, lwd = 2)
-    legend(x = par("usr")[2], y = 43, legend = paste0("Entanglement, n=", nrow(x.curr)), 
+    legend(x = par("usr")[2], y = 43, legend = paste0("Entanglement\nreport, n=", nrow(x.curr)), 
            xjust = 1, pch = 1, col = "red", pt.cex = 1.5)
     
     graphics::box()
@@ -184,9 +183,9 @@ x.int <- x.sf.int %>%
 x.int %>% 
   ggplot(aes(Year_Month, H_Abund, colour = CA_DC_kgsl, shape = In_Season)) +
   geom_point(size = 3) + 
-  scale_y_continuous(limits = c(0, 0.08)) +
+  # scale_y_continuous(limits = c(0, 0.08)) +
   ggtitle("Humpback prediction value for each humpback entanglement report") + 
-  ylab("Humpback density (whales / km2)") + 
+  ylab("Humpback abundance (whales)") + 
   guides(color = guide_legend(title = "CA-DC known gear set location"), 
          shape = guide_legend(title = "Report month")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4))
