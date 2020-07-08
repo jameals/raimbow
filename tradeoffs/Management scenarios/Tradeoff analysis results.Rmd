@@ -279,7 +279,7 @@ glimpse(sq_maps_df)
 # https://github.com/smwoodman/eSDM/blob/master/data-raw/figure_plot.R and https://github.com/smwoodman/eSDM/blob/master/data-raw/figure5.R
 
 # # make some maps of where NA values occur
-# grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
+#grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
 load(path_Grid_5km_landerased) # this is called grid.5km.lno
 # area.key <- grid.5km.lno %>% 
 #   st_drop_geometry() %>% 
@@ -287,31 +287,66 @@ load(path_Grid_5km_landerased) # this is called grid.5km.lno
 #   distinct()
 
 # background map
-states <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>% 
-  st_transform(st_crs(grid.5km.lno))
+# states_grid.5km.lno <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>%
+#   st_transform(st_crs(grid.5km.lno))
+
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#states <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>% 
+#  st_transform(st_crs(grd))
 
 # join grd to median whales and pings. takes a moment
-sq_maps_grd <- grid.5km.lno %>%
-  left_join(sq_maps_df %>% filter(quantile == "50%")) #%>%
+sq_maps_grid <- grid.5km.lno %>%
+  left_join(sq_maps_df %>% filter(quantile == "50%")) %>%
+  filter(is.na(Humpback_dens) == FALSE)
+
+x.whale_mean <- x.whale %>%
+  group_by(GRID5KM_ID) %>%
+  summarise(
+    Humpback_abund_mean = mean(Humpback_abund_mean)
+  )
+
+x.whale_grid <- grid.5km.lno %>%
+  left_join(x.whale_mean)
+
+# join grd to median whales and pings. takes a moment
+# sq_maps_grd_hump <- grd %>%
+#   left_join(sq_maps_df %>% filter(quantile == "50%")) %>%
+#   filter(is.na(Humpback_dens) == FALSE)
   # filter(year == 2010) %>%
   # filter(is.na(H_Avg_Abund)) %>%
   # mutate(
   #   empty_cell = 1
   # )
 
-sq_bbox <- st_bbox(sq_maps_grd %>% 
+sq_bbox <- st_bbox(sq_maps_grid %>% 
                       st_as_sf()
 )
 
+ggplot() + 
+  geom_sf(data=x.whale_grid, 
+          aes(fill=Humpback_abund_mean,
+              col=Humpback_abund_mean
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("2009-2019 Mean humpback densities") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+
 # plot median humpback densities 
 
-# STOPPED HERE. NOT QUITE WORKING. NEED TO ZOOM INTO CA (USE IS.NA(PINGS)==FALSE? AND NEED TO FIX THE GREY PREDICTIONS OF HUMP DENSITIES)
-
 map_hump <- ggplot() + 
-  geom_sf(data=sq_maps_grd, 
-          aes(fill=Humpback_dens)
+  geom_sf(data=sq_maps_grid, 
+          aes(fill=Humpback_dens,
+              col=Humpback_dens
+          )
   ) +
-  geom_sf(data=states,col=NA,fill='gray50') +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
   ggtitle("2009-2019 Median humpback densities\nduring the Dungeness crab fishing season") +
   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
 map_hump
