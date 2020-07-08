@@ -60,6 +60,7 @@ library(magrittr)
 library(ggerr)
 library(scales)
 library(maps)
+library(rnaturalearth)
 
 # Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
 #   Thus, please ensure that file paths are complete rather than relative
@@ -79,6 +80,10 @@ if (user == "JS") {
   path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
   
   path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  
+  path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
+  
+  path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
     
   path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
   
@@ -244,15 +249,47 @@ ggsave("Figures/annual_blue_entanglements.pdf",width=10, height=8)
 
 
 ```{r}
+
+#1) read in data
+#1a) fishing data
+
+# fishing data. whale predictions here only pertain to year_months in which the DCRB fishery was open and grid cells in which fishing was nonzero
 risk_out_sq <- read_rds(path_status_quo)
 glimpse(risk_out_sq)
 
 # sanity check. QA/QC and make sure all of the year_month - GRID5KM_ID pairs in risk_out_sq are unique
-glimpse(risk_out_sq %>% select(GRID5KM_ID, year_month) %>% distinct())
-#with(risk_out_sq, table(year_month, GRID5KM_ID))
+# glimpse(risk_out_sq %>% dplyr::select(GRID5KM_ID, year_month) %>% distinct())
+# with(risk_out_sq, table(year_month, GRID5KM_ID))
 
-x.whale <-read_rds(path_whales)
+#1b) whale data
+
+x.whale <-read_rds(path_whales) # this is whale predictions within DCRB fishing cells, but in contrast to risk_out_sq it includes predictions in DCRB fishing cells for all yr_mths and fishing grid cells, not just months and grid cells in which DCRB fishing occurred
 glimpse(x.whale)
+# table(x.whale$year_month)
+
+# humpbacks
+hump.all <- read_rds(path_Humpback_5km_long_monthly) %>% # hump predictions in all 5km cells, all year_months 
+  mutate(
+    year_month = paste0(year(date), "_", format.Date(date, "%m"))
+  )
+glimpse(hump.all)
+table(hump.all$year_month)
+
+# blues
+blue.all <- read_rds(path_BlueWhale_5km_long_monthly) # blue predictions in all 5km cells. output from https://github.com/jameals/raimbow/blob/master/blue_whale/BW_preds_aggr.Rmd
+
+#2) group_by GRID5KM_ID, summarise above data by 2009-14, 2014-18, 2018-19, excluding Aug-Oct 
+#3) make df's sf objects and prep for plotting
+#4) plot
+
+
+
+
+
+
+
+
+
 
 sq_maps_df <- risk_out_sq %>%
   full_join(x.whale) %>% #, by=c("year_month", "GRID5KM_ID")
@@ -314,6 +351,15 @@ x.whale_mean <- x.whale %>%
 x.whale_grid <- grid.5km.lno %>%
   left_join(x.whale_mean)
 
+hump.all_mean <- hump.all %>%
+  group_by(GRID5KM_ID) %>%
+  summarise(
+    Humpback_dens_mean = mean(Humpback_dens_mean)
+  )
+
+hump.all_grid <- grid.5km.lno %>%
+  left_join(hump.all_mean)
+  
 # join grd to median whales and pings. takes a moment
 # sq_maps_grd_hump <- grd %>%
 #   left_join(sq_maps_df %>% filter(quantile == "50%")) %>%
@@ -327,6 +373,16 @@ x.whale_grid <- grid.5km.lno %>%
 sq_bbox <- st_bbox(sq_maps_grid %>% 
                       st_as_sf()
 )
+
+ggplot() + 
+  geom_sf(data=hump.all_grid, 
+          aes(fill=Humpback_dens_mean,
+              col=Humpback_dens_mean
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("2009-2019 Mean humpback densities") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
 
 ggplot() + 
   geom_sf(data=x.whale_grid, 
