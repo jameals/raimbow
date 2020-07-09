@@ -75,6 +75,8 @@ if (user == "JS") {
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
+  path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
+  
   path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
   
   path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
@@ -493,10 +495,10 @@ sq_bbox <- st_bbox(sq_maps_grid %>%
                       st_as_sf()
 )
 
-# plot median humpback densities 
-
 sq_maps_grid_noNA <- sq_maps_grid %>%
   filter(!(is.na(time_period)))
+
+# plot median humpback densities 
 
 map_hump <- ggplot() + 
   geom_sf(data=sq_maps_grid_noNA, 
@@ -511,35 +513,74 @@ map_hump <- ggplot() +
   ggtitle("2009-2019 Median humpback densities\nduring the Dungeness crab fishing season") +
   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
 map_hump
-ggsave(here::here('tradeoffs','map_hump.png'),map_hump,h=8,w=6)
 
-# plot median pings
-ggplot() + 
-  geom_sf(data=sq_maps_grd, 
-          aes(fill=Num_DCRB_VMS_pings)
-          ) +
-  geom_sf(data=states,col=NA,fill='gray50')+
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+png(paste0(path_maps, "/map_hump_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_hump
+dev.off()
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
 
-ggplot() + 
-  geom_sf(data=hump.all_grid, 
-          aes(fill=Humpback_dens_mean,
-              col=Humpback_dens_mean
+# plot median blue occurrence 
+
+map_blue <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA, 
+          aes(fill=Blue_occurrence,
+              col=Blue_occurrence
           )
   ) +
+  facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  ggtitle("2009-2019 Mean humpback densities") +
+  scale_fill_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median blue whale occurrence\nduring the Dungeness crab fishing season") +
   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+map_blue
 
-ggplot() + 
-  geom_sf(data=x.whale_grid, 
-          aes(fill=Humpback_abund_mean,
-              col=Humpback_abund_mean
+png(paste0(path_maps, "/map_blue_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_blue
+dev.off()
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
+
+# plot median Num_DCRB_VMS_pings 
+
+map_pings <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA, 
+          aes(fill=Num_DCRB_VMS_pings,
+              col=Num_DCRB_VMS_pings
           )
   ) +
+  facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  ggtitle("2009-2019 Mean humpback densities") +
+  scale_fill_viridis(na.value=NA,option="D",name="VMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="VMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median VMS pings\nduring the Dungeness crab fishing season") +
   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+map_pings
+
+png(paste0(path_maps, "/map_pings_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_pings
+dev.off()
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
+
+
+# ggplot() + 
+#   geom_sf(data=hump.all_grid, 
+#           aes(fill=Humpback_dens_mean,
+#               col=Humpback_dens_mean
+#           )
+#   ) +
+#   geom_sf(data=rmap.base,col=NA,fill='gray50') +
+#   ggtitle("2009-2019 Mean humpback densities") +
+#   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+# 
+# ggplot() + 
+#   geom_sf(data=x.whale_grid, 
+#           aes(fill=Humpback_abund_mean,
+#               col=Humpback_abund_mean
+#           )
+#   ) +
+#   geom_sf(data=rmap.base,col=NA,fill='gray50') +
+#   ggtitle("2009-2019 Mean humpback densities") +
+#   coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
 
 ```
 <br>
