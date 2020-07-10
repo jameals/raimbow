@@ -450,8 +450,8 @@ rmap.base <- c(
 
 # join grd to median whales and pings. takes a moment
 sq_maps_grid <- grid.5km.lno %>%
-  left_join(sq_DCRBcells_maps_df) #%>%
-  #filter(is.na(Humpback_dens) == FALSE)
+  left_join(sq_DCRBcells_maps_df) %>%
+  filter(!(is.na(Num_DCRB_VMS_pings)))
 
 # join grd to median whales and pings. takes a moment
 # sq_maps_grd_hump <- grd %>%
@@ -510,8 +510,18 @@ map_hump <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median humpback densities\nduring the Dungeness crab fishing season") +
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+  ggtitle("2009-2019 Median humpback densities on Dungeness crab fishing grounds\nduring the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
 map_hump
 
 png(paste0(path_maps, "/map_hump_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
@@ -531,8 +541,18 @@ map_blue <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median blue whale occurrence\nduring the Dungeness crab fishing season") +
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+  ggtitle("2009-2019 Median blue whale occurrence on Dungeness crab fishing grounds\nduring the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
 map_blue
 
 png(paste0(path_maps, "/map_blue_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
@@ -541,19 +561,51 @@ dev.off()
 #ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
 
 # plot median Num_DCRB_VMS_pings 
+# Num_DCRB_VMS_pings is highly skewed
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2018-2019") %>% 
+  summarise(quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+            Num_DCRB_VMS_pings = quantile(Num_DCRB_VMS_pings, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE)
+            )
+
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2014-2018") %>%
+  #filter(Num_DCRB_VMS_pings > 0) %>%
+  select(Num_DCRB_VMS_pings) %>%
+  ggplot(aes(x=Num_DCRB_VMS_pings)) +
+  geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=5)
+
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2014-2018") %>%
+  filter(Num_DCRB_VMS_pings > 0) %>%
+  select(Num_DCRB_VMS_pings) %>%
+  ggplot(aes(x=log10(Num_DCRB_VMS_pings+10^-6))) +
+  geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=0.5)
+
 
 map_pings <- ggplot() + 
-  geom_sf(data=sq_maps_grid_noNA, 
-          aes(fill=Num_DCRB_VMS_pings,
-              col=Num_DCRB_VMS_pings
-          )
+  geom_sf(data=sq_maps_grid_noNA %>% filter(Num_DCRB_VMS_pings > 0), 
+          aes(fill=log10(Num_DCRB_VMS_pings),#+10^-6
+              col=log10(Num_DCRB_VMS_pings) )
+          # aes(fill = Num_DCRB_VMS_pings,
+          #     col = Num_DCRB_VMS_pings)
   ) +
   facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="VMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="VMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_fill_viridis(na.value=NA,option="D",name="log10\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="log10\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   ggtitle("2009-2019 Median VMS pings\nduring the Dungeness crab fishing season") +
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4]))
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
 map_pings
 
 png(paste0(path_maps, "/map_pings_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
@@ -561,6 +613,115 @@ map_pings
 dev.off()
 #ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
 
+
+# diff humps
+
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2014-2018") %>%
+  select(diff_Humpback_dens) %>%
+  ggplot(aes(x=diff_Humpback_dens)) +
+  geom_density(fill='#33638DFF', alpha=0.8)
+
+map_diff_humps <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA %>% filter(time_period != "2009-2014"), 
+          aes(fill=diff_Humpback_dens,
+              col=diff_Humpback_dens
+          )
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Change in\nHumpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Change in\nHumpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("Change in median humpback densities on Dungeness crab fishing grounds\nduring the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_diff_humps
+
+png(paste0(path_maps, "/map_diff_humps_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_diff_humps
+dev.off()
+
+# diff blues
+
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2014-2018") %>%
+  select(diff_Blue_occurrence) %>%
+  ggplot(aes(x=diff_Blue_occurrence)) +
+  geom_density(fill='#33638DFF', alpha=0.8)
+
+map_diff_blues <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA %>% filter(time_period != "2009-2014"), 
+          aes(fill=diff_Blue_occurrence,
+              col=diff_Blue_occurrence
+          )
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Change in\nBlue Whale\nOccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Change in\nBlue Whale\nOccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("Change in median blue whale occurrenceon Dungeness crab\nfishing grounds during the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_diff_blues
+
+png(paste0(path_maps, "/map_diff_blues_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_diff_blues
+dev.off()
+
+
+# diff pings
+
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2014-2018") %>%
+  select(diff_Num_DCRB_VMS_pings) %>%
+  ggplot(aes(x=diff_Num_DCRB_VMS_pings)) +
+  geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=0.5)
+
+map_diff_pings <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA %>% filter(time_period != "2009-2014"), 
+          aes(fill=diff_Num_DCRB_VMS_pings,
+              col=diff_Num_DCRB_VMS_pings
+          )
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Change in\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Change in\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("Change in median VMS pings\nduring the Dungeness crab fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_diff_pings
+
+png(paste0(path_maps, "/map_diff_pings_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_diff_pings
+dev.off()
 
 # ggplot() + 
 #   geom_sf(data=hump.all_grid, 
