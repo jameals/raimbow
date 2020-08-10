@@ -52,3 +52,7 @@ unique(sort(dcrb_vms_tix_analysis$drvid))[1:10]
 range(permits_cdfw$`FG VESSEL ID`)
 range(vessel_reg$VESSEL_NUM)
 range(dcrb_vms_tix_analysis$drvid)
+
+# following call with CDFW and PSMFC on 080720
+length(which(permits_cdfw$`FG VESSEL ID` %in% vessel_reg$REGISTRATION_NUM == TRUE)) #4483
+length(which(permits_cdfw$`FG VESSEL ID` %in% vessel_reg$REGISTRATION_NUM == TRUE))/length(unique(vessel_reg$REGISTRATION_NUM)) #0.766
