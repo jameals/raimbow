@@ -1,0 +1,1969 @@
+---
+title: "Tradeoff analysis results small vessels"
+author: "Jameal Samhouri"
+date: "8/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This document provides an outline of figures and tables to include in the Samhouri et al. tradeoff analysis. It is based on the presentation I gave February 5, 2020, with improvements. See google doc: https://docs.google.com/document/d/15loTrgX2H7ZIArVmTIHVTNrinvHHui03CTLo1cdlbss/edit?pli=1. Use "Full workflow for risk assessment and tradeoff analysis" google doc to prep data frames for making figures below. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
+
+Current outline of figures:
+
+Entanglements are on the rise coastwide. Hump, blue, other entanglements by year
+
+The CA Dungeness crab fishery revenue, landings, and vessels by year. Also do for VMS vessels only
+
+Maps of long-term average during DCRB season of hump, blue, DCRB $, DCRB lbs, DCRB pings [DCRB do all, sm, lg]
+
+Time series of cumulative annual (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between Statewide, region, BIAs. [DCRB do all, sm, lg].
+
+Time series of cumulative risk and revenue by early/mid/late season (a) humpback risk, (b) blue risk, (c) DCRB revenue. Emphasizes contrasts between times of year for each metric. [DCRB do all, sm, lg]. 
+
+Time series of cumulative risk and revenue in cenCA vs norCA, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts between regions and times of year for each metric. [DCRB do all, sm, lg]
+
+Time series of cumulative risk and revenue in and out of BIAs, faceted by early/mid/late season and humpbacks, blues, DCRB. Emphasizes contrasts in and out of BIAs and times of year for each metric. [DCRB do all, sm, lg]
+
+Maps of long-term avg full season pings for SQ, delay cenCA, early closure statewide, and delay cenCA + early closure statewide. If not contrast, revisit.
+
+Avg risk in 2009-13 v 2014-19 for blues and humps. 
+
+Avg $ in 2009-13 v 2014-19 for all, sm, lg DCRB.
+
+Expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
+
+Time series of expected (a) risk reduction by scenario for humps v blues, (b) $ reduction by scenario for all, sm, lg DCRB. order by whales
+
+Tradeoff plots for hump, blues, both. Full time period, 2009-13, 2014-19. all, sm, lg DCRB.
+
+
+
+```{r prep, message=FALSE}
+# just getting libraries loaded and file paths sorted
+
+library(tidyverse)
+library(foreign) # read.dbf()
+library(here)
+library(lubridate)
+library(sf)
+library(viridis)
+library(ggrepel)
+library(magrittr)
+library(ggerr)
+library(scales)
+library(maps)
+library(rnaturalearth)
+library(gridExtra)
+library(ggpubr)
+library(knitr)
+
+# Note that Rmd documents set the working directory as the location of the document, rather than the project directory. 
+#   Thus, please ensure that file paths are complete rather than relative
+
+source(here::here("User_script_local.R"))
+if (user == "JS") {
+  #flag.save = TRUE # option to save all outputs or not
+  
+  path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  
+  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
+  
+  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
+  
+  path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
+  
+  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
+  
+  path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
+  
+  path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  
+  path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
+  
+  path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+    
+  path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
+  
+  path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
+  
+  path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
+  
+  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
+  
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds" 
+  
+  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds" 
+  
+  path_annual_statewide_df_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_2020-06-16.rds"
+  
+  path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_2020-06-16.rds"
+  
+  path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
+  
+
+} else if (user == "SMW") {
+  NULL
+} else {
+  stop("Invalid user")
+}
+
+```
+<br>
+
+## Avg risk in 2009-14 v 2014-18 v 2018-2019 for blues and humps by scenario. Small vessels
+
+Get the data frames in order
+```{r}
+
+annual_statewide_df_focal_scenarios_small_vessels <- read_rds(path_annual_statewide_df_focal_scenarios_small_vessels)
+glimpse(annual_statewide_df_focal_scenarios_small_vessels)
+
+# which scenarios lead to zero small vessels? scenarios 16, 17, 18 in 2015_16
+with(annual_statewide_df_focal_scenarios_small_vessels, table(crab_year,number_id))
+
+# add in zero years
+annual_statewide_df_focal_scenarios_small_vessels %<>%
+  add_row(
+    number_id = c("16", "17", "18"),
+    scenario_df_name = unique(annual_statewide_df_focal_scenarios_small_vessels$scenario_df_name[which(annual_statewide_df_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    crab_year = "2015_2016",
+    DCRB_lbs = 0,
+    DCRB_rev = 0,
+    Num_DCRB_Vessels = 0,
+    Num_DCRB_VMS_pings = 0,
+    risk_humpback = 0,
+    risk_blue = 0,
+    risk_both = 0,
+    n_risk_humpback = 0,
+    n_risk_blue = 0,
+    n_risk_both = 0,
+    
+    # these added for later grouping
+    delay.region = unique(annual_statewide_df_focal_scenarios_small_vessels$delay.region[which(annual_statewide_df_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    closure.region = unique(annual_statewide_df_focal_scenarios_small_vessels$closure.region[which(annual_statewide_df_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    reduction.after.region = unique(annual_statewide_df_focal_scenarios_small_vessels$reduction.after.region[which(annual_statewide_df_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))])
+    #.before = c(67,76,85)
+    )
+
+
+# add pre/post 2014, plotting_year
+annual_statewide_df_focal_scenarios_small_vessels %<>% mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  pre_post = ifelse(plotting_year >=2015 & plotting_year <2019, "2014-2018",
+                    ifelse(plotting_year <2015, "2009-2014", "2018-2019")
+  )
+) 
+glimpse(annual_statewide_df_focal_scenarios_small_vessels)
+
+# read in tradeoff df, make pretty scenario names, and join with annual df
+df_tradeoff_focal_scenarios_small_vessels <- read_rds(path_df_tradeoff_focal_scenarios_small_vessels)
+glimpse(df_tradeoff_focal_scenarios_small_vessels)
+
+# which scenarios lead to zero small vessels? scenarios 16, 17, 18 in 2015_16
+with(df_tradeoff_focal_scenarios_small_vessels, table(crab_year,number_id))
+
+# add in zero years
+df_tradeoff_focal_scenarios_small_vessels %<>%
+  add_row(
+    number_id = c("16", "17", "18"),
+    scenario_df_name = unique(df_tradeoff_focal_scenarios_small_vessels$scenario_df_name[which(df_tradeoff_focal_scenarios_small_vessels$number_id %in% c("16", "17", "18"))]),
+    crab_year = "2015_2016",
+    relative_hump_risk = 0,
+    relative_blwh_risk = 0,
+    relative_both_risk = 0,
+    relative_hump_risk_n = 0,
+    relative_blwh_risk_n = 0,
+    relative_both_risk_n = 0,
+    relative_pings = 0,
+    relative_dollars = 0,
+    relative_pounds = 0
+    )
+
+### BE CAREFUL WITH NEXT STEP. IT CAN GET MESSED UP BECAUSE OF ZEROES
+
+# make nice scenario names
+#unique(df_tradeoff_focal_scenarios$scenario_df_name)
+df_tradeoff_focal_scenarios_small_vessels$pretty_scenario_names <- c(
+    rep("Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA, Early Closure BIAs", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Status Quo", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))-1), ### BE CAREFUL WITH NEXT STEP. IT CAN GET MESSED UP BECAUSE OF ZEROES
+    rep("Delay Statewide, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))-1), ### BE CAREFUL WITH NEXT STEP. IT CAN GET MESSED UP BECAUSE OF ZEROES
+    rep("Delay CenCA, Early Closure Statewide", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))-1), ### BE CAREFUL WITH NEXT STEP. IT CAN GET MESSED UP BECAUSE OF ZEROES
+    rep("Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay Statewide, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Delay CenCA, Early Closure CenCA", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA 50% Effort Reduction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("Statewide 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    rep("CenCA 50% Effort Reduction, <30 fathom Depth Restriction Apr-Jul", length(unique(df_tradeoff_focal_scenarios_small_vessels$crab_year))),
+    "Early Closure Statewide",
+    "Delay Statewide, Early Closure Statewide",
+    "Delay CenCA, Early Closure Statewide"
+    )  
+
+# join to annual df
+annual_statewide_df_focal_scenarios_small_vessels %<>%
+  left_join(df_tradeoff_focal_scenarios_small_vessels)
+
+
+# arrange scenarios by risk to humpbacks.
+
+#### focus at first on statewide only
+
+statewide_annual <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA'))
+glimpse(statewide_annual)
+
+# arrange from greatest risk during 2014-18 to least
+statewide_annual_rank <- statewide_annual %>%
+  group_by(pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+glimpse(statewide_annual_rank)
+
+statewide_annual_rank_bp <- statewide_annual %>%
+  left_join(statewide_annual_rank)
+glimpse(statewide_annual_rank_bp)
+
+# status quo is ranked first so no need to rearrange
+
+#### cenCA only
+
+cenca_annual <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'CenCA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA'))
+glimpse(cenca_annual)
+
+# arrange from greatest risk during 2014-18 to least
+cenca_annual_rank <- cenca_annual %>%
+  group_by(pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+glimpse(cenca_annual)
+
+cenca_annual_rank_bp <- cenca_annual %>%
+  left_join(cenca_annual_rank)
+glimpse(cenca_annual_rank_bp)
+
+# status quo is ranked first so no need to rearrange
+
+#### BIA only
+
+bia_annual <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'BIA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|CenCA'))
+glimpse(bia_annual)
+
+# arrange from greatest risk during 2014-18 to least
+bia_annual_rank <- bia_annual %>%
+  group_by(pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+glimpse(bia_annual)
+
+bia_annual_rank_bp <- bia_annual %>%
+  left_join(bia_annual_rank)
+glimpse(bia_annual_rank_bp)
+
+# status quo is NOT ranked first so need to rearrange
+# but stop here because this is only early closure BIAs vs status quo
+
+
+##############
+
+### all scenarios
+# arrange from greatest risk during 2014-18 to least
+
+# calculate median risk/rev by period and scenario
+median_scenario_period <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  group_by(pretty_scenario_names, pre_post) %>%
+  summarise(
+    median_n_risk_blue = median(n_risk_blue),
+    median_n_risk_humpback = median(n_risk_humpback),
+    median_n_risk_both = median(n_risk_both),
+    median_DCRB_rev = median(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    median_relative_hump_risk_n = median(relative_hump_risk_n),
+    median_relative_blwh_risk_n = median(relative_blwh_risk_n),
+    median_relative_both_risk_n = median(relative_both_risk_n),
+    median_relative_dollars = median(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) %>%
+  arrange(
+    -median_n_risk_humpback,
+    -median_n_risk_blue,
+    -median_n_risk_both,
+    -median_DCRB_rev
+  ) #%>%
+  #mutate(scenario_rank = row_number())
+glimpse(median_scenario_period)
+
+MHWperiod<- median_scenario_period %>%
+  filter(pre_post == "2014-2018") %>%
+  select(pretty_scenario_names, pre_post, median_n_risk_humpback, median_n_risk_blue,
+         median_n_risk_both, median_DCRB_rev) %>%
+  arrange(
+    -median_n_risk_humpback,
+    -median_n_risk_blue,
+    -median_n_risk_both,
+    -median_DCRB_rev
+  ) 
+glimpse(MHWperiod)
+
+# status quo not first, so fix
+rank_MHWperiod <- MHWperiod[which(MHWperiod$pretty_scenario_names == "Status Quo"),] %>%
+  bind_rows(MHWperiod %>% 
+              filter(pretty_scenario_names != "Status Quo") %>%
+              arrange(
+                -median_n_risk_humpback,
+                -median_n_risk_blue,
+                -median_n_risk_both,
+                -median_DCRB_rev
+                )
+            ) %>%
+  mutate(scenario_rank = row_number()) %>%
+  select(pretty_scenario_names, pre_post, scenario_rank)
+glimpse(rank_MHWperiod)
+# ranks are correct to here
+
+median_scenario_period %<>% 
+  left_join(rank_MHWperiod, by = "pretty_scenario_names") %>%
+  mutate(
+    pre_post = pre_post.x
+  ) %>%
+  select(-pre_post.x, -pre_post.y)
+glimpse(median_scenario_period)
+
+annual_rank_bp <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  left_join(median_scenario_period)
+glimpse(annual_rank_bp)
+
+
+```
+
+Now make the plots
+```{r}
+### statewide scenarios
+
+# normalized humpbacks, statewide scenarios only
+plot_hump_risk_prepost_statewide_small <- ggplot(
+  data = statewide_annual_rank,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = mean_n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_n_risk_humpback - (2*se_n_risk_humpback), ymax = mean_n_risk_humpback + 2*(se_n_risk_humpback)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_statewide_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_statewide_small
+invisible(dev.off())
+
+# normalized humpbacks, statewide scenarios only, as boxplots
+plot_hump_risk_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_statewide_bp_small
+invisible(dev.off())
+
+# normalized humpbacks, statewide scenarios only, as geom_line
+plot_hump_risk_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_humpback,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_statewide_connect_small
+invisible(dev.off())
+
+# relative normalized humpbacks, statewide scenarios only, as boxplots
+plot_hump_rel_risk_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_hump_risk_n,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Relative risk reduction to humpback whales from small vessels\n(normalized)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_rel_risk_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_rel_risk_prepost_statewide_bp_small
+invisible(dev.off())
+
+# relative normalized humpbacks, statewide scenarios only, as geom_line
+plot_hump_rel_risk_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_hump_risk_n,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Relative risk reduction to humpback whales from small vessels\n(normalized)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_rel_risk_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_rel_risk_prepost_statewide_connect_small
+invisible(dev.off())
+
+#normalized blues, statewide scenarios only, boxplot
+plot_blue_risk_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to blue whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_statewide_bp_small
+invisible(dev.off())
+
+#normalized relative blues, statewide scenarios only, boxplot
+plot_blue_rel_risk_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_blwh_risk_n,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Relative risk reduction to blue whales from small vessels\n(normalized)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_rel_risk_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_rel_risk_prepost_statewide_bp_small
+invisible(dev.off())
+
+# normalized blues, statewide scenarios only, as geom_line
+plot_blue_risk_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_blue,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Risk to blue whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_statewide_connect_small
+invisible(dev.off())
+
+# relative normalized blues, statewide scenarios only, as geom_line
+plot_blue_rel_risk_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_blwh_risk_n,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Relative risk reduction to blue whales from small vessels\n(normalized)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_rel_risk_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300) 
+plot_blue_rel_risk_prepost_statewide_connect_small
+invisible(dev.off())
+
+
+### cen CA scenarios
+# normalized humpbacks, cenCA only
+plot_hump_risk_prepost_cenca_small <- ggplot(
+  data = cenca_annual_rank,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = mean_n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_n_risk_humpback - (2*se_n_risk_humpback), ymax = mean_n_risk_humpback + 2*(se_n_risk_humpback)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_cenca_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_cenca_small
+invisible(dev.off())
+
+# normalized humpbacks, cenCA scenarios only, boxplot
+plot_hump_risk_prepost_cenca_bp_small <- ggplot(
+  data = cenca_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_cenca_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_cenca_bp_small
+invisible(dev.off())
+
+#normalized blues, cenCA scenarios only
+plot_blue_risk_prepost_cenca_bp_small <- ggplot(
+  data = cenca_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to blue whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_cenca_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_cenca_bp_small
+invisible(dev.off())
+
+### all scenarios
+
+# normalized humpbacks
+plot_hump_risk_prepost_bp_small <- ggplot(
+  data = annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to humpback whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_hump_risk_prepost_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_prepost_bp_small
+invisible(dev.off())
+
+#normalized blues
+plot_blue_risk_prepost_bp_small <- ggplot(
+  data = annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Risk to blue whales from small vessels\n(normalized)") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_bp_small
+invisible(dev.off())
+
+
+plot_hump_risk_prepost_statewide_small
+plot_hump_risk_prepost_statewide_bp_small
+plot_blue_risk_prepost_statewide_bp_small
+plot_hump_risk_prepost_cenca_small
+plot_hump_risk_prepost_cenca_bp_small
+plot_blue_risk_prepost_cenca_bp_small
+plot_hump_risk_prepost_bp_small
+plot_blue_risk_prepost_bp_small
+
+
+```
+<br>
+
+## Avg risk in 2009-13 v 2014-19 for blues and humps by scenario based on spatial scale
+
+Make the data frames
+```{r}
+
+
+### compare risk based on scale of mgmt scenario
+# also make plots that have spatial domain (statewide vs cenCA) on x axis, with risk on yaxis, grouped by scenario. my sense is that for whale risk reduction scenario ranks are the same across scales, so that early + delay is best, then early closure = depth restriction and gear reduction, then delay =  reduction
+
+scale_compare <- annual_statewide_df_focal_scenarios_small_vessels %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
+  mutate(
+  
+    scale = ifelse(delay.region == "All" | closure.region == "All" | reduction.after.region == "All",
+                 "Statewide",
+                 ifelse(delay.region == "CenCA" | closure.region == "CenCA" | reduction.after.region == "CenCA",
+                        "Central California Only", NA)),
+    
+  scenario_type = ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth and Gear Restrictions",
+                         ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & !stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth Restriction",
+                                ifelse(!stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Gear Restriction",                                   
+                                       ifelse(stringr::str_detect(pretty_scenario_names, 'Early Closure'), "Early Closure", 
+                                              ifelse(stringr::str_detect(pretty_scenario_names, 'Delay'), "Delayed Opening", NA)
+                                              )
+                                       )
+                                )
+                         )
+  ) %>%
+  group_by(pretty_scenario_names, pre_post, scale, scenario_type) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) 
+  
+glimpse(scale_compare)
+
+```
+
+Now make the plots
+```{r}
+
+plot_hump_risk_scale_compare_small <- ggplot(
+  data = scale_compare,
+  aes(
+    x = scale,
+    y = mean_relative_hump_risk_n,
+    colour = scenario_type,
+    fill = scenario_type,
+    shape = scenario_type
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_relative_hump_risk_n - (2*se_relative_hump_risk_n), ymax = mean_relative_hump_risk_n + 2*(se_relative_hump_risk_n)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  facet_wrap(pre_post~.) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_shape_manual(values=c(21:25) ) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
+  xlab("Spatial Scale") +
+  ylab("Relative risk reduction for\nhumpback whales from small vessels\n(normalized, +/- 2SE)") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+ 
+png(paste0(path_figures, "/plot_hump_risk_scale_compare_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_scale_compare_small
+invisible(dev.off())
+
+plot_blwh_risk_scale_compare_small <- ggplot(
+  data = scale_compare,
+  aes(
+    x = scale,
+    y = mean_relative_blwh_risk_n,
+    colour = scenario_type,
+    fill = scenario_type,
+    shape = scenario_type
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_relative_blwh_risk_n - (2*se_relative_blwh_risk_n), ymax = mean_relative_blwh_risk_n + 2*(se_relative_blwh_risk_n)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  facet_wrap(pre_post~.) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_shape_manual(values=c(21:25) ) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
+  xlab("Spatial Scale") +
+  ylab("Relative risk reduction for\nblue whales from small vessels\n(normalized, +/- 2SE)") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+ 
+png(paste0(path_figures, "/plot_blwh_risk_scale_compare_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blwh_risk_scale_compare_small
+invisible(dev.off())
+
+plot_hump_risk_scale_compare_small
+plot_blwh_risk_scale_compare_small
+
+```
+
+
+## Avg $ and lbs in 2009-13 v 2014-19 for all DCRB vessels by scenario.
+
+
+```{r}
+
+# # DCRB revenue
+# plot_DCRB_rev_prepost <- ggplot(
+#   data = annual_statewide_df_focal_scenarios_means_bp,
+#   aes(
+#     x = reorder(pretty_scenario_names,scenario_rank),
+#     y = DCRB_rev/10^5,
+#     colour = factor(pre_post)
+#     )
+#   )  +
+#   geom_label(aes(label = crab_year, group = factor(pre_post)), size=2, alpha=0.6, position=position_jitterdodge()) +
+#   stat_err(spread = "se", mult = 2, width=.1, position=position_dodge(width=0.75)) + 
+#   stat_err(geom="point", size=7, alpha = 0.8, position=position_dodge(width=0.75)) + 
+#   #coord_flip() +
+#   # scale_y_continuous(limits = c(-26,100),
+#   #                    breaks = c(-25,0,25,50,75,100)) +
+#   xlab("Scenario") +
+#   ylab(bquote("Dungeness crab fishery revenue ($, x"*10^5*")")) +
+#   #bquote(Vc[max](mu~mol ~CO[2]~ m^-2~s^-1)))
+#   scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+#   scale_x_discrete(labels = wrap_format(30)) + 
+#   theme_classic() +
+#   theme(
+#     legend.title = element_blank(),
+#     title = element_text(size = 26),
+#     legend.text = element_text(size = 18),
+#     #legend.position = c(.1, .95),
+#     axis.text.x = element_text(hjust = 1, size = 14, angle = 60),
+#     axis.text.y = element_text(size = 14),
+#     axis.title = element_text(size = 16)
+#     #legend.position = "none"
+#     )
+# 
+# png(paste0(path_figures, "/plot_DCRB_rev_prepost.png"), width = 14, height = 10, units = "in", res = 300)
+# plot_DCRB_rev_prepost
+# invisible(dev.off())
+
+# DCRB revenue, statewide scenarios only, as boxplots
+plot_DCRB_rev_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_rev/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery revenue\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost_statewide_bp_small
+invisible(dev.off())
+
+# DCRB revenue, statewide scenarios only, as geom_line
+plot_DCRB_rev_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_rev/(10^5),
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery revenue\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost_statewide_connect_small
+invisible(dev.off())
+
+# relative DCRB $, statewide scenarios only, as boxplots
+plot_DCRB_rel_rev_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_dollars,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Relative revenue for the Dungeness crab fishery\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rel_rev_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rel_rev_prepost_statewide_bp_small
+invisible(dev.off())
+
+# relative DCRB $, statewide scenarios only, as geom_line
+plot_DCRB_rel_rev_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_dollars,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Relative revenue for the Dungeness crab fishery\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rel_rev_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rel_rev_prepost_statewide_connect_small
+invisible(dev.off())
+
+# DCRB landings, statewide scenarios only, as boxplots
+plot_DCRB_lbs_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_lbs/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery landings\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_lbs_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_lbs_prepost_statewide_bp_small
+invisible(dev.off())
+
+# DCRB landings, statewide scenarios only, as geom_line
+plot_DCRB_lbs_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_lbs/(10^5),
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery landings\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_lbs_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_lbs_prepost_statewide_connect_small
+invisible(dev.off())
+
+# relative DCRB landings, statewide scenarios only, as boxplots
+plot_DCRB_rel_lbs_prepost_statewide_bp_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_pounds,
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Relative landings in the Dungeness crab fishery\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rel_lbs_prepost_statewide_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rel_lbs_prepost_statewide_bp_small
+invisible(dev.off())
+
+# relative DCRB landings, statewide scenarios only, as geom_line
+plot_DRCB_rel_lbs_prepost_statewide_connect_small <- ggplot(
+  data = statewide_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = relative_pounds,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+    )
+  )  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                   alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Relative landings in the Dungeness crab fishery\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DRCB_rel_lbs_prepost_statewide_connect_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DRCB_rel_lbs_prepost_statewide_connect_small
+invisible(dev.off())
+
+### Figure S1 Samhouri et al
+
+ggarrange(
+  plot_blue_rel_risk_prepost_statewide_connect_small,
+  plot_DCRB_rel_rev_prepost_statewide_connect_small,
+  plot_hump_rel_risk_prepost_statewide_connect_small,
+          nrow = 2,
+          ncol = 2,
+          common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+  )
+
+png(paste0(path_figures, "/all_statewide_connect_small.png"), width = 18, height = 12, units = "in", res = 300)
+ggarrange(
+  plot_blue_rel_risk_prepost_statewide_connect_small,
+  plot_DCRB_rel_rev_prepost_statewide_connect_small,
+  plot_hump_rel_risk_prepost_statewide_connect_small,
+          nrow = 2,
+          ncol = 2,
+          common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+  )
+invisible(dev.off())
+
+# DCRB rev, cenCA scenarios only, boxplot
+plot_DCRB_rev_prepost_cenca_bp_small <- ggplot(
+  data = cenca_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_rev/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery revenue\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev_prepost_cenca_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost_cenca_bp_small
+invisible(dev.off())
+
+# DCRB lbs, cenCA scenarios only, boxplot
+plot_DCRB_lbs_prepost_cenca_bp_small <- ggplot(
+  data = cenca_annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_lbs/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery landings\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_lbs_prepost_cenca_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_lbs_prepost_cenca_bp_small
+invisible(dev.off())
+
+
+#DCRB $, all scenarios
+plot_DCRB_rev_prepost_bp_small <- ggplot(
+  data = annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_rev/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery revenue\nsmall vessels only\n(dollars, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_rev_prepost_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_prepost_bp_small
+invisible(dev.off())
+
+#DCRB lbs, all scenarios
+plot_DCRB_lbs_prepost_bp_small <- ggplot(
+  data = annual_rank_bp,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = DCRB_lbs/(10^5),
+    colour = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Dungeness crab fishery landings\nsmall vessels only\n(pounds, x10^5)") +
+  #ylim(0,0.35) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_DCRB_lbs_prepost_bp_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_lbs_prepost_bp_small
+invisible(dev.off())
+
+### This is Figure 3 in Samhouri et al
+png(paste0(path_figures, "/p_statewide_small.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(plot_blue_risk_prepost_statewide_bp_small,
+             plot_DCRB_rev_prepost_statewide_bp_small,
+             plot_hump_risk_prepost_statewide_bp_small, 
+             nrow = 2,
+          ncol=2,
+          common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+          )
+invisible(dev.off())
+
+png(paste0(path_figures, "/p_cenca_small.png"), width = 14, height = 10, units = "in", res = 300)
+# grid.arrange(plot_hump_risk_prepost_cenca_bp,
+#              plot_DCRB_rev_prepost_cenca_bp,
+#              plot_blue_risk_prepost_cenca_bp, 
+#              nrow = 2)
+ggarrange(plot_blue_risk_prepost_cenca_bp_small,
+             plot_DCRB_rev_prepost_cenca_bp_small,
+             plot_hump_risk_prepost_cenca_bp_small, 
+             nrow = 2,
+              ncol=2,
+             common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+             )
+invisible(dev.off())
+
+plot_DCRB_rev_prepost_statewide_bp_small
+plot_DCRB_lbs_prepost_statewide_bp_small
+ggarrange(plot_blue_risk_prepost_statewide_bp_small,
+             plot_DCRB_rev_prepost_statewide_bp_small,
+             plot_hump_risk_prepost_statewide_bp_small, 
+             nrow = 2,
+          ncol=2,
+          common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+          )
+
+plot_DCRB_rev_prepost_cenca_bp_small
+plot_DCRB_lbs_prepost_cenca_bp_small
+ggarrange(plot_blue_risk_prepost_cenca_bp_small,
+             plot_DCRB_rev_prepost_cenca_bp_small,
+             plot_hump_risk_prepost_cenca_bp_small, 
+             nrow = 2,
+              ncol=2,
+             common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+             )
+
+plot_DCRB_rev_prepost_bp_small
+plot_DCRB_lbs_prepost_bp_small
+```
+<br>
+
+
+## Avg $ and lbs in 2009-13 v 2014-19 for all DCRB vessels by scenario based on spatial scale
+```{r}
+
+plot_DCRB_rev_scale_compare_small <- ggplot(
+  data = scale_compare,
+  aes(
+    x = scale,
+    y = mean_relative_dollars,
+    colour = scenario_type,
+    fill = scenario_type,
+    shape = scenario_type
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_relative_dollars - (2*se_relative_dollars), ymax = mean_relative_dollars + 2*(se_relative_dollars)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  facet_wrap(pre_post~.) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_shape_manual(values=c(21:25) ) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
+  xlab("Spatial Scale") +
+  ylab("Relative revenue reduction for\nthe Dungeness crab fishery\nsmall vessels only (+/- 2SE)") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+ 
+png(paste0(path_figures, "/plot_DCRB_rev_scale_compare_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_DCRB_rev_scale_compare_small
+invisible(dev.off())
+
+### This is Figure 4 in Samhouri et al
+png(paste0(path_figures, "/p_scale_compare_small.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(plot_blwh_risk_scale_compare_small,
+             plot_DCRB_rev_scale_compare_small,
+             plot_hump_risk_scale_compare_small, 
+             nrow = 2,
+              ncol=2,
+             common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+             )
+invisible(dev.off())
+
+
+plot_DCRB_rev_scale_compare_small
+ggarrange(plot_blwh_risk_scale_compare_small,
+             plot_DCRB_rev_scale_compare_small,
+             plot_hump_risk_scale_compare_small, 
+             nrow = 2,
+              ncol=2,
+             common.legend = TRUE, 
+             legend="bottom",
+          labels="auto",
+          hjust=0
+             )
+
+
+```
+
+
+
+## Tradeoff plots for early and late time period separately for hump, blues, both. Full time period, 2009-14, 2014-18, 2018-2019. Small DCRB vessels.
+
+```{r}
+
+### 061220. summed normalized risk for both whales is calculated from the year_month df as part of the make_tradeoff_dataframes_function.R. this allows us to sum risk across year_months for each crab season and each scenario first, then calculate combined risk relative to sq
+
+# add pre_post, categorize scenarios
+df_tradeoff_focal_scenarios_small_vessels %<>% 
+  mutate(
+    plotting_year = as.numeric(substr(crab_year,6,9)),
+    pre_post = ifelse(plotting_year >=2015 & plotting_year <2019, "2014-2018",
+                    ifelse(plotting_year <2015, "2009-2014", "2018-2019")),
+    scenario_type = factor(
+      case_when(
+      pretty_scenario_names == "Status Quo" ~ "Status Quo",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delay and Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay', negate = TRUE) ~ "Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure', negate = TRUE)  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delayed Opening",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Depth and Gear Restrictions",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction', negate = TRUE) ~ "Depth Restriction",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction', negate = TRUE) & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Gear Restriction",
+      TRUE ~ "Delay and Early Closure"
+    ),
+    levels = c("Status Quo", "Depth Restriction", "Gear Restriction",
+               "Depth and Gear Restrictions", "Delayed Opening", "Early Closure",
+               "Delay and Early Closure")),
+    spatial_domain = factor(
+      case_when(
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Hybrid",
+      stringr::str_detect(pretty_scenario_names, 'BIA') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Hybrid",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'BIA') ~ "Hybrid",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') ~ "Statewide",
+      stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Central California",
+      stringr::str_detect(pretty_scenario_names, 'BIA') ~ "BIA",
+      TRUE ~ "Status Quo"
+    ),
+    levels= c("Status Quo","BIA","Central California","Statewide","Hybrid")
+  )
+  )
+glimpse(df_tradeoff_focal_scenarios_small_vessels)
+
+### normalized humpbacks, by pre_post
+to_hump_n_pre_post_small <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type, 
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=2, alpha=0.3) + #,position=position_dodge(width = 0.9)
+  #geom_text_repel(aes(label=str_replace(crab_year,"_","-")), size=2, alpha=0.6, point.padding = NA, segment.colour = NA) +
+  stat_err(spread = "se", mult = 1, width=.1) + 
+  stat_err(geom="point", size=5, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8) +
+  scale_shape_manual(values=c(21:25) ) +
+  ylab("Relative reduction in risk to humpbacks\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery\n small vessels only") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario type"), fill = guide_legend("Scenario type"),  shape = guide_legend("Spatial domain")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    legend.text = element_text(size=18),
+    strip.text = element_text(size=18)#,
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/Tradeoff plot small vessels only - normalized humpbacks only by pre_post _",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_hump_n_pre_post_small
+invisible(dev.off())
+
+### normalized blues, by pre_post
+
+to_blue_n_pre_post_small <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type, 
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=2, alpha=0.3) + #,position=position_dodge(width = 0.9)
+  #geom_text_repel(aes(label=str_replace(crab_year,"_","-")), size=2, alpha=0.6, point.padding = NA, segment.colour = NA) +
+  stat_err(spread = "se", mult = 1, width=.1) + 
+  stat_err(geom="point", size=5, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8) +
+  scale_shape_manual(values=c(21:25) ) +
+  ylab("Relative reduction in risk to blues\n(normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery\n small vessels only") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario type"), fill = guide_legend("Scenario type"),  shape = guide_legend("Spatial domain")) +
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    legend.text = element_text(size=18),
+    strip.text = element_text(size=18),
+    )
+
+png(paste0(path_figures,"/Tradeoff plot small vessels only - normalized blues only by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_blue_n_pre_post_small
+invisible(dev.off())
+
+# what is % change in risk/rev by period and scenario
+kable(df_tradeoff_focal_scenarios_small_vessels %>% group_by(pre_post, pretty_scenario_names) %>% summarise(mean_hump = mean(relative_hump_risk_n),
+         mean_blwh = mean(relative_blwh_risk_n),                                                 mean_rev = mean(relative_dollars)
+         ) %>%
+       arrange(pretty_scenario_names, pre_post)
+     )
+
+kable(df_tradeoff_focal_scenarios_small_vessels %>% group_by(pre_post, pretty_scenario_names) %>% summarise(median_hump = median(relative_hump_risk_n),
+         median_blwh = median(relative_blwh_risk_n),                                                 median_rev = median(relative_dollars)
+         ) %>%
+       arrange(pretty_scenario_names, pre_post)
+     )
+
+# compare relative risk across pre_post
+plot_hump_risk_prepost_compare_small <- ggplot(
+  data = df_tradeoff_focal_scenarios_small_vessels,
+  aes(
+    x = pre_post,
+    y = relative_hump_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type, 
+    colour=scenario_type,
+    shape = spatial_domain
+    )
+  )  +
+  geom_point(size=2, alpha=0.3, position=position_dodge(width=0.5)) + #,position=position_dodge(width = 0.9)
+  #geom_text_repel(aes(label=str_replace(crab_year,"_","-")), size=2, alpha=0.6, point.padding = NA, segment.colour = NA) +
+  stat_err(spread = "se", mult = 1, width=.1) + 
+  stat_err(geom="point", size=5, alpha = 0.8) + #
+  geom_path(aes(colour=scenario_type, group = pretty_scenario_names), position=position_dodge(width=0.5)) +
+  #facet_wrap(pre_post~.) +
+  xlab("Time period") +
+  ylab("Relative risk reduction for\nhumpback whales from small vessels only\n(normalized, +/- 2SE)") +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+ 
+png(paste0(path_figures, "/plot_hump_risk_scale_compare_small.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_scale_compare_small
+invisible(dev.off())
+
+### normalized both, by pre_post
+
+to_both_n_pre_post_small <- ggplot(
+  df_tradeoff_focal_scenarios_small_vessels, #df
+  aes(
+    x=relative_dollars,
+    y=relative_both_risk_n,
+    colour=pretty_scenario_names
+  )
+) + 
+  geom_point(size=2, alpha=0.6) +
+  stat_err(spread = "se", mult = 2, width=.1) + 
+  stat_err(geom="point", size=7, alpha = 0.8) + 
+  stat_err(spread = "se", mult = 2, geom = "errorbarh", height = .1) +
+  facet_grid(rows = vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  ylab("Relative reduction in risk to\nhumpback and blue whales\nfrom small vessels only (normalized)") +
+  xlab("Relative revenue to the Dungeness crab fishery") +
+  ylim(-26,100) +
+  guides(colour = guide_legend("Scenario")) + 
+  theme_classic() +
+  theme(
+    title = element_text(size = 26),
+    axis.text.x = element_text(size = 18),
+    axis.text.y = element_text(size = 18),
+    axis.title = element_text(size = 20),
+    strip.text = element_text(size=18)#,
+   )
+
+png(paste0(path_figures,"/Tradeoff plot small vessels only - normalized humpbacks and blues by pre_post_",today(),".png"), 
+    width = 10, height = 8, units = "in", res = 300)
+to_both_n_pre_post_small
+invisible(dev.off())
+
+### Figure 5 Samhouri et al
+
+png(paste0(path_figures,"/Tradeoff plot small vessels only - normalized blues, normalized humpbacks by pre_post_",today(),".png"), 
+    width = 14, height = 10, units = "in", res = 300)
+ggarrange(
+    to_blue_n_pre_post_small,
+  to_hump_n_pre_post_small,
+          nrow = 1,
+          ncol = 2,
+          common.legend = TRUE, 
+             legend="right",
+          labels="auto",
+          hjust=0
+)
+invisible(dev.off())
+
+ggarrange(
+    to_blue_n_pre_post_small,
+  to_hump_n_pre_post_small,
+          nrow = 1,
+          ncol = 2,
+          common.legend = TRUE, 
+             legend="right",
+          labels="auto",
+          hjust=0
+)
+
+to_hump_n_pre_post_small
+to_blue_n_pre_post_small
+to_both_n_pre_post_small
+
+```
