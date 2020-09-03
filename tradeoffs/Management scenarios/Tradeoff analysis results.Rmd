@@ -78,6 +78,8 @@ if (user == "JS") {
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
+  path_rds <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios"
+  
   path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
   
   path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
@@ -2822,11 +2824,14 @@ scale_compare <- annual_statewide_df_focal_scenarios %>%
   ) 
   
 glimpse(scale_compare)
+write_rds(scale_compare, paste0(path_rds,"/scale_compare_all_vessels.rds"))
 
 ```
 
 Now make the plots
 ```{r}
+
+scale_compare <- read_rds(paste0(path_rds,"/scale_compare_all_vessels.rds"))
 
 plot_hump_risk_scale_compare <- ggplot(
   data = scale_compare,
@@ -2868,6 +2873,48 @@ png(paste0(path_figures, "/plot_hump_risk_scale_compare.png"), width = 14, heigh
 plot_hump_risk_scale_compare
 invisible(dev.off())
 
+plot_hump_risk_statewide <- ggplot(
+  data = scale_compare %>% filter(scale != "Central California Only"),
+  aes(
+    x = scale,
+    y = mean_relative_hump_risk_n,
+    colour = scenario_type,
+    fill = scenario_type,
+    shape = scenario_type
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_relative_hump_risk_n - (2*se_relative_hump_risk_n), ymax = mean_relative_hump_risk_n + 2*(se_relative_hump_risk_n)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  facet_wrap(pre_post~.) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_shape_manual(values=c(21:25) ) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
+  xlab("") +
+  ylab("Relative risk reduction for\nhumpback whales\n(normalized, +/- 2SE)") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+plot_hump_risk_statewide
+
+png(paste0(path_figures, "/plot_hump_risk_statewide.png"), width = 14, height = 10, units = "in", res = 300)
+plot_hump_risk_statewide
+invisible(dev.off())
+
+
 plot_blwh_risk_scale_compare <- ggplot(
   data = scale_compare,
   aes(
@@ -2907,6 +2954,49 @@ plot_blwh_risk_scale_compare <- ggplot(
 png(paste0(path_figures, "/plot_blwh_risk_scale_compare.png"), width = 14, height = 10, units = "in", res = 300)
 plot_blwh_risk_scale_compare
 invisible(dev.off())
+
+plot_blwh_risk_statewide <- ggplot(
+  data = scale_compare %>% filter(scale != "Central California Only"),
+  aes(
+    x = scale,
+    y = mean_relative_blwh_risk_n,
+    colour = scenario_type,
+    fill = scenario_type,
+    shape = scenario_type
+    )
+  )  +
+  geom_point(size=5, alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(
+    ymin = mean_relative_blwh_risk_n - (2*se_relative_blwh_risk_n), ymax = mean_relative_blwh_risk_n + 2*(se_relative_blwh_risk_n)
+  ),
+  position=position_dodge(width=0.5), size=0.5) + 
+  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  facet_wrap(pre_post~.) +
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
+  scale_shape_manual(values=c(21:25) ) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
+  xlab("") +
+  ylab("Relative risk reduction for\nblue whales\n(normalized, +/- 2SE)") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12,hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 16),strip.text = element_text(size=12)
+    #legend.position = "none"
+    )
+ 
+png(paste0(path_figures, "/plot_blwh_risk_statewide.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blwh_risk_statewide
+invisible(dev.off())
+
+
+
 
 plot_hump_risk_scale_compare
 plot_blwh_risk_scale_compare
