@@ -2831,6 +2831,7 @@ write_rds(scale_compare, paste0(path_rds,"/scale_compare_all_vessels.rds"))
 Now make the plots
 ```{r}
 
+# can start here to make scale_compare plots
 scale_compare <- read_rds(paste0(path_rds,"/scale_compare_all_vessels.rds"))
 
 plot_hump_risk_scale_compare <- ggplot(

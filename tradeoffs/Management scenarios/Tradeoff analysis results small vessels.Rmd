@@ -970,7 +970,10 @@ Make the data frames
 ### compare risk based on scale of mgmt scenario
 # also make plots that have spatial domain (statewide vs cenCA) on x axis, with risk on yaxis, grouped by scenario. my sense is that for whale risk reduction scenario ranks are the same across scales, so that early + delay is best, then early closure = depth restriction and gear reduction, then delay =  reduction
 
-scale_compare <- annual_statewide_df_focal_scenarios_small_vessels %>%
+scale_compare_small <- read_rds(paste0(path_rds,"/scale_compare_sm_vessels.rds"))  %>%
+  add_column(vessel_size = "Small")
+
+scale_compare_small <- annual_statewide_df_focal_scenarios_small_vessels %>%
   filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
   mutate(
   
@@ -1014,8 +1017,8 @@ scale_compare <- annual_statewide_df_focal_scenarios_small_vessels %>%
     .groups = "drop"
   ) 
   
-glimpse(scale_compare)
-write_rds(scale_compare, paste0(path_rds,"/scale_compare_sm_vessels.rds"))
+glimpse(scale_compare_small)
+write_rds(scale_compare_small, paste0(path_rds,"/scale_compare_sm_vessels.rds"))
 
 ```
 
@@ -1023,7 +1026,7 @@ Now make the plots
 ```{r}
 
 plot_hump_risk_scale_compare_small <- ggplot(
-  data = scale_compare,
+  data = scale_compare_small,
   aes(
     x = scale,
     y = mean_relative_hump_risk_n,
@@ -1063,7 +1066,7 @@ plot_hump_risk_scale_compare_small
 invisible(dev.off())
 
 plot_blwh_risk_scale_compare_small <- ggplot(
-  data = scale_compare,
+  data = scale_compare_small,
   aes(
     x = scale,
     y = mean_relative_blwh_risk_n,
@@ -1725,7 +1728,7 @@ plot_DCRB_lbs_prepost_bp_small
 ```{r}
 
 plot_DCRB_rev_scale_compare_small <- ggplot(
-  data = scale_compare,
+  data = scale_compare_small,
   aes(
     x = scale,
     y = mean_relative_dollars,
