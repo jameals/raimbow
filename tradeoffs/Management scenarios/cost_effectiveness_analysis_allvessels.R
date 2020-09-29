@@ -156,3 +156,119 @@ plot_hump_ce_prepost_bp
 png(paste0(path_figures, "/plot_hump_costeffectiveness_bp.png"), width = 14, height = 10, units = "in", res = 300)
 plot_hump_ce_prepost_bp
 invisible(dev.off())
+
+
+
+##################################
+##################################
+### CONSIDER CHANGES IN RANK C-E
+
+# arrange from greatest risk during 2014-18 to least
+df_rank <- df_tradeoff_focal_scenarios_simple_quantile %>%
+  filter(quantile == "50%") %>%
+  group_by(pretty_scenario_names, pre_post) %>%
+  arrange(
+    costs_benefits_hump,
+    costs_benefits_blwh,
+    pretty_scenario_names
+  ) %>%
+  #tibble::rowid_to_column("scenario_rank")
+  ungroup() %>%
+  mutate(scenario_rank = row_number()) %>%
+  rename(
+    median_relative_hump_risk_n = relative_hump_risk_n,
+    median_relative_blwh_risk_n = relative_blwh_risk_n,
+    median_relative_dollars_cost = relative_dollars_cost,
+    median_costs_benefits_hump = costs_benefits_hump,
+    median_costs_benefits_blwh = costs_benefits_blwh
+  ) %>%
+  select(-quantile) %>%
+  group_by(pretty_scenario_names) %>%
+  mutate(
+    scenario_min_rank = min(scenario_rank) 
+  )
+  
+  #group_by(pretty_scenario_names) %>%
+  # arrange(
+  #   scenario_rank,
+  #   group_by = pretty_scenario_names
+  # )
+
+glimpse(df_rank)
+
+
+df_tradeoff_focal_scenarios_simple_rank <- df_tradeoff_focal_scenarios_simple %>%
+  left_join(df_rank, by = c("pre_post", "pretty_scenario_names"))
+glimpse(df_tradeoff_focal_scenarios_simple_rank)
+
+plot_ce_hump_prepost_statewide_connect <- ggplot(
+  data = df_tradeoff_focal_scenarios_simple_rank,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_min_rank),
+    y = costs_benefits_hump,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+  )
+)  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                  alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Cost effectiveness for humpback whales\n(% revenue loss / % risk reduction )") +
+  ylim(-0.1,2.3) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/plot_ce_hump_prepost_statewide_connect.png"), width = 14, height = 10, units = "in", res = 300)
+plot_ce_hump_prepost_statewide_connect
+invisible(dev.off())
+
+plot_ce_blue_prepost_statewide_connect <- ggplot(
+  data = df_tradeoff_focal_scenarios_simple_rank,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_min_rank),
+    y = costs_benefits_blwh,
+    group = interaction(factor(pre_post),plotting_year),
+    colour = factor(pre_post)
+  )
+)  +
+  #geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5))+
+  geom_line(position=position_dodge(width=0.5))+
+  geom_text_repel(aes(label=crab_year),
+                  alpha=0.6) +
+  xlab("Scenario") +
+  ylab("Cost effectiveness for blue whales\n(% revenue loss / % risk reduction )") +
+  ylim(-0.1,2.3) +
+  scale_colour_viridis_d(option = "cividis",begin=0.2, end=0.8, direction = -1) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+  )
+
+png(paste0(path_figures, "/plot_ce_blue_prepost_statewide_connect.png"), width = 14, height = 10, units = "in", res = 300)
+plot_ce_blue_prepost_statewide_connect
+invisible(dev.off())
