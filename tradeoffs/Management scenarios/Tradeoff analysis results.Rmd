@@ -551,6 +551,8 @@ sq_bbox <- st_bbox(sq_maps_grid %>%
 sq_maps_grid_noNA <- sq_maps_grid %>%
   filter(!(is.na(time_period)))
 
+write_csv(sq_maps_grid_noNA, paste0(path_maps,"/Data frame for Figure 2 Samhouri et al.csv"))
+
 # plot median humpback densities 
 
 map_hump <- ggplot() + 
