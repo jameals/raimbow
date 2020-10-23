@@ -61,7 +61,7 @@ d <- effort_mgmt(
   delay.method = "depth",
   delay.method.fidelity = NULL, #"temporal",
   closure.date = as.Date("2010-04-01"),
-  closure.region = c("BIA"),
+  closure.region = c("CenCA"),
   closure.method = "temporal",
   closure.redist.percent = 10,
   depth.shallow = -100, depth.deep = -500,

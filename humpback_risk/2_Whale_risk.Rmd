@@ -24,7 +24,7 @@ library(tidyverse)
 Set file paths depending on user.
 
 ```{r}
-source(here::here("whalepreds_aggregate/Whalepreds_aggregate.R"), local = TRUE, echo = FALSE)
+# source(here::here("whalepreds_aggregate/Whalepreds_aggregate.R"), local = TRUE, echo = FALSE)
 source(here::here("User_script_local.R"))
 
 if (user == "JS") {

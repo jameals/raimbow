@@ -1,0 +1,379 @@
+---
+title: "Tradeoff manuscript whale time series figures"
+author: "Sam Woodman"
+date: "10/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This document generates whale prediction time series plots for Jameal's tradeoff manuscript. It duplicates a fair bit of the work done in '2_Whale_risk.Rmd' and '3_Whale_risk_timeseries.Rmd', but also does it for blue whales and does it without needing to worry about carrying along the risk metrics/calculations and thus the duplication was worth having this document be self-contained.
+
+We can use 'Grid5km_whale.rds' because we're only making time series plots for CA.
+
+```{r intro, message=FALSE}
+library(gridExtra)
+library(lubridate)
+library(sf)
+library(tidyverse)
+
+
+source(here::here("User_script_local.R"))
+
+if (user == "JS") {
+  
+} else if (user == "SMW") {
+  flag.save <- FALSE
+  
+  # file.data.bmpreds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds"
+  # file.data.mnpreds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds"
+  file.grid.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_key.rds"
+  file.whale.data <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid5km_whale.rds"
+  
+} else {
+  stop("User not recognized")
+}
+```
+
+## Process whale predictions
+
+```{r}
+grid.key <- readRDS(file.grid.region)
+x.orig <- readRDS(file.whale.data) 
+
+x <- x.orig %>% 
+  left_join(grid.key, by = "GRID5KM_ID") %>% 
+  mutate(Humpback_dens = Humpback_abund_mean / area_km_lno, 
+         Region = factor(Region, levels = c("NorCA", "CenCA")))
+
+stopifnot(!anyNA(x$Region))
+
+
+# Quantiles - from https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+# Note: could swap these out to use normalized values instead
+quibble2 <- function(x, q = c(0.025, 0.25, 0.50, 0.75, 0.975)) {
+  tibble("{{ x }}" := quantile(x, q, na.rm = TRUE), "{{ x }}_q" := q)
+}
+
+
+bm.q <- x %>% 
+  group_by(year_month, Region) %>% 
+  summarise(quibble2(Blue_occurrence_mean), 
+            .groups = "drop") %>% 
+  mutate(Blue_occurrence_mean = unname(Blue_occurrence_mean)) %>% 
+  tidyr::pivot_wider(names_from = Blue_occurrence_mean_q, names_prefix = "bm_occ_", 
+                     values_from = Blue_occurrence_mean)
+
+mn.q <- x %>% 
+  group_by(year_month, Region) %>% 
+  summarise(quibble2(Humpback_dens), 
+            .groups = "drop") %>% 
+  mutate(Humpback_dens = unname(Humpback_dens)) %>% 
+  tidyr::pivot_wider(names_from = Humpback_dens_q, names_prefix = "mn_dens_", 
+                     values_from = Humpback_dens)
+
+
+bm.q.ca <- x %>% 
+  group_by(year_month) %>% 
+  summarise(quibble2(Blue_occurrence_mean), 
+            .groups = "drop") %>% 
+  mutate(Blue_occurrence_mean = unname(Blue_occurrence_mean)) %>% 
+  tidyr::pivot_wider(names_from = Blue_occurrence_mean_q, names_prefix = "bm_occ_", 
+                     values_from = Blue_occurrence_mean)
+
+mn.q.ca <- x %>% 
+  group_by(year_month) %>% 
+  summarise(quibble2(Humpback_dens), 
+            .groups = "drop") %>% 
+  mutate(Humpback_dens = unname(Humpback_dens)) %>% 
+  tidyr::pivot_wider(names_from = Humpback_dens_q, names_prefix = "mn_dens_", 
+                     values_from = Humpback_dens)
+
+
+
+
+x.summ <- x %>% 
+  group_by(year_month, Region) %>% 
+  summarise(bm_occ_mean = mean(Blue_occurrence_mean, na.rm = TRUE),
+            mn_dens_mean = mean(Humpback_dens, na.rm = TRUE), 
+            bm_normalized_med = median(normalized_blue, na.rm = TRUE),
+            mn_normalized_med = median(normalized_humpback, na.rm = TRUE),
+            .groups = "drop") %>% 
+  left_join(bm.q, by = c("year_month", "Region")) %>% 
+  left_join(mn.q, by = c("year_month", "Region"))
+
+x.summ.ca <- x %>% 
+  group_by(year_month) %>% 
+  summarise(bm_occ_mean = mean(Blue_occurrence_mean, na.rm = TRUE),
+            mn_dens_mean = mean(Humpback_dens, na.rm = TRUE),
+            bm_normalized_med = median(normalized_blue, na.rm = TRUE),
+            mn_normalized_med = median(normalized_humpback, na.rm = TRUE),
+            .groups = "drop") %>% 
+  mutate(Region = factor("CA")) %>% 
+  left_join(bm.q.ca, by = "year_month") %>% 
+  left_join(mn.q.ca, by = "year_month")
+
+
+
+x.max <- length(unique(x.summ$year_month))
+x.lab.idx <- seq(1, to = x.max, by = 3)
+x.lab <- sort(unique(x.summ$year_month))[x.lab.idx]
+vert.lines <- seq(0.5, to = x.max, by = 12)
+```
+
+Function for generating time series plots
+
+```{r}
+raimbow_ca_ts <- function(obj.df, x.aes.x, y, plot.main = NULL, y.lab = NULL, filter.reg.idx, 
+                          month.flag = FALSE) {
+  ### Inputs
+  # obj.df: summary of risk, etc, by month and region
+  # y: unquoted name of value to be plotted
+  # wa.flag: logical indicating whether WA values should be plotted
+  # filter.reg.idx: index number indicating regions to be filtered for
+  
+  x.aes.x <- enquo(x.aes.x)
+  y <- enquo(y)
+  
+  x.breaks <- if (month.flag) month.abb else x.lab
+  y.max <- max(select(obj.df, !!y))
+  
+  tmp <- obj.df %>% 
+    mutate(DC_season = factor(1)) %>% 
+    # ggplot(aes(!!x.aes.x, !!y, colour = Region, group = Region, linetype = DC_season)) +
+    ggplot(aes(!!x.aes.x, !!y, group = Region)) +
+    geom_point() + 
+    geom_line()
+  
+  if (!month.flag) tmp <- tmp + 
+    geom_vline(xintercept = vert.lines, col = "grey", lwd = 0.35) 
+  
+  tmp + 
+    # scale_colour_manual(values = cols.vals, drop = TRUE, name = "Region") +
+    # scale_colour_brewer(palette = "Set1", name = "Region", drop = FALSE) +
+    # guides(linetype = guide_legend(title = "DC season", label = FALSE,
+    #                                override.aes = list(colour = "black"))) +
+    
+    # coord_cartesian(xlim = c(-1, x.max)) + 
+    scale_x_discrete(breaks = x.breaks) +
+    xlab (NULL) + 
+    ylab(y.lab) + 
+    ylim(0, y.max) + 
+    ggtitle(plot.main) + 
+    theme_classic() +
+    theme(plot.title = element_text(hjust = 0.5), 
+          axis.text.x = element_text(angle = 90, vjust = 0.4), 
+          legend.justification = "top")
+}
+
+
+###############################################################################
+raimbow_ca_ts_facets <- function(x.data, x.aes.x, x.aes.y, y.lab, title, 
+                                 month.flag = FALSE) {
+  x.aes.x <- enquo(x.aes.x)
+  x.aes.y <- enquo(x.aes.y)
+  x.breaks <- if (month.flag) month.abb else x.lab
+  
+  tmp <- ggplot(
+    data = x.data, 
+    aes(!!x.aes.x, !!x.aes.y, group = Region)
+  ) +
+    geom_point(size = 1) +
+    geom_line()
+  
+  if (!month.flag) tmp <- tmp + 
+    geom_vline(xintercept = vert.lines, col = "grey", lwd = 0.35) 
+  
+  # geom_vline(xintercept = vert.lines, col = "grey", lwd = 0.35) +
+  # geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  tmp + 
+    facet_grid(rows = vars(Region),
+               scales = "free_y",
+               labeller = as_labeller(c(
+                 `CenCA` = "Central CA",
+                 `NorCA` = "Northern CA"
+               )),
+               switch = "y"
+    ) + 
+    # scale_x_continuous(breaks = seq(2010, 2019),
+    #                    labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")) + 
+    ylab(y.lab) + 
+    xlab("") +
+    scale_x_discrete(breaks = x.breaks) +
+    ggtitle(title) + 
+    theme_classic() +
+    theme(legend.title = element_blank(),
+          #title = element_text(size = 26),
+          # legend.text = element_text(size = 20),
+          legend.position = c(.15, .85),
+          plot.title = element_text(hjust = 0.5), 
+          # axis.text.x = element_text(angle = 90, vjust = 0.4), 
+          axis.text.x = element_text(hjust = 1, angle = 60),
+          # axis.text.y = element_text(size = 14),
+          # axis.title = element_text(size = 16),
+          # strip.text = element_text(size=14),
+          strip.background = element_blank(),
+          strip.placement = "left"
+    )
+}
+```
+
+## Blue whale time series
+
+```{r}
+raimbow_ca_ts(
+  x.summ.ca, year_month, bm_normalized_med, plot.main = "Blue whales - California - median - normalized",
+  y.lab = "Whales / km2", filter.reg.idx = c(1)
+)
+
+raimbow_ca_ts(
+  x.summ.ca, year_month, bm_occ_0.5, plot.main = "Blue whales - California - median",
+  y.lab = "Whales / km2", filter.reg.idx = c(1)
+)
+
+raimbow_ca_ts_facets(
+  x.summ, year_month, bm_occ_0.5, 
+  "Probability of occurrence", "Blue whales - median"
+)
+
+# ggsave()
+```
+
+## Humpback time series
+
+```{r}
+raimbow_ca_ts(
+  x.summ.ca, year_month, mn_normalized_med, plot.main = "Humpback whales - California - median - normalized",
+  y.lab = "Whales / km2", filter.reg.idx = c(1)
+)
+
+raimbow_ca_ts(
+  x.summ.ca, year_month, mn_dens_0.5, plot.main = "Humpback whales - California - median",
+  y.lab = "Whales / km2", filter.reg.idx = c(1)
+)
+raimbow_ca_ts_facets(
+  x.summ, year_month, mn_dens_0.5, "Whales / km2", "Humpback whales - median"
+)
+```
+
+## Seasonality
+
+First we must generate data frames with averages by month for our desired time periods. Of note - the year-months start January of 2009 and run through July 2019, so there are not equal number of records for all months.
+
+NOTE: These averages are calculated using the original data (one value per grid cell per month), not the median values for each year-month
+
+For this section, the user will need to update the next code block to reflect the desired filters
+
+```{r}
+# TODO by user: set filter as desired
+#   User will also need to update y value, plot titles, and file names below
+filename.out <- "Monthly_Nov2009_Oct2014.png"
+
+x.month <- x %>%  
+  mutate(year = as.numeric(substr(year_month, 1, 4)), 
+         month = as.numeric(substr(year_month, 6, 7)), 
+         ym_date = as.Date(paste(year, month, "01", sep = "-"))) %>% 
+  filter(between(ym_date, as.Date("2009-11-01"), as.Date("2014-10-15")))
+
+range(x.month$ym_date)
+```
+
+This code should be able to be run with no alterations
+
+```{r}
+###############################################################################
+bm.q.month <- x.month %>% 
+  group_by(month, Region) %>% 
+  summarise(quibble2(Blue_occurrence_mean), 
+            .groups = "drop") %>% 
+  mutate(Blue_occurrence_mean = unname(Blue_occurrence_mean)) %>% 
+  tidyr::pivot_wider(names_from = Blue_occurrence_mean_q, names_prefix = "bm_occ_", 
+                     values_from = Blue_occurrence_mean)
+
+mn.q.month <- x.month %>% 
+  group_by(month, Region) %>% 
+  summarise(quibble2(Humpback_dens), 
+            .groups = "drop") %>% 
+  mutate(Humpback_dens = unname(Humpback_dens)) %>% 
+  tidyr::pivot_wider(names_from = Humpback_dens_q, names_prefix = "mn_dens_", 
+                     values_from = Humpback_dens)
+
+
+bm.q.ca.month <- x.month %>% 
+  group_by(month) %>% 
+  summarise(quibble2(Blue_occurrence_mean), 
+            .groups = "drop") %>% 
+  mutate(Blue_occurrence_mean = unname(Blue_occurrence_mean)) %>% 
+  tidyr::pivot_wider(names_from = Blue_occurrence_mean_q, names_prefix = "bm_occ_", 
+                     values_from = Blue_occurrence_mean)
+
+mn.q.ca.month <- x.month %>% 
+  group_by(month) %>% 
+  summarise(quibble2(Humpback_dens), 
+            .groups = "drop") %>% 
+  mutate(Humpback_dens = unname(Humpback_dens)) %>% 
+  tidyr::pivot_wider(names_from = Humpback_dens_q, names_prefix = "mn_dens_", 
+                     values_from = Humpback_dens)
+
+
+
+###############################################################################
+x.summ.month <- x.month %>%   
+  group_by(month, Region) %>%
+  summarise(bm_occ_mean = mean(Blue_occurrence_mean, na.rm = TRUE),
+            mn_dens_mean = mean(Humpback_dens, na.rm = TRUE),
+            bm_normalized_med = median(normalized_blue, na.rm = TRUE),
+            mn_normalized_med = median(normalized_humpback, na.rm = TRUE),
+            .groups = "drop") %>%
+  left_join(bm.q.month, by = c("month", "Region")) %>%
+  left_join(mn.q.month, by = c("month", "Region")) %>% 
+  mutate(month = factor(month.abb[month], levels = month.abb))
+
+x.summ.ca.month <- x.month %>%   
+  group_by(month) %>%
+  summarise(bm_occ_mean = mean(Blue_occurrence_mean, na.rm = TRUE),
+            mn_dens_mean = mean(Humpback_dens, na.rm = TRUE),
+            bm_normalized_med = median(normalized_blue, na.rm = TRUE),
+            mn_normalized_med = median(normalized_humpback, na.rm = TRUE),
+            .groups = "drop") %>%
+  left_join(bm.q.ca.month, by = c("month")) %>%
+  left_join(mn.q.ca.month, by = c("month")) %>% 
+  mutate(Region = "CA", 
+         month = factor(month.abb[month], levels = month.abb))
+```
+
+Here the user must update the y values, plot titles, and file names
+
+```{r}
+# Plot
+
+raimbow_ca_ts(
+  x.summ.ca.month, month, mn_normalized_med, plot.main = "Humpback whale - normalized median - Nov 2009 to Oct 2014", 
+  y.lab = "Whales / km2", filter.reg.idx, month.flag = TRUE
+)
+# ggsave(filename.out, plot = month.plot)
+
+raimbow_ca_ts_facets(
+  x.summ.month, month, mn_dens_0.5, "Whales / km2", "Humpback whale - median - Nov 2009 to Oct 2014", 
+  month.flag = TRUE
+)
+# ggsave(filename.out, plot = month.plot)
+
+raimbow_ca_ts(
+  x.summ.ca.month, month, bm_normalized_med, "Blue whale - normalized median - Nov 2009 to Oct 2014", 
+  y.lab = "Probability of occurrence", filter.reg.idx, month.flag = TRUE
+)
+# ggsave(filename.out, plot = month.plot)
+
+raimbow_ca_ts_facets(
+  x.summ.month, month, bm_occ_0.5, "Whales / km2", "Blue whale - median - Nov 2009 to Oct 2014", 
+  month.flag = TRUE
+)
+# ggsave(filename.out, plot = month.plot)
+```
+
+Now we make plots of these seasonality sections

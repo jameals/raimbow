@@ -1,5 +1,7 @@
 # Code to generate specific time series plots for KAF Entanglement Science Workshop presentation
-#   'Objects are from 3_Whale_risk_timeseries.Rmd' - most of this file must be run first
+#   Objects are from '3_Whale_risk_timeseries.Rmd' - most of this file 
+#   must be run first (specifically need to run up to 'Plots')
+# Also contains code to generate plots for Jameal's manuscript
 
 
 #------------------------------------------------------------------------------
