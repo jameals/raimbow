@@ -26,6 +26,9 @@ source(here::here("User_script_local.R"))
 
 if (user == "JS") {
   
+  file.grid.region <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds"
+  file.whale.data <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  
 } else if (user == "SMW") {
   flag.save <- FALSE
   
