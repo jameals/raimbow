@@ -46,12 +46,17 @@ season.st.date.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/start_da
 
 
 
+x.exp <- x.orig %>% 
+  filter(year_month == "2010_04") %>% 
+  slice(1:20) %>% 
+  mutate(depth = seq(-5, -100, by = -5))
+
 
 ###############################################################################
 ### Shift/redistribute effort as specified
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
 d <- effort_mgmt(
-  x = x.orig,
+  x = x.orig, #x.exp,
   season.st.key = season.st.date.key, 
   preseason.days = 3, 
   # season.st.backstop = NULL,
@@ -61,10 +66,10 @@ d <- effort_mgmt(
   delay.method = "depth",
   delay.method.fidelity = NULL, #"temporal",
   closure.date = as.Date("2010-04-01"),
-  closure.region = c("CenCA"),
-  closure.method = "temporal",
-  closure.redist.percent = 10,
-  depth.shallow = -100, depth.deep = -500,
+  closure.region = c("All"),
+  closure.method = "depth",
+  closure.redist.percent = 50,
+  depth.shallow = 0, depth.deep = -100,
   # reduction.before.date = as.Date("2009-12-15"),
   # reduction.before.percent = 50,
   # reduction.before.region = "All",
@@ -72,6 +77,20 @@ d <- effort_mgmt(
   # reduction.after.percent = 50,
   # reduction.after.region = "All"
 )
+
+# depth+temporal sanity testing
+sum(d$Num_DCRB_VMS_pings)
+x.orig.depth.logical <- !between(x.orig$depth, -100, 0) & substr(x.orig$year_month, 6, 7) %in% sprintf("%02d", 4:10) #& x.orig$Region == "NorCA"
+sum(d2$Num_DCRB_VMS_pings) - 0.5 * sum(x.orig$Num_DCRB_VMS_pings[x.orig.depth.logical])
+
+d.summ <- d %>% 
+  group_by(year_month, date_record, GRID5KM_ID) %>% 
+  summarise(count = n(), 
+            Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings))
+d2 <- d2 %>% arrange(year_month, date_record, GRID5KM_ID)
+
+
+
 
 # Look at date distribution by Region
 d.summ.date <- d %>% group_by(crab_year, Region) %>% summarise(min(date_record), max(date_record))

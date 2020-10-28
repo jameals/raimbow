@@ -15,7 +15,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                         delay.method.fidelity = c("spatial", "temporal"), 
                         closure.date = NULL, 
                         closure.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
-                        closure.method = c("remove", "temporal", "depth"), 
+                        closure.method = c("remove", "temporal", "depth", "depth+temporal"), 
                         closure.redist.percent = 100, 
                         depth.shallow = NULL, depth.deep = NULL, 
                         reduction.before.date = NULL, 
@@ -23,19 +23,21 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                         reduction.before.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
                         reduction.after.date = NULL, 
                         reduction.after.percent = 50, 
-                        reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA")) {
+                        reduction.after.region = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
+                        reduction.after.redist = FALSE, 
+                        reduction.after.redist.percent = 10) {
   
   ### Inputs
   # x: data.frame; expected to have same format at data frame from Jameal
   # preseason.days: numeric; number of days before the provided season start date
-  #   definied by season.st.key for which effort will be kept, i.e. not affected by early.data.method.
+  #   defined by season.st.key for which effort will be kept, i.e. not affected by early.data.method.
   #   For instance, is 3, than all data up to 3 days before the season start is kept, 
   #   and not processed by early.data.method
   # season.st.key: data frame with 3 columns; specifies the season start dates for each region. 
   #   The columns must be (in order): crab year, region, and start date. Names don't matter
   #   Data before these dates are handled as specified in early.data.method
   #   If NULL, then the season start dates are determined as 
-  #   the first day with histroical effort (from x) in that region for that crab year
+  #   the first day with historical effort (from x) in that region for that crab year
   # season.st.backstop: data frame with the same format as season.st.key.
   #   This data serves as a 'backstop' minimum season start date. 
   #   A message is printed if any dates from season.st.key are before the corresponding backstop date, 
@@ -55,6 +57,9 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   #   other 'closure...' arguments are ignored
   # closure.region: character; one of options listed above. Ignored if closure.date is NULL
   # closure.method: character; one of options listed above. Ignored if closure.date is NULL
+  #   Note that 'depth+temporal' temporally redistributes effort outside of the 
+  #   range specified by depth.deep and depth.shallow into the specified depth range,
+  #   in the same region
   # closure.redist.percent: numeric; default is 100. 
   #   Ignored if closure.method is not "temporal". Otherwise, 
   #   values being redistributed are multiplied by (closure.redist.percent / 100) 
@@ -74,6 +79,13 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   # reduction.after.percent: numeric; between 0 and 100. Ignored if reduction.after.date is NULL
   # reduction.after.region: character; one of options listed above. 
   #   Ignored if reduction.after.date is NULL
+  # reduction.after.redist: logical indicating if effort removed by reduction.after... arguments
+  #   is redistributed using temporal fidelity. 
+  #   This can only be TRUE if reduction.after.region is 'CenCA' or 'NorCA', in which case the effort 
+  #   is temporally redistributed to the other region
+  # reduction.after.redist.percent: numeric; if reduction.after.redist is TRUE, then 
+  #   (effort removed * (reduction.after.redist.percent / 100)) effort 
+  #   is redistributed to the other (open) region
   
   
   ### Output
@@ -85,7 +97,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   #     lawful end date (July 15 for central CA and July 31 otherwise) 
   #     for this Region in this crab year
   
-  #browser()
+  # browser()
   stopifnot(
     require(dplyr), 
     require(lubridate), 
@@ -101,7 +113,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   stopifnot(
     inherits(x, "data.frame"), 
     "season.st.key must be NULL or a data frame with 3 columns" = 
-      is.null(season.st.key) | inherits(season.st.key, "data.frame") & ncol(season.st.key) == 3, 
+      is.null(season.st.key) | (inherits(season.st.key, "data.frame") & ncol(season.st.key) == 3), 
     inherits(preseason.days, c("numeric", "integer")), 
     preseason.days >= 0,
     "season.st.backstop must be NULL or a data frame with 3 columns" = 
@@ -124,7 +136,11 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     "reduction.after.percent must a numeric of length 1 between 0 and 100" = 
       length(reduction.after.percent) == 1 & dplyr::between(reduction.after.percent, 0, 100), 
     is.null(depth.shallow) | inherits(depth.shallow, c("integer", "numeric")), 
-    is.null(depth.deep) | inherits(depth.deep, c("integer", "numeric"))
+    is.null(depth.deep) | inherits(depth.deep, c("integer", "numeric")), 
+    "reduction.after.redist must a logical of length 1" = 
+      inherits(reduction.after.redist, "logical") & length(reduction.after.redist) == 1, 
+    "reduction.after.redist.percent must a numeric of length 1 between 0 and 100" = 
+      length(reduction.after.redist.percent) == 1 & dplyr::between(reduction.after.redist.percent, 0, 100)
   )
   
   early.data.method <- match.arg(early.data.method)
@@ -155,12 +171,12 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     stop("All effort data must be in the following regions\n:", 
          paste(eff.regions, collapse = ", "))
   
-  if (identical(delay.method, "depth") | identical(closure.method, "depth")) {
+  if (identical(delay.method, "depth") | identical(closure.method, "depth") | identical(closure.method, "depth+temporal")) {
     if (is.null(depth.shallow)) depth.shallow <- max(x$depth)
     if (is.null(depth.deep)) depth.deep <- min(x$depth)
-    if (!(depth.shallow <= 0 & depth.deep < depth.shallow))
-      stop("depth.shallow and depth.deep must be less than 0,", 
-           "and depth.deep must be less than depth.shallow", 
+    if (!(depth.shallow <= 0 & depth.deep <= depth.shallow))
+      stop("depth.shallow and depth.deep must be less than or equal to 0,", 
+           "and depth.deep must be less than or equal to depth.shallow", 
            "(i.e. have a greater absolute value)")
     
     if (!any(x$depth < depth.shallow))
@@ -174,9 +190,22 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     stop("Effort reduction before some date and a delayed opening cannot be used ", 
          "simultaneously unless delay.method is 'depth'")
   
-  if ((!is.null(closure.date) & !identical(closure.method, "depth")) & !is.null(reduction.after.date))
+  if ((!is.null(closure.date) & (!identical(closure.method, "depth") | !identical(closure.method, "depth+temporal"))) & 
+      !is.null(reduction.after.date))
     stop("Effort reduction after some date and an early closure cannot be used ", 
-         "simultaneously unless closure.method is 'depth'")
+         "simultaneously unless closure.method is 'depth' or 'depth+temporal'")
+  
+  
+  # Check that if reduction.after.redist is TRUE, then...
+  if (reduction.after.redist) {
+    if (is.null(reduction.after.date)) {
+      stop("reduction.after.redist can only be TRUE if reduction.after.date is not NULL")
+      
+    } else if (identical(reduction.after.region, "CenCA") | identical(reduction.after.region, "NorCA")) {
+      stop("reduction.after.redist can only be TRUE if reduction.after.region is ", 
+           "exactly one of 'CenCA' or 'NorCA'")
+    }
+  }
   
   
   # Checks delay/closure dates relative to each other
@@ -189,6 +218,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   if (!is.null(delay.date) & !is.null(closure.date)) 
     if (delay.date >= closure.date)
       stop("delay.date must come before closure.date")
+  
   
   # Checks that non-NULL dates are within the correct ranges
   date.message.common <- paste(
@@ -372,13 +402,13 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     
     x.fish.delay.reduct <- x.fish.delay.reduct %>% 
       mutate(rec = reduce_region & reduce_date, 
-             rec_dec = 1 - (reduction.before.percent / 100), 
-             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_dec, DCRB_lbs), 
-             DCRB_rev = ifelse(rec, DCRB_rev * rec_dec, DCRB_rev), 
-             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_dec, Num_DCRB_VMS_pings), 
-             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_dec, Num_DCRB_Vessels), 
-             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_dec, Num_Unique_DCRB_Vessels)) %>% 
-      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_dec)
+             rec_decimal = 1 - (reduction.before.percent / 100), 
+             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs), 
+             DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal, DCRB_rev), 
+             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal, Num_DCRB_VMS_pings), 
+             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal, Num_DCRB_Vessels), 
+             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels)) %>% 
+      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_decimal)
   }
   
   #----------------------------------------------------------------------------
@@ -516,15 +546,50 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
         mutate(reduce_region = Region %in% reduction.after.region)
     }
     
-    x.fish.closure.reduct <- x.fish.closure.reduct %>% 
-      mutate(rec = reduce_region & reduce_date, 
-             rec_dec = 1 - (reduction.after.percent / 100), #get decimal value
-             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_dec, DCRB_lbs), 
-             DCRB_rev = ifelse(rec, DCRB_rev * rec_dec, DCRB_rev), 
-             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_dec, Num_DCRB_VMS_pings), 
-             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_dec, Num_DCRB_Vessels), 
-             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_dec, Num_Unique_DCRB_Vessels)) %>% 
-      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_dec)
+    # browser()
+    # x.fish.closure.reduct.pre <- x.fish.closure.reduct %>% 
+    #   mutate(rec = reduce_region & reduce_date, 
+    #          rec_decimal = 1 - (reduction.after.percent / 100)) #get decimal value
+    # 
+    # x.fish.closure.reduct.toredist <- x.fish.closure.reduct.pre %>% 
+    #   mutate(year_month_old = year_month, 
+    #          date_record_old = date_record, 
+    #          record_toshift = rec, 
+    #          record_base = !rec & reduce_date, 
+    #          region_toshiftto) %>% 
+    #   redistribute_temporal(Num_DCRB_VMS_pings, "closure", reduction.after.region, 
+    #                         reduction.after.redist.percent)# function below
+    # 
+    # 
+    # x.fish.closure.reduct <- x.fish.closure.reduct.pre %>% 
+    #   mutate(DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs), 
+    #          DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal, DCRB_rev), 
+    #          Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal, Num_DCRB_VMS_pings), 
+    #          Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal, Num_DCRB_Vessels), 
+    #          Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels)) %>% 
+    #   select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_decimal)
+    
+    x.fish.closure.reduct <- x.fish.closure.reduct %>%
+      mutate(rec = reduce_region & reduce_date,
+             rec_decimal = 1 - (reduction.after.percent / 100), #get decimal value
+             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs),
+             DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal, DCRB_rev),
+             Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal, Num_DCRB_VMS_pings),
+             Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal, Num_DCRB_Vessels),
+             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels)) %>%
+      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_decimal)
+    
+    # if (reduction.after.redist) {
+    #   redistribute_temporal(x.fish.closure.reduct, Num_DCRB_VMS_pings, "closure", closure.region, 
+    #                         reduction.after.redist.percent)
+    # x.fish.c2 %>% 
+    #   mutate(record_toshift = record_closed, 
+    #          record_base = !record_toshift & record_post_closure_date, 
+    #          date_record_old = date_record, 
+    #          year_month_old = year_month) %>% 
+    #   redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
+    #                         closure.redist.percent)# function below
+    # }
   }
   
   
@@ -587,6 +652,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     
     #------------------------------------------------------
     # Remove or redistribute closed effort in applicable region(s)
+    # browser()
     x.fish.closure <- if (closure.method == "remove") {
       x.fish.c2 %>% 
         filter(!record_closed) %>% 
@@ -599,6 +665,36 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
         filter(!record_closed | between(.data$depth, depth.deep, depth.shallow)) %>% 
         select(-season_close_mgmt, -record_post_closure_date, 
                -record_closed, -region_toshiftto)
+      
+    } else if (closure.method == "depth+temporal") {
+      # Redistribute effort not in accepted depth band
+      if (identical(closure.region, "All")) {
+        # redistribute_temporal can only do one region at a time
+        bind_rows(
+          lapply(c("CenCA", "NorCA"), function(i) {
+            x.fish.c2 %>% 
+              filter(Region == i) %>% 
+              mutate(record_toshift = record_closed & !between(.data$depth, depth.deep, depth.shallow), 
+                     record_base = !record_toshift & record_post_closure_date, 
+                     region_toshiftto = ifelse(record_toshift, Region, NA), 
+                     date_record_old = date_record, 
+                     year_month_old = year_month) %>% 
+              redistribute_temporal(Num_DCRB_VMS_pings, "closure", i, 
+                                    closure.redist.percent)
+          })
+        ) %>% 
+          arrange(crab_year, Region, day(date_record), GRID5KM_ID)
+        
+      } else {
+        x.fish.c2 %>% 
+          mutate(record_toshift = record_closed & !between(.data$depth, depth.deep, depth.shallow), 
+                 record_base = !record_toshift & record_post_closure_date, 
+                 region_toshiftto = ifelse(record_toshift, Region, NA), 
+                 date_record_old = date_record, 
+                 year_month_old = year_month) %>% 
+          redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
+                                closure.redist.percent)# function below
+      }
       
     } else if (closure.method == "temporal") {
       x.fish.c2 %>% 
@@ -734,7 +830,6 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   # Convert to decimal
   z.perc <- z.perc / 100
   
-  
   #--------------------------------------------------------
   ### Pre-process - Extract necessary columns for calculations
   if (z.type == "closure") {
@@ -801,17 +896,22 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
            Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
            Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
   
-  if (z.reg == "BIA" & nrow(z.redist.nobase) > 0)
+  if (z.reg == "BIA" & nrow(z.redist.nobase) > 0) {
     warning("Some effort being redistributed out of the BIAs does not have ", 
             "a base for redistribution - ", 
             "this will result in an incorrect output file")
+  } else if (nrow(z.redist.nobase) > 0) {
+    warning("Some effort being redistributed does not have ", 
+            "a base for redistribution - ", 
+            "this will result in an incorrect output file")
+  }
   
   # 3) Get effort that is not being redistributed
   z.tostay <- z.use %>% filter(!record_toshift)
   
   
   # Get sums of z.col, grouped by region and year-month, to calculate percentages
-  #   for redistributioin
+  #   for redistribution
   z.summ.col.old.sum <- z.use %>% 
     filter(record_base) %>% 
     group_by(Region, year_month_old) %>% 
