@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document cleans up whale and fishing data for the analysis included in the Samhouri et al. tradeoff manuscript.
 
+See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
+
 ```{r prep, message=FALSE}
 
 # just getting libraries loaded and file paths sorted

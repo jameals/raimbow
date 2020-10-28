@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document reflects the figures included in the Samhouri et al. tradeoff manuscript.
 
-Use "Full workflow for risk assessment and tradeoff analysis" google doc to prep data frames for making figures below. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
+See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
 Figure 1. Maps of whales and DCRB pings in 3 time periods. Made outside of this doc.
 
