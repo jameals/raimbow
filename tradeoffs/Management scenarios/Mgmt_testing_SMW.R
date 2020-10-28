@@ -69,7 +69,7 @@ d <- effort_mgmt(
   closure.region = c("All"),
   closure.method = "depth+temporal",
   closure.redist.percent = 100,
-  depth.shallow = 0, depth.deep = -40,
+  depth.shallow = 0, depth.deep = -100,
   # reduction.before.date = as.Date("2009-12-15"),
   # reduction.before.percent = 50,
   # reduction.before.region = "All",
@@ -77,7 +77,7 @@ d <- effort_mgmt(
   reduction.after.percent = 50,
   reduction.after.region = "CenCA", 
   reduction.after.redist = TRUE, 
-  reduction.after.redist.percent = 100
+  reduction.after.redist.percent = 10
 )
 
 x.summ <- x.orig %>% 
