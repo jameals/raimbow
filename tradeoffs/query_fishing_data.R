@@ -85,3 +85,23 @@ length(unique(dcrb_ca_vms_tix_analysis$Rec_ID)) #16182
 
 # number of unique geolocations
 length(unique(dcrb_ca_vms_tix_analysis$VMS_RECNO)) #369688
+
+# summed revenue of VMS vessels 2009-14 vs 2014-18
+unique(dcrb_ca_vms_tix_analysis$crab_year)
+
+dcrb_ca_vms_tix_analysis %>%
+  mutate(
+    period = case_when(
+      crab_year %in% c("2009_2010","2010_2011","2011_2012","2012_2013","2013_2014") ~ "pre",
+      crab_year %in% c("2014_2015","2016_2017","2015_2016","2017_2018") ~ "MHW",
+      TRUE ~ "post"
+    ) 
+  ) %>%
+  group_by(period) %>%
+  summarise(
+    sum_DCRB_rev = sum(DCRB_revenue)
+  )
+3001185673/4
+2939986917/5
+750296418-587997383
+162299035/587997383 # 27.6% higher annual revenue for DCRB VMS vessels during MHW

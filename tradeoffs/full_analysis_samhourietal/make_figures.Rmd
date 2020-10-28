@@ -1,5 +1,5 @@
 ---
-title: "Samhouri et al tradeoff analysis"
+title: "Samhouri et al tradeoff analysis make figures"
 author: "Jameal Samhouri"
 date: "10/27/2020"
 output: html_document
@@ -97,11 +97,11 @@ if (user == "JS") {
 
 ```
 
-## Process data
+## Figure 2. 
 
-This is where we can move through the workfolow, from prepping whale and fishing data to running the effort_mgmt and risk_mgmt functions that implement scenarios of interest.
+Changes over time (2009-2019) in (a) the number of confirmed whale entanglements along the US West Coast, (b) expected risk to blue and humpback whales, measured as spatial overlap (see Methods), from the California Dungeness crab fishery, and (c) revenue to the California Dungeness crab fishery.
 
-```{r process, echo=FALSE}
+```{r fig2, echo=FALSE}
 
 
 
