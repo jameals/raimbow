@@ -1,7 +1,7 @@
 ---
-title: "Samhouri et al tradeoff analysis make figures"
+title: "Samhouri et al tradeoff analysis run analysis"
 author: "Jameal Samhouri"
-date: "10/27/2020"
+date: "11/4/2020"
 output: 
   html_document:
       toc: true
@@ -14,20 +14,35 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-This document reflects the figures included in the Samhouri et al. tradeoff manuscript.
+This document runs the analysis included in the Samhouri et al. tradeoff manuscript.
 
 See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
-Figure 1. Maps of whales and DCRB pings in 3 time periods. Made outside of this doc.
 
-Figure 2. Changes over time (2009-2019) in (a) the number of confirmed whale entanglements along the US West Coast, (b) expected risk to blue and humpback whales, measured as spatial overlap (see Methods), from the California Dungeness crab fishery, and (c) revenue to the California Dungeness crab fishery.
+1) MAKE SCENARIOS
+RUN SCENARIOS
+MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS
+- status quo as separate df, all scenarios in one df, and scale_compare df
+- repeat for sm vessels
+CALCULATE SCENARIO RANKS
+- one df by year, one by period
+- repeat for statewide only and cenCA only scenarios
+- ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
+CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
+- repeat for statewide only and cenCA only scenarios
+- % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
+QUERY FISHING DATA
+- number vessels, unique tix/geolocations, revenue and landings by period for vms 
+- total revenue by crab year and period for all fish tix
+- pings by period, statewide and by region
+QUERY ENTANGLEMENT DATA
+QUERY WHALE MODEL OUTPUTS
+- predicted occurrence/density by period, statewide and by region
 
-Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. 
-
-Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years.
-
-SI Figures follow from there.
-Entanglement ts by gear type (updated version of Fig14 in Saez et al. 2020)
+Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
+Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
+Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
+Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
 
 ## Prep libraries and file paths
 
@@ -57,13 +72,9 @@ if (user == "JS") {
   
   path_entanglement_file2 <- paste0(here::here(), "/tradeoffs/full_analysis_samhourietal/output_dfs/entanglement_df_annual_complete.csv")
   
-path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/full_analysis_samhourietal/figures"
-  
   path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   
-  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
-  
-
+  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
   path_rds <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios"
   
@@ -107,44 +118,57 @@ path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/rai
 
 ```
 
-# Figure 2. 
+# QUERY ENTANGLEMENT DATA
 
-Changes over time (2009-2019) in (a) the number of confirmed whale entanglements along the US West Coast, (b) expected risk to blue and humpback whales, measured as spatial overlap (see Methods), from the California Dungeness crab fishery, and (c) revenue to the California Dungeness crab fishery.
-
-## Entanglements
-TS of ONLY CA commercial DCRB entanglements
-```{r fig2, echo=FALSE}
+Entanglements by period and species
+```{r entanglements, echo=FALSE}
 
 entanglement_df_annual_complete <- read_csv(path_entanglement_file2)
 
-entanglements_ts <- ggplot(entanglement_df_annual_complete %>% filter (Year > 2008), 
-                           aes(x=Year, y=count, group=species, colour=species)) + # group=1 tells ggplot that there is only 1 group
-  geom_point(size=2, position = position_dodge(0.4)) +
-  geom_line(position = position_dodge(0.4)) + 
-  ylab("Number of entanglements") +
-  xlab("Year") +
-  labs(subtitle = "Data from NMFS WRO") +
-  #ggtitle("Number of Whale\nEntanglements,US West Coast") +
-  scale_colour_viridis_d(begin=0.2, end=0.8) +
-  scale_x_continuous(breaks=seq(2009, 2019 , 1),limits=c(2008,2020))+
-  scale_y_continuous(breaks=seq(0, 25, 5),limits=c(0,25))+
-  theme_classic() +
-  #scale_fill_manual(values=c("lightskyblue", "coral")) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=14),
-        axis.text.x = element_text(hjust = 1,size = 14, angle = 90),
-        axis.text.y = element_text(size = 14),
-        axis.title = element_text(size = 16),
-        legend.position = c(0.2, 0.8)
-        )
-entanglements_ts 
-
-png(paste0(path_figures, "/entanglements_ts.png"), width = 14, height = 10, units = "in", res = 300)
-entanglements_ts
-invisible(dev.off())
-
+entanglement_df_annual_complete %>% 
+  mutate(
+    period = case_when(
+      Year == 2009 | Year == 2010 | Year == 2011 | Year == 2012 | Year == 2013 ~ "pre",
+      Year == 2014 | Year == 2015 | Year == 2016 | Year == 2017 | Year == 2018 ~ "mhw",
+      Year == 2019 ~ "post",
+      TRUE ~ "OTHER"
+    )
+  ) %>%
+  filter( Year >= 2009) %>%
+  group_by(period, species) %>%
+  summarise(
+    total = sum(count)
+  ) %>%
+  arrange(
+    species,
+    factor(period, levels = c("pre", "mhw", "post"))
+  ) %>%
+  knitr::kable()
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Entanglements by period, all species combined
+```{r entanglements, echo=FALSE}
+
+entanglement_df_annual_complete <- read_csv(path_entanglement_file2)
+
+entanglement_df_annual_complete %>% 
+  mutate(
+    period = case_when(
+      Year == 2009 | Year == 2010 | Year == 2011 | Year == 2012 | Year == 2013 ~ "pre",
+      Year == 2014 | Year == 2015 | Year == 2016 | Year == 2017 | Year == 2018 ~ "mhw",
+      Year == 2019 ~ "post",
+      TRUE ~ "OTHER"
+    )
+  ) %>%
+  filter( Year >= 2009) %>%
+  group_by(period) %>%
+  summarise(
+    total = sum(count)
+  ) %>%
+  arrange(
+    factor(period, levels = c("pre", "mhw", "post"))
+  ) %>%
+  knitr::kable()
+
+```

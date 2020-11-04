@@ -1,0 +1,115 @@
+Year,Year.as.date,species,count
+1982,1982-01-01,Blue Whale,0
+1982,1982-01-01,Humpback Whale,0
+1982,1982-01-01,Other / Unidentified,0
+1983,1983-01-01,Blue Whale,0
+1983,1983-01-01,Humpback Whale,0
+1983,1983-01-01,Other / Unidentified,0
+1984,1984-01-01,Blue Whale,0
+1984,1984-01-01,Humpback Whale,0
+1984,1984-01-01,Other / Unidentified,0
+1985,1985-01-01,Blue Whale,0
+1985,1985-01-01,Humpback Whale,0
+1985,1985-01-01,Other / Unidentified,0
+1986,1986-01-01,Blue Whale,0
+1986,1986-01-01,Humpback Whale,0
+1986,1986-01-01,Other / Unidentified,0
+1987,1987-01-01,Blue Whale,0
+1987,1987-01-01,Humpback Whale,0
+1987,1987-01-01,Other / Unidentified,0
+1988,1988-01-01,Blue Whale,0
+1988,1988-01-01,Humpback Whale,0
+1988,1988-01-01,Other / Unidentified,1
+1989,1989-01-01,Blue Whale,0
+1989,1989-01-01,Humpback Whale,0
+1989,1989-01-01,Other / Unidentified,0
+1990,1990-01-01,Blue Whale,0
+1990,1990-01-01,Humpback Whale,0
+1990,1990-01-01,Other / Unidentified,0
+1991,1991-01-01,Blue Whale,0
+1991,1991-01-01,Humpback Whale,0
+1991,1991-01-01,Other / Unidentified,0
+1992,1992-01-01,Blue Whale,0
+1992,1992-01-01,Humpback Whale,0
+1992,1992-01-01,Other / Unidentified,0
+1993,1993-01-01,Blue Whale,0
+1993,1993-01-01,Humpback Whale,0
+1993,1993-01-01,Other / Unidentified,0
+1994,1994-01-01,Blue Whale,0
+1994,1994-01-01,Humpback Whale,0
+1994,1994-01-01,Other / Unidentified,0
+1995,1995-01-01,Blue Whale,0
+1995,1995-01-01,Humpback Whale,0
+1995,1995-01-01,Other / Unidentified,0
+1996,1996-01-01,Blue Whale,0
+1996,1996-01-01,Humpback Whale,0
+1996,1996-01-01,Other / Unidentified,0
+1997,1997-01-01,Blue Whale,0
+1997,1997-01-01,Humpback Whale,0
+1997,1997-01-01,Other / Unidentified,0
+1998,1998-01-01,Blue Whale,0
+1998,1998-01-01,Humpback Whale,0
+1998,1998-01-01,Other / Unidentified,0
+1999,1999-01-01,Blue Whale,0
+1999,1999-01-01,Humpback Whale,0
+1999,1999-01-01,Other / Unidentified,0
+2000,2000-01-01,Blue Whale,0
+2000,2000-01-01,Humpback Whale,0
+2000,2000-01-01,Other / Unidentified,0
+2001,2001-01-01,Blue Whale,0
+2001,2001-01-01,Humpback Whale,0
+2001,2001-01-01,Other / Unidentified,0
+2002,2002-01-01,Blue Whale,0
+2002,2002-01-01,Humpback Whale,0
+2002,2002-01-01,Other / Unidentified,0
+2003,2003-01-01,Blue Whale,0
+2003,2003-01-01,Humpback Whale,0
+2003,2003-01-01,Other / Unidentified,1
+2004,2004-01-01,Blue Whale,0
+2004,2004-01-01,Humpback Whale,0
+2004,2004-01-01,Other / Unidentified,0
+2005,2005-01-01,Blue Whale,0
+2005,2005-01-01,Humpback Whale,1
+2005,2005-01-01,Other / Unidentified,0
+2006,2006-01-01,Blue Whale,0
+2006,2006-01-01,Humpback Whale,0
+2006,2006-01-01,Other / Unidentified,0
+2007,2007-01-01,Blue Whale,0
+2007,2007-01-01,Humpback Whale,0
+2007,2007-01-01,Other / Unidentified,0
+2008,2008-01-01,Blue Whale,0
+2008,2008-01-01,Humpback Whale,1
+2008,2008-01-01,Other / Unidentified,1
+2009,2009-01-01,Blue Whale,0
+2009,2009-01-01,Humpback Whale,0
+2009,2009-01-01,Other / Unidentified,0
+2010,2010-01-01,Blue Whale,0
+2010,2010-01-01,Humpback Whale,0
+2010,2010-01-01,Other / Unidentified,0
+2011,2011-01-01,Blue Whale,0
+2011,2011-01-01,Humpback Whale,0
+2011,2011-01-01,Other / Unidentified,0
+2012,2012-01-01,Blue Whale,0
+2012,2012-01-01,Humpback Whale,0
+2012,2012-01-01,Other / Unidentified,2
+2013,2013-01-01,Blue Whale,0
+2013,2013-01-01,Humpback Whale,0
+2013,2013-01-01,Other / Unidentified,3
+2014,2014-01-01,Blue Whale,0
+2014,2014-01-01,Humpback Whale,2
+2014,2014-01-01,Other / Unidentified,0
+2015,2015-01-01,Blue Whale,0
+2015,2015-01-01,Humpback Whale,7
+2015,2015-01-01,Other / Unidentified,2
+2016,2016-01-01,Blue Whale,2
+2016,2016-01-01,Humpback Whale,19
+2016,2016-01-01,Other / Unidentified,1
+2017,2017-01-01,Blue Whale,1
+2017,2017-01-01,Humpback Whale,3
+2017,2017-01-01,Other / Unidentified,1
+2018,2018-01-01,Blue Whale,0
+2018,2018-01-01,Humpback Whale,7
+2018,2018-01-01,Other / Unidentified,0
+2019,2019-01-01,Blue Whale,0
+2019,2019-01-01,Humpback Whale,3
+2019,2019-01-01,Other / Unidentified,0

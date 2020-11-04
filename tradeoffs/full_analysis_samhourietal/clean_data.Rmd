@@ -2,20 +2,37 @@
 title: "Samhouri et al tradeoff analysis clean data"
 author: "Jameal Samhouri"
 date: "10/28/2020"
-output: html_document
+output: 
+  html_document:
+      toc: true
+      toc_float: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Introduction
+# Introduction
 
 This document cleans up whale and fishing data for the analysis included in the Samhouri et al. tradeoff manuscript.
 
 See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
-```{r prep, message=FALSE}
+1) PROCESS WHALE MODEL OUTPUTS. [turn off if no changes to whale predictions]
+2) PREP FISHING DATA
+- vms matched to fish tickets and all fish tickets for DCRB
+3) PREP GRIDS AND JOIN TO FISHING DATA
+4) PREP ENTANGLEMENT DATA
+
+
+Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
+Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
+Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
+Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
+
+## Prep libraries and file paths
+
+```{r prep, include=FALSE}
 
 # just getting libraries loaded and file paths sorted
 
@@ -39,9 +56,9 @@ source(here::here("User_script_local.R"))
 if (user == "JS") {
   #flag.save = TRUE # option to save all outputs or not
   
-  path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/ca_confirmed_dcrb_entanglements.csv" # from Lauren Saez
   
-  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
+  path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   
@@ -87,13 +104,106 @@ if (user == "JS") {
 
 ```
 
-## Prep fishing data
+# 1) PROCESS WHALE MODEL OUTPUTS
+
+## Humpbacks
+```{r whales, echo=FALSE}
+
+## Humpbacks
+# overlay the predictions on the 5km grid
+source(paste0(here::here(), "/humpback_risk/","1a_Mn_preds_overlay5km.R"))
+
+# aggregate the predictions by month and make them long.
+source(paste0(here::here(), "/humpback_risk/","1b_Mn_preds_aggr.R"))
+
+```
+
+
+## Blues
+```{r whales, echo=FALSE}
+
+## Blues
+# overlay the predictions on the 5km grid
+source(paste0(here::here(), "/blue_whale","BW_preds_overlay5km.Rmd"))
+
+# aggregate the predictions by month
+source(paste0(here::here(), "/blue_whale","BW_preds_aggr.Rmd"))
+
+```
+
+# 2) PREP FISHING DATA
+
 
 ```{r fishing, echo=FALSE}
 
 source(paste0(here::here(),"/tradeoffs/full_analysis_samhourietal/prep_data_for_scenario_df_function.R"))
 
+# add period
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# 3) PREP GRIDS AND JOIN TO FISHING DATA
+```{r grids, echo=FALSE}
+
+
+
+```
+
+# 4) PREP ENTANGLEMENT DATA
+```{r entanglements, echo=FALSE}
+
+# all data based on "entanglement reports from lauren 100920.xlsx"
+# focus on confirmed CA commercial Dungeness crab entanglements by year
+
+# most code from Make time series of entanglements.Rmd
+#Initial processing
+entanglement_df <- read_csv(path_entanglement_file)
+glimpse(entanglement_df)
+
+#unique(entanglement_df$Common_Nam)
+
+entanglement_df_annual <- entanglement_df %>%
+  pivot_longer(
+    !Year, names_to = "common_nam", values_to = "count"
+  ) %>%
+#group_by(Year) %>% #, Common_Nam
+  #tally() %>%
+  mutate(
+    Year.as.date = as.Date(paste(Year, 1, 1, sep = "-")) 
+    ) %>%
+  #complete(Year.as.date = seq.Date(min(Year.as.date), max(Year.as.date), by="year"),
+  #         fill = list(n=0)) %>%
+  #complete(Year, nesting(Common_Nam)) %>%
+  mutate(
+    species = case_when(common_nam == "Gray" | common_nam == "Killer" | common_nam == "Unidentified"  ~ "Other / Unidentified",
+                        common_nam == "Humpback" ~ "Humpback Whale",
+                        common_nam == "Blue" ~ "Blue Whale",
+                        TRUE ~ "ERROR")
+  )
+glimpse(entanglement_df_annual)
+
+# complete the df with zeroes for each species category
+
+#complete_species_year <- expand.grid(species = unique(entanglement_df_annual$species), Year.as.date = seq.Date(as.Date(paste(1982, 1, 1, sep = "-")), max(entanglement_df_annual$Year.as.date), by="year"))
+
+entanglement_df_annual_complete <- entanglement_df_annual %>%
+  group_by(Year, Year.as.date, species) %>%
+  summarise(
+    count = sum(count), 
+    .groups = 'drop'
+  )
+  #tally() #%>%
+  #full_join(complete_species_year)
+  
+#entanglement_df_annual_complete$Year <- ifelse(is.na(entanglement_df_annual_complete$Year),year(entanglement_df_annual_complete$Year.as.date),entanglement_df_annual_complete$Year)
+
+#entanglement_df_annual_complete$n <- ifelse(is.na(entanglement_df_annual_complete$n),0,entanglement_df_annual_complete$n)
+
+glimpse(entanglement_df_annual_complete)
+
+write_csv(entanglement_df_annual_complete, 
+          paste0(here::here(), "/tradeoffs/full_analysis_samhourietal/output_dfs/entanglement_df_annual_complete.csv")
+          )
+
+```
+
