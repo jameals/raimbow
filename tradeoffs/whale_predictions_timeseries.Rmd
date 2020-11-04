@@ -368,9 +368,9 @@ raimbow_ca_ts(
 
 raimbow_ca_ts_facets(
   x.summ.month, month, mn_dens_0.5, "Whales / km2", "Humpback whale - median - Nov 2009 to Oct 2014", 
-  month.flag = TRUE
+  month.flag = TRUE #, y.range = c(0, 0.04)
 )
-# ggsave(filename.out, plot = month.plot)
+# ggsave("../../raimbow-local/Plots/Mn_monthly_median_2009-14.png")
 
 raimbow_ca_ts(
   x.summ.ca.month, month, bm_normalized_med, "Blue whale - normalized median - Nov 2009 to Oct 2014", 
@@ -401,8 +401,6 @@ range(x.month$ym_date)
 
 source(here::here("tradeoffs", "whale_predictions_timeseries_helper.R"), local = TRUE)
 
-
-
 raimbow_ca_ts(
   x.summ.ca.month, month, mn_normalized_med, plot.main = "Humpback whale - normalized median - Nov 2014 to Oct 2018", 
   y.lab = "Whales / km2", filter.reg.idx, month.flag = TRUE
@@ -411,8 +409,9 @@ raimbow_ca_ts(
 
 raimbow_ca_ts_facets(
   x.summ.month, month, mn_dens_0.5, "Whales / km2", "Humpback whale - median - Nov 2014 to Oct 2018", 
-  month.flag = TRUE
+  month.flag = TRUE #, y.range = c(0, 0.04)
 )
+# ggsave("../../raimbow-local/Plots/Mn_monthly_median_2014-18.png")
 raimbow_ca_ts_facets(
   x.summ.month, month, mn_dens_mean, "Whales / km2", "Humpback whale - mean - Nov 2014 to Oct 2018", 
   month.flag = TRUE
@@ -458,8 +457,9 @@ raimbow_ca_ts(
 
 raimbow_ca_ts_facets(
   x.summ.month, month, mn_dens_0.5, "Whales / km2", "Humpback whale - median - Nov 2018 to Oct 2019", 
-  month.flag = TRUE
+  month.flag = TRUE #, y.range = c(0, 0.04)
 )
+# ggsave("../../raimbow-local/Plots/Mn_monthly_median_2018-19.png")
 # ggsave(filename.out, plot = month.plot)
 
 raimbow_ca_ts(

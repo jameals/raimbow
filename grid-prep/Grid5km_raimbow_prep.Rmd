@@ -295,6 +295,21 @@ x.whale <- full_join(x.blue.filt, x.hump.filt,
                                                center = min(Humpback_abund_mean, na.rm = TRUE),
                                                scale = diff(range(Humpback_abund_mean, na.rm = TRUE))))) %>%
   select(GRID5KM_ID, year_month, area_km_lno, everything())
+
+# summary(x.whale$Blue_occurrence_mean)
+# summary(x.whale$Humpback_abund_mean)
+# summary(x.whale$normalized_blue)
+# summary(x.whale$normalized_humpback)
+# 
+# 
+# opar <- par(mfrow = c(2, 3))
+# hist(x.whale$Blue_occurrence_mean, main = "Blues - orig", xlab = "Probability of occurrence")
+# hist(x.whale$normalized_blue, main = "Blues - normalized", xlab = "")
+# hist(x.whale$Blue_occurrence_mean / sum(x.whale$Blue_occurrence_mean, na.rm = TRUE), main = "Blues - sum to 1", xlab = "")
+# hist(x.whale$Humpback_abund_mean, main = "Humpbacks - orig", xlab = "Abundance (whales)")
+# hist(x.whale$normalized_humpback, main = "Humpbacks - normalized", xlab = "")
+# hist(x.whale$Humpback_abund_mean / sum(x.whale$Humpback_abund_mean, na.rm = TRUE), main = "Humpbacks - sum to 1", xlab = "")
+# par(opar)
 ```
 
 ## Outputs

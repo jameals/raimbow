@@ -190,10 +190,11 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     stop("Effort reduction before some date and a delayed opening cannot be used ", 
          "simultaneously unless delay.method is 'depth'")
   
-  if ((!is.null(closure.date) & (!identical(closure.method, "depth") | !identical(closure.method, "depth+temporal"))) & 
-      !is.null(reduction.after.date))
-    stop("Effort reduction after some date and an early closure cannot be used ", 
-         "simultaneously unless closure.method is 'depth' or 'depth+temporal'")
+  if (!is.null(closure.date) & !is.null(reduction.after.date)) {
+    if (!(identical(closure.method, "depth") | identical(closure.method, "depth+temporal")))
+      stop("Effort reduction after some date and an early closure cannot be used ", 
+           "simultaneously unless closure.method is 'depth' or 'depth+temporal'")
+  }
   
   
   # Check that if reduction.after.redist is TRUE, then...
@@ -201,7 +202,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     if (is.null(reduction.after.date)) {
       stop("reduction.after.redist can only be TRUE if reduction.after.date is not NULL")
       
-    } else if (identical(reduction.after.region, "CenCA") | identical(reduction.after.region, "NorCA")) {
+    } else if (!(identical(reduction.after.region, "CenCA") | identical(reduction.after.region, "NorCA"))) {
       stop("reduction.after.redist can only be TRUE if reduction.after.region is ", 
            "exactly one of 'CenCA' or 'NorCA'")
     }
@@ -546,51 +547,71 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
         mutate(reduce_region = Region %in% reduction.after.region)
     }
     
-    # browser()
-    # x.fish.closure.reduct.pre <- x.fish.closure.reduct %>% 
-    #   mutate(rec = reduce_region & reduce_date, 
-    #          rec_decimal = 1 - (reduction.after.percent / 100)) #get decimal value
-    # 
-    # x.fish.closure.reduct.toredist <- x.fish.closure.reduct.pre %>% 
-    #   mutate(year_month_old = year_month, 
-    #          date_record_old = date_record, 
-    #          record_toshift = rec, 
-    #          record_base = !rec & reduce_date, 
-    #          region_toshiftto) %>% 
-    #   redistribute_temporal(Num_DCRB_VMS_pings, "closure", reduction.after.region, 
-    #                         reduction.after.redist.percent)# function below
-    # 
-    # 
-    # x.fish.closure.reduct <- x.fish.closure.reduct.pre %>% 
-    #   mutate(DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs), 
-    #          DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal, DCRB_rev), 
-    #          Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal, Num_DCRB_VMS_pings), 
-    #          Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal, Num_DCRB_Vessels), 
-    #          Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels)) %>% 
-    #   select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_decimal)
-    
-    x.fish.closure.reduct <- x.fish.closure.reduct %>%
+    x.fish.closure.reduct.pre <- x.fish.closure.reduct %>%
       mutate(rec = reduce_region & reduce_date,
-             rec_decimal = 1 - (reduction.after.percent / 100), #get decimal value
-             DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs),
+             rec_decimal_redist = reduction.after.percent / 100, 
+             rec_decimal = 1 - rec_decimal_redist)
+    
+    x.fish.closure.reduct <- x.fish.closure.reduct.pre %>%
+      mutate(DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal, DCRB_lbs),
              DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal, DCRB_rev),
              Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal, Num_DCRB_VMS_pings),
              Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal, Num_DCRB_Vessels),
-             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels)) %>%
-      select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, -rec, -rec_decimal)
+             Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal, Num_Unique_DCRB_Vessels))
     
-    # if (reduction.after.redist) {
-    #   redistribute_temporal(x.fish.closure.reduct, Num_DCRB_VMS_pings, "closure", closure.region, 
-    #                         reduction.after.redist.percent)
-    # x.fish.c2 %>% 
-    #   mutate(record_toshift = record_closed, 
-    #          record_base = !record_toshift & record_post_closure_date, 
-    #          date_record_old = date_record, 
-    #          year_month_old = year_month) %>% 
-    #   redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
-    #                         closure.redist.percent)# function below
-    # }
+    
+    if (reduction.after.redist) {
+      region_toshiftto.val <- if (identical(reduction.after.region, "CenCA")) {
+        "NorCA"
+      } else if (identical(reduction.after.region, "CA")) {
+        "CenCA"
+      } else { #Sanity check
+        stop("Can't use reduction.after.redist if reduction.after.region is not 'CenCA' or 'NorCA'")
+      }
+      
+      # 'Generate' records with effort that needs to be redistributed...
+      x.fish.closure.reduct.toredist <- x.fish.closure.reduct.pre %>%
+        filter(rec) %>% 
+        mutate(year_month_old = year_month,
+               date_record_old = date_record,
+               record_toshift = rec,
+               record_base = !rec,
+               region_toshiftto = region_toshiftto.val,
+               # across(DCRB_lbs:Num_Unique_DCRB_Vessels, ~ ifelse(rec, .x * rec_decimal_redist, .x)), #Equivalent to below 5 lines
+               DCRB_lbs = ifelse(rec, DCRB_lbs * rec_decimal_redist, DCRB_lbs),
+               DCRB_rev = ifelse(rec, DCRB_rev * rec_decimal_redist, DCRB_rev),
+               Num_DCRB_VMS_pings = ifelse(rec, Num_DCRB_VMS_pings * rec_decimal_redist, Num_DCRB_VMS_pings),
+               Num_DCRB_Vessels = ifelse(rec, Num_DCRB_Vessels * rec_decimal_redist, Num_DCRB_Vessels),
+               Num_Unique_DCRB_Vessels = ifelse(rec, Num_Unique_DCRB_Vessels * rec_decimal_redist, Num_Unique_DCRB_Vessels))
+      
+      # ...then bind it to other effort and redistribute
+      x.fish.closure.reduct <- x.fish.closure.reduct %>% 
+        mutate(year_month_old = year_month,
+               date_record_old = date_record,
+               record_toshift = FALSE,
+               record_base = reduce_date & !reduce_region,
+               region_toshiftto = NA) %>% 
+        bind_rows(x.fish.closure.reduct.toredist) %>% 
+        redistribute_temporal(Num_DCRB_VMS_pings, "closure", reduction.after.region,
+                              reduction.after.redist.percent)# function below
+      
+      rm(region_toshiftto.val, x.fish.closure.reduct.toredist)
+      
+    } else {
+      x.fish.closure.reduct <- x.fish.closure.reduct %>%
+        select(-reduce_yr, -reduce_mgmt, -reduce_date, -reduce_region, 
+               -rec, -rec_decimal, -rec_decimal_redist)
+    }
+    rm(x.fish.closure.reduct.pre)
   }
+  
+  # Sanity check
+  stopifnot(
+    identical(names(x.fish.closure.reduct), 
+              c("crab_year", "year_month", "date_record", "GRID5KM_ID", "Region", 
+                "depth", "BIA_bm_noNAs", "BIA_mn_noNAs", "BIA_bm_or_mn", 
+                "DCRB_lbs", "DCRB_rev", "Num_DCRB_VMS_pings", "Num_DCRB_Vessels", "Num_Unique_DCRB_Vessels"))
+  )
   
   
   #----------------------------------------------------------------------------
@@ -608,7 +629,6 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
              record_post_closure_date = date_record >= season_close_mgmt) %>% 
       select(-mgmt_yr)
     
-    #browser()
     #------------------------------------------------------
     # Do region-specific stuff
     #   identical() ensures that closure.region is of length 1
@@ -652,7 +672,6 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     
     #------------------------------------------------------
     # Remove or redistribute closed effort in applicable region(s)
-    # browser()
     x.fish.closure <- if (closure.method == "remove") {
       x.fish.c2 %>% 
         filter(!record_closed) %>% 
@@ -879,8 +898,8 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
               Num_DCRB_VMS_pings_sum_toadd = sum(Num_DCRB_VMS_pings) * z.perc, 
               Num_DCRB_Vessels_sum_toadd = sum(Num_DCRB_Vessels) * z.perc, 
               Num_Unique_DCRB_Vessels_sum_toadd = sum(Num_Unique_DCRB_Vessels) * z.perc, 
-              .groups = "drop") #%>%
-  # ungroup()
+              .groups = "drop") %>% 
+    mutate(region_toshiftto = as.character(region_toshiftto)) #for when this df has 0 rows
   
   # ...and get list to feed to tidyr::replace_na later
   list.nas.names <- names(select(z.summ.toredistribute, -region_toshiftto, -year_month))
