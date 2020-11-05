@@ -32,9 +32,7 @@ CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
 - repeat for statewide only and cenCA only scenarios
 - % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
 QUERY FISHING DATA
-- number vessels, unique tix/geolocations, revenue and landings by period for vms 
-- total revenue by crab year and period for all fish tix
-- pings by period, statewide and by region
+
 QUERY ENTANGLEMENT DATA
 QUERY WHALE MODEL OUTPUTS
 - predicted occurrence/density by period, statewide and by region
@@ -170,5 +168,16 @@ entanglement_df_annual_complete %>%
     factor(period, levels = c("pre", "mhw", "post"))
   ) %>%
   knitr::kable()
+
+```
+
+# QUERY FISHING DATA
+
+- number vessels, unique tix/geolocations, revenue and landings by period for vms 
+- total revenue by crab year and period for all fish tix
+- pings by period, statewide and by region
+```{r fishing, echo=FALSE}
+
+# pick up here. include correct file paths above and then start making data frames here
 
 ```

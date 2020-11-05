@@ -20,15 +20,8 @@ See pseudocode in "Full workflow for risk assessment and tradeoff analysis" goog
 
 1) PROCESS WHALE MODEL OUTPUTS. [turn off if no changes to whale predictions]
 2) PREP FISHING DATA
-- vms matched to fish tickets and all fish tickets for DCRB
 3) PREP GRIDS AND JOIN TO FISHING DATA
 4) PREP ENTANGLEMENT DATA
-
-
-Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
-Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
-Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
-Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
 
 ## Prep libraries and file paths
 
@@ -133,12 +126,18 @@ source(paste0(here::here(), "/blue_whale","BW_preds_aggr.Rmd"))
 
 # 2) PREP FISHING DATA
 
-
+Vms matched to fish tickets
 ```{r fishing, echo=FALSE}
 
 source(paste0(here::here(),"/tradeoffs/full_analysis_samhourietal/prep_data_for_scenario_df_function.R"))
 
 # add period
+
+```
+
+All fish tickets for DCRB [not yet included]
+```{r fishing, echo=FALSE}
+
 
 ```
 
