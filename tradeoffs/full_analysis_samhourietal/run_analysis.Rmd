@@ -19,31 +19,30 @@ This document runs the analysis included in the Samhouri et al. tradeoff manuscr
 See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
 
-1) MAKE SCENARIOS
-RUN SCENARIOS
-MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS
-- status quo as separate df, all scenarios in one df, and scale_compare df
-- repeat for sm vessels
-CALCULATE SCENARIO RANKS
-- one df by year, one by period
-- repeat for statewide only and cenCA only scenarios
-- ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
-CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
-- repeat for statewide only and cenCA only scenarios
-- % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
-QUERY FISHING DATA
+1. MAKE SCENARIOS
+2. RUN SCENARIOS
+3. MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS
++ status quo as separate df, all scenarios in one df, and scale_compare df
++ repeat for sm vessels
+4. CALCULATE SCENARIO RANKS
++ one df by year, one by period
++ repeat for statewide only and cenCA only scenarios
++ ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
+5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
++ repeat for statewide only and cenCA only scenarios
++ % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
+6. QUERY ENTANGLEMENT DATA
+7. QUERY FISHING DATA
+8. QUERY WHALE MODEL OUTPUTS
++ predicted occurrence/density by period, statewide and by region
 
-QUERY ENTANGLEMENT DATA
-QUERY WHALE MODEL OUTPUTS
-- predicted occurrence/density by period, statewide and by region
-
-Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
-Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
-Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
-Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
+* Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
+* Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
+* Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
+* Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
 
 ## Prep libraries and file paths
-
+(no need to display messages)
 ```{r prep, include=FALSE}
 
 # just getting libraries loaded and file paths sorted
@@ -70,41 +69,43 @@ if (user == "JS") {
   
   path_entanglement_file2 <- paste0(here::here(), "/tradeoffs/full_analysis_samhourietal/output_dfs/entanglement_df_annual_complete.csv")
   
-  path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path_dcrb_vms_tix_analysis <- "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS"
   
-  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
-  
-  path_rds <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios"
-  
-  path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
-  
-  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
-  
-  path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
-  
-  path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
-  
-  path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
-  
-  path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
-    
-  path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
-  
-  path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
-  
-  path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
-  
-  path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
-  
-  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds" 
-  
-  path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds" 
-  
-  path_annual_statewide_df_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_2020-06-16.rds"
-  
-  path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_2020-06-16.rds"
-  
-  path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
+  # path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  # 
+  # path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
+  # 
+  # path_rds <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios"
+  # 
+  # path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
+  # 
+  # path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
+  # 
+  # path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
+  # 
+  # path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  # 
+  # path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
+  # 
+  # path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+  #   
+  # path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
+  # 
+  # path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
+  # 
+  # path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
+  # 
+  # path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
+  # 
+  # path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds" 
+  # 
+  # path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds" 
+  # 
+  # path_annual_statewide_df_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_2020-06-16.rds"
+  # 
+  # path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_2020-06-16.rds"
+  # 
+  # path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
 
 } else if (user == "SMW") {
@@ -116,9 +117,13 @@ if (user == "JS") {
 
 ```
 
+
+# MAKE SCENARIOS
+pick up here 1100620
+
 # QUERY ENTANGLEMENT DATA
 
-Entanglements by period and species
+## Entanglements by period and species
 ```{r entanglements, echo=FALSE}
 
 entanglement_df_annual_complete <- read_csv(path_entanglement_file2)
@@ -145,8 +150,8 @@ entanglement_df_annual_complete %>%
 
 ```
 
-Entanglements by period, all species combined
-```{r entanglements, echo=FALSE}
+## Entanglements by period, all species combined
+```{r entanglements2, echo=FALSE}
 
 entanglement_df_annual_complete <- read_csv(path_entanglement_file2)
 
@@ -173,11 +178,211 @@ entanglement_df_annual_complete %>%
 
 # QUERY FISHING DATA
 
-- number vessels, unique tix/geolocations, revenue and landings by period for vms 
-- total revenue by crab year and period for all fish tix
-- pings by period, statewide and by region
-```{r fishing, echo=FALSE}
+```{r fishing, include=FALSE}
 
-# pick up here. include correct file paths above and then start making data frames here
+
+# most of this code originally from query_fishing_data.R
+# this takes a few min to read in
+dcrb_vms_tix_analysis <- read_rds(path_dcrb_vms_tix_analysis)
+glimpse(dcrb_vms_tix_analysis)
+
+# check years included
+unique(dcrb_vms_tix_analysis$year)
+
+#####################################################
+# filter the data using the control variables below
+# years <- seq(2009,2019,1)
+
+state_agency_code <- "C"
+#state <- "CA"
+target_rev <- "DCRB"
+target_lbs <- "DCRB"
+region_north <- c(1040, 1041, 1042)
+vessel_size_category_break <- 40
+winter_months <- c("November", "December", "January", "February", "March")
+crab_months <- c(1:7,11:12)
+removal_types <- c("COMMERCIAL (NON-EFP)", "COMMERCIAL(DIRECT SALES)", "UNKNOWN")
+max_speed <- 4.11556
+min_speed <- 0
+
+#ports <- c("CCA", "ERA", "BGA","BDA", "SFA", "MRA", "MNA")
+#region_south <- c(1035, 1036, 1037, 1038)
+#####################################################
+
+#####################################################
+
+# subset the data based on above queries. CA only
+dcrb_ca_vms_tix_analysis <- dcrb_vms_tix_analysis %>%
+  filter(agency_code == state_agency_code) %>%
+  #filter(agency_code == state_agency_code & STATE == state) %>%
+  filter(TARGET_rev == target_rev | TARGET_lbs == target_lbs) %>%
+  filter(removal_type_name %in% removal_types) %>%
+  filter(CA_OFFSHOR != -999) %>%
+  filter(DEPTH_CATM == "0-100m" | DEPTH_CATM == "100-150m") %>%
+  #filter(NGDC_M <= 0 & NGDC_M >= -12000) %>% # considered adding 052220. also see "evaluate fishing depths.R". probably unnecessary because NGDC_M refers to centroid depth and we can match depths by 5km grid cell later
+  filter(avg_speed_recalc <= max_speed & avg_speed_recalc >= min_speed) %>%
+  #filter(is.na(in_port) == TRUE) %>% # only removes ~4000 records
+  #filter(port_group_code %in% ports) %>%
+  mutate(#GRID5KM_ID = as.character(GRID5KM_ID),
+    Region = ifelse(CA_OFFSHOR %in% region_north,
+                    "NorCA","CenCA"),
+    BIA_mn_noNAs = ifelse(is.na(BIA_mn)==TRUE,0,BIA_mn),
+    BIA_bm_noNAs = ifelse(is.na(BIA_bm)==TRUE,0,BIA_bm),
+    #year = lubridate::year(westcoastdate_notime), # removed because it is included with the vessel_lengths step
+    year_month = paste0(lubridate::year(westcoastdate_notime),"_", substr(lubridate::ymd(westcoastdate_notime),6,7)), # substr() ensures month is a 2 digit value
+    month = lubridate::month(westcoastdate_notime, label=TRUE, abbr = FALSE),
+    month_as_numeric = month(westcoastdate_notime),
+    week_of_year = week(westcoastdate_notime),
+    day_of_year = yday(westcoastdate_notime),
+    season = as.character(ifelse(month %in% winter_months, "Winter", "Spring-Summer")),
+    crab_year = ifelse(
+      month_as_numeric >= 11, paste0(year,"_",1+year), paste0(year - 1,"_",year)
+    ),
+    Vessel_Size = as.character(ifelse(FINAL_LENGTH >= vessel_size_category_break, paste0(">=",vessel_size_category_break, " ft"),paste0("<",vessel_size_category_break, " ft"))),
+    BIA_bm_or_mn = ifelse(BIA_bm_noNAs !=0 | BIA_mn_noNAs != 0, "Inside BIA","Outside BIA")#,
+  ) %>%
+  filter(westcoastdate_notime >= as.Date("2009-11-01") & westcoastdate_notime <= as.Date("2019-08-01")) %>%
+  filter(month_as_numeric %in% crab_months) %>%
+  dplyr::select(
+    Rec_ID, VMS_RECNO, drvid, Vessel_Size,
+    westcoastdate_notime, year, crab_year, year_month, month, month_as_numeric, week_of_year, day_of_year, season,
+    GRID5KM_ID, BAND_25KM, BAND_50KM, CA_OFFSHOR, Region, BIA_mn_noNAs, BIA_bm_noNAs, BIA_bm_or_mn, pacfin_port_code, port_group_code, DEPTH_CATM, NGDC_M,
+    TARGET_lbs, TARGET_rev, DCRB_lbs, DCRB_revenue
+  )
+
+#glimpse(dcrb_ca_vms_tix_analysis)
+```
+
+## All 10 Years
+Number unique vessels  tix, geolocations, and total revenue and landings
+(VMS-tracked only)
+
+```{r fishing2, echo=FALSE}
+# number of unique vessels
+total_num_vessels <- length(unique(dcrb_ca_vms_tix_analysis$drvid)) #283
+
+# number of unique tix
+total_num_tix <- length(unique(dcrb_ca_vms_tix_analysis$Rec_ID)) #16182
+
+# number of unique geolocations
+total_num_locations <- length(unique(dcrb_ca_vms_tix_analysis$VMS_RECNO)) #369688
+
+# total revenue
+total_rev <- sum(dcrb_ca_vms_tix_analysis$DCRB_revenue) #6563123120
+
+# total landings
+total_landings <- sum(dcrb_ca_vms_tix_analysis$DCRB_lbs) #2234063912
+
+
+data.frame(total_num_vessels,
+           total_num_tix,
+           total_num_locations,
+           total_rev,
+           total_landings) %>%
+  knitr::kable()
+
 
 ```
+
+## By period
+
+Number unique vessels  tix, geolocations, and total revenue and landings by period
+(VMS-tracked only)
+```{r fishing3, echo=FALSE}
+
+# summed revenue of VMS vessels 2009-14 vs 2014-18
+#unique(dcrb_ca_vms_tix_analysis$crab_year)
+
+period_summaries <- dcrb_ca_vms_tix_analysis %>%
+  mutate(
+    period = case_when(
+      crab_year %in% c("2009_2010","2010_2011","2011_2012","2012_2013","2013_2014") ~ "pre",
+      crab_year %in% c("2014_2015","2016_2017","2015_2016","2017_2018") ~ "MHW",
+      TRUE ~ "post"
+    ) 
+  ) %>%
+  group_by(period) %>%
+  summarise(
+    num_vessels = length(unique(drvid)),
+    num_tix = length(unique(Rec_ID)),
+    num_locations = length(unique(VMS_RECNO)),
+    sum_DCRB_rev = sum(DCRB_revenue),
+    sum_DCRB_lbs = sum(DCRB_lbs)
+    
+  ) %>%
+  mutate(
+    annual_rev = case_when(
+      period == "MHW" ~ sum_DCRB_rev/4,
+      period == "pre" ~ sum_DCRB_rev/5,
+      period == "post" ~ sum_DCRB_rev/1
+      #TRUE ~ "ERROR"
+    )
+  ) %>%
+    arrange(
+    factor(period, levels = c("pre", "MHW", "post"))
+           ) 
+
+annual_percent_rev_change_MHW_v_pre <- 100 * ( period_summaries$annual_rev[which(period_summaries$period == "MHW")] - period_summaries$annual_rev[which(period_summaries$period == "pre")] ) / period_summaries$annual_rev[which(period_summaries$period == "pre")]
+
+period_summaries %>%
+  knitr::kable()
+
+print("annual_percent_rev_change_MHW_v_pre")
+annual_percent_rev_change_MHW_v_pre
+
+
+```
+
+## By period and region
+
+Number unique vessels  tix, geolocations, and total revenue and landings by period and region
+(VMS-tracked only)
+```{r fishing4, echo=FALSE}
+
+# summed revenue of VMS vessels 2009-14 vs 2014-18
+#unique(dcrb_ca_vms_tix_analysis$crab_year)
+
+period_region_summaries <- dcrb_ca_vms_tix_analysis %>%
+  mutate(
+    period = case_when(
+      crab_year %in% c("2009_2010","2010_2011","2011_2012","2012_2013","2013_2014") ~ "pre",
+      crab_year %in% c("2014_2015","2016_2017","2015_2016","2017_2018") ~ "MHW",
+      TRUE ~ "post"
+    ) 
+  ) %>%
+  group_by(period, Region) %>%
+  summarise(
+    num_vessels = length(unique(drvid)),
+    num_tix = length(unique(Rec_ID)),
+    num_locations = length(unique(VMS_RECNO)),
+    sum_DCRB_rev = sum(DCRB_revenue),
+    sum_DCRB_lbs = sum(DCRB_lbs)
+    
+  ) %>%
+  #group_by(Region) %>%
+  mutate(
+    annual_rev = case_when(
+      period == "MHW" ~ sum_DCRB_rev/4,
+      period == "pre" ~ sum_DCRB_rev/5,
+      period == "post" ~ sum_DCRB_rev/1
+      #TRUE ~ "ERROR"
+    )
+  ) %>%
+    arrange(
+      Region,
+    factor(period, levels = c("pre", "MHW", "post"))
+           ) 
+
+annual_percent_rev_change_MHW_v_pre_region <- 100 * ( period_region_summaries$annual_rev[which(period_region_summaries$period == "MHW")] - period_region_summaries$annual_rev[which(period_region_summaries$period == "pre")] ) / period_region_summaries$annual_rev[which(period_region_summaries$period == "pre")]
+
+period_region_summaries %>%
+  knitr::kable()
+
+print("annual_percent_rev_change_MHW_v_pre_region")
+annual_percent_rev_change_MHW_v_pre_region
+
+
+```
+
+Total revenue and landings by crab year and period for all fish tix
+(not yet analyzed)
