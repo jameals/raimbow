@@ -75,7 +75,9 @@ if (user == "JS") {
   
   path_season.st.date.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds"
   
-  # path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  
+  path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   # 
   # path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   # 
@@ -87,7 +89,6 @@ if (user == "JS") {
   # 
   # path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
   # 
-  # path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
   # 
   # path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
   # 
@@ -122,7 +123,7 @@ if (user == "JS") {
 ```
 
 
-# MAKE SCENARIOS
+# 1. MAKE SCENARIOS
 ```{r make_scenarios, echo=FALSE}
 
 source(paste0(here::here(), "/tradeoffs/Management scenarios/make_scenarios_table.R"))
@@ -164,8 +165,10 @@ write_csv(scenario_table_all,here::here(
 
 ```
 
-# RUN SCENARIOS
-```{r run_scenarios, echo=FALSE}
+# 2. RUN SCENARIOS
+
+## Loop through scenarios of interest and create a list of output df's
+```{r run_scenarios1, echo=FALSE}
 
 ### 1) Loop through scenarios of interest and create a list of output df's
 
@@ -189,11 +192,16 @@ season.st.date.key <- read_rds(path_season.st.date.key) %>%
          Region = unname(sapply(CA_region, simpleCap))) %>% 
   select(crab_year, Region, start_of_season_oneperc)
 
-# 1c) shift effort
+# 1c) shift effort for scenarios of interest
+
+# drop redundant scenarios
+
+scenario_table_all_trim <- scenario_table_all %>%
+  filter(!grepl('redundant', scenario_number))
 
 start.time <- Sys.time()
 
-scenario.output.list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table_input) { # for testing. nrow(scenario_table_all[1:2,])
+scenario.output.list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_table_input) { # for testing. nrow(scenario_table_all_trim[1:2,])
   print(i)
   #browser()
   
@@ -205,71 +213,294 @@ scenario.output.list <- lapply(1:nrow(scenario_table_all), function(i, scenario_
     
     season.st.key = season.st.date.key,
     
-    preseason.days = scenario_table_all$preseason.days[i],
+    preseason.days = scenario_table_all_trim$preseason.days[i],
     
-    season.st.backstop = if (scenario_table_all$season.st.backstop[i] == "NULL") {
+    season.st.backstop = if (scenario_table_all_trim$season.st.backstop[i] == "NULL") {
       NULL
       }
     else {
-      as.Date(scenario_table_all$season.st.backstop[i])
+      as.Date(scenario_table_all_trim$season.st.backstop[i])
       },
     
-    early.data.method = scenario_table_all$early.data.method[i], 
+    early.data.method = scenario_table_all_trim$early.data.method[i], 
     
-    delay.date = if (scenario_table_all$delay.date[i] == "NULL") {
+    delay.date = if (scenario_table_all_trim$delay.date[i] == "NULL") {
       NULL
     } else {
-      as.Date(scenario_table_all$delay.date[i])
+      as.Date(scenario_table_all_trim$delay.date[i])
     },
     
-    delay.region = if (scenario_table_all$delay.region[i] == "NULL") NULL else scenario_table_all$delay.region[i],
+    delay.region = if (scenario_table_all_trim$delay.region[i] == "NULL") NULL else scenario_table_all_trim$delay.region[i],
     
-    delay.method = if (scenario_table_all$delay.method[i] == "NULL") NULL else scenario_table_all$delay.method[i],
+    delay.method = if (scenario_table_all_trim$delay.method[i] == "NULL") NULL else scenario_table_all_trim$delay.method[i],
     
-    delay.method.fidelity = scenario_table_all$delay.method.fidelity[i],
+    delay.method.fidelity = scenario_table_all_trim$delay.method.fidelity[i],
     
-    closure.date = if (scenario_table_all$closure.date[i] == "NULL") NULL else as.Date(scenario_table_all$closure.date[i]),
+    closure.date = if (scenario_table_all_trim$closure.date[i] == "NULL") NULL else as.Date(scenario_table_all_trim$closure.date[i]),
     
-    closure.region = if (scenario_table_all$closure.region[i] == "NULL") NULL else scenario_table_all$closure.region[i],
+    closure.region = if (scenario_table_all_trim$closure.region[i] == "NULL") NULL else scenario_table_all_trim$closure.region[i],
     
-    closure.method = if (scenario_table_all$closure.method[i] == "NULL") NULL else scenario_table_all$closure.method[i],
+    closure.method = if (scenario_table_all_trim$closure.method[i] == "NULL") NULL else scenario_table_all_trim$closure.method[i],
     
-    closure.redist.percent = scenario_table_all$closure.redist.percent[i],
+    closure.redist.percent = scenario_table_all_trim$closure.redist.percent[i],
     
-    depth.shallow = if (scenario_table_all$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.shallow[i]), 
+    depth.shallow = if (scenario_table_all_trim$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table_all_trim$depth.shallow[i]), 
     
-    depth.deep = if (scenario_table_all$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.deep[i]),
+    depth.deep = if (scenario_table_all_trim$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table_all_trim$depth.deep[i]),
     
-    reduction.before.date = if (scenario_table_all$reduction.before.date[i] == "NULL") NULL else scenario_table_all$reduction.before.date[i],
+    reduction.before.date = if (scenario_table_all_trim$reduction.before.date[i] == "NULL") NULL else scenario_table_all_trim$reduction.before.date[i],
     
     reduction.before.percent = 50,
     
-    reduction.before.region = if (scenario_table_all$reduction.before.region[i] == "NULL") NULL else scenario_table_all$reduction.before.region[i],
+    reduction.before.region = if (scenario_table_all_trim$reduction.before.region[i] == "NULL") NULL else scenario_table_all_trim$reduction.before.region[i],
     
-    reduction.after.date = if (scenario_table_all$reduction.after.date[i] == "NULL") NULL else as.Date(scenario_table_all$reduction.after.date[i]),
+    reduction.after.date = if (scenario_table_all_trim$reduction.after.date[i] == "NULL") NULL else as.Date(scenario_table_all_trim$reduction.after.date[i]),
     
     reduction.after.percent = 50,
     
-    reduction.after.region = if (scenario_table_all$reduction.after.region[i] == "NULL") NULL else scenario_table_all$reduction.after.region[i],
+    reduction.after.region = if (scenario_table_all_trim$reduction.after.region[i] == "NULL") NULL else scenario_table_all_trim$reduction.after.region[i],
     
-    reduction.after.redist = if (scenario_table_all$reduction.after.redist[i] == "FALSE") FALSE else TRUE,
+    reduction.after.redist = if (scenario_table_all_trim$reduction.after.redist[i] == "FALSE") FALSE else TRUE,
     
-    reduction.after.redist.percent = scenario_table_all$reduction.after.redist.percent[i]
+    reduction.after.redist.percent = scenario_table_all_trim$reduction.after.redist.percent[i]
     
   )
   
-}, scenario_table_input = scenario_table_all)
+}, scenario_table_input = scenario_table_all_trim)
 
 Sys.time() - start.time
 
+# JS. update directory as needed
 save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
-
-### 2) Calculate and summarize risk for multiple scenarios, including status quo
-### 3) make annual and tradeoff df's.
 
 ```
 
-# QUERY ENTANGLEMENT DATA
+
+## Calculate and summarize risk for multiple scenarios, including status quo
+```{r run_scenarios2, echo=FALSE}
+### 2) Calculate and summarize risk for multiple scenarios, including status quo
+
+# 2a) grab shifted effort fishing data if not running full code above
+# JS. update directory as needed 
+# load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_","2020-11-11",".RData"))
+
+# 2b) grab whale data
+x.whale <-read_rds(path_whales)
+
+# 2c) Load and prep grid cell - area key
+load(path_Grid_5km_landerased)
+area.key <- grid.5km.lno %>% 
+  st_drop_geometry() %>% 
+  select(GRID5KM_ID, area_km_lno) %>% 
+  distinct()
+
+### 2d) grab fishing metrics range to make sure normalizations are conducted properly (deals with normalizing within/across years and regions issue)
+CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
+### 2e) Calculate and summarize risk
+source(here:: here(
+"tradeoffs",
+"Management scenarios",
+"Mgmt_scenarios_risk.R")
+)
+
+# will need to re-run all of the above and below for sm and lg vessels
+
+start.time <- Sys.time()
+
+risk_out_list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_table_input) { # for testing. nrow(scenario_table[1:3,])
+  print(paste("Summarizing risk for Scenario", i))
+  #browser()
+  
+  risk_out <- risk_mgmt(
+    x = scenario.output.list[[i]], 
+    x.col = Num_DCRB_VMS_pings, 
+    y = x.whale,
+    risk.unit = "dens", 
+    area.key = area.key,
+    scale.list = CA_fishing_metrics_range_2009_2019, 
+    ym.min = "2009_11", 
+    ym.max = "2019_07"
+  )
+}, scenario_table_input = scenario_table_all_trim
+)
+
+Sys.time() - start.time
+# Time difference of 19 secs
+
+### save status quo scenario as its own df ###
+#scenario_table_all_trim$scenario_df_name # use scenario_number == sq, which is 1
+
+glimpse(risk_out_list[[1]])
+risk_5km_yr_mth_sq_all <- risk_out_list[[1]]
+
+# JS. update directory as needed
+write_rds(risk_5km_yr_mth_sq_all, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_",today(),".rds"))
+
+# 2f) summarize risk by region
+
+start.time <- Sys.time()
+risk_out_summ_list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_table_input) { # for testing. nrow(scenario_table[1:3,])
+  print(paste("Summarizing risk for Scenario", i))
+  #browser()
+  
+  risk_out_summ <- risk_mgmt_summ(
+    x = risk_out_list[[i]], 
+    summary.level = "Region"
+  )
+}, scenario_table_input = scenario_table_all_trim
+)
+
+Sys.time() - start.time
+#Time difference of 5 secs
+
+glimpse(risk_out_summ_list[[1]])
+
+# JS. update directory as needed
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_",today(),".RData"))
+
+```
+
+# 3. MAKE DATA FRAMES
+
+MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values)
++ status quo as separate df, all scenarios in one df, and scale_compare df
++ repeat for sm vessels
+
+## Make annual and tradeoff df's, all scenarios.
+```{r make_dfs1, echo=FALSE}
+
+### 1) make annual and tradeoff df's.
+
+# 1a) # if needed, load data
+# JS. update directory as needed
+# load(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_","2020-11-11",".RData"))
+
+# 1b) make data frames
+# could subset or map to region for regional summaries here
+source(here::here(
+"tradeoffs",
+"Management scenarios",
+"make_tradeoff_dataframes_function.R")
+)
+
+# note that this function writes rds files specific to JS directories (sorry!)
+# also note that write_rds should be modified if running analysis for small or large vessels (~lines 119, 224)
+# also also note that if sq scenario name changes  objects need to be redefined in the function (sorry again!)
+
+start.time <- Sys.time()
+tradeoff_df_function(
+  risk_list = risk_out_summ_list,
+  scenario_names_table = scenario_table_all_trim,
+  annual_statewide_df_name = "annual_statewide_df", # this ensures df is available in the globalEnv after running function
+  df_tradeoff_name = "df_tradeoff" # this ensures df is available in the globalEnv after running function
+  )
+Sys.time() - start.time
+#Time difference of 0.24 secs
+
+# is risk actually greater for whales under some scenarios? yes.
+dim(df_tradeoff)
+length(which(df_tradeoff$relative_hump_risk < 0)) # 35 out of 310
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 50 out of 310
+length(which(df_tradeoff$relative_both_risk < 0)) # 39 out of 310
+
+# is $ or pounds actually greater for the fishery under some scenarios? yes
+length(which(df_tradeoff$relative_dollars > 100)) # 3 out of 310
+length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 310
+
+```
+
+## Make subset of main text vs supplement scenarios.
+```{r make_dfs2, echo=FALSE}
+
+# 1a) Subset to focal scenarios for main text
+
+annual_statewide_df_focal_scenarios <- annual_statewide_df %>%
+  filter(!grepl('alt', scenario_number))
+
+# JS. update directory as needed
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_",today(),".rds"))
+
+scenario_table_focal_scenarios <- scenario_table_all_trim %>%
+  filter(!grepl('alt', scenario_number))
+
+# JS. update directory as needed
+write_rds(scenario_table_focal_scenarios, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  paste0("scenario_table_focal_scenarios_",today(),".rds"))
+)
+
+df_tradeoff_focal_scenarios <- df_tradeoff  %>%
+  filter(!grepl('alt', scenario_number))
+
+# JS. update directory as needed
+write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_",today(),".rds"))
+
+# 1b) Subset to focal scenarios for supplement
+
+annual_statewide_df_supplement <- annual_statewide_df %>%
+  filter(grepl('alt', scenario_number) | grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(annual_statewide_df_supplement, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_supplement_",today(),".rds"))
+
+scenario_table_supplement <- scenario_table_all_trim %>%
+  filter(grepl('alt', scenario_number) | grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(scenario_table_supplement, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  paste0("scenario_table_supplement_",today(),".rds"))
+)
+
+df_tradeoff_supplement <- df_tradeoff  %>%
+  filter(grepl('alt', scenario_number) | grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(df_tradeoff_supplement, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_supplement_",today(),".rds"))
+
+# 1c) Subset to status quo scenario only
+
+annual_statewide_df_sq <- annual_statewide_df %>%
+  filter(grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(annual_statewide_df_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_sq_",today(),".rds"))
+
+scenario_table_sq <- scenario_table_all_trim %>%
+  filter(grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(scenario_table_sq, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  paste0("scenario_table_sq_",today(),".rds"))
+)
+
+df_tradeoff_sq <- df_tradeoff  %>%
+  filter(grepl('sq', scenario_number))
+
+# JS. update directory as needed
+write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_sq_",today(),".rds"))
+
+
+```
+
+# remember that i want to:
+4. CALCULATE SCENARIO RANKS
++ one df by year, one by period
++ repeat for statewide only and cenCA only scenarios
++ ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
+5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
++ repeat for statewide only and cenCA only scenarios
++ % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
+
+# 6. QUERY ENTANGLEMENT DATA
 
 ## Entanglements by period and species
 ```{r entanglements, echo=FALSE}
@@ -324,7 +555,7 @@ entanglement_df_annual_complete %>%
 
 ```
 
-# QUERY FISHING DATA
+# 7. QUERY FISHING DATA
 
 ```{r fishing, include=FALSE}
 
@@ -534,3 +765,6 @@ annual_percent_rev_change_MHW_v_pre_region
 
 Total revenue and landings by crab year and period for all fish tix
 (not yet analyzed)
+
+# 8. QUERY WHALE MODEL OUTPUTS
++ predicted occurrence/density by period, statewide and by region
