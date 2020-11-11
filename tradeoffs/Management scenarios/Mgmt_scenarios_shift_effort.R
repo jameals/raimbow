@@ -94,7 +94,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   #   date_past_season_end: logical; indicates if date_record is past the 
   #     original end date for this Region in this crab year
   #   date_past_region_end: logical; indicates if date_record is past the 
-  #     lawful end date (July 15 for central CA and July 31 otherwise) 
+  #     lawful end date (June 30 for central CA and July 15 otherwise) 
   #     for this Region in this crab year
   
   # browser()
@@ -359,8 +359,9 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
     group_by(crab_year, Region) %>% 
     summarise(season_date_end = max(date_record), 
               region_date_end = make_date(
-                substr(unique(crab_year), 6, 9), 7 ,
-                ifelse(unique(Region) == "CenCA", 15, 31)), 
+                substr(unique(crab_year), 6, 9), 
+                ifelse(unique(Region) == "CenCA", 6, 7),
+                ifelse(unique(Region) == "CenCA", 30, 15)), 
               .groups = "drop")
   
   if (any(x.fish.end.summ$season_date_end > x.fish.end.summ$region_date_end))

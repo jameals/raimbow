@@ -130,6 +130,66 @@ scenario.output.df.noinfo.sq <- effort_mgmt(
   closure.redist.percent = 100
 )
 
+# testing code week of nov 11 2020
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+x.orig <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels_regions_depths.RDS") 
+
+scenario_table_all <- read_csv(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_all.csv"
+))
+
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+season.st.date.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
+
+i=31
+# 7:9, 19:21, 26, 30:31 problematic. 
+
+scenario.output.tmp <- effort_mgmt(
+  x = x.orig, # %>% filter(crab_year != "2015_2016")
+  season.st.key = season.st.date.key,
+  preseason.days = scenario_table_all$preseason.days[i],
+  season.st.backstop = if (scenario_table_all$season.st.backstop[i] == "NULL") {
+    NULL
+  }
+  else {
+    as.Date(scenario_table_all$season.st.backstop[i])
+  },
+  early.data.method = scenario_table_all$early.data.method[i], 
+  delay.date = if (scenario_table_all$delay.date[i] == "NULL") {
+    NULL
+  } else {
+    as.Date(scenario_table_all$delay.date[i])
+  },
+  delay.region = if (scenario_table_all$delay.region[i] == "NULL") NULL else scenario_table_all$delay.region[i],
+  delay.method = if (scenario_table_all$delay.method[i] == "NULL") NULL else scenario_table_all$delay.method[i],
+  delay.method.fidelity = scenario_table_all$delay.method.fidelity[i],
+  closure.date = if (scenario_table_all$closure.date[i] == "NULL") NULL else as.Date(scenario_table_all$closure.date[i]),
+  closure.region = if (scenario_table_all$closure.region[i] == "NULL") NULL else scenario_table_all$closure.region[i],
+  closure.method = if (scenario_table_all$closure.method[i] == "NULL") NULL else scenario_table_all$closure.method[i],
+  closure.redist.percent = scenario_table_all$closure.redist.percent[i],
+  depth.shallow = if (scenario_table_all$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.shallow[i]), 
+  depth.deep = if (scenario_table_all$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.deep[i]),
+  reduction.before.date = if (scenario_table_all$reduction.before.date[i] == "NULL") NULL else scenario_table_all$reduction.before.date[i],
+  reduction.before.percent = 50,
+  reduction.before.region = if (scenario_table_all$reduction.before.region[i] == "NULL") NULL else scenario_table_all$reduction.before.region[i],
+  reduction.after.date = if (scenario_table_all$reduction.after.date[i] == "NULL") NULL else as.Date(scenario_table_all$reduction.after.date[i]),
+  reduction.after.percent = 50,
+  reduction.after.region = if (scenario_table_all$reduction.after.region[i] == "NULL") NULL else scenario_table_all$reduction.after.region[i],
+  reduction.after.redist = if (scenario_table_all$reduction.after.redist[i] == "FALSE") FALSE else TRUE,
+  reduction.after.redist.percent = scenario_table_all$reduction.after.redist.percent[i]
+)
+glimpse(scenario.output.tmp)
+
 
 # testing code week of june 8 2020
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")

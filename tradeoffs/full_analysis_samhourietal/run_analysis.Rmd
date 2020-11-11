@@ -71,6 +71,10 @@ if (user == "JS") {
   
   path_dcrb_vms_tix_analysis <- "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS"
   
+  path_dcrb_daily_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels_regions_depths.RDS"
+  
+  path_season.st.date.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds"
+  
   # path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   # 
   # path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
@@ -119,7 +123,151 @@ if (user == "JS") {
 
 
 # MAKE SCENARIOS
-pick up here 1100620
+```{r make_scenarios, echo=FALSE}
+
+source(paste0(here::here(), "/tradeoffs/Management scenarios/make_scenarios_table.R"))
+# note season.st.key argument has to be defined separately from above
+
+# scenario_table[1,]
+# scenario_table_edr[1,]
+
+# separate scenario tables need to be bound together.
+# number the scenarios for easier reference. sq indicates status quo; redundant indicates scenario already represented and can be ignored; alt indicates scenario uses alt set of assumptions about what happens to effort (either remove or not removed and/or 10% v 100% of effort redistributed)
+scenario_table_all <- scenario_table %>%
+  bind_rows(scenario_table_edr) %>%
+  mutate(
+    scenario_number = c(
+      "sq","1","2","3","6","8","4alt","7alt","9alt","5",
+      "10","11","sq_redundant","1_redundant","2_redundant",
+      "3_redundant","6_redundant","8_redundant","4","7","9",
+      "5alt","10alt","11alt","12","13","14","15","16","17",
+      "18","13alt","14alt","15alt","16alt","17alt","18alt"
+    )
+  )
+
+# scenario_table_all[3,] == scenario_table_all[15,]
+
+# convert factors to characters
+scenario_table_all$delay_scenario <- as.character(scenario_table_all$delay_scenario)
+scenario_table_all$delay_scenario <- as.character(scenario_table_all$delay_scenario)
+scenario_table_all$closure_scenario <- as.character(scenario_table_all$closure_scenario)
+scenario_table_all$closure_scenario <- as.character(scenario_table_all$closure_scenario)
+
+glimpse(scenario_table_all)
+
+write_csv(scenario_table_all,here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_all.csv"
+          )
+)
+
+```
+
+# RUN SCENARIOS
+```{r run_scenarios, echo=FALSE}
+
+### 1) Loop through scenarios of interest and create a list of output df's
+
+# 1a) load function to shift fishing effort and daily fishing data
+source(here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "Mgmt_scenarios_shift_effort.R")
+)
+x.orig <- read_rds(path_dcrb_daily_all)
+
+# 1b) read in season start date key
+# grab helper function. https://stackoverflow.com/questions/6364783/capitalize-the-first-letter-of-both-words-in-a-two-word-string
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+season.st.date.key <- read_rds(path_season.st.date.key) %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
+
+# 1c) shift effort
+
+start.time <- Sys.time()
+
+scenario.output.list <- lapply(1:nrow(scenario_table_all), function(i, scenario_table_input) { # for testing. nrow(scenario_table_all[1:2,])
+  print(i)
+  #browser()
+  
+  # i=1 # testing. no longer breaks because "At least one of delay.date or closure.date must not be NULL"
+  # i=2 # testing. no longer breaks because when switch() is used and does not return NULL, it returns nothing
+  
+  scenario.output.df <- effort_mgmt(
+    x = x.orig,
+    
+    season.st.key = season.st.date.key,
+    
+    preseason.days = scenario_table_all$preseason.days[i],
+    
+    season.st.backstop = if (scenario_table_all$season.st.backstop[i] == "NULL") {
+      NULL
+      }
+    else {
+      as.Date(scenario_table_all$season.st.backstop[i])
+      },
+    
+    early.data.method = scenario_table_all$early.data.method[i], 
+    
+    delay.date = if (scenario_table_all$delay.date[i] == "NULL") {
+      NULL
+    } else {
+      as.Date(scenario_table_all$delay.date[i])
+    },
+    
+    delay.region = if (scenario_table_all$delay.region[i] == "NULL") NULL else scenario_table_all$delay.region[i],
+    
+    delay.method = if (scenario_table_all$delay.method[i] == "NULL") NULL else scenario_table_all$delay.method[i],
+    
+    delay.method.fidelity = scenario_table_all$delay.method.fidelity[i],
+    
+    closure.date = if (scenario_table_all$closure.date[i] == "NULL") NULL else as.Date(scenario_table_all$closure.date[i]),
+    
+    closure.region = if (scenario_table_all$closure.region[i] == "NULL") NULL else scenario_table_all$closure.region[i],
+    
+    closure.method = if (scenario_table_all$closure.method[i] == "NULL") NULL else scenario_table_all$closure.method[i],
+    
+    closure.redist.percent = scenario_table_all$closure.redist.percent[i],
+    
+    depth.shallow = if (scenario_table_all$depth.shallow[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.shallow[i]), 
+    
+    depth.deep = if (scenario_table_all$depth.deep[i] == "NULL") NULL else as.numeric(scenario_table_all$depth.deep[i]),
+    
+    reduction.before.date = if (scenario_table_all$reduction.before.date[i] == "NULL") NULL else scenario_table_all$reduction.before.date[i],
+    
+    reduction.before.percent = 50,
+    
+    reduction.before.region = if (scenario_table_all$reduction.before.region[i] == "NULL") NULL else scenario_table_all$reduction.before.region[i],
+    
+    reduction.after.date = if (scenario_table_all$reduction.after.date[i] == "NULL") NULL else as.Date(scenario_table_all$reduction.after.date[i]),
+    
+    reduction.after.percent = 50,
+    
+    reduction.after.region = if (scenario_table_all$reduction.after.region[i] == "NULL") NULL else scenario_table_all$reduction.after.region[i],
+    
+    reduction.after.redist = if (scenario_table_all$reduction.after.redist[i] == "FALSE") FALSE else TRUE,
+    
+    reduction.after.redist.percent = scenario_table_all$reduction.after.redist.percent[i]
+    
+  )
+  
+}, scenario_table_input = scenario_table_all)
+
+Sys.time() - start.time
+
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
+
+### 2) Calculate and summarize risk for multiple scenarios, including status quo
+### 3) make annual and tradeoff df's.
+
+```
 
 # QUERY ENTANGLEMENT DATA
 

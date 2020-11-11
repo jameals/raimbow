@@ -5,7 +5,7 @@
 
 library(tidyverse)
 
-# 052720, updated 060520. settings. 
+# 052720, updated 060520. settings. updated 110920.
 
 # 1) table for delays and early closures, no effort reduction or depth restriction 
 # season.st.key: set as key based on 1% accumulated landings
@@ -18,7 +18,7 @@ library(tidyverse)
 # delay.method.fidelity: preferred / main text scenario setting is "spatial"
 # closure.date: NULL or Apr 1
 # closure.region: NULL, "All", "CenCA", "BIA"
-# closure.method: set as "temporal" but compare to "remove"; must be "remove" when closure.region is "All"
+# closure.method: set as "temporal" but compare to "remove"; must be "remove" when closure.region is "All". 
 # closure.redist.percent: develop 2 complete sets of scenarios, 1 with this setting as 100 and 1 as 10. JS preferred / main text scenario setting is 10 for closure.region== "CenCA", 100 for closure.region=="BIA
 # depth.shallow = NULL, 
 # depth.deep = NULL, 
@@ -28,6 +28,8 @@ library(tidyverse)
 # reduction.after.date: NULL
 # reduction.after.percent = 50. this is the default but will be ignored because reduction.after.date is NULL
 # reduction.after.region: NULL
+# reduction.after.redist: FALSE
+# reduction.after.redist.percent: NULL
 
 ### Make the scenario combinations 
 delay_scenarios <- c(
@@ -90,12 +92,14 @@ scenario_table_1 <- scenario_table %>%
     reduction.before.region = "NULL",
     reduction.after.date = "NULL",
     reduction.after.percent = 50,
-    reduction.after.region = "NULL"
+    reduction.after.region = "NULL",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0 
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
                 preseason.days, season.st.backstop, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
-                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
 
 # 2nd set of scenarios
 # delay.method.fidelity: "spatial"
@@ -133,12 +137,14 @@ scenario_table_2 <- scenario_table %>%
     reduction.before.region = "NULL",
     reduction.after.date = "NULL",
     reduction.after.percent = 50,
-    reduction.after.region = "NULL"
+    reduction.after.region = "NULL",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent =  0 
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
                 preseason.days, season.st.backstop, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
-                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
 
 scenario_table <- bind_rows(list(scenario_table_1,scenario_table_2))
 
@@ -160,7 +166,7 @@ write_rds(scenario_table, here::here(
 # delay.method.fidelity: NULL
 # closure.date: Apr 1
 # closure.region: "All", "CenCA"
-# closure.method: "temporal", "depth"
+# closure.method: "temporal", "depth+temporal". Use 'depth+temporal' for depth restrictions, which temporally redistributes effort outside of the range specified by depth.deep and depth.shallow into the specified depth range, in the same region
 # closure.redist.percent: 0
 # depth.shallow = NULL, 
 # depth.deep = -54.864; assuming units are meters this corresponds to 30 fathoms. with depth.shallow set to NULL this keeps all effort shallower than -54.864 m, and removes everything deeper (seaward)
@@ -170,6 +176,8 @@ write_rds(scenario_table, here::here(
 # reduction.after.date: Apr 1
 # reduction.after.percent = 50. this is the default
 # reduction.after.region: "All", "CenCA"
+# reduction.after.redist: TRUE or FALSE (logical) indicating if effort removed by reduction.after... argumentsis redistributed using temporal fidelity. This can only be TRUE if reduction.after.region is 'CenCA' or 'NorCA', in which case the effort is temporally redistributed to the other region
+# reduction.after.redist.percent: if reduction.after.redist is TRUE, then (effort removed * (reduction.after.redist.percent / 100)) effort is redistributed to the other (open) region
 
 ### Make the scenario combinations 
 delay_scenarios_edr <- c(
@@ -199,6 +207,7 @@ restriction_after_date <- "2010-04-01"
 
 # 3rd set of scenarios
 # reduction.after.percent: 50
+# redistribute to norCA if only cenCA closed
 scenario_table_3 <- scenario_table_edr %>%
   mutate(
     scenario_df_name = paste(delay_scenario, closure_scenario, restriction_scenario,"reduction_after_percent_50",sep="_"),
@@ -228,15 +237,63 @@ scenario_table_3 <- scenario_table_edr %>%
     reduction.after.region = ifelse(substr(restriction_scenario,1,3) == "Sta", 
                                            "All",
                                            "CenCA"
-                                    )
+                                    ),
+    reduction.after.redist = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                    "FALSE",
+                                    "TRUE"
+    ),
+    reduction.after.redist.percent = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                            0,
+                                            10
+    )
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
                 preseason.days, season.st.backstop, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
-                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
+# 3rd set of scenarios - alt
+# reduction.after.percent: 50
+# remove all effort when only cenCA closed
+scenario_table_3alt <- scenario_table_edr[2,] %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario[1], closure_scenario, restriction_scenario,"reduction_after_percent_50_remove",sep="_"),
+    #season.st.key = "season.st.date.key",
+    preseason.days = 3,
+    season.st.backstop = "NULL",
+    early.data.method = "remove",
+    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
+    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
+                          ifelse(substr(delay_scenario,1,5) == "State",
+                                 "All",
+                                 "CenCA")
+    ),
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = "NULL",
+    closure.region = "NULL",
+    closure.method = "remove",
+    closure.redist.percent = 0,
+    depth.shallow = "NULL", 
+    depth.deep = "NULL",
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = "CenCA",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0
+  ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
+                preseason.days, season.st.backstop, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
 
 # 4th set of scenarios
 # depth.val = -54.864
+# redistribute offshore effort onshore by region
 scenario_table_4 <- scenario_table_edr %>%
   mutate(
     scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"depth_val_30fathom",sep="_"),
@@ -259,6 +316,49 @@ scenario_table_4 <- scenario_table_edr %>%
                                    "CenCA"
                                    )
                             ),
+    closure.method = "depth+temporal",
+    closure.redist.percent = 100,
+    depth.shallow = "NULL", 
+    depth.deep = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = "NULL",
+    reduction.after.percent = 50,
+    reduction.after.region = "NULL",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0
+    ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
+                preseason.days, season.st.backstop, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
+# 4th set of scenarios - alt
+# depth.val = -54.864
+# remove offshore effort completely
+scenario_table_4alt <- scenario_table_edr %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"depth_val_30fathom_remove",sep="_"),
+    #season.st.key = "season.st.date.key",
+    preseason.days = 3,
+    season.st.backstop = "NULL",
+    early.data.method = "remove",
+    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
+    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
+                          ifelse(substr(delay_scenario,1,5) == "State",
+                                 "All",
+                                 "CenCA")
+    ),
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = ifelse(restriction_scenario != "No_Early_Closure", restriction_after_date, "NULL"),
+    closure.region = ifelse(restriction_scenario == "No_Early_Closure", "NULL",
+                            ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                   "All",
+                                   "CenCA"
+                            )
+    ),
     closure.method = "depth",
     closure.redist.percent = 0,
     depth.shallow = "NULL", 
@@ -268,21 +368,78 @@ scenario_table_4 <- scenario_table_edr %>%
     reduction.before.region = "NULL",
     reduction.after.date = "NULL",
     reduction.after.percent = 50,
-    reduction.after.region = "NULL"
-    ) %>%
+    reduction.after.region = "NULL",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0
+  ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
                 preseason.days, season.st.backstop, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
-                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
-
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
 
 
 # 5th set of scenarios
 # reduction.after.percent: 50
+# redistribute to norCA if only cenCA closed
 # depth.val = -54.864
+# redistribute offshore effort onshore by region
 scenario_table_5 <- scenario_table_edr %>%
   mutate(
     scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"reduction_after_percent_50","depth_val_30fathom",sep="_"),
+    #season.st.key = "season.st.date.key",
+    preseason.days = 3,
+    season.st.backstop = "NULL",
+    early.data.method = "remove",
+    delay.date = ifelse(delay_scenario == "No_Delay", "NULL", delayed.opening.date),
+    delay.region = ifelse(delay_scenario == "No_Delay", "NULL",
+                          ifelse(substr(delay_scenario,1,5) == "State",
+                                 "All",
+                                 "CenCA")
+    ),
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = ifelse(restriction_scenario != "No_Early_Closure", restriction_after_date, "NULL"),
+    closure.region = ifelse(restriction_scenario == "No_Early_Closure", "NULL",
+                            ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                   "All",
+                                   "CenCA"
+                            )
+    ),
+    closure.method = "depth+temporal",
+    closure.redist.percent = 100,
+    depth.shallow = "NULL", 
+    depth.deep = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                    "All",
+                                    "CenCA"
+    ),
+    reduction.after.redist = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                    "FALSE",
+                                    "TRUE"
+    ),
+    reduction.after.redist.percent = ifelse(substr(restriction_scenario,1,3) == "Sta", 
+                                            0,
+                                            10
+    )
+  ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
+                preseason.days, season.st.backstop, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
+# 5th set of scenarios - alt
+# reduction.after.percent: 50
+# remove all effort
+# depth.val = -54.864
+# remove all offshore effort
+scenario_table_5alt <- scenario_table_edr %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario,closure_scenario,restriction_scenario,"reduction_after_percent_50","depth_val_30fathom_remove",sep="_"),
     #season.st.key = "season.st.date.key",
     preseason.days = 3,
     season.st.backstop = "NULL",
@@ -314,20 +471,102 @@ scenario_table_5 <- scenario_table_edr %>%
     reduction.after.region = ifelse(substr(restriction_scenario,1,3) == "Sta", 
                                     "All",
                                     "CenCA"
-    )
+    ),
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0
   ) %>%
   dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
                 preseason.days, season.st.backstop, early.data.method, delay.date,
                 delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
-                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region)
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
+# scenario 18
+# reduction.after.percent: 50
+# redistribute to norCA when only cenCA closed
+# depth.val = -54.864
+# redistribute offshore effort onshore by region
+scenario_18 <- scenario_table_edr[2,] %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario, closure_scenario, restriction_scenario,"reduction_after_percent_50","Statewide","depth_val_30fathom",sep="_"),
+    #season.st.key = "season.st.date.key",
+    preseason.days = 3,
+    season.st.backstop = "NULL",
+    early.data.method = "remove",
+    delay.date = "NULL",
+    delay.region = "NULL",
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = restriction_after_date,
+    closure.region = "All",
+    closure.method = "depth+temporal",
+    closure.redist.percent = 100,
+    depth.shallow = "NULL", 
+    depth.deep = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = "CenCA",
+    reduction.after.redist = "TRUE",
+    reduction.after.redist.percent = 10
+    ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
+                preseason.days, season.st.backstop, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
+
+# scenario 18 - alt
+# reduction.after.percent: 50
+# remove effort
+# depth.val = -54.864
+# remove offshore effort
+scenario_18alt <- scenario_table_edr[2,] %>%
+  mutate(
+    scenario_df_name = paste(delay_scenario, closure_scenario, restriction_scenario,"reduction_after_percent_50","Statewide","depth_val_30fathom_remove",sep="_"),
+    #season.st.key = "season.st.date.key",
+    preseason.days = 3,
+    season.st.backstop = "NULL",
+    early.data.method = "remove",
+    delay.date = "NULL",
+    delay.region = "NULL",
+    delay.method = "lag",
+    delay.method.fidelity = "spatial",
+    closure.date = restriction_after_date,
+    closure.region = "All",
+    closure.method = "depth",
+    closure.redist.percent = 0,
+    depth.shallow = "NULL", 
+    depth.deep = as.character(-54.864),
+    reduction.before.date = "NULL",
+    reduction.before.percent = 50,
+    reduction.before.region = "NULL",
+    reduction.after.date = restriction_after_date,
+    reduction.after.percent = 50,
+    reduction.after.region = "CenCA",
+    reduction.after.redist = "FALSE",
+    reduction.after.redist.percent = 0
+  ) %>%
+  dplyr::select(scenario_df_name, delay_scenario, closure_scenario, #season.st.key,        
+                preseason.days, season.st.backstop, early.data.method, delay.date,
+                delay.region, delay.method, delay.method.fidelity, closure.date, closure.region,
+                closure.method, closure.redist.percent, depth.shallow, depth.deep, reduction.before.date, reduction.before.percent, reduction.before.region, reduction.after.date, reduction.after.percent, reduction.after.region, reduction.after.redist, reduction.after.redist.percent)
 
 
-scenario_table_edr <- bind_rows(list(scenario_table_3, scenario_table_4, scenario_table_5))
+scenario_table_edr <- bind_rows(list(scenario_table_3, scenario_table_4, scenario_table_5, scenario_18,
+                                     scenario_table_3alt, scenario_table_4alt, scenario_table_5alt, scenario_18alt))
 
 write_rds(scenario_table_edr, here::here(
   "tradeoffs",
   "Management scenarios",
   "scenario_table_effort_depth_restrictions.RDS"
+)
+)
+
+write_csv(scenario_table_edr, here::here(
+  "tradeoffs",
+  "Management scenarios",
+  "scenario_table_effort_depth_restrictions.csv"
 )
 )
 
