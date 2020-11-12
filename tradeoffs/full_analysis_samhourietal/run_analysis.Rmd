@@ -531,7 +531,9 @@ write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Proce
 
 ```
 
-4. CALCULATE SCENARIO RANKS
+# 4. CALCULATE SCENARIO RANKS
+
+CALCULATE SCENARIO RANKS
 + one df by year, one by period
 + repeat for statewide only and cenCA only scenarios
 + also make scale_compare df by period
@@ -551,7 +553,6 @@ write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Proce
 ```{r rank_scenarios3, echo=FALSE}
 
 ```
-
 
 ## Make df's to compare scales of management in different periods
 ```{r rank_scenarios, echo=FALSE}
@@ -669,7 +670,7 @@ write_rds(scale_compare_supplement,
 ```
 
 # remember that i want to:
-5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
+# 5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
 + repeat for statewide only and cenCA only scenarios
 + % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
 
