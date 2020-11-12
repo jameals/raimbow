@@ -378,6 +378,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   )
   
   
+  
   #----------------------------------------------------------------------------
   # Do percent reduction - early season
   if (is.null(reduction.before.date)) {
@@ -916,14 +917,27 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
            Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
            Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
   
+  # browser()
   if (z.reg == "BIA" & nrow(z.redist.nobase) > 0) {
     warning("Some effort being redistributed out of the BIAs does not have ", 
             "a base for redistribution - ", 
-            "this will result in an incorrect output file")
+            "this will result in an incorrect output file ", 
+            "as this effort will be left in its original Region. This effort is summarized here:", 
+            immediate. = TRUE)
   } else if (nrow(z.redist.nobase) > 0) {
     warning("Some effort being redistributed does not have ", 
             "a base for redistribution - ", 
-            "this will result in an incorrect output file")
+            "this will result in an incorrect output file ", 
+            "as this effort will be left in its original Region. This effort is summarized here:", 
+            immediate. = TRUE)
+  }
+  
+  if (nrow(z.redist.nobase) > 0) {
+    print(z.redist.nobase %>% 
+            group_by(crab_year, Region, year_month) %>% 
+            summarise(num_records = n(), 
+                      Num_DCRB_VMS_pings_sum = sum(Num_DCRB_VMS_pings), 
+                      .groups = "drop"))
   }
   
   # 3) Get effort that is not being redistributed

@@ -52,6 +52,22 @@ season.st.date.key <- readRDS("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/start_da
 #   mutate(depth = seq(-5, -100, by = -5))
 
 
+
+table(x.orig$Region)
+x.summ <- x.orig %>% 
+  group_by(crab_year, Region, year_month) %>% 
+  summarise(count = n(), .groups = "drop") %>% 
+  mutate(id = paste(crab_year, Region, year_month, sep = "-"))
+
+x.summ.cenca <- x.summ %>% filter(Region == "CenCA")
+x.summ.norca <- x.summ %>% filter(Region == "NorCA")
+
+x.summ.cenca[!(x.summ.norca$year_month %in% x.summ.cenca$year_month), ]
+x.summ.norca[!(x.summ.cenca$year_month %in% x.summ.norca$year_month), ]
+
+
+
+
 ###############################################################################
 ### Shift/redistribute effort as specified
 source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
@@ -59,24 +75,25 @@ d <- effort_mgmt(
   x = x.orig, 
   season.st.key = season.st.date.key, 
   preseason.days = 3, 
-  # season.st.backstop = NULL,
+  season.st.backstop = NULL,
   early.data.method = "remove", 
-  delay.date = NULL, #as.Date("2010-01-01"),
+  delay.date = as.Date("2009-12-15"),
   delay.region = "CenCA",
-  delay.method = "depth",
-  delay.method.fidelity = NULL, #"temporal",
+  delay.method = "lag",
+  delay.method.fidelity = "spatial", #"temporal",
   closure.date = as.Date("2010-04-01"),
-  closure.region = c("All"),
-  closure.method = "depth+temporal",
+  closure.region = c("CenCA"),
+  closure.method = "temporal",
   closure.redist.percent = 100,
-  depth.shallow = 0, depth.deep = -100,
+  depth.shallow = NULL, 
+  depth.deep = NULL,
   # reduction.before.date = as.Date("2009-12-15"),
   # reduction.before.percent = 50,
   # reduction.before.region = "All",
-  reduction.after.date = as.Date("2010-04-01"),
+  reduction.after.date = NULL, #as.Date("2010-04-01"),
   reduction.after.percent = 50,
   reduction.after.region = "CenCA", 
-  reduction.after.redist = TRUE, 
+  reduction.after.redist = FALSE, 
   reduction.after.redist.percent = 10
 )
 
