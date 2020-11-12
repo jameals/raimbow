@@ -18,16 +18,10 @@ This document runs the analysis included in the Samhouri et al. tradeoff manuscr
 
 See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
-
 1. MAKE SCENARIOS
 2. RUN SCENARIOS
 3. MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS
-+ status quo as separate df, all scenarios in one df, and scale_compare df
-+ repeat for sm vessels
 4. CALCULATE SCENARIO RANKS
-+ one df by year, one by period
-+ repeat for statewide only and cenCA only scenarios
-+ ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
 5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
 + repeat for statewide only and cenCA only scenarios
 + % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
@@ -170,6 +164,8 @@ write_csv(scenario_table_all,here::here(
 ## Loop through scenarios of interest and create a list of output df's
 ```{r run_scenarios1, echo=FALSE}
 
+# note this chunk was adapted from scenario_analysis_all_vessels.R
+
 ### 1) Loop through scenarios of interest and create a list of output df's
 
 # 1a) load function to shift fishing effort and daily fishing data
@@ -278,6 +274,9 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 ## Calculate and summarize risk for multiple scenarios, including status quo
 ```{r run_scenarios2, echo=FALSE}
+
+# note this chunk was adapted from scenario_analysis_all_vessels.R
+
 ### 2) Calculate and summarize risk for multiple scenarios, including status quo
 
 # 2a) grab shifted effort fishing data if not running full code above
@@ -367,11 +366,13 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 # 3. MAKE DATA FRAMES
 
 MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values)
-+ status quo as separate df, all scenarios in one df, and scale_compare df
-+ repeat for sm vessels
++ status quo as separate df, all scenarios in one df, main text and supplement df's
++ repeat for sm vessels [ not yet coded ]
 
 ## Make annual and tradeoff df's, all scenarios.
 ```{r make_dfs1, echo=FALSE}
+
+# note this chunk was adapted from scenario_analysis_all_vessels.R
 
 ### 1) make annual and tradeoff df's.
 
@@ -415,6 +416,46 @@ length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 310
 
 ## Make subset of main text vs supplement scenarios.
 ```{r make_dfs2, echo=FALSE}
+
+# note this chunk was adapted from scenario_analysis_all_vessels.R
+
+# give scenarios pretty names, add pre_post and year columns
+scenario_names_key <- read_csv(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "scenario_names_key.csv"
+))
+
+annual_statewide_df %<>%
+  left_join(
+    scenario_names_key
+  ) %<>%
+  mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  pre_post = ifelse(plotting_year >=2015 & plotting_year <2019, "2014-2018",
+                    ifelse(plotting_year <2015, "2009-2014", "2018-2019")
+                    )
+  )
+
+scenario_table_all_trim %<>%
+  left_join(
+    scenario_names_key
+  )
+
+df_tradeoff %<>%
+  left_join(
+    scenario_names_key
+  ) %<>%
+  mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9)),
+  pre_post = ifelse(plotting_year >=2015 & plotting_year <2019, "2014-2018",
+                    ifelse(plotting_year <2015, "2009-2014", "2018-2019")
+                    )
+  )
+
+# join tradeoff df to annual df to include relative changes
+annual_statewide_df %<>%
+  left_join(df_tradeoff)
 
 # 1a) Subset to focal scenarios for main text
 
@@ -488,14 +529,146 @@ df_tradeoff_sq <- df_tradeoff  %>%
 # JS. update directory as needed
 write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_sq_",today(),".rds"))
 
+```
+
+4. CALCULATE SCENARIO RANKS
++ one df by year, one by period
++ repeat for statewide only and cenCA only scenarios
++ also make scale_compare df by period
++ ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
+
+## Calculate scenario ranks each year and each period, all scenarios
+```{r rank_scenarios1, echo=FALSE}
+
+```
+
+## Calculate scenario ranks each year and each period, statewide focal scenarios
+```{r rank_scenarios2, echo=FALSE}
+
+```
+
+## Calculate scenario ranks each year and each period, cenCA only focal scenarios
+```{r rank_scenarios3, echo=FALSE}
+
+```
+
+
+## Make df's to compare scales of management in different periods
+```{r rank_scenarios, echo=FALSE}
+
+### compare risk based on scale of mgmt scenario
+
+# 1a) focal scenarios for main text
+scale_compare_focal_scenarios <- annual_statewide_df_focal_scenarios %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
+  mutate(
+  
+    scale = ifelse(delay.region == "All" | closure.region == "All" | reduction.after.region == "All",
+                 "Statewide",
+                 ifelse(delay.region == "CenCA" | closure.region == "CenCA" | reduction.after.region == "CenCA",
+                        "Central California Only", NA)),
+    
+  scenario_type = ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth and Gear Restrictions",
+                         ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & !stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth Restriction",
+                                ifelse(!stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Gear Restriction",                                   
+                                       ifelse(stringr::str_detect(pretty_scenario_names, 'Early Closure'), "Early Closure", 
+                                              ifelse(stringr::str_detect(pretty_scenario_names, 'Delay'), "Delayed Opening", NA)
+                                              )
+                                       )
+                                )
+                         )
+  ) %>%
+  group_by(pretty_scenario_names, pre_post, scale, scenario_type) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) 
+  
+glimpse(scale_compare_focal_scenarios)
+write_rds(scale_compare_focal_scenarios, 
+          here::here(
+            "tradeoffs",
+            "Management scenarios",
+            "scale_compare_all_vessels.rds")
+          )
+
+
+# 1b) focal scenarios for supplement
+scale_compare_supplement <- annual_statewide_df_supplement %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
+  mutate(
+  
+    scale = ifelse(delay.region == "All" | closure.region == "All" | reduction.after.region == "All",
+                 "Statewide",
+                 ifelse(delay.region == "CenCA" | closure.region == "CenCA" | reduction.after.region == "CenCA",
+                        "Central California Only", NA)),
+    
+  scenario_type = ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth and Gear Restrictions",
+                         ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & !stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth Restriction",
+                                ifelse(!stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Gear Restriction",                                   
+                                       ifelse(stringr::str_detect(pretty_scenario_names, 'Early Closure'), "Early Closure", 
+                                              ifelse(stringr::str_detect(pretty_scenario_names, 'Delay'), "Delayed Opening", NA)
+                                              )
+                                       )
+                                )
+                         )
+  ) %>%
+  group_by(pretty_scenario_names, pre_post, scale, scenario_type) %>%
+  summarise(
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_DCRB_rev = mean(DCRB_rev),
+    
+    se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+    se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+    se_n_risk_both = sd(n_risk_both)/sqrt(n()),
+    se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+    
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_relative_dollars = mean(relative_dollars),
+    
+    se_relative_hump_risk_n = sd(relative_hump_risk_n)/sqrt(n()),
+    se_relative_blwh_risk_n = sd(relative_blwh_risk_n)/sqrt(n()),
+    se_relative_both_risk_n = sd(relative_both_risk_n)/sqrt(n()),
+    se_relative_dollars = sd(relative_dollars)/sqrt(n()),
+    
+    .groups = "drop"
+  ) 
+  
+glimpse(scale_compare_supplement)
+write_rds(scale_compare_supplement, 
+          here::here(
+            "tradeoffs",
+            "Management scenarios",
+            "scale_compare_all_vessels_supplement.rds")
+          )
+
 
 ```
 
 # remember that i want to:
-4. CALCULATE SCENARIO RANKS
-+ one df by year, one by period
-+ repeat for statewide only and cenCA only scenarios
-+ ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
 5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
 + repeat for statewide only and cenCA only scenarios
 + % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
