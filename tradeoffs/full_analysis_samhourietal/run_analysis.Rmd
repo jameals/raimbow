@@ -544,12 +544,12 @@ CALCULATE SCENARIO RANKS
 
 ```
 
-## Calculate scenario ranks each year and each period, statewide focal scenarios
+## Extract scenario ranks each year and each period, statewide focal scenarios
 ```{r rank_scenarios2, echo=FALSE}
 
 ```
 
-## Calculate scenario ranks each year and each period, cenCA only focal scenarios
+## Extract scenario ranks each year and each period, cenCA only focal scenarios
 ```{r rank_scenarios3, echo=FALSE}
 
 ```
@@ -934,6 +934,39 @@ period_region_summaries %>%
 print("annual_percent_rev_change_MHW_v_pre_region")
 annual_percent_rev_change_MHW_v_pre_region
 
+
+```
+
+
+Fish ticket IDs and Vessels landing crab after Jun 30 in CenCA and after Jul 15 in NorCA
+```{r fishing 5 echo=FALSE}
+
+dcrb_ca_vms_tix_analysis_inseason <-  dcrb_ca_vms_tix_analysis %>%
+  mutate(
+    monthday = format(westcoastdate_notime, "%m%d"),
+    in_season = case_when(
+      Region == "CenCA" & monthday >= "1112" | monthday <= "0630" ~ "Y",
+      Region == "NorCA" & monthday >= "1128" | monthday <= "0715" ~ "Y",
+      TRUE ~ "N"
+    )
+  )
+
+dcrb_ca_vms_tix_analysis_inseason_unique <- dcrb_ca_vms_tix_analysis_inseason %>%
+  filter(in_season != "Y") %>%
+  distinct(crab_year, westcoastdate_notime, Region, Rec_ID, drvid)
+
+dcrb_ca_vms_tix_analysis_inseason_unique %>%
+  knitr::kable()
+
+write_csv(dcrb_ca_vms_tix_analysis_inseason_unique %>% select(-drvid),
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "dcrb_ca_vms_tix_analysis_outseason_unique.csv"
+          )
+)
+  
 
 ```
 
