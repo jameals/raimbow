@@ -542,15 +542,787 @@ CALCULATE SCENARIO RANKS
 ## Calculate scenario ranks each year and each period, all scenarios
 ```{r rank_scenarios1, echo=FALSE}
 
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+# tmp<- data.frame(yr=c(2009,2009,2010,2010,2011,2011),scenario=c("A","B","A","B","A","B"),rel_risk=c(30,80,40))
+# tmp %>% group_by(yr) %>% mutate(rank_risk = row_number(rel_risk))
+
+annual_df_ranks <- annual_statewide_df %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump), # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_cbblwh = row_number(costs_benefits_blwh) # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,rank_cbhump,rank_cbblwh,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period <- annual_statewide_df %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,rank_cbhump,rank_cbblwh,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_hump <- annual_df_ranks_period %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_hump)
+
+write_csv(annual_df_ranks_period_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_hump.csv")
+          )
+
+```
+
+## Extract scenario ranks each year and each period, focal scenarios
+```{r rank_scenarios2, echo=FALSE}
+
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_focal_scenarios_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_focal)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_focal_hump <- annual_df_ranks_period_focal %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_focal_hump)
+
+write_csv(annual_df_ranks_period_focal_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_focal_hump.csv")
+          )
+
+
 ```
 
 ## Extract scenario ranks each year and each period, statewide focal scenarios
-```{r rank_scenarios2, echo=FALSE}
+```{r rank_scenarios3, echo=FALSE}
+
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_focal_scenarios_statewide_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_focal_statewide)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_focal_statewide_hump <- annual_df_ranks_period_focal_statewide %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_focal_statewide_hump)
+
+write_csv(annual_df_ranks_period_focal_statewide_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_focal_statewide_hump.csv")
+          )
 
 ```
 
 ## Extract scenario ranks each year and each period, cenCA only focal scenarios
-```{r rank_scenarios3, echo=FALSE}
+```{r rank_scenarios4, echo=FALSE}
+
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'CenCA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_focal_scenarios_cenCA_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'CenCA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_focal_cenCA)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_focal_cenCA_hump <- annual_df_ranks_period_focal_cenCA %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_focal_cenCA_hump)
+
+write_csv(annual_df_ranks_period_focal_cenCA_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_focal_cenCA_hump.csv")
+          )
+
+```
+
+## Extract scenario ranks each year and each period, supplement scenarios
+```{r rank_scenarios5, echo=FALSE}
+
+annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_supplement_scenarios_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_supplement)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_supplement_hump <- annual_df_ranks_period_supplement %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_supplement_hump)
+
+write_csv(annual_df_ranks_period_supplement_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_supplement_hump.csv")
+          )
+```
+
+## Extract scenario ranks each year and each period, statewide supplement scenarios
+```{r rank_scenarios6, echo=FALSE}
+
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_supplement_scenarios_statewide_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_supplement_statewide)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_supplement_statewide_hump <- annual_df_ranks_period_supplement_statewide %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_supplement_statewide_hump)
+
+write_csv(annual_df_ranks_period_supplement_statewide_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_supplement_statewide_hump.csv")
+          )
+
+
+```
+
+## Extract scenario ranks each year and each period, cenCA only supplement scenarios
+```{r rank_scenarios7, echo=FALSE}
+
+# by year, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'CenCA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    rank_hump = row_number(relative_hump_risk_n),
+    rank_blwh = row_number(relative_blwh_risk_n),
+    rank_both = row_number(relative_both_risk_n),
+    rank_dollars = row_number(relative_dollars),
+    rank_pounds = row_number(relative_pounds),
+    rank_cbhump = row_number(costs_benefits_hump),
+    rank_cbblwh = row_number(costs_benefits_blwh)
+  ) %>%
+  select(crab_year, plotting_year, pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         n_risk_humpback,relative_hump_risk_n,
+         n_risk_blue,relative_blwh_risk_n,
+         n_risk_both, relative_both_risk_n,
+         DCRB_rev,relative_dollars,
+         DCRB_lbs,relative_pounds
+  )
+
+glimpse(annual_df_supplement_scenarios_cenCA_ranks)
+
+# by period, ranked by various response variables
+# larger values get higher ranks
+# for relative whale metrics higher is greater risk reduction and therefore better
+# for relative DCRB metrics higher is greater yield reduction and therefore worse
+annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
+  filter(stringr::str_detect(pretty_scenario_names, 'CenCA|Status Quo') ) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
+  group_by(crab_year) %>%
+  mutate(
+    relative_dollars_cost = 100 - relative_dollars,
+    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+  ) %>%
+  group_by(scenario_number, pretty_scenario_names, pre_post) %>%
+  summarise(
+    mean_n_risk_humpback = mean(n_risk_humpback),
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n),
+    mean_n_risk_blue = mean(n_risk_blue),
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+    mean_n_risk_both = mean(n_risk_both),
+    mean_relative_both_risk_n = mean(relative_both_risk_n),
+    mean_DCRB_rev = mean(DCRB_rev),
+    mean_relative_dollars = mean(relative_dollars),
+    mean_DCRB_lbs = mean(DCRB_lbs),
+    mean_relative_pounds = mean(relative_pounds),
+    mean_cbhump = mean(costs_benefits_hump),
+    mean_cbblwh = mean(costs_benefits_blwh),
+    .groups = "drop"
+  ) %>%
+  group_by(pre_post) %>%
+  mutate(
+    rank_hump = row_number(mean_relative_hump_risk_n),
+    rank_blwh = row_number(mean_relative_blwh_risk_n),
+    rank_both = row_number(mean_relative_both_risk_n),
+    rank_dollars = row_number(mean_relative_dollars),
+    rank_pounds = row_number(mean_relative_pounds),
+    rank_cbhump = row_number(mean_cbhump),
+    rank_cbblwh = row_number(mean_cbblwh),
+    .groups = "drop"
+  ) %>%
+  select(pre_post, 
+         scenario_number, pretty_scenario_names,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         mean_n_risk_humpback, mean_relative_hump_risk_n,
+         mean_n_risk_blue, mean_relative_blwh_risk_n,
+         mean_n_risk_both, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars,
+         mean_DCRB_lbs, mean_relative_pounds,
+         mean_cbhump,
+         mean_cbblwh
+  )
+
+glimpse(annual_df_ranks_period_supplement_cenCA)
+
+# make a df sorted by rank risk reduction to humps
+annual_df_ranks_period_supplement_cenCA_hump <- annual_df_ranks_period_supplement_cenCA %>%
+  arrange(
+    -mean_n_risk_humpback,
+    -mean_n_risk_blue,
+    -mean_n_risk_both,
+    -mean_DCRB_rev,
+    -mean_DCRB_lbs,
+    .groups = "drop"
+  ) %>%
+  mutate(scenario_rank = row_number())
+
+glimpse(annual_df_ranks_period_supplement_cenCA_hump)
+
+write_csv(annual_df_ranks_period_supplement_cenCA_hump, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_ranks_period_supplement_cenCA_hump.csv")
+          )
+
+
 
 ```
 
