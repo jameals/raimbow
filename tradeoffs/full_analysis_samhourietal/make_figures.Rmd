@@ -18,13 +18,13 @@ This document reflects the figures included in the Samhouri et al. tradeoff manu
 
 See pseudocode in "Full workflow for risk assessment and tradeoff analysis" google doc. https://docs.google.com/document/d/1T8S5rEOACMCeGa5efS5BnEQY4gOw-PbxmvILJvShsQo/edit
 
-Figure 1. Maps of whales and DCRB pings in 3 time periods. Made outside of this doc.
+* Figure 1. Maps of whales and DCRB pings in 3 time periods on 5km grid. Made outside of this doc.
 
-Figure 2. Changes over time (2009-2019) in (a) the number of confirmed whale entanglements along the US West Coast, (b) expected risk to blue and humpback whales, measured as spatial overlap (see Methods), from the California Dungeness crab fishery, and (c) revenue to the California Dungeness crab fishery.
+* Figure 2. Changes over time (2009-2019) in (a) the number of confirmed whale entanglements along the US West Coast, (b) expected risk to blue and humpback whales, measured as spatial overlap (see Methods), from the California Dungeness crab fishery, and (c) revenue to the California Dungeness crab fishery. whale risk is calculated in the run_analysis RUN SCENARIOS step
 
-Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. 
+* Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
 
-Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years.
+* Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
 
 SI Figures follow from there.
 Entanglement ts by gear type (updated version of Fig14 in Saez et al. 2020)

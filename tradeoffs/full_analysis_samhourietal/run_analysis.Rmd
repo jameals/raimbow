@@ -1,11 +1,13 @@
 ---
 title: "Samhouri et al tradeoff analysis run analysis"
 author: "Jameal Samhouri"
-date: "11/4/2020"
-output: 
+date: "11/4/2020 - 11/16/2020"
+output:
+  pdf_document:
+    toc: yes
   html_document:
-      toc: true
-      toc_float: true
+    toc: yes
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -23,12 +25,9 @@ See pseudocode in "Full workflow for risk assessment and tradeoff analysis" goog
 3. MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS
 4. CALCULATE SCENARIO RANKS
 5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
-+ repeat for statewide only and cenCA only scenarios
-+ % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
 6. QUERY ENTANGLEMENT DATA
 7. QUERY FISHING DATA
 8. QUERY WHALE MODEL OUTPUTS
-+ predicted occurrence/density by period, statewide and by region
 
 * Fig 1 data. Whale and fishing data on 5km grid, averaged by time period
 * Fig 2 data. Entanglement reports, DCRB revenue by crab year. whale risk is calculated in the scenario_analysis step
@@ -148,7 +147,9 @@ scenario_table_all$delay_scenario <- as.character(scenario_table_all$delay_scena
 scenario_table_all$closure_scenario <- as.character(scenario_table_all$closure_scenario)
 scenario_table_all$closure_scenario <- as.character(scenario_table_all$closure_scenario)
 
-glimpse(scenario_table_all)
+#glimpse(scenario_table_all)
+
+scenario_table_all %>% knitr::kable()
 
 write_csv(scenario_table_all,here::here(
   "tradeoffs",
@@ -315,7 +316,7 @@ risk_out_list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_ta
   #browser()
   
   risk_out <- risk_mgmt(
-    x = scenario.output.list[[i]], 
+    x = scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE), 
     x.col = Num_DCRB_VMS_pings, 
     y = x.whale,
     risk.unit = "dens", 
@@ -363,6 +364,28 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 
 ```
 
+
+
+Here is a table summarizing the number of records that got dropped because they occurred outside of the scheduled season end dates.
+
+```{r run_scenarios3, echo=FALSE}
+# track out of season records
+season_keep_drop_df <- inseason_records <- outseason_records <- percent_outseason <- c()
+for(i in 1:nrow(scenario_table_all_trim)){
+  
+inseason_records[i] <- nrow(scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE))
+outseason_records[i] <- nrow(scenario.output.list[[i]] %>% filter(date_past_region_end == TRUE))
+percent_outseason[i] <- 100*(outseason_records[i]/nrow(scenario.output.list[[i]]))
+season_keep_drop_df <- bind_rows(season_keep_drop_df,
+                                 c(inseason = inseason_records[i],outseason = outseason_records[i],
+                                   percent_outseason = percent_outseason[i])
+)
+}
+
+season_keep_drop_df %>% knitr::kable()
+```
+
+
 # 3. MAKE DATA FRAMES
 
 MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values)
@@ -370,7 +393,7 @@ MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values)
 + repeat for sm vessels [ not yet coded ]
 
 ## Make annual and tradeoff df's, all scenarios.
-```{r make_dfs1, echo=FALSE}
+```{r make_dfs1, echo=TRUE}
 
 # note this chunk was adapted from scenario_analysis_all_vessels.R
 
@@ -531,6 +554,18 @@ write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Proce
 
 ```
 
+Output df's of interest are:
+
+- ALL SCENARIOS: annual_statewide_df
+
+- FOCAL SCENARIOS: annual_statewide_df_focal_scenarios, scenario_table_focal_scenarios, df_tradeoff_focal_scenarios
+
+- SUPPLEMENT SCENARIOS: annual_statewide_df_supplement, scenario_table_supplement, df_tradeoff_supplement
+
+- STATUS QUO SCENARIOS: annual_statewide_df_sq, scenario_table_sq, df_tradeoff_sq
+
+There are also corresponding output .rds files
+
 # 4. CALCULATE SCENARIO RANKS
 
 CALCULATE SCENARIO RANKS
@@ -574,7 +609,7 @@ annual_df_ranks <- annual_statewide_df %>%
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_ranks)
+#glimpse(annual_df_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -626,7 +661,7 @@ annual_df_ranks_period <- annual_statewide_df %>%
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period)
+#glimpse(annual_df_ranks_period)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_hump <- annual_df_ranks_period %>%
@@ -640,7 +675,9 @@ annual_df_ranks_period_hump <- annual_df_ranks_period %>%
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_hump)
+#glimpse(annual_df_ranks_period_hump)
+
+annual_df_ranks_period_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_hump, 
           here::here(
@@ -684,7 +721,7 @@ annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_focal_scenarios_ranks)
+#glimpse(annual_df_focal_scenarios_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -736,7 +773,7 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_focal)
+#glimpse(annual_df_ranks_period_focal)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_focal_hump <- annual_df_ranks_period_focal %>%
@@ -750,7 +787,9 @@ annual_df_ranks_period_focal_hump <- annual_df_ranks_period_focal %>%
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_focal_hump)
+#glimpse(annual_df_ranks_period_focal_hump)
+
+annual_df_ranks_period_focal_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_hump, 
           here::here(
@@ -797,7 +836,7 @@ annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_focal_scenarios_statewide_ranks)
+#glimpse(annual_df_focal_scenarios_statewide_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -851,7 +890,7 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_focal_statewide)
+#glimpse(annual_df_ranks_period_focal_statewide)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_focal_statewide_hump <- annual_df_ranks_period_focal_statewide %>%
@@ -865,7 +904,9 @@ annual_df_ranks_period_focal_statewide_hump <- annual_df_ranks_period_focal_stat
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_focal_statewide_hump)
+#glimpse(annual_df_ranks_period_focal_statewide_hump)
+
+annual_df_ranks_period_focal_statewide_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_statewide_hump, 
           here::here(
@@ -911,7 +952,7 @@ annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_focal_scenarios_cenCA_ranks)
+#glimpse(annual_df_focal_scenarios_cenCA_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -965,7 +1006,7 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_focal_cenCA)
+#glimpse(annual_df_ranks_period_focal_cenCA)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_focal_cenCA_hump <- annual_df_ranks_period_focal_cenCA %>%
@@ -979,7 +1020,9 @@ annual_df_ranks_period_focal_cenCA_hump <- annual_df_ranks_period_focal_cenCA %>
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_focal_cenCA_hump)
+#glimpse(annual_df_ranks_period_focal_cenCA_hump)
+
+annual_df_ranks_period_focal_cenCA_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_cenCA_hump, 
           here::here(
@@ -1018,7 +1061,7 @@ annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_supplement_scenarios_ranks)
+#glimpse(annual_df_supplement_scenarios_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1070,7 +1113,7 @@ annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_supplement)
+#glimpse(annual_df_ranks_period_supplement)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_supplement_hump <- annual_df_ranks_period_supplement %>%
@@ -1084,7 +1127,9 @@ annual_df_ranks_period_supplement_hump <- annual_df_ranks_period_supplement %>%
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_supplement_hump)
+#glimpse(annual_df_ranks_period_supplement_hump)
+
+annual_df_ranks_period_supplement_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_hump, 
           here::here(
@@ -1129,7 +1174,7 @@ annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_supplement_scenarios_statewide_ranks)
+#glimpse(annual_df_supplement_scenarios_statewide_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1183,7 +1228,7 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_supplement_statewide)
+#glimpse(annual_df_ranks_period_supplement_statewide)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_supplement_statewide_hump <- annual_df_ranks_period_supplement_statewide %>%
@@ -1197,7 +1242,9 @@ annual_df_ranks_period_supplement_statewide_hump <- annual_df_ranks_period_suppl
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_supplement_statewide_hump)
+#glimpse(annual_df_ranks_period_supplement_statewide_hump)
+
+annual_df_ranks_period_supplement_statewide_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_statewide_hump, 
           here::here(
@@ -1244,7 +1291,7 @@ annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
          DCRB_lbs,relative_pounds
   )
 
-glimpse(annual_df_supplement_scenarios_cenCA_ranks)
+#glimpse(annual_df_supplement_scenarios_cenCA_ranks)
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1298,7 +1345,7 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
          mean_cbblwh
   )
 
-glimpse(annual_df_ranks_period_supplement_cenCA)
+#glimpse(annual_df_ranks_period_supplement_cenCA)
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_supplement_cenCA_hump <- annual_df_ranks_period_supplement_cenCA %>%
@@ -1312,7 +1359,9 @@ annual_df_ranks_period_supplement_cenCA_hump <- annual_df_ranks_period_supplemen
   ) %>%
   mutate(scenario_rank = row_number())
 
-glimpse(annual_df_ranks_period_supplement_cenCA_hump)
+#glimpse(annual_df_ranks_period_supplement_cenCA_hump)
+
+annual_df_ranks_period_supplement_cenCA_hump %>% knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_cenCA_hump, 
           here::here(
@@ -1376,7 +1425,10 @@ scale_compare_focal_scenarios <- annual_statewide_df_focal_scenarios %>%
     .groups = "drop"
   ) 
   
-glimpse(scale_compare_focal_scenarios)
+#glimpse(scale_compare_focal_scenarios)
+
+scale_compare_focal_scenarios %>% knitr::kable()
+
 write_rds(scale_compare_focal_scenarios, 
           here::here(
             "tradeoffs",
@@ -1430,7 +1482,10 @@ scale_compare_supplement <- annual_statewide_df_supplement %>%
     .groups = "drop"
   ) 
   
-glimpse(scale_compare_supplement)
+#glimpse(scale_compare_supplement)
+
+scale_compare_supplement %>% knitr::kable()
+
 write_rds(scale_compare_supplement, 
           here::here(
             "tradeoffs",
@@ -1441,10 +1496,108 @@ write_rds(scale_compare_supplement,
 
 ```
 
-# remember that i want to:
 # 5. CALCULATE CHANGES IN RISK AND REVENUE BY PERIOD AND SCENARIO
 + repeat for statewide only and cenCA only scenarios
 + % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
+
+## For each scenario, calculate % change in risk/revenue between periods, all scenarios
+```{r change1, echo=FALSE}
+
+# what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
+# i.e., are some scenarios disproportionately more effective during the MHW?
+
+percent_diff_period_df <- annual_df_ranks_period_hump %>%
+  arrange(scenario_number, pre_post) %>%
+  group_by(scenario_number, pretty_scenario_names) %>%
+  summarise(
+    percent_diff_relative_hump_risk_n = 100 * (mean_relative_hump_risk_n-lag(mean_relative_hump_risk_n))/lag(mean_relative_hump_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_blwh_risk_n-lag(mean_relative_blwh_risk_n))/lag(mean_relative_blwh_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
+    percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
+    percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
+    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
+    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    .groups = "drop") %>%
+  bind_cols(annual_df_ranks_period_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
+
+#glimpse(percent_diff_period_df)
+
+percent_diff_period_df %>% knitr::kable()
+
+write_csv(percent_diff_period_df, 
+          here::here(
+            "tradeoffs",
+            "Management scenarios",
+            "percent_diff_period_df.csv")
+          )
+
+```
+
+## ## For each scenario, calculate % change in risk/revenue between periods, statewide focal scenarios only
+```{r change2, echo=FALSE}
+
+# what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
+# i.e., are some scenarios disproportionately more effective during the MHW?
+
+percent_diff_period_focal_statewide_df <- annual_df_ranks_period_focal_statewide_hump %>%
+  arrange(scenario_number, pre_post) %>%
+  group_by(scenario_number, pretty_scenario_names) %>%
+  summarise(
+    percent_diff_relative_hump_risk_n = 100 * (mean_relative_hump_risk_n-lag(mean_relative_hump_risk_n))/lag(mean_relative_hump_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_blwh_risk_n-lag(mean_relative_blwh_risk_n))/lag(mean_relative_blwh_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
+    percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
+    percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
+    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
+    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    .groups = "drop") %>%
+  bind_cols(annual_df_ranks_period_focal_statewide_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
+
+#glimpse(percent_diff_period_focal_statewide_df)
+
+percent_diff_period_focal_statewide_df %>% knitr::kable()
+
+write_csv(percent_diff_period_focal_statewide_df, 
+          here::here(
+            "tradeoffs",
+            "Management scenarios",
+            "percent_diff_period_focal_statewide_df.csv")
+          )
+
+```
+
+## ## For each scenario, calculate % change in risk/revenue between periods, cenCA focal scenarios only
+```{r change3, echo=FALSE}
+
+# what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
+# i.e., are some scenarios disproportionately more effective during the MHW?
+
+percent_diff_period_focal_cenCA_df <- annual_df_ranks_period_focal_cenCA_hump %>%
+  arrange(scenario_number, pre_post) %>%
+  group_by(scenario_number, pretty_scenario_names) %>%
+  summarise(
+    percent_diff_relative_hump_risk_n = 100 * (mean_relative_hump_risk_n-lag(mean_relative_hump_risk_n))/lag(mean_relative_hump_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_blwh_risk_n-lag(mean_relative_blwh_risk_n))/lag(mean_relative_blwh_risk_n),
+    percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
+    percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
+    percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
+    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
+    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    .groups = "drop") %>%
+  bind_cols(annual_df_ranks_period_focal_cenCA_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
+
+#glimpse(percent_diff_period_focal_cenCA_df)
+
+percent_diff_period_focal_cenCA_df %>% knitr::kable()
+
+write_csv(percent_diff_period_focal_cenCA_df, 
+          here::here(
+            "tradeoffs",
+            "Management scenarios",
+            "percent_diff_period_focal_cenCA_df.csv")
+          )
+
+```
 
 # 6. QUERY ENTANGLEMENT DATA
 
@@ -1711,7 +1864,8 @@ annual_percent_rev_change_MHW_v_pre_region
 
 
 Fish ticket IDs and Vessels landing crab after Jun 30 in CenCA and after Jul 15 in NorCA
-```{r fishing 5 echo=FALSE}
+Code creates output csv (table redacated because it contains confidential informatoion)
+```{r fishing 5, echo=FALSE}
 
 dcrb_ca_vms_tix_analysis_inseason <-  dcrb_ca_vms_tix_analysis %>%
   mutate(
@@ -1727,7 +1881,7 @@ dcrb_ca_vms_tix_analysis_inseason_unique <- dcrb_ca_vms_tix_analysis_inseason %>
   filter(in_season != "Y") %>%
   distinct(crab_year, westcoastdate_notime, Region, Rec_ID, drvid)
 
-dcrb_ca_vms_tix_analysis_inseason_unique %>%
+dcrb_ca_vms_tix_analysis_inseason_unique %>% select(-drvid) %>%
   knitr::kable()
 
 write_csv(dcrb_ca_vms_tix_analysis_inseason_unique %>% select(-drvid),
@@ -1747,3 +1901,4 @@ Total revenue and landings by crab year and period for all fish tix
 
 # 8. QUERY WHALE MODEL OUTPUTS
 + predicted occurrence/density by period, statewide and by region
+[ not yet included]
