@@ -86,7 +86,7 @@ d <- effort_mgmt(
   closure.method = "depth+temporal",
   closure.redist.percent = 100,
   depth.shallow = 0, 
-  depth.deep = 0#,
+  depth.deep = -50#,
   # reduction.before.date = as.Date("2009-12-15"),
   # reduction.before.percent = 50,
   # reduction.before.region = "All",
