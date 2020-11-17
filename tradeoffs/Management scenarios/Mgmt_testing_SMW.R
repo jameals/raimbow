@@ -83,18 +83,18 @@ d <- effort_mgmt(
   delay.method.fidelity = "spatial", #"temporal",
   closure.date = as.Date("2010-04-01"),
   closure.region = c("CenCA"),
-  closure.method = "temporal",
+  closure.method = "depth+temporal",
   closure.redist.percent = 100,
-  depth.shallow = NULL, 
-  depth.deep = NULL,
+  depth.shallow = 0, 
+  depth.deep = 0#,
   # reduction.before.date = as.Date("2009-12-15"),
   # reduction.before.percent = 50,
   # reduction.before.region = "All",
-  reduction.after.date = NULL, #as.Date("2010-04-01"),
-  reduction.after.percent = 50,
-  reduction.after.region = "CenCA", 
-  reduction.after.redist = FALSE, 
-  reduction.after.redist.percent = 10
+  # reduction.after.date = as.Date("2010-04-01"),
+  # reduction.after.percent = 50,
+  # reduction.after.region = "CenCA",
+  # reduction.after.redist = F,
+  # reduction.after.redist.percent = 10
 )
 
 x.summ <- x.orig %>% 

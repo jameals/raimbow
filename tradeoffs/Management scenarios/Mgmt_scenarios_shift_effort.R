@@ -261,6 +261,10 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
   }
   
   
+  # Data frame to hold nobase records, as necessary
+  x.nobase <- NULL
+  
+  
   #----------------------------------------------------------------------------
   # Get season start dates, adjust early data as necessary
   
@@ -485,7 +489,8 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
       x.fish.shifted %>% select(-starts_with("season_")) 
       
     } else if (delay.method.fidelity == "temporal") {
-      redistribute_temporal(x.fish.shifted, Num_DCRB_VMS_pings, "delay", delay.region)
+      redistribute_temporal(x.fish.shifted, Num_DCRB_VMS_pings, "delay", delay.region, 
+                            "delayed opening")
       
     } else if (delay.method.fidelity == "spatial") {
       x.fish.shifted %>% select(-starts_with("season_")) 
@@ -494,6 +499,13 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
       stop("Unrecognized value passed to delay.method.fidelity")
     } 
     
+    # Pull out any nobase effort
+    if ("nobase" %in% names(x.fish.redist)) {
+      if (any(x.fish.redist$nobase)) {
+        x.nobase <- bind_rows(x.nobase, filter(x.fish.redist, nobase))
+      }
+      x.fish.redist <- x.fish.redist %>% filter(!nobase) %>% select(-nobase)
+    }
     # select for instead of remove because redistribute_temporal removes some columns
     x.fish.redist <- x.fish.redist %>% 
       select(crab_year, year_month, date_record, GRID5KM_ID, Region, 
@@ -595,9 +607,19 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                region_toshiftto = NA) %>% 
         bind_rows(x.fish.closure.reduct.toredist) %>% 
         redistribute_temporal(Num_DCRB_VMS_pings, "closure", reduction.after.region,
-                              reduction.after.redist.percent)# function below
+                              reduction.after.redist.percent, "late season reduction")
       
       rm(region_toshiftto.val, x.fish.closure.reduct.toredist)
+      
+      # Pull out any nobase effort
+      if ("nobase" %in% names(x.fish.closure.reduct)) {
+        
+        if (any(x.fish.closure.reduct$nobase)) {
+          x.nobase <- bind_rows(x.nobase, filter(x.fish.closure.reduct, nobase))
+        }
+        x.fish.closure.reduct <- x.fish.closure.reduct %>% filter(!nobase) %>% select(-nobase)
+      }
+      
       
     } else {
       x.fish.closure.reduct <- x.fish.closure.reduct %>%
@@ -701,7 +723,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                      date_record_old = date_record, 
                      year_month_old = year_month) %>% 
               redistribute_temporal(Num_DCRB_VMS_pings, "closure", i, 
-                                    closure.redist.percent)
+                                    closure.redist.percent, "early closure")
           })
         ) %>% 
           arrange(crab_year, Region, day(date_record), GRID5KM_ID)
@@ -714,7 +736,7 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                  date_record_old = date_record, 
                  year_month_old = year_month) %>% 
           redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
-                                closure.redist.percent)# function below
+                                closure.redist.percent, "early closure")
       }
       
     } else if (closure.method == "temporal") {
@@ -724,10 +746,18 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
                date_record_old = date_record, 
                year_month_old = year_month) %>% 
         redistribute_temporal(Num_DCRB_VMS_pings, "closure", closure.region, 
-                              closure.redist.percent)# function below
+                              closure.redist.percent, "early closure")
       
     } else {
       stop("Invalid closure.method argument")
+    }
+    
+    # Pull out any nobase data
+    if ("nobase" %in% names(x.fish.closure)) {
+      if (any(x.fish.closure$nobase)) {
+        x.nobase <- bind_rows(x.nobase, filter(x.fish.closure, nobase))
+      }
+      x.fish.closure <- x.fish.closure %>% filter(!nobase) %>% select(-nobase)
     }
     
     rm(x.fish.c1, x.fish.c2)
@@ -741,6 +771,16 @@ effort_mgmt <- function(x, season.st.key = NULL, preseason.days = 3,
       left_join(x.other, by = "GRID5KM_ID") %>% 
       select(crab_year, year_month, date_record, 
              GRID5KM_ID, Region, CA_OFFSHOR, depth, everything())
+  }
+  
+  x.fish.closure$nobase <- FALSE
+  if (!is.null(x.nobase)) {
+    warning("The output data frame contains 'nobase' effort - ", 
+            "be sure to filter the function output for `nobase == FALSE`", 
+            immediate. = TRUE)
+    x.fish.closure <- x.fish.closure %>% 
+      mutate(nobase = FALSE) %>% 
+      bind_rows(mutate(x.nobase, nobase = TRUE))
   }
   
   x.out <- x.fish.closure %>% 
@@ -802,14 +842,15 @@ delay_date_shift <- function(y, delay.method = c("lag", "pile")) {
 # Temporal fidelity redistribution function
 redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"), 
                                   z.reg = c("All", "CenCA", "NorCA", "BIA", "OR", "WA"), 
-                                  z.perc = 100) {
+                                  z.perc = 100, 
+                                  z.message = c("delayed opening", "early closure", "late season reduction")) {
   ### Inputs
   # z: data frame; Contains columns described in z.cols.nec
   # z.col: symbol, column name to use for redistribution percentages
   # z.type: character; either "delay" or "closure"
   # z.reg: character; passed from delay.region or closure.region
-  # z.perc: numeric; default is 100. Percentage multiplier for effort
-  #   to be redistributed
+  # z.perc: numeric; default is 100. Percentage multiplier for effort to be redistributed
+  # z.message: character; text to display with nobase message if necessary
   
   ### Output: 
   # A data frame with fishing effort data redistributed temporally  
@@ -820,6 +861,8 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   ### Input checks
   z.type <- match.arg(z.type)
   z.reg <- match.arg(z.reg, several.ok = TRUE)
+  z.message <- match.arg(z.message)
+  
   if (z.type == "closure")
     if (!(z.reg %in% c("CenCA", "NorCA", "BIA")) & length(z.reg) == 1)
       stop("If z.type is closure, then z.reg must be BIA, CenCA, or NorCA")
@@ -917,15 +960,16 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
            Num_DCRB_Vessels = Num_DCRB_Vessels * z.perc, 
            Num_Unique_DCRB_Vessels = Num_Unique_DCRB_Vessels * z.perc)
   
-  # browser()
   if (z.reg == "BIA" & nrow(z.redist.nobase) > 0) {
-    warning("Some effort being redistributed out of the BIAs does not have ", 
+    warning("In this ", toupper(z.message), " scenario, ", 
+            "some effort being redistributed out of the BIAs does not have ", 
             "a base for redistribution - ", 
             "this will result in an incorrect output file ", 
             "as this effort will be left in its original Region. This effort is summarized here:", 
             immediate. = TRUE)
   } else if (nrow(z.redist.nobase) > 0) {
-    warning("Some effort being redistributed does not have ", 
+    warning("In this ", toupper(z.message), " scenario, ", 
+            "some effort being redistributed does not have ", 
             "a base for redistribution - ", 
             "this will result in an incorrect output file ", 
             "as this effort will be left in its original Region. This effort is summarized here:", 
@@ -984,10 +1028,15 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
   # a) Bind together 3 elements of 'new' effort (listed with 1,2,3 above)
   # b) Group by date and grid cell ID (other vars are there to keep info)
   # c) Ensure that order of (remaining) columns is the same as the input
-  z.new.names <- base::intersect(names(z), c(z.cols.nec, z.cols.dcrb, z.cols.other))
-  z.new <- bind_rows(z.redist.base, z.tostay, z.redist.nobase) %>% 
+  z.new.names <- c(
+    base::intersect(names(z), c(z.cols.nec, z.cols.dcrb, z.cols.other)), 
+    "nobase"
+  )
+  z.new <- bind_rows(z.redist.base, z.tostay) %>% 
+    mutate(nobase = FALSE) %>% 
+    bind_rows(mutate(z.redist.nobase, nobase = TRUE)) %>% 
     arrange(crab_year, Region, day(date_record), GRID5KM_ID) %>%
-    group_by(crab_year, GRID5KM_ID, Region, year_month, date_record) %>%
+    group_by(crab_year, GRID5KM_ID, Region, year_month, date_record, nobase) %>%
     summarise(DCRB_lbs = sum(DCRB_lbs),
               DCRB_rev = sum(DCRB_rev),
               Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings),
@@ -998,6 +1047,20 @@ redistribute_temporal <- function(z, z.col, z.type = c("delay", "closure"),
     left_join(distinct(select(z, GRID5KM_ID, !!z.cols.other)), 
               by = c("GRID5KM_ID")) %>% 
     select(!!z.new.names)
+  # z.new.names <- base::intersect(names(z), c(z.cols.nec, z.cols.dcrb, z.cols.other))
+  # z.new <- bind_rows(z.redist.base, z.tostay, z.redist.nobase) %>% 
+  #   arrange(crab_year, Region, day(date_record), GRID5KM_ID) %>%
+  #   group_by(crab_year, GRID5KM_ID, Region, year_month, date_record) %>%
+  #   summarise(DCRB_lbs = sum(DCRB_lbs),
+  #             DCRB_rev = sum(DCRB_rev),
+  #             Num_DCRB_VMS_pings = sum(Num_DCRB_VMS_pings),
+  #             Num_DCRB_Vessels = sum(Num_DCRB_Vessels),
+  #             Num_Unique_DCRB_Vessels = sum(Num_Unique_DCRB_Vessels), 
+  #             .groups = "drop") %>% 
+  #   # ungroup() %>% 
+  #   left_join(distinct(select(z, GRID5KM_ID, !!z.cols.other)), 
+  #             by = c("GRID5KM_ID")) %>% 
+  #   select(!!z.new.names)
   
   
   # Sanity check 2: amount of effort in mataches amount of effort out
