@@ -3,11 +3,11 @@ title: "Samhouri et al tradeoff analysis run analysis"
 author: "Jameal Samhouri"
 date: "11/4/2020 - 11/16/2020"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     toc_float: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -71,6 +71,13 @@ if (user == "JS") {
   path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
   
   path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
+  
+  path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
+
+  path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+  
+  #path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2020-11-16.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
+   
   # 
   # path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/figures"
   # 
@@ -83,9 +90,6 @@ if (user == "JS") {
   # path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
   # 
   # 
-  # path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
-  # 
-  # path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   #   
   # path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
   # 
@@ -288,7 +292,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 x.whale <-read_rds(path_whales)
 
 # 2c) Load and prep grid cell - area key
-load(path_Grid_5km_landerased)
+load(path_Grid_5km_landerased) # this is called grid.5km.lno
 area.key <- grid.5km.lno %>% 
   st_drop_geometry() %>% 
   select(GRID5KM_ID, area_km_lno) %>% 
@@ -365,6 +369,7 @@ save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samho
 ```
 
 
+## Out of season records
 
 Here is a table summarizing the number of records that got dropped because they occurred outside of the scheduled season end dates.
 
@@ -388,7 +393,7 @@ season_keep_drop_df %>% knitr::kable()
 
 # 3. MAKE DATA FRAMES
 
-MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values)
+MAKE DF'S FOR TIME SERIES OF RISK, REVENUE, AND LANDINGS (annual values), AND FOR MAPS
 + status quo as separate df, all scenarios in one df, main text and supplement df's
 + repeat for sm vessels [ not yet coded ]
 
@@ -554,7 +559,259 @@ write_rds(df_tradeoff_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Proce
 
 ```
 
-Output df's of interest are:
+## Make df for maps
+
+This chunk makes "Data frame for Figure 1 Samhouri et al.csv", which gets handed off to Blake
+```{r make_dfs3, echo=FALSE}
+
+#1) read in data
+#1a) fishing data, positive fishing grid cells and year_months only
+
+# fishing data. whale predictions here only pertain to year_months in which the DCRB fishery was open and grid cells in which fishing was nonzero
+risk_out_sq <- risk_5km_yr_mth_sq_all
+#risk_out_sq <- read_rds(path_status_quo)
+#glimpse(risk_out_sq)
+
+# sanity check. QA/QC and make sure all of the year_month - GRID5KM_ID pairs in risk_out_sq are unique
+# glimpse(risk_out_sq %>% dplyr::select(GRID5KM_ID, year_month) %>% distinct())
+# with(risk_out_sq, table(year_month, GRID5KM_ID))
+
+### Function to calculate crab year
+func_crab_year <- function(z) {
+  # z: character; year_month
+  
+  stopifnot(require(lubridate))
+  z.yr <- as.numeric(substr(z, 1, 4))
+  z.mon <- as.numeric(substr(z, 6, 7))
+  
+  ifelse(
+    z.mon %in% 11:12, 
+    paste(z.yr, z.yr + 1, sep = "_"), paste(z.yr - 1, z.yr, sep = "_")
+  )
+}
+
+risk_out_sq_complete <-  risk_out_sq %>%
+  select(year_month, GRID5KM_ID, Num_DCRB_VMS_pings) %>%
+  complete(year_month, nesting(GRID5KM_ID), fill = list(Num_DCRB_VMS_pings = 0)) 
+
+# table(risk_out_sq_complete$year_month) # check that all year_months have same number of grid cells
+
+#1b) whale data, fishing grid cells only but includes year_months without fishing
+
+# x.whale <-read_rds(path_whales) # this is whale predictions within DCRB fishing cells, but in contrast to risk_out_sq it includes predictions in DCRB fishing cells for all yr_mths and fishing grid cells, not just months and grid cells in which DCRB fishing occurred
+# glimpse(x.whale)
+# table(x.whale$year_month) # check that all year_months have same number of grid cells
+
+# check to see if all grid cells appear in both risk_out_sq_complete and x.whale
+# all(risk_out_sq_complete$GRID5KM_ID %in% x.whale$GRID5KM_ID)
+# which(risk_out_sq_complete$GRID5KM_ID %in% x.whale$GRID5KM_ID == FALSE)
+# which(x.whale$GRID5KM_ID %in% risk_out_sq_complete$GRID5KM_ID == FALSE)
+whale.id <- sort(unique(x.whale$GRID5KM_ID))
+fish.id <- sort(unique(risk_out_sq_complete$GRID5KM_ID))
+# whale.id[which(whale.id %in% fish.id == FALSE)]
+# fish.id[which(fish.id %in% whale.id == FALSE)]
+
+# 2 grid cells are problematic. they are on the edge of the nonNA fishing cells. ignore and drop them for now
+cells_to_drop <- c(whale.id[which(whale.id %in% fish.id == FALSE)], fish.id[which(fish.id %in% whale.id == FALSE)])
+
+
+#1c) humpbacks, all GRID5KM_ID, all year_months
+hump.all <- read_rds(path_Humpback_5km_long_monthly) %>% # hump predictions in all 5km cells, all year_months 
+  mutate(
+    year_month = paste0(year(date), "_", format.Date(date, "%m"))
+  )
+# glimpse(hump.all)
+#table(hump.all$year_month)
+
+#1d) blues, all GRID5KM_ID, all year_months
+blue.all <- read_rds(path_BlueWhale_5km_long_monthly) %>% # blue predictions in all 5km cells. output from https://github.com/jameals/raimbow/blob/master/blue_whale/BW_preds_aggr.Rmd
+  mutate(
+    year_month = paste0(year(date), "_", format.Date(date, "%m"))
+  )
+# glimpse(blue.all)
+# table(blue.all$year_month)
+
+#2) group_by GRID5KM_ID, summarise above data by 2009-14, 2014-18, 2018-19, excluding Aug-Oct 
+
+sq_DCRBcells_maps_df <- x.whale %>% # ensures that we have whale density predictions for all grid cells and year months, by=c("year_month", "GRID5KM_ID")
+  full_join(risk_out_sq_complete, by = c("GRID5KM_ID", "year_month")) %>% 
+  filter(!(is.na(Num_DCRB_VMS_pings)) | year_month %in% unique(risk_out_sq_complete$year_month)) %>% # if pings != NA or  yr_mth is in df_fishing, keep
+  replace_na(list(Num_DCRB_VMS_pings=0)) %>%
+  mutate(
+    year = as.numeric(substr(year_month, 1,4)),
+    month = as.numeric(substr(year_month,6,7)),
+    crab_year = func_crab_year(year_month),
+    plotting_year = as.numeric(substr(crab_year,6,9)),
+    time_period = ifelse(plotting_year <2015, "2009-2014",
+                         ifelse(
+                           plotting_year > 2017, "2018-2019",
+                           "2014-2018"
+                         )),
+    Humpback_dens_mean = Humpback_abund_mean / area_km_lno,
+    Humpback_dens_se = Humpback_abund_se / area_km_lno
+      ) %>%
+  filter(!(GRID5KM_ID %in% cells_to_drop)) %>%
+#glimpse(sq_DCRBcells_maps_df)
+  select(year_month, crab_year, plotting_year, time_period, GRID5KM_ID, Num_DCRB_VMS_pings, Humpback_dens_mean, Blue_occurrence_mean) %>%
+  group_by(GRID5KM_ID, time_period) %>%
+  summarise(quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+            Num_DCRB_VMS_pings = quantile(Num_DCRB_VMS_pings, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+            Humpback_dens = quantile(Humpback_dens_mean, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+            Blue_occurrence = quantile(Blue_occurrence_mean, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    .groups = "drop"
+    ) %>%
+  filter(quantile == "50%") %>% 
+  arrange(GRID5KM_ID, time_period) %>%
+  group_by(GRID5KM_ID) %>%
+  mutate(
+    diff_Num_DCRB_VMS_pings = Num_DCRB_VMS_pings - lag(Num_DCRB_VMS_pings, default = 0),
+    diff_Humpback_dens = Humpback_dens - lag(Humpback_dens, default = 0),
+    diff_Blue_occurrence = Blue_occurrence - lag(Blue_occurrence, default = 0)
+  )
+
+# set all diffs for 2009-2014 to NA because they are bogus
+sq_DCRBcells_maps_df$diff_Num_DCRB_VMS_pings[which(sq_DCRBcells_maps_df$time_period == "2009-2014")] <- NA
+sq_DCRBcells_maps_df$diff_Humpback_dens[which(sq_DCRBcells_maps_df$time_period == "2009-2014")] <- NA
+sq_DCRBcells_maps_df$diff_Blue_occurrence[which(sq_DCRBcells_maps_df$time_period == "2009-2014")] <- NA
+  
+
+# glimpse(sq_DCRBcells_maps_df)
+# View(sq_DCRBcells_maps_df)
+
+
+# # check that each grid cell is represented in each year month
+# table(sq_DCRBcells_maps_df$year_month) # there is one less grid cell in this df than in risk_out_sq_complete
+
+# all(sq_DCRBcells_maps_df$GRID5KM_ID %in% whale.id)
+# glimpse(sq_DCRBcells_maps_df[which(sq_DCRBcells_maps_df$GRID5KM_ID %in% whale.id == FALSE),])
+# unique(sq_DCRBcells_maps_df[which(sq_DCRBcells_maps_df$GRID5KM_ID %in% whale.id == FALSE),'GRID5KM_ID'])
+# all(sq_DCRBcells_maps_df$GRID5KM_ID %in% fish.id)
+# glimpse(sq_DCRBcells_maps_df[which(sq_DCRBcells_maps_df$GRID5KM_ID %in% fish.id == FALSE),])
+# unique(sq_DCRBcells_maps_df[which(sq_DCRBcells_maps_df$GRID5KM_ID %in% fish.id == FALSE),'GRID5KM_ID'])
+
+# table(sq_DCRBcells_maps_df$GRID5KM_ID) 
+# all(sq_DCRBcells_maps_df$GRID5KM_ID %in% risk_out_sq_complete$GRID5KM_ID)
+# which(sq_DCRBcells_maps_df$GRID5KM_ID %in% risk_out_sq_complete$GRID5KM_ID == FALSE)
+# glimpse(sq_DCRBcells_maps_df[587,]) # GRID5KM_ID is 65500
+# which(risk_out_sq_complete$GRID5KM_ID == 65500)
+# 
+# all(risk_out_sq_complete$GRID5KM_ID %in% x.fish$GRID5KM_ID)
+# all(x.whale$GRID5KM_ID %in% x.fish$GRID5KM_ID)
+# all(risk_out_sq_complete$GRID5KM_ID %in% x.whale$GRID5KM_ID)
+# which(risk_out_sq_complete$GRID5KM_ID %in% x.whale$GRID5KM_ID == FALSE)
+# which(x.whale$GRID5KM_ID %in% risk_out_sq_complete$GRID5KM_ID == FALSE)
+
+# # check that Aug-Oct excluded. yes
+# unique(sq_DCRBcells_maps_df$year_month)
+# 
+# # check for NAs for pings. none
+# which(is.na(sq_DCRBcells_maps_df$Num_DCRB_VMS_pings)) # none
+# 
+# # check for NAs for whales. some NAs but they are the same NAs as in x.whale (where blue and hump predictions do not overlap). ok to proceed
+# length(which(is.na(sq_DCRBcells_maps_df$Humpback_abund_mean)))
+# length(which(is.na(x.whale$Humpback_abund_mean)))
+# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Humpback_abund_mean))])
+# unique(x.whale$GRID5KM_ID[which(is.na(x.whale$Humpback_abund_mean))])
+# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Blue_occurrence_mean))])
+# unique(x.whale$GRID5KM_ID[which(is.na(x.whale$Blue_occurrence_mean))])
+
+
+  #dplyr::filter(month < 8 | month > 10) %>% #only including crab season months
+  
+ 
+  
+
+# sq_maps_df <- risk_out_sq %>%
+#   full_join(x.whale) %>% #, by=c("year_month", "GRID5KM_ID")
+#   mutate(
+#     Humpback_dens_mean = Humpback_abund_mean / area_km_lno,
+#     Humpback_dens_se = Humpback_abund_se / area_km_lno,
+#     month = as.numeric(substr(year_month,6,7)),
+#   ) %>%
+#   dplyr::filter(month < 8 | month > 10) %>% #only including crab season months
+#   select(year_month, GRID5KM_ID, Num_DCRB_VMS_pings, Humpback_dens_mean, Blue_occurrence_mean) %>%
+#   group_by(GRID5KM_ID) %>%
+#   summarise(quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+#             Num_DCRB_VMS_pings = quantile(Num_DCRB_VMS_pings, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#             Humpback_dens = quantile(Humpback_dens_mean, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#             Blue_occurrence = quantile(Blue_occurrence_mean, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#     .groups = "drop"
+#     )
+
+#3) make df's sf objects and prep for plotting
+
+#grd <- sf::read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/regions_master_final_lamb.shp")
+
+# load(path_Grid_5km_landerased) # this is called grid.5km.lno
+# area.key <- grid.5km.lno %>% 
+#   st_drop_geometry() %>% 
+#   select(GRID5KM_ID, area_km_lno) %>% 
+#   distinct()
+
+# background map
+# states_grid.5km.lno <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>%
+#   st_transform(st_crs(grid.5km.lno))
+
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#states <- st_as_sf(map("state", fill = TRUE, plot=FALSE)) %>% 
+#  st_transform(st_crs(grd))
+
+# join grd to median whales and pings. takes a moment
+sq_maps_grid <- grid.5km.lno %>%
+  left_join(sq_DCRBcells_maps_df) %>%
+  filter(!(is.na(Num_DCRB_VMS_pings)))
+
+# join grd to median whales and pings. takes a moment
+# sq_maps_grd_hump <- grd %>%
+#   left_join(sq_maps_df %>% filter(quantile == "50%")) %>%
+#   filter(is.na(Humpback_dens) == FALSE)
+  # filter(year == 2010) %>%
+  # filter(is.na(H_Avg_Abund)) %>%
+  # mutate(
+  #   empty_cell = 1
+  # )
+
+
+
+# x.whale_mean <- x.whale %>%
+#   group_by(GRID5KM_ID) %>%
+#   summarise(
+#     Humpback_abund_mean = mean(Humpback_abund_mean)
+#   )
+# 
+# x.whale_grid <- grid.5km.lno %>%
+#   left_join(x.whale_mean)
+# 
+# hump.all_mean <- hump.all %>%
+#   group_by(GRID5KM_ID) %>%
+#   summarise(
+#     Humpback_dens_mean = mean(Humpback_dens_mean)
+#   )
+# 
+# hump.all_grid <- grid.5km.lno %>%
+#   left_join(hump.all_mean)
+
+
+sq_bbox <- st_bbox(sq_maps_grid %>% 
+                      st_as_sf()
+)
+
+sq_maps_grid_noNA <- sq_maps_grid %>%
+  filter(!(is.na(time_period)))
+
+# JS. update directory as needed
+write_csv(sq_maps_grid_noNA,paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/", "Data frame for Figure 1 Samhouri et al.csv"))
+
+
+```
+
+Other output df's of interest are:
 
 - ALL SCENARIOS: annual_statewide_df
 
@@ -677,7 +934,20 @@ annual_df_ranks_period_hump <- annual_df_ranks_period %>%
 
 #glimpse(annual_df_ranks_period_hump)
 
-annual_df_ranks_period_hump %>% knitr::kable()
+#annual_df_ranks_period_hump %>% knitr::kable()
+
+annual_df_ranks_period_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
+
 
 write_csv(annual_df_ranks_period_hump, 
           here::here(
@@ -789,7 +1059,19 @@ annual_df_ranks_period_focal_hump <- annual_df_ranks_period_focal %>%
 
 #glimpse(annual_df_ranks_period_focal_hump)
 
-annual_df_ranks_period_focal_hump %>% knitr::kable()
+#annual_df_ranks_period_focal_hump %>% knitr::kable()
+
+annual_df_ranks_period_focal_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_focal_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_hump, 
           here::here(
@@ -906,7 +1188,19 @@ annual_df_ranks_period_focal_statewide_hump <- annual_df_ranks_period_focal_stat
 
 #glimpse(annual_df_ranks_period_focal_statewide_hump)
 
-annual_df_ranks_period_focal_statewide_hump %>% knitr::kable()
+#annual_df_ranks_period_focal_statewide_hump %>% knitr::kable()
+
+annual_df_ranks_period_focal_statewide_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_focal_statewide_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_statewide_hump, 
           here::here(
@@ -1022,7 +1316,19 @@ annual_df_ranks_period_focal_cenCA_hump <- annual_df_ranks_period_focal_cenCA %>
 
 #glimpse(annual_df_ranks_period_focal_cenCA_hump)
 
-annual_df_ranks_period_focal_cenCA_hump %>% knitr::kable()
+#annual_df_ranks_period_focal_cenCA_hump %>% knitr::kable()
+
+annual_df_ranks_period_focal_cenCA_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_focal_cenCA_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_cenCA_hump, 
           here::here(
@@ -1129,7 +1435,20 @@ annual_df_ranks_period_supplement_hump <- annual_df_ranks_period_supplement %>%
 
 #glimpse(annual_df_ranks_period_supplement_hump)
 
-annual_df_ranks_period_supplement_hump %>% knitr::kable()
+#annual_df_ranks_period_supplement_hump %>% knitr::kable()
+
+annual_df_ranks_period_supplement_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_supplement_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
+
 
 write_csv(annual_df_ranks_period_supplement_hump, 
           here::here(
@@ -1244,7 +1563,19 @@ annual_df_ranks_period_supplement_statewide_hump <- annual_df_ranks_period_suppl
 
 #glimpse(annual_df_ranks_period_supplement_statewide_hump)
 
-annual_df_ranks_period_supplement_statewide_hump %>% knitr::kable()
+#annual_df_ranks_period_supplement_statewide_hump %>% knitr::kable()
+
+annual_df_ranks_period_supplement_statewide_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_supplement_statewide_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_statewide_hump, 
           here::here(
@@ -1361,7 +1692,19 @@ annual_df_ranks_period_supplement_cenCA_hump <- annual_df_ranks_period_supplemen
 
 #glimpse(annual_df_ranks_period_supplement_cenCA_hump)
 
-annual_df_ranks_period_supplement_cenCA_hump %>% knitr::kable()
+#annual_df_ranks_period_supplement_cenCA_hump %>% knitr::kable()
+
+annual_df_ranks_period_supplement_cenCA_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks_period_supplement_cenCA_hump %>% 
+  select(pre_post, scenario_number, pretty_scenario_names,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
+         mean_cbhump, mean_cbblwh) %>% 
+  knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_cenCA_hump, 
           here::here(
@@ -1376,6 +1719,8 @@ write_csv(annual_df_ranks_period_supplement_cenCA_hump,
 ```
 
 ## Make df's to compare scales of management in different periods
+
+Focal scenarios for main text
 ```{r rank_scenarios, echo=FALSE}
 
 ### compare risk based on scale of mgmt scenario
@@ -1427,7 +1772,13 @@ scale_compare_focal_scenarios <- annual_statewide_df_focal_scenarios %>%
   
 #glimpse(scale_compare_focal_scenarios)
 
-scale_compare_focal_scenarios %>% knitr::kable()
+# scale_compare_focal_scenarios %>% knitr::kable()
+
+scale_compare_focal_scenarios %>% 
+  select(pre_post, pretty_scenario_names, scale, scenario_type,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars) %>%  #mean_DCRB_lbs, mean_relative_pounds,
+  knitr::kable()
 
 write_rds(scale_compare_focal_scenarios, 
           here::here(
@@ -1435,7 +1786,11 @@ write_rds(scale_compare_focal_scenarios,
             "Management scenarios",
             "scale_compare_all_vessels.rds")
           )
+```
 
+
+Focal scenarios for supplement
+```{r rank_scenarios8, echo=FALSE}
 
 # 1b) focal scenarios for supplement
 scale_compare_supplement <- annual_statewide_df_supplement %>%
@@ -1484,7 +1839,13 @@ scale_compare_supplement <- annual_statewide_df_supplement %>%
   
 #glimpse(scale_compare_supplement)
 
-scale_compare_supplement %>% knitr::kable()
+#scale_compare_supplement %>% knitr::kable()
+
+scale_compare_supplement %>% 
+  select(pre_post, pretty_scenario_names, scale, scenario_type,
+         mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
+         mean_DCRB_rev, mean_relative_dollars) %>%  #mean_DCRB_lbs, mean_relative_pounds,
+  knitr::kable()
 
 write_rds(scale_compare_supplement, 
           here::here(
@@ -1501,6 +1862,9 @@ write_rds(scale_compare_supplement,
 + % change in each scenario's impact on risk and revenue between 2009-14 and 2014-18 periods
 
 ## For each scenario, calculate % change in risk/revenue between periods, all scenarios
+
+Focus on middle row for each scenario number, which reflects the percent improvement in risk/rev/lbs/ce relative to the status quo during the MHW 2014-18 compared to the pre-MHW period 2009-2014.
+
 ```{r change1, echo=FALSE}
 
 # what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
@@ -1533,7 +1897,7 @@ write_csv(percent_diff_period_df,
 
 ```
 
-## ## For each scenario, calculate % change in risk/revenue between periods, statewide focal scenarios only
+## For each scenario, calculate % change in risk/revenue between periods, statewide focal scenarios only
 ```{r change2, echo=FALSE}
 
 # what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
@@ -1566,7 +1930,7 @@ write_csv(percent_diff_period_focal_statewide_df,
 
 ```
 
-## ## For each scenario, calculate % change in risk/revenue between periods, cenCA focal scenarios only
+## For each scenario, calculate % change in risk/revenue between periods, cenCA focal scenarios only
 ```{r change3, echo=FALSE}
 
 # what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?

@@ -57,19 +57,19 @@ if (user == "JS") {
   
   path_entanglement_file2 <- paste0(here::here(), "/tradeoffs/full_analysis_samhourietal/output_dfs/entanglement_df_annual_complete.csv")
   
-path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/full_analysis_samhourietal/figures"
+  path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/full_analysis_samhourietal/figures"
   
   path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   
   path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
   
-
+  path_mappingdf <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/Data frame for Figure 1 Samhouri et al.csv"
   
   path_rds <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios"
   
   path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
   
-  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_2020-06-14.rds") # from extract_status_quo_scenario_summary.R
+  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2020-11-16.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
   
   path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
   
@@ -103,6 +103,163 @@ path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/rai
 } else {
   stop("Invalid user")
 }
+
+
+```
+
+# Figure 1
+
+Make some maps even though Blake will make nicer ones
+```{r fig1, echo=FALSE}
+
+# load df if not already in the env
+# sq_maps_grid_noNA <- read_csv(path_mappingdf)
+
+# from sam:
+# Mn_monthly_multipanel.R has an example of using the tmap package, which I've had success with for paper-ready maps, https://github.com/karinforney/Mn3kmSDM
+# https://github.com/mtennekes/tmap (with links to vignettes) 
+# https://github.com/smwoodman/eSDM/blob/master/data-raw/figure_plot.R and https://github.com/smwoodman/eSDM/blob/master/data-raw/figure5.R
+
+# plot median humpback densities 
+
+map_hump <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA, 
+          aes(fill=Humpback_dens,
+              col=Humpback_dens
+          )
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median humpback densities\non Dungeness crab fishing grounds\nduring the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_hump
+
+png(paste0(path_maps, "/map_hump_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_hump
+invisible(dev.off())
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
+
+# plot median blue occurrence 
+
+map_blue <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA, 
+          aes(fill=Blue_occurrence,
+              col=Blue_occurrence
+          )
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median blue whale occurrence\non Dungeness crab fishing grounds\nduring the fishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue
+
+png(paste0(path_maps, "/map_blue_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_blue
+invisible(dev.off())
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
+
+# plot median Num_DCRB_VMS_pings 
+# Num_DCRB_VMS_pings is highly skewed
+sq_maps_grid_noNA %>% 
+  filter(time_period == "2018-2019") %>% 
+  summarise(quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+            Num_DCRB_VMS_pings = quantile(Num_DCRB_VMS_pings, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE)
+            )
+
+# sq_maps_grid_noNA %>% 
+#   filter(time_period == "2014-2018") %>%
+#   #filter(Num_DCRB_VMS_pings > 0) %>%
+#   select(Num_DCRB_VMS_pings) %>%
+#   ggplot(aes(x=Num_DCRB_VMS_pings)) +
+#   geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=5)
+# 
+# sq_maps_grid_noNA %>% 
+#   filter(time_period == "2014-2018") %>%
+#   filter(Num_DCRB_VMS_pings > 0) %>%
+#   select(Num_DCRB_VMS_pings) %>%
+#   ggplot(aes(x=log10(Num_DCRB_VMS_pings+10^-6))) +
+#   geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=0.5)
+
+
+map_pings <- ggplot() + 
+  geom_sf(data=sq_maps_grid_noNA %>% filter(Num_DCRB_VMS_pings > 0), 
+          aes(fill=log10(Num_DCRB_VMS_pings),#+10^-6
+              col=log10(Num_DCRB_VMS_pings) )
+          # aes(fill = Num_DCRB_VMS_pings,
+          #     col = Num_DCRB_VMS_pings)
+  ) +
+  facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="log10\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="log10\nVMS Pings") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median VMS pings\nduring the Dungeness crab\nfishing season") +
+  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_pings
+
+png(paste0(path_maps, "/map_pings_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+map_pings
+invisible(dev.off())
+#ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
+
+### This is Figure 1 in Samhouri et al
+ggarrange(map_blue,
+          map_hump,
+          map_pings,
+          ncol=3,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+          )
+#,font.label=list(size=12)
+
+png(paste0(path_figures, "/fig1_maps.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_blue,
+          map_hump,
+          map_pings,
+          ncol=3,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+          )
+invisible(dev.off())
 
 
 ```
