@@ -200,6 +200,8 @@ season.st.date.key <- read_rds(path_season.st.date.key) %>%
 scenario_table_all_trim <- scenario_table_all %>%
   filter(!grepl('redundant', scenario_number))
 
+scenario_table_all_trim %>% select(scenario_number, scenario_df_name) %>% knitr::kable()
+
 start.time <- Sys.time()
 
 scenario.output.list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_table_input) { # for testing. nrow(scenario_table_all_trim[1:2,])
@@ -320,7 +322,7 @@ risk_out_list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_ta
   #browser()
   
   risk_out <- risk_mgmt(
-    x = scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE), 
+    x = scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE), # can add filter for nobase == FALSE here too
     x.col = Num_DCRB_VMS_pings, 
     y = x.whale,
     risk.unit = "dens", 
