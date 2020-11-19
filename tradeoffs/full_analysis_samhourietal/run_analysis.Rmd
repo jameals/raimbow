@@ -273,6 +273,17 @@ scenario.output.list <- lapply(1:nrow(scenario_table_all_trim), function(i, scen
 
 Sys.time() - start.time
 
+# check to see how much nobase effort is dropped relative to total under sq
+
+scenario.output.list[[1]] %>% 
+  filter(date_past_region_end != TRUE) %>% 
+  filter(nobase == FALSE) %>%
+  group_by(crab_year, Region, year_month) %>% 
+            summarise(num_records = n(), 
+                      Num_DCRB_VMS_pings_sum = sum(Num_DCRB_VMS_pings), 
+                      .groups = "drop") %>%
+  filter(year_month == "2019_05")
+
 # JS. update directory as needed
 save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
 
@@ -322,7 +333,7 @@ risk_out_list <- lapply(1:nrow(scenario_table_all_trim), function(i, scenario_ta
   #browser()
   
   risk_out <- risk_mgmt(
-    x = scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE), # can add filter for nobase == FALSE here too
+    x = scenario.output.list[[i]] %>% filter(date_past_region_end != TRUE) %>% filter(nobase == FALSE), # can add filter for nobase == FALSE here too
     x.col = Num_DCRB_VMS_pings, 
     y = x.whale,
     risk.unit = "dens", 
@@ -712,9 +723,9 @@ sq_DCRBcells_maps_df$diff_Blue_occurrence[which(sq_DCRBcells_maps_df$time_period
 # # check for NAs for whales. some NAs but they are the same NAs as in x.whale (where blue and hump predictions do not overlap). ok to proceed
 # length(which(is.na(sq_DCRBcells_maps_df$Humpback_abund_mean)))
 # length(which(is.na(x.whale$Humpback_abund_mean)))
-# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Humpback_abund_mean))])
+# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Humpback_dens))])
 # unique(x.whale$GRID5KM_ID[which(is.na(x.whale$Humpback_abund_mean))])
-# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Blue_occurrence_mean))])
+# unique(sq_DCRBcells_maps_df$GRID5KM_ID[which(is.na(sq_DCRBcells_maps_df$Blue_occurrence))])
 # unique(x.whale$GRID5KM_ID[which(is.na(x.whale$Blue_occurrence_mean))])
 
 
@@ -865,10 +876,23 @@ annual_df_ranks <- annual_statewide_df %>%
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_ranks)
+
+annual_df_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -990,10 +1014,23 @@ annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_ranks)
+
+annual_df_focal_scenarios_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_focal_scenarios_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1117,10 +1154,33 @@ annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_statewide_ranks)
+
+annual_df_focal_scenarios_statewide_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_focal_scenarios_statewide_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
+
+annual_df_focal_scenarios_statewide_ranks %>%
+  group_by(scenario_number, pretty_scenario_names) %>%
+  summarise(
+    mean_relative_hump_risk_n = mean(relative_hump_risk_n), 
+    mean_relative_blwh_risk_n = mean(relative_blwh_risk_n), 
+    mean_relative_dollars = mean(relative_dollars), 
+    mean_relative_pounds = mean(relative_pounds)
+  ) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1245,10 +1305,23 @@ annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_cenCA_ranks)
+
+annual_df_focal_scenarios_cenCA_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_focal_scenarios_cenCA_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1366,10 +1439,23 @@ annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_ranks)
+
+annual_df_supplement_scenarios_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_supplement_scenarios_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1492,10 +1578,23 @@ annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_statewide_ranks)
+
+annual_df_supplement_scenarios_statewide_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_supplement_scenarios_statewide_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1621,10 +1720,23 @@ annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
-         DCRB_lbs,relative_pounds
+         DCRB_lbs,relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_cenCA_ranks)
+
+annual_df_supplement_scenarios_cenCA_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         rank_hump, rank_blwh, rank_both, rank_dollars, rank_pounds) %>% 
+  knitr::kable()
+
+annual_df_supplement_scenarios_cenCA_ranks %>% 
+  select(scenario_number, pretty_scenario_names,
+         n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
+         DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
+         costs_benefits_hump, costs_benefits_blwh) %>% 
+  knitr::kable()
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -2268,3 +2380,57 @@ Total revenue and landings by crab year and period for all fish tix
 # 8. QUERY WHALE MODEL OUTPUTS
 + predicted occurrence/density by period, statewide and by region
 [ not yet included]
+
+````{r whales, echo=FALSE}
+
+# grid.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds") %>% 
+#   select(-region_ts)
+
+# dont worry about NAs. see end of chunk make_dfs3 where we check for NAs for whales. some NAs but they are the same NAs as in x.whale (where blue and hump predictions do not overlap). ok to proceed
+# sq_maps_grid_noNA %>%
+#   summarise(
+#     hump_na = length(which(is.na(Humpback_dens))),
+#     blue_na = length(which(is.na(Blue_occurrence)))
+#   )
+# which(is.na(sq_maps_grid_noNA$Humpback_dens)
+
+# coastwide
+sq_maps_grid_noNA %>%
+  left_join(grid.key, by = "GRID5KM_ID") %>% 
+  group_by(time_period) %>%
+  summarise(
+    mean_hump_dens = mean(Humpback_dens, na.rm=TRUE),
+    median_hump_dens = median(Humpback_dens, na.rm=TRUE),
+    mean_blue_occur = mean(Blue_occurrence, na.rm=TRUE),
+    median_blue_occur = median(Blue_occurrence, na.rm=TRUE),
+    mean_pings = mean(Num_DCRB_VMS_pings, na.rm=TRUE),
+    median_pings = median(Num_DCRB_VMS_pings, na.rm=TRUE)
+  ) %>%
+  arrange(
+    time_period
+  ) %>%
+  st_drop_geometry %>%
+  knitr::kable()
+
+# by region
+sq_maps_grid_noNA %>%
+  left_join(grid.key, by = "GRID5KM_ID") %>% 
+  mutate(
+    Region = ifelse(Region == "OR", "NorCA", Region)
+    ) %>%
+  group_by(time_period, Region) %>%
+  summarise(
+    mean_hump_dens = mean(Humpback_dens, na.rm=TRUE),
+    median_hump_dens = median(Humpback_dens, na.rm=TRUE),
+    mean_blue_occur = mean(Blue_occurrence, na.rm=TRUE),
+    median_blue_occur = median(Blue_occurrence, na.rm=TRUE),
+    mean_pings = mean(Num_DCRB_VMS_pings, na.rm=TRUE),
+    median_pings = median(Num_DCRB_VMS_pings, na.rm=TRUE)
+  ) %>%
+  arrange(
+    Region, time_period
+  ) %>%
+  st_drop_geometry %>%
+  knitr::kable()
+
+```
