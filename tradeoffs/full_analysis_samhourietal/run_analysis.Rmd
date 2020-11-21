@@ -34,7 +34,7 @@ See pseudocode in "Full workflow for risk assessment and tradeoff analysis" goog
 * Fig 3 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
 * Fig 4 data. Whale risk and DCRB revenue by scenario calculated in the scenario_analysis step
 
-## Prep libraries and file paths
+## Prep libraries and file paths and functions
 (no need to display messages)
 ```{r prep, include=FALSE}
 
@@ -76,6 +76,8 @@ if (user == "JS") {
 
   path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
+  path_grid_key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds"
+  
   #path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2020-11-16.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
    
   # 
@@ -116,6 +118,20 @@ if (user == "JS") {
   stop("Invalid user")
 }
 
+
+### Function to calculate crab year
+func_crab_year <- function(z) {
+  # z: character; year_month
+  
+  stopifnot(require(lubridate))
+  z.yr <- as.numeric(substr(z, 1, 4))
+  z.mon <- as.numeric(substr(z, 6, 7))
+  
+  ifelse(
+    z.mon %in% 11:12, 
+    paste(z.yr, z.yr + 1, sep = "_"), paste(z.yr - 1, z.yr, sep = "_")
+  )
+}
 
 ```
 
@@ -824,6 +840,66 @@ write_csv(sq_maps_grid_noNA,paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Pro
 
 ```
 
+## Make df for time series
+
+This chunk makes a data frame for Figure 2 time series Samhouri et al
+```{r make_dfs4, echo=FALSE}
+
+#risk_out_sq <- risk_5km_yr_mth_sq_all
+#risk_out_sq <- read_rds(path_status_quo)
+
+# summarise cumulative sum of $ and risk by crab_year
+annual_risk_out_sq <- risk_out_sq %>%
+  mutate(
+  #month = as.numeric(substr(year_month,6,7)),
+  crab_year = func_crab_year(year_month),
+  plotting_year = as.numeric(substr(crab_year,6,9))
+  ) %>%
+  group_by(crab_year, plotting_year, year_month) %>%
+  summarise(
+    sum_DCRB_rev = sum(DCRB_rev, na.rm=TRUE)/10^5,
+    sum_n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    sum_n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  group_by(crab_year, plotting_year) %>%
+  summarise(
+    quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+    DCRB_rev = quantile(sum_DCRB_rev, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    n_risk_humpback = quantile(sum_n_risk_humpback, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    n_risk_blue = quantile(sum_n_risk_blue, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq)
+
+
+# just peek at 2015-16 season, which only includes March-Jul. Zeroes in Nov-Feb are not included as part of average monthly risk.
+# View(risk_out_sq %>%
+#    mutate(
+#    #month = as.numeric(substr(year_month,6,7)),
+#    crab_year = func_crab_year(year_month),
+#    plotting_year = as.numeric(substr(crab_year,6,9))
+#    ) %>%
+#    group_by(crab_year, plotting_year, year_month) %>%
+#    summarise(
+#      sum_DCRB_rev = sum(DCRB_rev, na.rm=TRUE)/10^5,
+#      sum_n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+#      sum_n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+#      
+#      .groups = "drop"
+#      ) %>% filter(crab_year == "2015_2016"))
+
+```
+
+
+
 Other output df's of interest are:
 
 - ALL SCENARIOS: annual_statewide_df
@@ -832,7 +908,7 @@ Other output df's of interest are:
 
 - SUPPLEMENT SCENARIOS: annual_statewide_df_supplement, scenario_table_supplement, df_tradeoff_supplement
 
-- STATUS QUO SCENARIOS: annual_statewide_df_sq, scenario_table_sq, df_tradeoff_sq
+- STATUS QUO SCENARIOS: annual_statewide_df_sq, scenario_table_sq, df_tradeoff_sq, annual_risk_out_sq
 
 There are also corresponding output .rds files
 
@@ -1031,6 +1107,7 @@ annual_df_focal_scenarios_ranks %>%
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
          costs_benefits_hump, costs_benefits_blwh) %>% 
   knitr::kable()
+  
 
 # by period, ranked by various response variables
 # larger values get higher ranks
@@ -1083,6 +1160,25 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
   )
 
 #glimpse(annual_df_ranks_period_focal)
+
+# display a df showing relative changes
+annual_df_ranks_period_focal %>% 
+  select(pre_post, pretty_scenario_names, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_dollars) %>%
+  knitr::kable()
+
+annual_df_ranks_period_focal %>% 
+  select(pre_post, pretty_scenario_names, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_dollars) %>%
+  group_by(pre_post) %>%
+  summarise(
+    max_relative_hump_risk_n = max(mean_relative_hump_risk_n), 
+    mean_relative_hump_risk_n = mean(mean_relative_hump_risk_n), 
+    max_relative_blwh_risk_n = max(mean_relative_blwh_risk_n), 
+    mean_relative_blwh_risk_n = mean(mean_relative_blwh_risk_n), 
+    min_relative_dollars = min(mean_relative_dollars),
+    mean_relative_dollars = mean(mean_relative_dollars)
+  ) %>%
+  knitr::kable()
+
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_focal_hump <- annual_df_ranks_period_focal %>%
@@ -1235,6 +1331,39 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
   )
 
 #glimpse(annual_df_ranks_period_focal_statewide)
+
+# display a df showing relative changes
+annual_df_ranks_period_focal_statewide %>% 
+  select(pre_post, pretty_scenario_names, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_dollars) %>%
+  knitr::kable()
+
+annual_df_ranks_period_focal_statewide %>% 
+  select(pre_post, pretty_scenario_names, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_dollars) %>%
+  group_by(pre_post) %>%
+  summarise(
+    max_relative_hump_risk_n = max(mean_relative_hump_risk_n), 
+    mean_relative_hump_risk_n = mean(mean_relative_hump_risk_n), 
+    max_relative_blwh_risk_n = max(mean_relative_blwh_risk_n), 
+    mean_relative_blwh_risk_n = mean(mean_relative_blwh_risk_n), 
+    min_relative_dollars = min(mean_relative_dollars),
+    mean_relative_dollars = mean(mean_relative_dollars)
+  ) %>%
+  knitr::kable()
+
+annual_df_ranks_period_focal_statewide %>% 
+  filter(stringr::str_detect(pretty_scenario_names, 'Early')) %>% 
+  select(pre_post, pretty_scenario_names, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_dollars) %>%
+  group_by(pre_post) %>%
+  summarise(
+    early_only_max_relative_hump_risk_n = max(mean_relative_hump_risk_n), 
+    early_only_mean_relative_hump_risk_n = mean(mean_relative_hump_risk_n), 
+    early_only_max_relative_blwh_risk_n = max(mean_relative_blwh_risk_n), 
+    early_only_mean_relative_blwh_risk_n = mean(mean_relative_blwh_risk_n), 
+    early_only_min_relative_dollars = min(mean_relative_dollars),
+    early_only_mean_relative_dollars = mean(mean_relative_dollars)
+  ) %>%
+  knitr::kable()
+
 
 # make a df sorted by rank risk reduction to humps
 annual_df_ranks_period_focal_statewide_hump <- annual_df_ranks_period_focal_statewide %>%
@@ -2240,11 +2369,57 @@ data.frame(total_num_vessels,
 
 ```
 
+## By crab year
+
+Number unique vessels  tix, geolocations, and total revenue and landings by crab year
+(VMS-tracked only)
+```{r fishing3, echo=FALSE}
+
+# summed revenue of VMS vessels each crab_year
+#unique(dcrb_ca_vms_tix_analysis$crab_year)
+
+crabyear_summaries <- dcrb_ca_vms_tix_analysis %>%
+  mutate(
+  plotting_year = as.numeric(substr(crab_year,6,9))
+  ) %>%
+  group_by(crab_year, plotting_year) %>%
+  summarise(
+    num_vessels = length(unique(drvid)),
+    num_tix = length(unique(Rec_ID)),
+    num_locations = length(unique(VMS_RECNO)),
+    sum_DCRB_rev = sum(DCRB_revenue),
+    sum_DCRB_lbs = sum(DCRB_lbs)
+    
+  ) 
+
+crabyear_summaries %>%
+  knitr::kable()
+
+write_csv(crabyear_summaries, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "crabyear_summaries.csv"
+          )
+)
+
+crabyear_summaries %>%
+  summarise(
+    mean_vessels = mean(num_vessels),
+    min_vessels = min(num_vessels),
+    max_vessels = max(num_vessels)
+  ) %>%
+  knitr::kable()
+
+
+```
+
 ## By period
 
 Number unique vessels  tix, geolocations, and total revenue and landings by period
 (VMS-tracked only)
-```{r fishing3, echo=FALSE}
+```{r fishing4, echo=FALSE}
 
 # summed revenue of VMS vessels 2009-14 vs 2014-18
 #unique(dcrb_ca_vms_tix_analysis$crab_year)
@@ -2293,7 +2468,7 @@ annual_percent_rev_change_MHW_v_pre
 
 Number unique vessels  tix, geolocations, and total revenue and landings by period and region
 (VMS-tracked only)
-```{r fishing4, echo=FALSE}
+```{r fishing5, echo=FALSE}
 
 # summed revenue of VMS vessels 2009-14 vs 2014-18
 #unique(dcrb_ca_vms_tix_analysis$crab_year)
@@ -2343,7 +2518,7 @@ annual_percent_rev_change_MHW_v_pre_region
 
 Fish ticket IDs and Vessels landing crab after Jun 30 in CenCA and after Jul 15 in NorCA
 Code creates output csv (table redacated because it contains confidential informatoion)
-```{r fishing 5, echo=FALSE}
+```{r fishing 6, echo=FALSE}
 
 dcrb_ca_vms_tix_analysis_inseason <-  dcrb_ca_vms_tix_analysis %>%
   mutate(
@@ -2383,8 +2558,7 @@ Total revenue and landings by crab year and period for all fish tix
 
 ````{r whales, echo=FALSE}
 
-# grid.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds") %>% 
-#   select(-region_ts)
+grid.key <- read_rds(path_grid_key)
 
 # dont worry about NAs. see end of chunk make_dfs3 where we check for NAs for whales. some NAs but they are the same NAs as in x.whale (where blue and hump predictions do not overlap). ok to proceed
 # sq_maps_grid_noNA %>%

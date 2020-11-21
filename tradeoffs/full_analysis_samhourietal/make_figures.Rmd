@@ -50,11 +50,21 @@ library(rnaturalearth)
 library(gridExtra)
 library(ggpubr)
 library(knitr)
+library(rphylopic)
+library(png)
+library(RCurl)
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
   #flag.save = TRUE # option to save all outputs or not
   
+  path_crabyear_summaries <- here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "crabyear_summaries.csv"
+          )
+    
   path_entanglement_file2 <- paste0(here::here(), "/tradeoffs/full_analysis_samhourietal/output_dfs/entanglement_df_annual_complete.csv")
   
   path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/full_analysis_samhourietal/figures"
@@ -270,38 +280,412 @@ Changes over time (2009-2019) in (a) the number of confirmed whale entanglements
 
 ## Entanglements
 TS of ONLY CA commercial DCRB entanglements
-```{r fig2, echo=FALSE}
+```{r fig2a, echo=FALSE}
 
 entanglement_df_annual_complete <- read_csv(path_entanglement_file2)
 
-entanglements_ts <- ggplot(entanglement_df_annual_complete %>% filter (Year > 2008), 
+entanglements_ts <- ggplot(entanglement_df_annual_complete %>% filter (Year > 2009), 
                            aes(x=Year, y=count, group=species, colour=species)) + # group=1 tells ggplot that there is only 1 group
   geom_point(size=2, position = position_dodge(0.4)) +
   geom_line(position = position_dodge(0.4)) + 
-  ylab("Number of entanglements") +
-  xlab("Year") +
-  labs(subtitle = "Data from NMFS WRO") +
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  ylab("Number of\nentanglements") +
+  xlab("") + # "Year
+  #labs(subtitle = "Data from NMFS WRO") +
   #ggtitle("Number of Whale\nEntanglements,US West Coast") +
-  scale_colour_viridis_d(begin=0.2, end=0.8) +
-  scale_x_continuous(breaks=seq(2009, 2019 , 1),limits=c(2008,2020))+
-  scale_y_continuous(breaks=seq(0, 25, 5),limits=c(0,25))+
+  scale_colour_viridis_d(begin=0.1, end=0.9) + #, option = "plasma") +
+  scale_x_continuous(breaks=seq(2010, 2019 , 1),limits=c(2009.5,2019.5))+
+  scale_y_continuous(breaks=seq(0, 20, 5),limits=c(0,20))+
   theme_classic() +
   #scale_fill_manual(values=c("lightskyblue", "coral")) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=14),
-        axis.text.x = element_text(hjust = 1,size = 14, angle = 90),
-        axis.text.y = element_text(size = 14),
-        axis.title = element_text(size = 16),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
         legend.position = c(0.2, 0.8)
         )
 entanglements_ts 
 
-png(paste0(path_figures, "/entanglements_ts.png"), width = 14, height = 10, units = "in", res = 300)
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2a_entanglements_ts.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
 entanglements_ts
 invisible(dev.off())
 
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Risk
+TS of cumulative monthly risk to blue and humpback whales
+```{r fig2b, echo=FALSE}
+
+risk_out_sq <- risk_5km_yr_mth_sq_all
+#risk_out_sq <- read_rds(path_status_quo)
+
+# plot normalized blues
+
+ts_sq_blue <- ggplot(
+  data = annual_risk_out_sq %>% 
+    filter(response_metric != "DCRB_rev" & response_metric != "n_risk_humpback") %>%
+    filter(quantile != "2%" & quantile != "98%") %>%
+    pivot_wider(
+      names_from = quantile,
+      values_from = response
+    ), 
+  aes(
+    x = plotting_year, 
+    y = `50%`
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  # geom_ribbon(aes(ymin = `25%`,
+  #                 ymax = `75%`),
+  #             alpha = 0.2
+  #             ) +
+  geom_pointrange(aes(ymin = `25%`,
+                  ymax = `75%`)
+              ) +
+  # geom_errorbar(aes(ymin = `25%`,
+  #                 ymax = `75%`)
+  #             ) +
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  # facet_grid(rows = vars(response_metric),
+  #            #scales = "free_y",
+  #            labeller = as_labeller ( c(
+  #              #`DCRB_rev` = "Dungeness crab\nfishery revenue\n($, x10^5)",
+  #              `n_risk_blue` = ""#, # to\nblue whales",
+  #              #`n_risk_humpback` = "" # "Risk to\nhumpback whales\n(normalized)"
+  #              ) ),
+  #            switch = "y"
+  #            ) + 
+  scale_x_continuous(breaks = seq(2010, 2019,1),
+                     limits = c(2009.5,2019.5)
+                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     ) + 
+  #ylim(0,0.08) +
+  ylab("Normalized risk") + 
+  xlab("") + # "Dungeness crab season"
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2b_plot_ts_sq_blue.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+ts_sq_blue
+invisible(dev.off())
+
+ts_sq_blue
+
+# plot normalized humpbacks
+
+ts_sq_hump <- ggplot(
+  data = annual_risk_out_sq %>% 
+    filter(response_metric != "DCRB_rev" & response_metric != "n_risk_blue") %>%
+    filter(quantile != "2%" & quantile != "98%") %>%
+    pivot_wider(
+      names_from = quantile,
+      values_from = response
+    ), 
+  aes(
+    x = plotting_year, 
+    y = `50%`
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  # geom_ribbon(aes(ymin = `25%`,
+  #                 ymax = `75%`),
+  #             alpha = 0.2
+  #             ) +
+  geom_pointrange(aes(ymin = `25%`,
+                  ymax = `75%`)
+              ) +
+  # geom_errorbar(aes(ymin = `25%`,
+  #                 ymax = `75%`)
+  #             ) +
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  # facet_grid(rows = vars(response_metric),
+  #            #scales = "free_y",
+  #            labeller = as_labeller ( c(
+  #              #`DCRB_rev` = "Dungeness crab\nfishery revenue\n($, x10^5)",
+  #              #`n_risk_blue` = ""#, # to\nblue whales",
+  #              `n_risk_humpback` = "" # "Risk to\nhumpback whales\n(normalized)"
+  #              ) ),
+  #            switch = "y"
+  #            ) + 
+  scale_x_continuous(breaks = seq(2010, 2019,1),
+                     limits = c(2009.5,2019.5)
+                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     ) + 
+  #ylim(0,0.08) +
+  ylab("Normalized risk") + 
+  xlab("") + # "Dungeness crab season"
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2c_plot_ts_sq_hump.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+ts_sq_hump
+invisible(dev.off())
+
+ts_sq_hump
+
+
+# plot normalized humpbacks, normalized blues
+
+ts_sq_whales <- ggplot(
+  data = annual_risk_out_sq %>% 
+    filter(response_metric != "DCRB_rev") %>%
+    filter(quantile != "2%" & quantile != "98%") %>%
+    pivot_wider(
+      names_from = quantile,
+      values_from = response
+    ), 
+  aes(
+    x = plotting_year, 
+    y = `50%`
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  # geom_ribbon(aes(ymin = `25%`,
+  #                 ymax = `75%`),
+  #             alpha = 0.2
+  #             ) +
+  geom_pointrange(aes(ymin = `25%`,
+                  ymax = `75%`)
+              ) +
+  # geom_errorbar(aes(ymin = `25%`,
+  #                 ymax = `75%`)
+  #             ) +
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  facet_grid(rows = vars(response_metric),
+             #scales = "free_y",
+             labeller = as_labeller ( c(
+               #`DCRB_rev` = "Dungeness crab\nfishery revenue\n($, x10^5)",
+               `n_risk_blue` = "", # to\nblue whales",
+               `n_risk_humpback` = "" # "Risk to\nhumpback whales\n(normalized)"
+               ) ),
+             switch = "y"
+             ) + 
+  scale_x_continuous(breaks = seq(2010, 2019,1),
+                     limits = c(2009.5,2019.5)
+                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     ) + 
+  #ylim(0,0.08) +
+  ylab("Normalized risk") + 
+  xlab("") + # "Dungeness crab season"
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2bc_plot_ts_sq_whales.png"), 
+  width = 7.5, height = 5, units = "in", res = 300)
+ts_sq_whales
+invisible(dev.off())
+
+ts_sq_whales
+
+# to add silhouettes check out https://cran.r-project.org/web/packages/rphylopic/readme/README.html and https://scrogster.wordpress.com/2014/06/02/adding-phylopic-org-silhouettes-to-r-plots/
+
+# # humpback
+# hump_url <- "http://phylopic.org/assets/images/submissions/ce70490a-79a5-47fc-afb9-834e45803ab4.512.png"
+# hump_logo <-  readPNG(getURLContent(hump_url))
+# 
+# logoing_func<-function(logo, x, y, size){
+#   dims<-dim(logo)[1:2] #number of x-y pixels for the logo (aspect ratio)
+#   AR<-dims[1]/dims[2]
+#   par(usr=c(0, 1, 0, 1))
+#   rasterImage(logo, x-(size/2), y-(AR*size/2), x+(size/2), y+(AR*size/2), interpolate=TRUE)
+# }
+# 
+# ts_sq_whales + logoing_func(hump_logo, x=0.10, y=0.10, size=0.15)
+
+```
+
+## Revenue
+TS of total DCRB revenue each season
+```{r fig2c, echo=FALSE}
+
+#crabyear_summaries <- read_csv(path_crabyear_summaries)
+
+# plot $
+
+ts_sq_DCRBrev <- ggplot(
+  data = crabyear_summaries, 
+  aes(
+    x = plotting_year, 
+    y= sum_DCRB_rev/10^7
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  ylab(expression(Fishery~revenue~("$,"~x10^7))) + 
+  scale_x_continuous(breaks = seq(2010, 2019,1),
+                     limits = c(2009.5,2019.5)
+                     #labels = str_replace(unique(crabyear_summaries$crab_year),"_","-")
+                     ) + 
+  xlab("") + # "Dungeness crab season"
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2d_ts_sq_DCRBrev.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+ts_sq_DCRBrev
+invisible(dev.off())
+
+ts_sq_DCRBrev
+
+
+```
+
+## Figure 2abcd
+
+```{r fig2abcd, echo=FALSE}
+
+# Figure 1 Samhouri et al.
+ 
+ggarrange(entanglements_ts,
+          ts_sq_whales,
+          ts_sq_DCRBrev,
+          ncol=1,
+          #labels="auto",
+          heights = c(1,2,1),
+          hjust=0
+          )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "all_ts.png"), 
+  width = 10, height = 14, units = "in", res = 300)
+ggarrange(entanglements_ts,
+          ts_sq_whales,
+          ts_sq_DCRBrev,
+          ncol=1,
+          #labels="auto",
+          heights = c(1,2,1),
+          hjust=0
+          )
+invisible(dev.off())
+
+```
+
+# Figure 3. 
+
+Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
+
+## Risk to blue whales
+```{r fig3a, echo=FALSE}
+
+#normalized blues, statewide scenarios only, boxplot
+# try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
+
+# pick up here. stick with box plots? remove y axis label. change text size
+
+annual_df_focal_scenarios_statewide_ranks %<>%
+  mutate(
+    scenario_rank = ifelse(
+      pretty_scenario_names == "Status Quo", 0,
+      rank_hump
+      )
+  )
+
+plot_blue_risk_prepost_statewide_bp <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks,
+  aes(
+    x = reorder(pretty_scenario_names,-scenario_rank),
+    y = n_risk_blue,
+    colour = factor(pre_post),
+    fill = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("Scenario") +
+  ylab("Normalized risk") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size = 26),
+    legend.text = element_text(size = 18),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16)
+    #legend.position = "none"
+    )
+
+png(paste0(path_figures, "/plot_blue_risk_prepost_statewide_bp.png"), width = 14, height = 10, units = "in", res = 300)
+plot_blue_risk_prepost_statewide_bp
+invisible(dev.off())
+
+```
+
