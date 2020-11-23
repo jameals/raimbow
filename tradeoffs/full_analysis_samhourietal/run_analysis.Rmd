@@ -533,7 +533,35 @@ write_rds(scenario_table_focal_scenarios, here::here(
 )
 
 df_tradeoff_focal_scenarios <- df_tradeoff  %>%
-  filter(!grepl('alt', scenario_number))
+  filter(!grepl('alt', scenario_number)) %>%
+  mutate(
+     scenario_type = factor(
+      case_when(
+      pretty_scenario_names == "Status Quo" ~ "Status Quo",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delay and Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay', negate = TRUE) ~ "Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure', negate = TRUE)  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delayed Opening",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Depth and Gear Restrictions",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction', negate = TRUE) ~ "Depth Restriction",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction', negate = TRUE) & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Gear Restriction",
+      TRUE ~ "Delay and Early Closure"
+    ),
+    levels = c("Status Quo", "Depth Restriction", "Gear Restriction",
+               "Depth and Gear Restrictions", "Delayed Opening", "Early Closure",
+               "Delay and Early Closure")),
+    spatial_domain = factor(
+      case_when(
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Statewide/CenCA",
+      stringr::str_detect(pretty_scenario_names, 'BIA') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "CenCA/BIA",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'BIA') ~ "Statewide/BIA",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') ~ "Statewide",
+      stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Central California",
+      stringr::str_detect(pretty_scenario_names, 'BIA') ~ "BIA",
+      TRUE ~ "Status Quo"
+    ),
+    levels= c("Status Quo","BIA","Central California","Statewide","Statewide/CenCA", "CenCA/BIA","Statewide/BIA")
+  )
+  )
 
 # JS. update directory as needed
 write_rds(df_tradeoff_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_",today(),".rds"))
@@ -557,7 +585,35 @@ write_rds(scenario_table_supplement, here::here(
 )
 
 df_tradeoff_supplement <- df_tradeoff  %>%
-  filter(grepl('alt', scenario_number) | grepl('sq', scenario_number))
+  filter(grepl('alt', scenario_number) | grepl('sq', scenario_number)) %>%
+  mutate(
+     scenario_type = factor(
+      case_when(
+      pretty_scenario_names == "Status Quo" ~ "Status Quo",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delay and Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay', negate = TRUE) ~ "Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure', negate = TRUE)  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delayed Opening",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Depth and Gear Restrictions",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction', negate = TRUE) ~ "Depth Restriction",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction', negate = TRUE) & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Gear Restriction",
+      TRUE ~ "Delay and Early Closure"
+    ),
+    levels = c("Status Quo", "Depth Restriction", "Gear Restriction",
+               "Depth and Gear Restrictions", "Delayed Opening", "Early Closure",
+               "Delay and Early Closure")),
+    spatial_domain = factor(
+      case_when(
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Statewide/CenCA",
+      stringr::str_detect(pretty_scenario_names, 'BIA') & stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "CenCA/BIA",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') & stringr::str_detect(pretty_scenario_names, 'BIA') ~ "Statewide/BIA",
+      stringr::str_detect(pretty_scenario_names, 'Statewide') ~ "Statewide",
+      stringr::str_detect(pretty_scenario_names, 'CenCA') ~ "Central California",
+      stringr::str_detect(pretty_scenario_names, 'BIA') ~ "BIA",
+      TRUE ~ "Status Quo"
+    ),
+        levels= c("Status Quo","BIA","Central California","Statewide","Statewide/CenCA", "CenCA/BIA","Statewide/BIA")
+  )
+  )
 
 # JS. update directory as needed
 write_rds(df_tradeoff_supplement, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_supplement_",today(),".rds"))

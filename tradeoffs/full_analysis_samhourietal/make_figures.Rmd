@@ -645,18 +645,29 @@ Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback w
 
 # pick up here. stick with box plots? remove y axis label. change text size
 
-annual_df_focal_scenarios_statewide_ranks %<>%
+annual_df_focal_scenarios_statewide_ranks_fig <- 
+  annual_df_focal_scenarios_statewide_ranks %>%
+  ungroup() %>%
   mutate(
     scenario_rank = ifelse(
       pretty_scenario_names == "Status Quo", 0,
       rank_hump
-      )
+      ),
+    scenario_names_fig = c(
+      rep("Status Quo", 10),
+      rep("Delay", 10),
+      rep("Spring Closure", 10),
+      rep("Delay + Spring Closure", 10),
+      rep("Spring Effort Reduction", 10),
+      rep("Spring Depth Restriction", 10),
+      rep("Spring Effort Reduction + Depth Restriction", 10)
+    )
   )
 
 plot_blue_risk_prepost_statewide_bp <- ggplot(
-  data = annual_df_focal_scenarios_statewide_ranks,
+  data = annual_df_focal_scenarios_statewide_ranks_fig,
   aes(
-    x = reorder(pretty_scenario_names,-scenario_rank),
+    x = reorder(scenario_names_fig,-scenario_rank),
     y = n_risk_blue,
     colour = factor(pre_post),
     fill = factor(pre_post)
@@ -664,7 +675,7 @@ plot_blue_risk_prepost_statewide_bp <- ggplot(
   )  +
   geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
   geom_point(position=position_dodge(width=0.5), alpha=0.6)+
-  xlab("Scenario") +
+  xlab("") + # "Scenario"
   ylab("Normalized risk") +
   ylim(0,0.4) +
   scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
@@ -674,18 +685,379 @@ plot_blue_risk_prepost_statewide_bp <- ggplot(
   theme_classic() +
   theme(
     legend.title = element_blank(),
-    title = element_text(size = 26),
-    legend.text = element_text(size = 18),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
     #legend.position = c(.1, .95),
-    axis.text.x = element_text(size=14), #hjust = 1, size = 14, angle = 60
-    axis.text.y = element_text(size = 14),
-    axis.title = element_text(size = 16)
+    axis.text.x = element_text(size=12), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
     #legend.position = "none"
     )
 
-png(paste0(path_figures, "/plot_blue_risk_prepost_statewide_bp.png"), width = 14, height = 10, units = "in", res = 300)
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3a_plot_blue_risk_prepost_statewide_bp.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
 plot_blue_risk_prepost_statewide_bp
 invisible(dev.off())
 
+plot_blue_risk_prepost_statewide_bp
+
 ```
 
+
+## Risk to humpback whales
+```{r fig3b, echo=FALSE}
+
+#normalized humps, statewide scenarios only, boxplot
+# try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
+
+plot_hump_risk_prepost_statewide_bp <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_fig,
+  aes(
+    x = reorder(scenario_names_fig,-scenario_rank),
+    y = n_risk_humpback,
+    colour = factor(pre_post),
+    fill = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("") + # "Scenario"
+  ylab("Normalized risk") +
+  ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
+    #legend.position = "none"
+    )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3b_plot_hump_risk_prepost_statewide_bp.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+plot_hump_risk_prepost_statewide_bp
+invisible(dev.off())
+
+plot_hump_risk_prepost_statewide_bp
+
+```
+
+## DCRB revenue
+```{r fig3c, echo=FALSE}
+
+# DCRB revenue, statewide scenarios only, boxplot
+# try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
+
+plot_DCRB_rev_prepost_statewide_bp <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_fig,
+  aes(
+    x = reorder(scenario_names_fig,-scenario_rank),
+    y = DCRB_rev/(10^7),
+    colour = factor(pre_post),
+    fill = factor(pre_post)
+    )
+  )  +
+  geom_boxplot(position=position_dodge(width=0.5)) +#, width=0.1, color="grey", alpha=0.2) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6)+
+  xlab("") + # "Scenario"
+  ylab(expression(Fishery~revenue~("$,"~x10^7))) +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
+    #legend.position = "none"
+    )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3c_plot_DCRB_rev_prepost_statewide_bp.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+plot_DCRB_rev_prepost_statewide_bp
+invisible(dev.off())
+
+plot_DCRB_rev_prepost_statewide_bp
+
+```
+
+# Figure 4
+
+Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
+
+## Blue whales only
+```{r tradeoff1, echo = FALSE}
+
+### normalized blues, by pre_post
+# still getting warnings aroudn geom_errorbarh. that is because the 2018-19 period has no var. ok to proceed
+
+# df_tradeoff_focal_scenarios %>%
+#   group_by(scenario_number, pre_post) %>%
+#   summarise(
+#     mean_relative_blwh_risk_n = mean(relative_blwh_risk_n),
+#     sd_relative_blwh_risk_n = sd(relative_blwh_risk_n),
+#     mean_relative_dollars = mean(relative_dollars),
+#     sd_relative_dollars = sd(relative_dollars)
+#   )
+
+to_blue_n_pre_post <- ggplot(
+  df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type,
+    #label = scenario_number,
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=1, alpha=0.2) + #,position=position_dodge(width = 0.9)
+  #geom_text(aes(label=plotting_year, colour=scenario_type), size=2, alpha=0.5, check_overlap = TRUE) + #str_replace(crab_year,"_","-"), _repel
+  stat_err(spread = "se", mult = 1, width=.1, alpha = 0.5) + 
+  stat_err(geom="point", size=3, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1,alpha = 0.5) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                         labels = function(x) str_wrap(x, width = 10)) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                       labels = function(x) str_wrap(x, width = 10)) +
+  scale_shape_manual(values=c(21:25, 4, 8) ) +
+  ylab("Relative reduction in risk") + #  to blues\n(normalized)
+  xlab("Relative fishery revenue") + #  to the Dungeness crab fishery
+  scale_y_continuous(breaks=seq(-25, 100, 25),limits=c(-30,100)) +
+  guides(fill = guide_legend("Scenario type", order = 1), 
+         colour = guide_legend("Scenario type", order = 1),
+         shape = guide_legend("Spatial domain", order = 2)
+         ) + 
+  theme_classic(base_size = 12) +
+  theme(
+    #title = element_text(size = 26),
+    legend.position = "right",
+    legend.box="vertical", 
+    #legend.margin=margin(),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    #axis.title = element_text(size = 14),
+    legend.text = element_text(size=10),
+    #strip.text = element_text(size=14),
+    ) 
+to_blue_n_pre_post
+
+# need to figure out how to shrink to fit margins with font sizes
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized blues only by pre_post_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_blue_n_pre_post
+invisible(dev.off())
+
+to_blue_n_pre_post_nolegend <- ggplot(
+  df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
+  aes(
+    x=relative_dollars,
+    y=relative_blwh_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type,
+    #label = scenario_number,
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=1, alpha=0.2) + #,position=position_dodge(width = 0.9)
+  #geom_text(aes(label=plotting_year, colour=scenario_type), size=2, alpha=0.5, check_overlap = TRUE) + #str_replace(crab_year,"_","-"), _repel
+  stat_err(spread = "se", mult = 1, width=.1, alpha = 0.5) + 
+  stat_err(geom="point", size=3, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1,alpha = 0.5) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                         labels = function(x) str_wrap(x, width = 10)) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                       labels = function(x) str_wrap(x, width = 10)) +
+  scale_shape_manual(values=c(21:25, 4, 8) ) +
+  ylab("Relative reduction in risk") + #  to blues\n(normalized)
+  xlab("Relative fishery revenue") + #  to the Dungeness crab fishery
+  scale_y_continuous(breaks=seq(-25, 100, 25),limits=c(-30,100)) +
+  guides(fill = guide_legend("Scenario type", order = 1), 
+         colour = guide_legend("Scenario type", order = 1),
+         shape = guide_legend("Spatial domain", order = 2)
+         ) + 
+  theme_classic(base_size = 12) +
+  theme(
+    #title = element_text(size = 26),
+    legend.position = "none",
+    legend.box="vertical", 
+    #legend.margin=margin(),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    #axis.title = element_text(size = 14),
+    legend.text = element_text(size=10),
+    #strip.text = element_text(size=14),
+    ) 
+to_blue_n_pre_post_nolegend
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized blues only by pre_post_nolegend_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_blue_n_pre_post_nolegend
+invisible(dev.off())
+
+
+```
+
+
+## Humpback whales only
+```{r tradeoff2, echo = FALSE}
+
+### normalized humps, by pre_post
+# still getting warnings aroudn geom_errorbarh. that is because the 2018-19 period has no var. ok to proceed
+
+to_hump_n_pre_post <- ggplot(
+  df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type,
+    #label = scenario_number,
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=1, alpha=0.2) + #,position=position_dodge(width = 0.9)
+  #geom_text(aes(label=plotting_year, colour=scenario_type), size=2, alpha=0.5, check_overlap = TRUE) + #str_replace(crab_year,"_","-"), _repel
+  stat_err(spread = "se", mult = 1, width=.1, alpha = 0.5) + 
+  stat_err(geom="point", size=3, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1,alpha = 0.5) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                         labels = function(x) str_wrap(x, width = 10)) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                       labels = function(x) str_wrap(x, width = 10)) +
+  scale_shape_manual(values=c(21:25, 4, 8) ) +
+  ylab("Relative reduction in risk") + #  to humps\n(normalized)
+  xlab("Relative fishery revenue") + #  to the Dungeness crab fishery
+  scale_y_continuous(breaks=seq(-25, 100, 25),limits=c(-30,100)) +
+  guides(fill = guide_legend("Scenario type", order = 1), 
+         colour = guide_legend("Scenario type", order = 1),
+         shape = guide_legend("Spatial domain", order = 2)
+         ) + 
+  theme_classic(base_size = 12) +
+  theme(
+    #title = element_text(size = 26),
+    legend.position = "right",
+    legend.box="vertical", 
+    #legend.margin=margin(),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    #axis.title = element_text(size = 14),
+    legend.text = element_text(size=10),
+    #strip.text = element_text(size=14),
+    ) 
+to_hump_n_pre_post
+
+# need to figure out how to shrink to fit margins with font sizes
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized humps only by pre_post_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_hump_n_pre_post
+invisible(dev.off())
+
+to_hump_n_pre_post_nolegend <- ggplot(
+  df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
+  aes(
+    x=relative_dollars,
+    y=relative_hump_risk_n,
+    group=pretty_scenario_names,
+    fill=scenario_type,
+    #label = scenario_number,
+    colour=scenario_type,
+    shape = spatial_domain
+  )
+) + 
+  geom_point(size=1, alpha=0.2) + #,position=position_dodge(width = 0.9)
+  #geom_text(aes(label=plotting_year, colour=scenario_type), size=2, alpha=0.5, check_overlap = TRUE) + #str_replace(crab_year,"_","-"), _repel
+  stat_err(spread = "se", mult = 1, width=.1, alpha = 0.5) + 
+  stat_err(geom="point", size=3, alpha = 0.8) + #
+  stat_err(spread = "se", mult = 1, geom = "errorbarh", height = .1,alpha = 0.5) +
+  #facet_grid(rows = vars(pre_post) ) + 
+  facet_wrap(nrow = 3,  vars(pre_post) ) + 
+  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                         labels = function(x) str_wrap(x, width = 10)) +
+  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
+                       labels = function(x) str_wrap(x, width = 10)) +
+  scale_shape_manual(values=c(21:25, 4, 8) ) +
+  ylab("Relative reduction in risk") + #  to humps\n(normalized)
+  xlab("Relative fishery revenue") + #  to the Dungeness crab fishery
+  scale_y_continuous(breaks=seq(-25, 100, 25),limits=c(-30,100)) +
+  guides(fill = guide_legend("Scenario type", order = 1), 
+         colour = guide_legend("Scenario type", order = 1),
+         shape = guide_legend("Spatial domain", order = 2)
+         ) + 
+  theme_classic(base_size = 12) +
+  theme(
+    #title = element_text(size = 26),
+    legend.position = "none",
+    legend.box="vertical", 
+    #legend.margin=margin(),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    #axis.title = element_text(size = 14),
+    legend.text = element_text(size=10),
+    #strip.text = element_text(size=14),
+    ) 
+to_hump_n_pre_post_nolegend
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized humps only by pre_post_nolegend_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_hump_n_pre_post_nolegend
+invisible(dev.off())
+
+
+```
