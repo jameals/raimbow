@@ -449,6 +449,8 @@ source(here::here(
 # also note that write_rds should be modified if running analysis for small or large vessels (~lines 119, 224)
 # also also note that if sq scenario name changes  objects need to be redefined in the function (sorry again!)
 
+load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_2020-11-20.RData")
+
 start.time <- Sys.time()
 tradeoff_df_function(
   risk_list = risk_out_summ_list,
@@ -461,13 +463,13 @@ Sys.time() - start.time
 
 # is risk actually greater for whales under some scenarios? yes.
 dim(df_tradeoff)
-length(which(df_tradeoff$relative_hump_risk < 0)) # 35 out of 310
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 50 out of 310
-length(which(df_tradeoff$relative_both_risk < 0)) # 39 out of 310
+length(which(df_tradeoff$relative_hump_risk < 0)) # 28 out of 310
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 41 out of 310
+length(which(df_tradeoff$relative_both_risk < 0)) # 34 out of 310
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
-length(which(df_tradeoff$relative_dollars > 100)) # 3 out of 310
-length(which(df_tradeoff$relative_pounds > 100)) # 6 out of 310
+length(which(df_tradeoff$relative_dollars > 100)) # 8 out of 310
+length(which(df_tradeoff$relative_pounds > 100)) # 8 out of 310
 
 ```
 
@@ -2026,7 +2028,10 @@ Focal scenarios for main text
 
 # 1a) focal scenarios for main text
 scale_compare_focal_scenarios <- annual_statewide_df_focal_scenarios %>%
-  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Delay CenCA, Early Closure Statewide')) %>% 
+  filter(!stringr::str_detect(pretty_scenario_names, 'Delay Statewide, Early Closure CenCA')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA 50% Effort Reduction, Statewide <30 fathom Depth Restriction Apr-Jul')) %>%
   mutate(
   
     scale = ifelse(delay.region == "All" | closure.region == "All" | reduction.after.region == "All",
@@ -2034,15 +2039,20 @@ scale_compare_focal_scenarios <- annual_statewide_df_focal_scenarios %>%
                  ifelse(delay.region == "CenCA" | closure.region == "CenCA" | reduction.after.region == "CenCA",
                         "Central California Only", NA)),
     
-  scenario_type = ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth and Gear Restrictions",
-                         ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & !stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth Restriction",
-                                ifelse(!stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Gear Restriction",                                   
-                                       ifelse(stringr::str_detect(pretty_scenario_names, 'Early Closure'), "Early Closure", 
-                                              ifelse(stringr::str_detect(pretty_scenario_names, 'Delay'), "Delayed Opening", NA)
-                                              )
-                                       )
-                                )
-                         )
+  scenario_type = factor(
+      case_when(
+      pretty_scenario_names == "Status Quo" ~ "Status Quo",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delay and Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay', negate = TRUE) ~ "Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure', negate = TRUE)  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delayed Opening",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Depth and Gear Restrictions",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction', negate = TRUE) ~ "Depth Restriction",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction', negate = TRUE) & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Gear Restriction",
+      TRUE ~ "Delay and Early Closure"
+    ),
+    levels = c("Status Quo", "Depth Restriction", "Gear Restriction",
+               "Depth and Gear Restrictions", "Delayed Opening", "Early Closure",
+               "Delay and Early Closure"))
   ) %>%
   group_by(pretty_scenario_names, pre_post, scale, scenario_type) %>%
   summarise(
@@ -2093,7 +2103,10 @@ Focal scenarios for supplement
 
 # 1b) focal scenarios for supplement
 scale_compare_supplement <- annual_statewide_df_supplement %>%
-  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA|, Early')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Status Quo|BIA')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'Delay CenCA, Early Closure Statewide')) %>% 
+  filter(!stringr::str_detect(pretty_scenario_names, 'Delay Statewide, Early Closure CenCA')) %>%
+  filter(!stringr::str_detect(pretty_scenario_names, 'CenCA 50% Effort Reduction, Statewide <30 fathom Depth Restriction Apr-Jul')) %>%
   mutate(
   
     scale = ifelse(delay.region == "All" | closure.region == "All" | reduction.after.region == "All",
@@ -2101,15 +2114,20 @@ scale_compare_supplement <- annual_statewide_df_supplement %>%
                  ifelse(delay.region == "CenCA" | closure.region == "CenCA" | reduction.after.region == "CenCA",
                         "Central California Only", NA)),
     
-  scenario_type = ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth and Gear Restrictions",
-                         ifelse(stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & !stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Depth Restriction",
-                                ifelse(!stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction'), "Gear Restriction",                                   
-                                       ifelse(stringr::str_detect(pretty_scenario_names, 'Early Closure'), "Early Closure", 
-                                              ifelse(stringr::str_detect(pretty_scenario_names, 'Delay'), "Delayed Opening", NA)
-                                              )
-                                       )
-                                )
-                         )
+  scenario_type = factor(
+      case_when(
+      pretty_scenario_names == "Status Quo" ~ "Status Quo",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delay and Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure')  & stringr::str_detect(pretty_scenario_names, 'Delay', negate = TRUE) ~ "Early Closure",
+      stringr::str_detect(pretty_scenario_names, 'Early Closure', negate = TRUE)  & stringr::str_detect(pretty_scenario_names, 'Delay') ~ "Delayed Opening",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Depth and Gear Restrictions",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction') & stringr::str_detect(pretty_scenario_names, 'Effort Reduction', negate = TRUE) ~ "Depth Restriction",
+      stringr::str_detect(pretty_scenario_names, 'Depth Restriction', negate = TRUE) & stringr::str_detect(pretty_scenario_names, 'Effort Reduction') ~ "Gear Restriction",
+      TRUE ~ "Delay and Early Closure"
+    ),
+    levels = c("Status Quo", "Depth Restriction", "Gear Restriction",
+               "Depth and Gear Restrictions", "Delayed Opening", "Early Closure",
+               "Delay and Early Closure"))
   ) %>%
   group_by(pretty_scenario_names, pre_post, scale, scenario_type) %>%
   summarise(
