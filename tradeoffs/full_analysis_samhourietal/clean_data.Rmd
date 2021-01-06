@@ -50,25 +50,6 @@ library(readr)
 
 ```
 
-Prep file paths
-NOTE: this didn't work on 12/17/20 when I knit the Rmd, so I made it a new chunk for it
-```{r prep1, echo=FALSE}
-
-source(here::here("User_script_local.R"))
-if (user == "JS") {
-  #flag.save = TRUE # option to save all outputs or not
-  
-  path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/ca_confirmed_dcrb_entanglements.csv" # from Lauren Saez
-
-} else if (user == "SMW") {
-  NULL
-} else {
-  stop("Invalid user")
-}
-
-
-```
-
 # 1) PROCESS WHALE MODEL OUTPUTS
 
 ## Humpbacks
@@ -99,6 +80,7 @@ if (user == "JS") {
 # 2) PREP FISHING DATA
 
 Vms matched to fish tickets
+This makes separate files for: all vessels, small vessels, and large vessels.
 ```{r fishing, echo=FALSE}
 
 source(paste0(here::here(),"/tradeoffs/full_analysis_samhourietal/prep_data_for_scenario_df_function.R"))
@@ -137,6 +119,7 @@ All fish tickets for DCRB [not yet included]
 
 ```
 
+This makes separate files for: all vessels, small vessels, and large vessels.
 ```{r join_grids, echo=FALSE}
 #############################################
 # Join fishing data to region and depth keys
@@ -150,6 +133,26 @@ source(paste0(here::here(),"/tradeoffs/join_fishing_data_regions_depth.R"))
 ```
 
 # 4) PREP ENTANGLEMENT DATA
+
+Prep file paths
+NOTE: this didn't work on 12/17/20 when I knit the Rmd, so I made a new chunk for it. Then on 010621 I changed echo=FALSE to message=FALSE and commented out rm(list = ls()) when calling the prep_data_ function. Didn't work. But it is something about calling prep_data. Moved this chunk below to step 4 and that worked.
+```{r prep1, message=FALSE}
+
+source(here::here("User_script_local.R"))
+if (user == "JS") {
+  #flag.save = TRUE # option to save all outputs or not
+  
+  path_entanglement_file1 <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/ca_confirmed_dcrb_entanglements.csv" # from Lauren Saez
+
+} else if (user == "SMW") {
+  NULL
+} else {
+  stop("Invalid user")
+}
+
+
+```
+
 ```{r entanglements, echo=FALSE}
 
 # all data based on "entanglement reports from lauren 100920.xlsx"
@@ -157,7 +160,7 @@ source(paste0(here::here(),"/tradeoffs/join_fishing_data_regions_depth.R"))
 
 # most code from Make time series of entanglements.Rmd
 #Initial processing
-entanglement_df <- readr::read_csv(path_entanglement_file)
+entanglement_df <- readr::read_csv(path_entanglement_file1)
 glimpse(entanglement_df)
 
 #unique(entanglement_df$Common_Nam)

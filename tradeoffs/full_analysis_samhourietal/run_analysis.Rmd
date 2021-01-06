@@ -301,7 +301,7 @@ scenario.output.list[[1]] %>%
   filter(year_month == "2019_05")
 
 # JS. update directory as needed
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
+#save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_",today(),".RData"))
 
 ```
 
@@ -393,7 +393,7 @@ Sys.time() - start.time
 glimpse(risk_out_summ_list[[1]])
 
 # JS. update directory as needed
-save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_",today(),".RData"))
+#save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_",today(),".RData"))
 
 ```
 
@@ -449,7 +449,7 @@ source(here::here(
 # also note that write_rds should be modified if running analysis for small or large vessels (~lines 119, 224)
 # also also note that if sq scenario name changes  objects need to be redefined in the function (sorry again!)
 
-load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_2020-11-20.RData")
+#load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/scenario_output_risk_2020-11-20.RData")
 
 start.time <- Sys.time()
 tradeoff_df_function(
@@ -513,7 +513,7 @@ scenario_table_all_trim %<>%
     scenario_names_key
   )
 
-df_tradeoff <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_2020-11-30.rds")
+#df_tradeoff <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_2020-11-30.rds")
 
 df_tradeoff %<>%
   left_join(
@@ -998,6 +998,8 @@ CALCULATE SCENARIO RANKS
 + repeat for statewide only and cenCA only scenarios
 + also make scale_compare df by period
 + ranks based on hump risk, blwh risk, DCRB $, DCRB lbs, cost effectiveness for humps, cost effectiveness for blues
+
+NOTE: PICK UP HERE 010621. annual_statewide_df does not have relative metrics
 
 ## Calculate scenario ranks each year and each period, all scenarios
 ```{r rank_scenarios1, echo=FALSE}
@@ -2672,7 +2674,7 @@ Total revenue and landings by crab year and period for all fish tix
 + predicted occurrence/density by period, statewide and by region
 [ not yet included]
 
-````{r whales, echo=FALSE}
+```{r whales, echo=FALSE}
 
 grid.key <- read_rds(path_grid_key)
 
@@ -2722,5 +2724,13 @@ sq_maps_grid_noNA %>%
   ) %>%
   st_drop_geometry %>%
   knitr::kable()
+
+```
+
+
+Save all the data
+```{r}
+
+save.image(paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_",today(),".RData"))
 
 ```
