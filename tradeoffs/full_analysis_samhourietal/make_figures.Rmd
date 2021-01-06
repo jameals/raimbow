@@ -71,6 +71,8 @@ if (user == "JS") {
   
   path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-11-30.rds"
   
+  path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-11-30.rds"
+  
   path_Grid_5km_landerased <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA"
   
   path_entanglement_file <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Entanglement Data/2000_19/2000_19.dbf" # from Lauren Saez
@@ -643,8 +645,6 @@ Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback w
 #normalized blues, statewide scenarios only, boxplot
 # try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
 
-# pick up here. stick with box plots? remove y axis label. change text size
-
 annual_df_focal_scenarios_statewide_ranks_fig <- 
   annual_df_focal_scenarios_statewide_ranks %>%
   ungroup() %>%
@@ -801,6 +801,44 @@ png(here::here(
   width = 7.5, height = 2.5, units = "in", res = 300)
 plot_blue_risk_prepost_statewide_pointrange
 invisible(dev.off())
+
+# this version does not use coord_flip. js thinks it may be better. but the rank of the scenarios is slightly off (delay shoudl be 3rd from right)
+
+# plot_blue_risk_prepost_statewide_pointrange <- ggplot(
+#   data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+#   aes(
+#     x = reorder(scenario_names_fig,scenario_rank),
+#     y = mean_n_risk_blue,
+#     colour = factor(pre_post, levels = c("2018-2019", "2014-2018", "2009-2014")),
+#     fill = factor(pre_post, levels = c("2018-2019", "2014-2018", "2009-2014"))
+#     )
+#   )  +
+#   geom_pointrange(aes(ymin = mean_n_risk_blue - se_n_risk_blue,
+#                   ymax = mean_n_risk_blue + se_n_risk_blue),
+#                   position=position_dodge(width=0.5), alpha=0.6) +
+#   geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+#   # geom_line(aes(group=scenario_names_fig),
+#   #           position=position_dodge(width=0.5), alpha=0.6) +
+#   xlab("") + # "Scenario"
+#   ylab("Normalized risk") + #\n (mean +/- SE)") +
+#   ylim(0,0.4) +
+#   scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+#   scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+#   scale_x_discrete(labels = wrap_format(30)) + 
+#   #coord_flip() +
+#   guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) + 
+#   theme_classic() +
+#   theme(
+#     legend.title = element_blank(),
+#     #title = element_text(size = 26),
+#     legend.text = element_text(size = 14),
+#     #legend.position = c(.1, .95),
+#     axis.text.x = element_text(size=12, angle = 60, hjust = 1), #hjust = 1, size = 14, angle = 60
+#     axis.text.y = element_text(size = 12),
+#     axis.title = element_text(size = 14)
+#     #legend.position = "none"
+#     )
+# plot_blue_risk_prepost_statewide_pointrange
 
 ```
 

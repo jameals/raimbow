@@ -26,6 +26,7 @@ Note: user must run Grid5km_raimbow_prep.Rmd separately, after chunk 2 but befor
 
 ## Prep libraries and file paths
 
+Prep libraries
 ```{r prep, message=FALSE}
 
 # just getting libraries loaded and file paths sorted
@@ -46,6 +47,12 @@ library(gridExtra)
 library(ggpubr)
 library(knitr)
 library(readr)
+
+```
+
+Prep file paths
+NOTE: this didn't work on 12/17/20 when I knit the Rmd, so I made it a new chunk for it
+```{r prep1, echo=FALSE}
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {

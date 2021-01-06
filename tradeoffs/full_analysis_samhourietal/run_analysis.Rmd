@@ -78,6 +78,8 @@ if (user == "JS") {
   
   path_grid_key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds"
   
+  # path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-11-30.rds"
+  
   #path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2020-11-16.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
    
   # 
@@ -100,8 +102,6 @@ if (user == "JS") {
   # path_scenario_table_all <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_all_2020-06-09.rds"
   # 
   # path_scenario_table_focal_scenarios <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/Management scenarios/scenario_table_focal_scenarios_2020-06-12.rds"
-  # 
-  # path_annual_statewide_df_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-06-12.rds" 
   # 
   # path_df_tradeoff_focal_scenarios <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_2020-06-12.rds" 
   # 
@@ -485,6 +485,8 @@ scenario_names_key <- read_csv(here::here(
   "scenario_names_key.csv"
 ))
 
+# annual_statewide_df <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_2020-11-30.rds")
+
 annual_statewide_df %<>%
   left_join(
     scenario_names_key
@@ -496,10 +498,22 @@ annual_statewide_df %<>%
                     )
   )
 
+# scenario_table_all <- read_csv(here::here(
+#   "tradeoffs",
+#   "Management scenarios",
+#   "scenario_table_all.csv"
+#           )
+# )
+# 
+# scenario_table_all_trim <- scenario_table_all %>%
+#   filter(!grepl('redundant', scenario_number))
+
 scenario_table_all_trim %<>%
   left_join(
     scenario_names_key
   )
+
+df_tradeoff <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_2020-11-30.rds")
 
 df_tradeoff %<>%
   left_join(
@@ -516,13 +530,20 @@ df_tradeoff %<>%
 annual_statewide_df %<>%
   left_join(df_tradeoff)
 
-# 1a) Subset to focal scenarios for main text
+write_csv(annual_statewide_df, here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "output_dfs",
+  "annual_statewide_df.csv"
+  )
+  )
 
+# 1a) Subset to focal scenarios for main text
 annual_statewide_df_focal_scenarios <- annual_statewide_df %>%
   filter(!grepl('alt', scenario_number))
 
 # JS. update directory as needed
-write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_",today(),".rds"))
+write_rds(annual_statewide_df_focal_scenarios, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_",today(),".rds")) 
 
 scenario_table_focal_scenarios <- scenario_table_all_trim %>%
   filter(!grepl('alt', scenario_number))
@@ -985,6 +1006,7 @@ CALCULATE SCENARIO RANKS
 # larger values get higher ranks
 # for relative whale metrics higher is greater risk reduction and therefore better
 # for relative DCRB metrics higher is greater yield reduction and therefore worse
+# this is where cost effectiveness gets calculated
 
 # tmp<- data.frame(yr=c(2009,2009,2010,2010,2011,2011),scenario=c("A","B","A","B","A","B"),rel_risk=c(30,80,40))
 # tmp %>% group_by(yr) %>% mutate(rank_risk = row_number(rel_risk))
@@ -1032,6 +1054,7 @@ annual_df_ranks %>%
 # larger values get higher ranks
 # for relative whale metrics higher is greater risk reduction and therefore better
 # for relative DCRB metrics higher is greater yield reduction and therefore worse
+# this is where cost effectiveness gets calculated
 annual_df_ranks_period <- annual_statewide_df %>%
   group_by(crab_year) %>%
   mutate(
@@ -1126,6 +1149,8 @@ write_csv(annual_df_ranks_period_hump,
 # larger values get higher ranks
 # for relative whale metrics higher is greater risk reduction and therefore better
 # for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+#annual_statewide_df_focal_scenarios <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-11-30.rds")
 
 annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
@@ -1284,6 +1309,8 @@ write_csv(annual_df_ranks_period_focal_hump,
 # larger values get higher ranks
 # for relative whale metrics higher is greater risk reduction and therefore better
 # for relative DCRB metrics higher is greater yield reduction and therefore worse
+
+# annual_statewide_df_focal_scenarios <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_2020-11-30.rds")
 
 annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios %>%
   filter(stringr::str_detect(pretty_scenario_names, 'Statewide|Status Quo') ) %>%
@@ -1450,6 +1477,14 @@ annual_df_ranks_period_focal_statewide_hump %>%
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
          mean_cbhump, mean_cbblwh) %>% 
   knitr::kable()
+
+write_csv(annual_df_focal_scenarios_statewide_ranks, 
+          here::here(
+            "tradeoffs",
+            "full_analysis_samhourietal",
+            "output_dfs",
+            "annual_df_focal_scenarios_statewide_ranks.csv")
+          )
 
 write_csv(annual_df_ranks_period_focal_statewide_hump, 
           here::here(
@@ -2186,6 +2221,13 @@ Focus on middle row for each scenario number, which reflects the percent improve
 
 # what is the % difference in risk, revenue, etc compared to SQ, between pre and MHW periods, under each scenario?
 # i.e., are some scenarios disproportionately more effective during the MHW?
+
+# annual_df_ranks_period_hump <- read_csv(here::here(
+#             "tradeoffs",
+#             "full_analysis_samhourietal",
+#             "output_dfs",
+#             "annual_df_ranks_period_hump.csv")
+#             )
 
 percent_diff_period_df <- annual_df_ranks_period_hump %>%
   arrange(scenario_number, pre_post) %>%
