@@ -116,9 +116,9 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
   #browser()
   assign(annual_statewide_df_name, annual_statewide_df_internal, envir=.GlobalEnv)
   
-  write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_",today(),".rds"))
+  #write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_",today(),".rds"))
 
-  # write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_small_vessels_",today(),".rds"))  
+  write_rds(annual_statewide_df_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_small_vessels_",today(),".rds"))  
 
 # annual_statewide_df <- c()
 # 
@@ -221,9 +221,9 @@ tradeoff_df_function <- function(risk_list, scenario_names_table, annual_statewi
   #browser()
   assign(df_tradeoff_name, df_tradeoff_internal, envir=.GlobalEnv)
 
-  write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_",today(),".rds"))
+  #write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_",today(),".rds"))
   
-  # write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_small_vessels_",today(),".rds"))
+  write_rds(df_tradeoff_internal, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_small_vessels_",today(),".rds"))
 }
 
 
