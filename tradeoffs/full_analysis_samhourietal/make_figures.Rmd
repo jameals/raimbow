@@ -29,8 +29,6 @@ See pseudocode in "Full workflow for risk assessment and tradeoff analysis" goog
 SI Figures follow from there.
 Entanglement ts by gear type (updated version of Fig14 in Saez et al. 2020)
 
-This is where I showed Leena this file.
-
 ## Prep libraries and file paths
 
 ```{r prep, include=FALSE}
