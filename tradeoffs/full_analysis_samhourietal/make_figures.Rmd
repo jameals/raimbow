@@ -1973,6 +1973,7 @@ invisible(dev.off())
 
 ```
 
+PICK UP HERE 011421: READ IN run_analysis_data_small_2021-01-14.Rdata
 
 ## Risk due to small vessels
 TS of cumulative monthly risk to blue and humpback whales
