@@ -1,7 +1,7 @@
 ---
 title: "Samhouri et al tradeoff analysis run analysis for small vessels"
 author: "Jameal Samhouri"
-date: "11/4/2020 - 11/16/2020"
+date: "11/4/2020 - 11/16/2020, 01/06/2021 - 01/14/21"
 output:
   html_document:
     toc: yes
@@ -64,7 +64,7 @@ if (user == "JS") {
   
   path_dcrb_vms_tix_analysis <- "~/Documents/RAIMBOW/Processed Data/VMS/vms_all_interpolated_w_grd_vlengths.RDS"
   
-  path_dcrb_daily_small <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_small_vessels_regions.RDS"
+  path_dcrb_daily_small <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_small_vessels_regions_depths.RDS"
   
   path_season.st.date.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds"
   
@@ -465,13 +465,13 @@ Sys.time() - start.time
 
 # is risk actually greater for whales under some scenarios? yes.
 dim(df_tradeoff)
-length(which(df_tradeoff$relative_hump_risk < 0)) # 28 out of 310
-length(which(df_tradeoff$relative_blwh_risk < 0)) # 41 out of 310
-length(which(df_tradeoff$relative_both_risk < 0)) # 34 out of 310
+length(which(df_tradeoff$relative_hump_risk < 0)) # 21 out of 310
+length(which(df_tradeoff$relative_blwh_risk < 0)) # 42 out of 310
+length(which(df_tradeoff$relative_both_risk < 0)) # 32 out of 310
 
 # is $ or pounds actually greater for the fishery under some scenarios? yes
 length(which(df_tradeoff$relative_dollars > 100)) # 8 out of 310
-length(which(df_tradeoff$relative_pounds > 100)) # 8 out of 310
+length(which(df_tradeoff$relative_pounds > 100)) # 5 out of 310
 
 ```
 
@@ -487,7 +487,7 @@ scenario_names_key <- read_csv(here::here(
   "scenario_names_key.csv"
 ))
 
-# annual_statewide_df <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_2020-11-30.rds")
+# annual_statewide_df <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_scenario_outputs_small_vessels_2021-01-14.rds")
 
 annual_statewide_df %<>%
   left_join(
@@ -515,7 +515,7 @@ scenario_table_all_trim %<>%
     scenario_names_key
   )
 
-#df_tradeoff <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_2020-11-30.rds")
+#df_tradeoff <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_small_vessels_2021-01-14.rds")
 
 df_tradeoff %<>%
   left_join(
@@ -709,7 +709,10 @@ fish.id <- sort(unique(risk_out_sq_complete$GRID5KM_ID))
 # whale.id[which(whale.id %in% fish.id == FALSE)]
 # fish.id[which(fish.id %in% whale.id == FALSE)]
 
-# 2 grid cells are problematic. they are on the edge of the nonNA fishing cells. ignore and drop them for now
+# 236 grid cells are problematic. out of 1003
+# ignore and drop them for now
+# for the all vessels analysis, they were on the edge of the nonNA fishing cells. 
+# for the small vessels analysis they apear to be close to shore
 cells_to_drop <- c(whale.id[which(whale.id %in% fish.id == FALSE)], fish.id[which(fish.id %in% whale.id == FALSE)])
 
 

@@ -83,9 +83,9 @@ if (user == "JS") {
   
   path_maps <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOW/raimbow/tradeoffs/maps"
   
-  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2020-11-16.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
+  path_status_quo <- paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_all_2021-01-06.rds") # status_quo_risk_2009_2019_yr_mth_2020-06-14.rds was from extract_status_quo_scenario_summary.R
   
-  path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds" # from extract_status_quo_scenario_summary_small.R 
+  path_status_quo_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/risk_5km_yr_mth_sq_small_2021-01-14.rds" # from run_analysis_sm_vessels.Rmd risk_5km_yr_mth_sq_all, could also get from extract_status_quo_scenario_summary_small.R which writes out status_quo_risk_small_vessels_2009_2019_yr_mth_2020-06-17.rds
   
   path_whales <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
   
@@ -1973,19 +1973,50 @@ invisible(dev.off())
 
 ```
 
-NOTE: THE CODE BELOW HAS NOT YET BEEN MODIFIED TO FOCUS ON SM VESSELS ONLY. NEED TO ADD FILE PATHS IN 1ST CHUNK ABOVE. PICK UP HERE. 010721
 
 ## Risk due to small vessels
 TS of cumulative monthly risk to blue and humpback whales
 ```{r fig2b_sm, echo=FALSE}
 
-risk_out_sq <- risk_5km_yr_mth_sq_all
-#risk_out_sq <- read_rds(path_status_quo)
+#risk_out_sq_sm <- risk_5km_yr_mth_sq_all
+risk_out_sq_sm <- read_rds(path_status_quo_small_vessels)
+
+# Make data frame for Figure 2 time series Samhouri et al, sm vessels
+# summarise cumulative sum of $ and risk by crab_year
+annual_risk_out_sq_sm <- risk_out_sq_sm %>%
+  mutate(
+  #month = as.numeric(substr(year_month,6,7)),
+  crab_year = func_crab_year(year_month),
+  plotting_year = as.numeric(substr(crab_year,6,9))
+  ) %>%
+  group_by(crab_year, plotting_year, year_month) %>%
+  summarise(
+    sum_DCRB_rev = sum(DCRB_rev, na.rm=TRUE)/10^5,
+    sum_n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+    sum_n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  group_by(crab_year, plotting_year) %>%
+  summarise(
+    quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+    DCRB_rev = quantile(sum_DCRB_rev, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    n_risk_humpback = quantile(sum_n_risk_humpback, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    n_risk_blue = quantile(sum_n_risk_blue, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+    
+    .groups = "drop"
+    ) %>%
+  pivot_longer(
+    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+    names_to = "response_metric", 
+    values_to = "response"
+  )
+glimpse(annual_risk_out_sq_sm)
 
 # plot normalized blues
 
-ts_sq_blue <- ggplot(
-  data = annual_risk_out_sq %>% 
+ts_sq_blue_sm <- ggplot(
+  data = annual_risk_out_sq_sm %>% 
     filter(response_metric != "DCRB_rev" & response_metric != "n_risk_humpback") %>%
     filter(quantile != "2%" & quantile != "98%") %>%
     pivot_wider(
@@ -2021,7 +2052,7 @@ ts_sq_blue <- ggplot(
   #            ) + 
   scale_x_continuous(breaks = seq(2010, 2019,1),
                      limits = c(2009.5,2019.5)
-                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     #labels = str_replace(unique(annual_risk_out_sq_sm$crab_year),"_","-")
                      ) + 
   #ylim(0,0.08) +
   ylab("Normalized risk") + 
@@ -2043,17 +2074,17 @@ png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig2b_plot_ts_sq_blue.png"), 
+  "fig2b_plot_ts_sq_blue_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-ts_sq_blue
+ts_sq_blue_sm
 invisible(dev.off())
 
-ts_sq_blue
+ts_sq_blue_sm
 
 # plot normalized humpbacks
 
-ts_sq_hump <- ggplot(
-  data = annual_risk_out_sq %>% 
+ts_sq_hump_sm <- ggplot(
+  data = annual_risk_out_sq_sm %>% 
     filter(response_metric != "DCRB_rev" & response_metric != "n_risk_blue") %>%
     filter(quantile != "2%" & quantile != "98%") %>%
     pivot_wider(
@@ -2089,7 +2120,7 @@ ts_sq_hump <- ggplot(
   #            ) + 
   scale_x_continuous(breaks = seq(2010, 2019,1),
                      limits = c(2009.5,2019.5)
-                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     #labels = str_replace(unique(annual_risk_out_sq_sm$crab_year),"_","-")
                      ) + 
   #ylim(0,0.08) +
   ylab("Normalized risk") + 
@@ -2111,18 +2142,18 @@ png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig2c_plot_ts_sq_hump.png"), 
+  "fig2c_plot_ts_sq_hump_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-ts_sq_hump
+ts_sq_hump_sm
 invisible(dev.off())
 
-ts_sq_hump
+ts_sq_hump_sm
 
 
 # plot normalized humpbacks, normalized blues
 
-ts_sq_whales <- ggplot(
-  data = annual_risk_out_sq %>% 
+ts_sq_whales_sm <- ggplot(
+  data = annual_risk_out_sq_sm %>% 
     filter(response_metric != "DCRB_rev") %>%
     filter(quantile != "2%" & quantile != "98%") %>%
     pivot_wider(
@@ -2158,7 +2189,7 @@ ts_sq_whales <- ggplot(
              ) + 
   scale_x_continuous(breaks = seq(2010, 2019,1),
                      limits = c(2009.5,2019.5)
-                     #labels = str_replace(unique(annual_risk_out_sq$crab_year),"_","-")
+                     #labels = str_replace(unique(annual_risk_out_sq_sm$crab_year),"_","-")
                      ) + 
   #ylim(0,0.08) +
   ylab("Normalized risk") + 
@@ -2180,12 +2211,12 @@ png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig2bc_plot_ts_sq_whales.png"), 
+  "fig2bc_plot_ts_sq_whales_sm_vessels.png"), 
   width = 7.5, height = 5, units = "in", res = 300)
-ts_sq_whales
+ts_sq_whales_sm
 invisible(dev.off())
 
-ts_sq_whales
+ts_sq_whales_sm
 
 # to add silhouettes check out https://cran.r-project.org/web/packages/rphylopic/readme/README.html and https://scrogster.wordpress.com/2014/06/02/adding-phylopic-org-silhouettes-to-r-plots/
 
@@ -2205,6 +2236,8 @@ ts_sq_whales
 ```
 
 ## Figure 3 but for small vessels. 
+
+NOTE: THE CODE BELOW HAS NOT YET BEEN MODIFIED TO FOCUS ON SM VESSELS ONLY. NEED TO ADD FILE PATHS IN 1ST CHUNK ABOVE. PICK UP HERE. 011421
 
 Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
 
