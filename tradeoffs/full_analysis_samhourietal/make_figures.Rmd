@@ -93,6 +93,8 @@ if (user == "JS") {
   
   path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
     
+  path_run_analysis_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_small_2021-01-14.Rdata"
+  
   path_effort_shift_scenariocomparisons_annual_statewide_df_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_effort_shift_scenariocomparisons_n_2020-05-19.rds" # from effort_shift_comparison.R
   
   path_tradeoff_df_effort_shift_scenariocomparisons_n <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/tradeoff_df_effort_shift_scenariocomparisons_n_2020-05-19.rds"
@@ -105,7 +107,7 @@ if (user == "JS") {
   
   path_annual_statewide_df_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/annual_statewide_df_focal_scenarios_small_vessels_2020-06-16.rds"
   
-  path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_vessels_2020-06-16.rds"
+  path_df_tradeoff_focal_scenarios_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/df_tradeoff_focal_scenarios_small_2021-01-14.rds"
   
   path_prioritizr_all <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/prioritizr/prioritzr_outputs_all.rds"
   
@@ -1973,46 +1975,47 @@ invisible(dev.off())
 
 ```
 
-PICK UP HERE 011421: READ IN run_analysis_data_small_2021-01-14.Rdata
 
 ## Risk due to small vessels
 TS of cumulative monthly risk to blue and humpback whales
 ```{r fig2b_sm, echo=FALSE}
 
+load(path_run_analysis_small_vessels)
+
 #risk_out_sq_sm <- risk_5km_yr_mth_sq_all
-risk_out_sq_sm <- read_rds(path_status_quo_small_vessels)
+#risk_out_sq_sm <- read_rds(path_status_quo_small_vessels)
 
 # Make data frame for Figure 2 time series Samhouri et al, sm vessels
 # summarise cumulative sum of $ and risk by crab_year
-annual_risk_out_sq_sm <- risk_out_sq_sm %>%
-  mutate(
-  #month = as.numeric(substr(year_month,6,7)),
-  crab_year = func_crab_year(year_month),
-  plotting_year = as.numeric(substr(crab_year,6,9))
-  ) %>%
-  group_by(crab_year, plotting_year, year_month) %>%
-  summarise(
-    sum_DCRB_rev = sum(DCRB_rev, na.rm=TRUE)/10^5,
-    sum_n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
-    sum_n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
-    
-    .groups = "drop"
-    ) %>%
-  group_by(crab_year, plotting_year) %>%
-  summarise(
-    quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
-    DCRB_rev = quantile(sum_DCRB_rev, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
-    n_risk_humpback = quantile(sum_n_risk_humpback, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
-    n_risk_blue = quantile(sum_n_risk_blue, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
-    
-    .groups = "drop"
-    ) %>%
-  pivot_longer(
-    cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
-    names_to = "response_metric", 
-    values_to = "response"
-  )
-glimpse(annual_risk_out_sq_sm)
+# annual_risk_out_sq_sm <- risk_out_sq_sm %>%
+#   mutate(
+#   #month = as.numeric(substr(year_month,6,7)),
+#   crab_year = func_crab_year(year_month),
+#   plotting_year = as.numeric(substr(crab_year,6,9))
+#   ) %>%
+#   group_by(crab_year, plotting_year, year_month) %>%
+#   summarise(
+#     sum_DCRB_rev = sum(DCRB_rev, na.rm=TRUE)/10^5,
+#     sum_n_risk_humpback = sum(n_risk_humpback, na.rm=TRUE),
+#     sum_n_risk_blue = sum(n_risk_blue, na.rm=TRUE),
+#     
+#     .groups = "drop"
+#     ) %>%
+#   group_by(crab_year, plotting_year) %>%
+#   summarise(
+#     quantile = scales::percent(c(0.025, 0.25, 0.5, 0.75, 0.975)),
+#     DCRB_rev = quantile(sum_DCRB_rev, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#     n_risk_humpback = quantile(sum_n_risk_humpback, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#     n_risk_blue = quantile(sum_n_risk_blue, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm=TRUE),
+#     
+#     .groups = "drop"
+#     ) %>%
+#   pivot_longer(
+#     cols = c(DCRB_rev, n_risk_humpback, n_risk_blue), 
+#     names_to = "response_metric", 
+#     values_to = "response"
+#   )
+# glimpse(annual_risk_out_sq_sm)
 
 # plot normalized blues
 
@@ -2238,8 +2241,6 @@ ts_sq_whales_sm
 
 ## Figure 3 but for small vessels. 
 
-NOTE: THE CODE BELOW HAS NOT YET BEEN MODIFIED TO FOCUS ON SM VESSELS ONLY. NEED TO ADD FILE PATHS IN 1ST CHUNK ABOVE. PICK UP HERE. 011421
-
 Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
 
 ## Risk to blue whales
@@ -2248,6 +2249,29 @@ Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback w
 #normalized blues, statewide scenarios only, boxplot
 # try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
 
+# figure out if any years are missing because there would be no fishery, how many reps of each scenario name is needed
+with(annual_df_focal_scenarios_statewide_ranks, table(pretty_scenario_names))
+
+missing_one <- tibble(crab_year = "2015_2016", plotting_year = 2016, pre_post = "2014-2018",
+                      scenario_number = "3", pretty_scenario_names = "Early Closure Statewide",
+                      rank_hump = NA, rank_blwh = NA,rank_both = NA, rank_dollars = NA, 
+                      rank_pounds = NA, n_risk_humpback = 0, relative_hump_risk_n = 100, 
+                      n_risk_blue = 0, relative_blwh_risk_n = 100, n_risk_both = 0,
+                      relative_both_risk_n = 100, DCRB_rev = 0, relative_dollars = 0, DCRB_lbs = 0,
+                      relative_pounds = 0, costs_benefits_hump = NA, costs_benefits_blwh = NA,
+                      scenario_rank = 2,scenario_names_fig = "Spring Closure")
+
+missing_two <- tibble(crab_year = "2015_2016", plotting_year = 2016, pre_post = "2014-2018",
+                      scenario_number = "6", 
+                      pretty_scenario_names = "Delay Statewide, Early Closure Statewide", 
+                      rank_hump = NA, rank_blwh = NA, rank_both = NA, rank_dollars = NA, 
+                      rank_pounds = NA, n_risk_humpback = 0, relative_hump_risk_n = 100, 
+                      n_risk_blue = 0, relative_blwh_risk_n = 100, n_risk_both = 0,
+                      relative_both_risk_n = 100, DCRB_rev = 0, relative_dollars = 0, DCRB_lbs = 0,
+                      relative_pounds = 0, costs_benefits_hump = NA, costs_benefits_blwh = NA,
+                      scenario_rank = 2, scenario_names_fig = "Delay + Spring Closure")
+
+# make df, forcing early closures in 2015-16 to produce 0 risk and 0 $
 annual_df_focal_scenarios_statewide_ranks_fig <- 
   annual_df_focal_scenarios_statewide_ranks %>%
   ungroup() %>%
@@ -2259,15 +2283,18 @@ annual_df_focal_scenarios_statewide_ranks_fig <-
     scenario_names_fig = c(
       rep("Status Quo", 10),
       rep("Delay", 10),
-      rep("Spring Closure", 10),
-      rep("Delay + Spring Closure", 10),
+      rep("Spring Closure", 9),
+      rep("Delay + Spring Closure", 9),
       rep("Spring Effort Reduction", 10),
       rep("Spring Depth Restriction", 10),
       rep("Spring Effort Reduction + Depth Restriction", 10)
     )
+  ) %>%
+  bind_rows(
+    list(missing_one, missing_two)
   )
 
-plot_blue_risk_prepost_statewide_bp <- ggplot(
+plot_blue_risk_prepost_statewide_bp_sm <- ggplot(
   data = annual_df_focal_scenarios_statewide_ranks_fig,
   aes(
     x = reorder(scenario_names_fig,-scenario_rank),
@@ -2301,12 +2328,12 @@ png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig3a_plot_blue_risk_prepost_statewide_bp.png"), 
+  "fig3a_plot_blue_risk_prepost_statewide_bp_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-plot_blue_risk_prepost_statewide_bp
+plot_blue_risk_prepost_statewide_bp_sm
 invisible(dev.off())
 
-plot_blue_risk_prepost_statewide_bp
+plot_blue_risk_prepost_statewide_bp_sm
 
 ```
 
@@ -2317,25 +2344,29 @@ plot_blue_risk_prepost_statewide_bp
 #normalized blues, statewide scenarios only, geom_pointrange
 # try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
 
+# don't need this part of the code if chunk above was run
+# annual_df_focal_scenarios_statewide_ranks_fig <- 
+#   annual_df_focal_scenarios_statewide_ranks %>%
+#   ungroup() %>%
+#   mutate(
+#     scenario_rank = ifelse(
+#       pretty_scenario_names == "Status Quo", 0,
+#       rank_hump
+#       ),
+#     scenario_names_fig = c(
+#       rep("Status Quo", 10),
+#       rep("Delay", 10),
+#       rep("Spring Closure", 9),
+#       rep("Delay + Spring Closure", 9),
+#       rep("Spring Effort Reduction", 10),
+#       rep("Spring Depth Restriction", 10),
+#       rep("Spring Effort Reduction + Depth Restriction", 10)
+#     )
+#   ) %>%
+#   bind_rows(
+#     list(missing_one, missing_two)
+#   )
 
-annual_df_focal_scenarios_statewide_ranks_fig <- 
-  annual_df_focal_scenarios_statewide_ranks %>%
-  ungroup() %>%
-  mutate(
-    scenario_rank = ifelse(
-      pretty_scenario_names == "Status Quo", 0,
-      rank_hump
-      ),
-    scenario_names_fig = c(
-      rep("Status Quo", 10),
-      rep("Delay", 10),
-      rep("Spring Closure", 10),
-      rep("Delay + Spring Closure", 10),
-      rep("Spring Effort Reduction", 10),
-      rep("Spring Depth Restriction", 10),
-      rep("Spring Effort Reduction + Depth Restriction", 10)
-    )
-  )
 
 annual_df_focal_scenarios_statewide_ranks_pointrangefig <- annual_df_focal_scenarios_statewide_ranks_fig %>%
     group_by(pre_post, scenario_names_fig, scenario_number) %>%
@@ -2360,7 +2391,7 @@ annual_df_focal_scenarios_statewide_ranks_pointrangefig <- annual_df_focal_scena
       )
   )
 
-plot_blue_risk_prepost_statewide_pointrange <- ggplot(
+plot_blue_risk_prepost_statewide_pointrange_sm <- ggplot(
   data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
   aes(
     x = reorder(scenario_names_fig,-scenario_rank),
@@ -2394,15 +2425,15 @@ plot_blue_risk_prepost_statewide_pointrange <- ggplot(
     axis.title = element_text(size = 14)
     #legend.position = "none"
     )
-plot_blue_risk_prepost_statewide_pointrange
+plot_blue_risk_prepost_statewide_pointrange_sm
 
 png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig3a_blue_risk_prepost_statewide_pointrange.png"), 
+  "fig3a_blue_risk_prepost_statewide_pointrange_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-plot_blue_risk_prepost_statewide_pointrange
+plot_blue_risk_prepost_statewide_pointrange_sm
 invisible(dev.off())
 
 # this version does not use coord_flip. js thinks it may be better. but the rank of the scenarios is slightly off (delay shoudl be 3rd from right)
@@ -2451,7 +2482,7 @@ invisible(dev.off())
 #normalized humps, statewide scenarios only, boxplot
 # try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
 
-plot_hump_risk_prepost_statewide_bp <- ggplot(
+plot_hump_risk_prepost_statewide_bp_sm <- ggplot(
   data = annual_df_focal_scenarios_statewide_ranks_fig,
   aes(
     x = reorder(scenario_names_fig,-scenario_rank),
@@ -2485,12 +2516,12 @@ png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig3b_plot_hump_risk_prepost_statewide_bp.png"), 
+  "fig3b_plot_hump_risk_prepost_statewide_bp_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-plot_hump_risk_prepost_statewide_bp
+plot_hump_risk_prepost_statewide_bp_sm
 invisible(dev.off())
 
-plot_hump_risk_prepost_statewide_bp
+plot_hump_risk_prepost_statewide_bp_sm
 
 ```
 
@@ -2543,7 +2574,7 @@ plot_hump_risk_prepost_statewide_bp
 #       )
 #   )
 
-plot_hump_risk_prepost_statewide_pointrange <- ggplot(
+plot_hump_risk_prepost_statewide_pointrange_sm <- ggplot(
   data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
   aes(
     x = reorder(scenario_names_fig,-scenario_rank),
@@ -2577,21 +2608,22 @@ plot_hump_risk_prepost_statewide_pointrange <- ggplot(
     axis.title = element_text(size = 14)
     #legend.position = "none"
     )
-plot_hump_risk_prepost_statewide_pointrange
+plot_hump_risk_prepost_statewide_pointrange_sm
 
 png(here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  "fig3b_hump_risk_prepost_statewide_pointrange.png"), 
+  "fig3b_hump_risk_prepost_statewide_pointrange_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
-plot_hump_risk_prepost_statewide_pointrange
+plot_hump_risk_prepost_statewide_pointrange_sm
 invisible(dev.off())
 
 ```
 
 
 ## Figure 4 but for small vessels
+
 
 Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
 
@@ -2601,7 +2633,48 @@ Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) 
 ### normalized blues, by pre_post
 # still getting warnings aroudn geom_errorbarh. that is because the 2018-19 period has no var. ok to proceed
 
-df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios)
+# should not need to read this in if you used load() in the "Risk due to small vessels" chunk
+#df_tradeoff_focal_scenarios <- read_rds(path_df_tradeoff_focal_scenarios_small_vessels)
+
+# figure out if any years are missing because there would be no fishery, how many reps of each scenario name is needed
+
+with(df_tradeoff_focal_scenarios, table(pretty_scenario_names))
+
+missing_one_to <- tibble(scenario_number = "3", scenario_df_name = NA, crab_year = "2015_2016", 
+                         relative_hump_risk = 100, relative_blwh_risk = 100,
+                         relative_both_risk = 100, relative_hump_risk_n = 100, 
+                         relative_blwh_risk_n = 100, relative_both_risk_n = 100, 
+                         relative_pings = 0, relative_dollars = 0, relative_pounds = 0,
+                         pretty_scenario_names = "Early Closure Statewide",
+                         plotting_year = 2016, pre_post = "2014-2018", 
+                         scenario_type = "Delay and Early Closure", spatial_domain = "Statewide"
+                      )
+
+missing_two_to <- tibble(scenario_number = "6", scenario_df_name = NA, crab_year = "2015_2016", 
+                         relative_hump_risk = 100, relative_blwh_risk = 100,
+                         relative_both_risk = 100, relative_hump_risk_n = 100, 
+                         relative_blwh_risk_n = 100, relative_both_risk_n = 100, 
+                         relative_pings = 0, relative_dollars = 0, relative_pounds = 0,
+                         pretty_scenario_names = "Delay Statewide, Early Closure Statewide",
+                         plotting_year = 2016, pre_post = "2014-2018", 
+                         scenario_type = "Delay and Early Closure", spatial_domain = "Statewide"
+                      )
+
+missing_three_to <- tibble(scenario_number = "8", scenario_df_name = NA, crab_year = "2015_2016", 
+                         relative_hump_risk = 100, relative_blwh_risk = 100,
+                         relative_both_risk = 100, relative_hump_risk_n = 100, 
+                         relative_blwh_risk_n = 100, relative_both_risk_n = 100, 
+                         relative_pings = 0, relative_dollars = 0, relative_pounds = 0,
+                         pretty_scenario_names = "Delay CenCA, Early Closure Statewide",
+                         plotting_year = 2016, pre_post = "2014-2018", 
+                         scenario_type = "Delay and Early Closure", spatial_domain = "Statewide/CenCA"
+                      )
+
+df_tradeoff_focal_scenarios %<>% bind_rows(
+  list(missing_one_to,
+       missing_two_to,
+       missing_three_to)
+)
 
 df_tradeoff_focal_scenarios %>%
   group_by(pretty_scenario_names, scenario_number, pre_post) %>%
@@ -2616,7 +2689,7 @@ df_tradeoff_focal_scenarios %>%
 
 # 113020 need to update other to figure to reflect changes here
 
-to_blue_n_pre_post <- ggplot(
+to_blue_n_pre_post_sm <- ggplot(
   df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
   aes(
     x=relative_dollars,
@@ -2660,7 +2733,7 @@ to_blue_n_pre_post <- ggplot(
     legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
-to_blue_n_pre_post
+to_blue_n_pre_post_sm
 
 # need to figure out how to shrink to fit margins with font sizes
 
@@ -2669,12 +2742,12 @@ png(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  paste0("Tradeoff plot - normalized blues only by pre_post_",today(),".png")), 
+  paste0("Tradeoff plot - normalized blues only by pre_post_sm_vessels_",today(),".png")), 
     width = 3.75, height = 6, units = "in", res = 300)
-to_blue_n_pre_post
+to_blue_n_pre_post_sm
 invisible(dev.off())
 
-to_blue_n_pre_post_nolegend <- ggplot(
+to_blue_n_pre_post_nolegend_sm <- ggplot(
   df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
   aes(
     x=relative_dollars,
@@ -2717,28 +2790,30 @@ to_blue_n_pre_post_nolegend <- ggplot(
     legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
-to_blue_n_pre_post_nolegend
+to_blue_n_pre_post_nolegend_sm
 
 png(
   here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  paste0("Tradeoff plot - normalized blues only by pre_post_nolegend_",today(),".png")), 
+  paste0("Tradeoff plot - normalized blues only by pre_post_nolegend_sm_vessels_",today(),".png")), 
     width = 3.75, height = 6, units = "in", res = 300)
-to_blue_n_pre_post_nolegend
+to_blue_n_pre_post_nolegend_sm
 invisible(dev.off())
 
 
 ```
 
 ## Humpback whales only
+
+
 ```{r tradeoff2_sm, echo = FALSE}
 
 ### normalized humps, by pre_post
 # still getting warnings aroudn geom_errorbarh. that is because the 2018-19 period has no var. ok to proceed
 
-to_hump_n_pre_post <- ggplot(
+to_hump_n_pre_post_sm <- ggplot(
   df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
   aes(
     x=relative_dollars,
@@ -2781,7 +2856,7 @@ to_hump_n_pre_post <- ggplot(
     legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
-to_hump_n_pre_post
+to_hump_n_pre_post_sm
 
 # need to figure out how to shrink to fit margins with font sizes
 
@@ -2790,12 +2865,12 @@ png(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  paste0("Tradeoff plot - normalized humps only by pre_post_",today(),".png")), 
+  paste0("Tradeoff plot - normalized humps only by pre_post_sm_vessels_",today(),".png")), 
     width = 3.75, height = 6, units = "in", res = 300)
-to_hump_n_pre_post
+to_hump_n_pre_post_sm
 invisible(dev.off())
 
-to_hump_n_pre_post_nolegend <- ggplot(
+to_hump_n_pre_post_nolegend_sm <- ggplot(
   df_tradeoff_focal_scenarios, #%>% filter(scenario_number != "15" & scenario_number != "14" & scenario_number != "9"), #df
   aes(
     x=relative_dollars,
@@ -2838,16 +2913,16 @@ to_hump_n_pre_post_nolegend <- ggplot(
     legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
-to_hump_n_pre_post_nolegend
+to_hump_n_pre_post_nolegend_sm
 
 png(
   here::here(
   "tradeoffs",
   "full_analysis_samhourietal",
   "figures",
-  paste0("Tradeoff plot - normalized humps only by pre_post_nolegend_",today(),".png")), 
+  paste0("Tradeoff plot - normalized humps only by pre_post_nolegend_sm_vessels_",today(),".png")), 
     width = 3.75, height = 6, units = "in", res = 300)
-to_hump_n_pre_post_nolegend
+to_hump_n_pre_post_nolegend_sm
 invisible(dev.off())
 
 
