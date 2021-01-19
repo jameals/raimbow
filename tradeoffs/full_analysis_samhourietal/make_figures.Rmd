@@ -2239,6 +2239,61 @@ ts_sq_whales_sm
 
 ```
 
+## Revenue
+TS of total DCRB revenue each season for small vessels
+
+NOTE 0111921: THIS CHUNK NOT YET FUNCTIONAL. NEED TO MAKE crabyear_summaries IN run_analysis_sm_vessels.Rmd
+```{r fig2c_sm, echo=FALSE}
+
+#crabyear_summaries <- read_csv(path_crabyear_summaries)
+
+# plot $
+
+ts_sq_DCRBrev <- ggplot(
+  data = crabyear_summaries, 
+  aes(
+    x = plotting_year, 
+    y= sum_DCRB_rev/10^7
+  )
+) +
+  geom_point(size=4) +
+  geom_line() + 
+  geom_vline(xintercept = c(2014.5, 2018.5), linetype=2) +
+  ylab(expression(Fishery~revenue~("$,"~x10^7))) + 
+  scale_x_continuous(breaks = seq(2010, 2019,1),
+                     limits = c(2009.5,2019.5)
+                     #labels = str_replace(unique(crabyear_summaries$crab_year),"_","-")
+                     ) + 
+  xlab("") + # "Dungeness crab season"
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=14),
+        strip.background = element_blank(),
+        strip.placement = "left"
+        )
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig2d_ts_sq_DCRBrev.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+ts_sq_DCRBrev
+invisible(dev.off())
+
+ts_sq_DCRBrev
+
+
+```
+
+
+
 ## Figure 3 but for small vessels. 
 
 Figure 3. Comparison of expected (a) risk to blue whales, (b) risk to humpback whales, and (c) revenue to the Dungeness crab fishery under a range of status quo and hypothetical alternative management scenarios affecting the entire state of California, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
@@ -2617,6 +2672,103 @@ png(here::here(
   "fig3b_hump_risk_prepost_statewide_pointrange_sm_vessels.png"), 
   width = 7.5, height = 2.5, units = "in", res = 300)
 plot_hump_risk_prepost_statewide_pointrange_sm
+invisible(dev.off())
+
+```
+
+
+## DCRB revenue geom_pointrange 
+```{r fig3cc_sm, echo=FALSE}
+
+#DCRB_rev, statewide scenarios only, geom_pointrange
+# try using annual_df_focal_scenarios_statewide_ranks instead of statewide_annual_rank_bp
+
+
+# annual_df_focal_scenarios_statewide_ranks_fig <- 
+#   annual_df_focal_scenarios_statewide_ranks %>%
+#   ungroup() %>%
+#   mutate(
+#     scenario_rank = ifelse(
+#       pretty_scenario_names == "Status Quo", 0,
+#       rank_hump
+#       ),
+#     scenario_names_fig = c(
+#       rep("Status Quo", 10),
+#       rep("Delay", 10),
+#       rep("Spring Closure", 10),
+#       rep("Delay + Spring Closure", 10),
+#       rep("Spring Effort Reduction", 10),
+#       rep("Spring Depth Restriction", 10),
+#       rep("Spring Effort Reduction + Depth Restriction", 10)
+#     )
+#   )
+# 
+# annual_df_focal_scenarios_statewide_ranks_pointrangefig <- annual_df_focal_scenarios_statewide_ranks_fig %>%
+#     group_by(pre_post, scenario_names_fig, scenario_number) %>%
+#     summarise(
+#       mean_n_risk_blue = mean(n_risk_blue),
+#       se_n_risk_blue = sd(n_risk_blue)/sqrt(n()),
+#       mean_n_risk_humpback = mean(n_risk_humpback),
+#       se_n_risk_humpback = sd(n_risk_humpback)/sqrt(n()),
+#       mean_DCRB_rev = mean(DCRB_rev),
+#       se_DCRB_rev = sd(DCRB_rev)/sqrt(n()),
+#       
+#       .groups = "drop"
+#     ) %>%
+#   arrange(
+#     -mean_n_risk_humpback
+#   ) %>%
+#   mutate(
+#     rank_hump = row_number(),
+#     scenario_rank = ifelse(
+#       scenario_names_fig == "Status Quo", 0,
+#       rank_hump
+#       )
+#   )
+
+plot_DCRB_rev_prepost_statewide_pointrange_sm <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = reorder(scenario_names_fig,-scenario_rank),
+    y = mean_DCRB_rev/10^7,
+    colour = factor(pre_post, levels = c("2018-2019", "2014-2018", "2009-2014")),
+    fill = factor(pre_post, levels = c("2018-2019", "2014-2018", "2009-2014"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = (mean_DCRB_rev - se_DCRB_rev)/10^7,
+                  ymax = (mean_DCRB_rev + se_DCRB_rev)/10^7),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  ylab(expression(Fishery~revenue~("$,"~x10^7))) +
+  #ylim(0,0.4) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  coord_flip() +
+  guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) + 
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
+    #legend.position = c(.1, .95),
+    axis.text.x = element_text(size=12), #hjust = 1, size = 14, angle = 60
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
+    #legend.position = "none"
+    )
+plot_DCRB_rev_prepost_statewide_pointrange_sm
+
+png(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3c_plot_DCRB_rev_prepost_statewide_pointrange_sm_vessels.png"), 
+  width = 7.5, height = 2.5, units = "in", res = 300)
+plot_DCRB_rev_prepost_statewide_pointrange_sm
 invisible(dev.off())
 
 ```
