@@ -92,6 +92,8 @@ if (user == "JS") {
   path_Humpback_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds" 
   
   path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+  
+  path_run_analysis <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_2021-01-06.Rdata"
     
   path_run_analysis_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_small_2021-01-14.Rdata"
   
@@ -118,6 +120,15 @@ if (user == "JS") {
   stop("Invalid user")
 }
 
+
+```
+
+# Load data
+
+Only needed if environment is empty.
+```{r load_data, echo=FALSE}
+
+load(path_run_analysis)
 
 ```
 
@@ -1405,44 +1416,62 @@ invisible(dev.off())
 Blues
 ```{r scales1, echo = FALSE}
 
+# rename scenarios
+scale_compare_focal_scenarios <- scale_compare_focal_scenarios %>%
+  mutate(
+    scenario_names_fig = case_when(
+      scenario_type == "Depth Restriction" ~ "Spring Depth Restriction",
+      scenario_type == "Gear Restriction" ~ "Spring Effort Reduction",
+      scenario_type == "Depth and Gear Restrictions" ~ "Spring Effort Reduction, Depth Restriction",
+      scenario_type == "Delayed Opening" ~ "Delay",
+      scenario_type == "Delay and Early Closure" ~ "Delay, Spring Closure",
+      scenario_type == "Early Closure" ~ "Spring Closure"
+    )
+  )
+
+
+    
+
 plot_blwh_risk_scale_compare <- ggplot(
   data = scale_compare_focal_scenarios,
   aes(
     x = scale,
     y = mean_relative_blwh_risk_n,
-    colour = scenario_type,
-    fill = scenario_type,
-    shape = scenario_type
+    colour = scenario_names_fig,
+    fill = scenario_names_fig,
+    shape = scenario_names_fig
     )
   )  +
-  geom_point(alpha = 0.8, position=position_dodge(width=0.5)) +
+  geom_point(alpha = 0.8, position=position_dodge(width=0.5)) + #size=5, 
   geom_errorbar(aes(
-    ymin = mean_relative_blwh_risk_n - (2*se_relative_blwh_risk_n), ymax = mean_relative_blwh_risk_n + 2*(se_relative_blwh_risk_n)
+    ymin = mean_relative_blwh_risk_n - (se_relative_blwh_risk_n), ymax = mean_relative_blwh_risk_n + (se_relative_blwh_risk_n)
   ),
   position=position_dodge(width=0.5), size=0.5) + 
-  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  geom_path(aes(colour=scenario_names_fig, group= scenario_names_fig), position=position_dodge(width=0.5)) +
   facet_wrap(pre_post~.) +
-  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_shape_manual(values=c(21:25, 4) ) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                         labels = function(x) str_wrap(x, width = 18)) + #  
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                       labels = function(x) str_wrap(x, width = 18)) + #begin=0.2, end=0.8, 
+  scale_shape_manual(values=c(21:25, 8), labels = function(x) str_wrap(x, width = 18)) +
   scale_x_discrete(labels = wrap_format(30)) + 
   guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
   xlab("Spatial Scale") +
-  ylab("Relative risk reduction\n(mean +/- 2SE)") +
-  theme_classic(base_size = 12) +
+  ylab("Relative risk reduction") + #\n(mean +/- 2SE)") +
+  theme_classic(base_size = 10) +
   theme(
     legend.title = element_blank(),
     #title = element_text(size = 26),
     #legend.text = element_text(size = 18),
     #legend.position = c(.1, .95), #"none"
-    axis.text.x = element_text(size = 12, hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
-    legend.text = element_text(size=10),
+    #legend.text = element_text(size=10),
     #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
     #strip.text = element_text(size=12)
-    #legend.position = "none"
+    legend.position = "top"
     )
 plot_blwh_risk_scale_compare
  
@@ -1452,7 +1481,7 @@ png(
   "full_analysis_samhourietal",
   "figures",
   "plot_blwh_risk_scale_compare.png"), 
-  width = 7.5, height = 10, units = "in", res = 300)
+  width = 3.75, height = 4, units = "in", res = 300)
 plot_blwh_risk_scale_compare
 invisible(dev.off())
 
@@ -1466,39 +1495,42 @@ plot_hump_risk_scale_compare <- ggplot(
   aes(
     x = scale,
     y = mean_relative_hump_risk_n,
-    colour = scenario_type,
-    fill = scenario_type,
-    shape = scenario_type
+    colour = scenario_names_fig,
+    fill = scenario_names_fig,
+    shape = scenario_names_fig
     )
   )  +
   geom_point(alpha = 0.8, position=position_dodge(width=0.5)) +
   geom_errorbar(aes(
-    ymin = mean_relative_hump_risk_n - (2*se_relative_hump_risk_n), ymax = mean_relative_hump_risk_n + 2*(se_relative_hump_risk_n)
+    ymin = mean_relative_hump_risk_n - (se_relative_hump_risk_n), ymax = mean_relative_hump_risk_n + (se_relative_hump_risk_n)
   ),
   position=position_dodge(width=0.5), size=0.5) + 
-  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  geom_path(aes(colour=scenario_names_fig, group= scenario_names_fig), position=position_dodge(width=0.5)) +
   facet_wrap(pre_post~.) +
-  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_shape_manual(values=c(21:25, 4) ) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                       labels = function(x) str_wrap(x, width = 18)) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                       labels = function(x) str_wrap(x, width = 18)) +
+  scale_shape_manual(values=c(21:25, 8) ,
+                       labels = function(x) str_wrap(x, width = 18)) +
   scale_x_discrete(labels = wrap_format(30)) + 
   guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
   xlab("Spatial Scale") +
-  ylab("Relative risk reduction\n(mean +/- 2SE)") +
-  theme_classic(base_size = 12) +
+  ylab("Relative risk reduction") + # \n(mean +/- 2SE)") +
+  theme_classic(base_size = 10) +
   theme(
     legend.title = element_blank(),
     #title = element_text(size = 26),
     #legend.text = element_text(size = 18),
     #legend.position = c(.1, .95), #"none"
-    axis.text.x = element_text(size = 12, hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
-    legend.text = element_text(size=10),
+    #legend.text = element_text(size=10),
     #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
     #strip.text = element_text(size=12)
-    #legend.position = "none"
+    legend.position = "top"
     )
 plot_hump_risk_scale_compare
  
@@ -1508,7 +1540,7 @@ png(
   "full_analysis_samhourietal",
   "figures",
   "plot_hump_risk_scale_compare.png"), 
-  width = 7.5, height = 10, units = "in", res = 300)
+  width = 3.75, height = 4, units = "in", res = 300)
 plot_hump_risk_scale_compare
 invisible(dev.off())
 
@@ -1523,39 +1555,42 @@ plot_DCRB_rev_scale_compare <- ggplot(
   aes(
     x = scale,
     y = mean_relative_dollars,
-    colour = scenario_type,
-    fill = scenario_type,
-    shape = scenario_type
+    colour = scenario_names_fig,
+    fill = scenario_names_fig,
+    shape = scenario_names_fig
     )
   )  +
   geom_point(alpha = 0.8, position=position_dodge(width=0.5)) +
   geom_errorbar(aes(
-    ymin = mean_relative_dollars - (2*se_relative_dollars), ymax = mean_relative_dollars + 2*(se_relative_dollars)
+    ymin = mean_relative_dollars - (se_relative_dollars), ymax = mean_relative_dollars + (se_relative_dollars)
   ),
   position=position_dodge(width=0.5), size=0.5) + 
-  geom_path(aes(colour=scenario_type, group= scenario_type), position=position_dodge(width=0.5)) +
+  geom_path(aes(colour=scenario_names_fig, group= scenario_names_fig), position=position_dodge(width=0.5)) +
   facet_wrap(pre_post~.) +
-  scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1) +
-  scale_shape_manual(values=c(21:25, 4) ) +
+  scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                       labels = function(x) str_wrap(x, width = 18)) +
+  scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1,
+                       labels = function(x) str_wrap(x, width = 18)) +
+  scale_shape_manual(values=c(21:25, 4),
+                       labels = function(x) str_wrap(x, width = 18)) +
   scale_x_discrete(labels = wrap_format(30)) + 
   guides(colour = guide_legend("Scenario"), fill = guide_legend("Scenario"), shape = guide_legend("Scenario")) +
   xlab("Spatial Scale") +
-  ylab("Relative fishery revenue\n(mean +/- 2SE)") +
-  theme_classic(base_size = 12) +
+  ylab("Relative fishery revenue") + #\n(mean +/- 2SE)") +
+  theme_classic(base_size = 10) +
   theme(
     legend.title = element_blank(),
     #title = element_text(size = 26),
     #legend.text = element_text(size = 18),
     #legend.position = c(.1, .95), #"none"
-    axis.text.x = element_text(size = 12, hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(hjust = 1, angle=60), #hjust = 1, size = 14, angle = 60
+    #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
-    legend.text = element_text(size=10),
+    #legend.text = element_text(size=10),
     #axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
     #strip.text = element_text(size=12)
-    #legend.position = "none"
+    legend.position = "top"
     )
 plot_DCRB_rev_scale_compare
  
@@ -1565,7 +1600,7 @@ png(
   "full_analysis_samhourietal",
   "figures",
   "plot_DCRB_rev_scale_compare.png"), 
-  width = 7.5, height = 10, units = "in", res = 300)
+  width = 3.75, height = 4, units = "in", res = 300)
 plot_DCRB_rev_scale_compare
 invisible(dev.off())
 
@@ -1588,7 +1623,7 @@ ggarrange(plot_blwh_risk_scale_compare,
              nrow = 2,
               ncol=2,
              common.legend = TRUE, 
-             legend="bottom",
+             legend="top",
           labels="auto",
           hjust=0
              )
@@ -1600,7 +1635,7 @@ ggarrange(plot_blwh_risk_scale_compare,
              nrow = 2,
               ncol=2,
              common.legend = TRUE, 
-             legend="bottom",
+             legend="top",
           labels="auto",
           hjust=0
              )
