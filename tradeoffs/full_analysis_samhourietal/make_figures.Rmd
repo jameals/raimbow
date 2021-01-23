@@ -53,6 +53,9 @@ library(knitr)
 library(rphylopic)
 library(png)
 library(RCurl)
+library(magick)
+library(cowplot)
+library(forcats)
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
@@ -1145,6 +1148,267 @@ invisible(dev.off())
 
 ```
 
+## Joining them all
+
+```{r fig3all}
+
+theme_fig3 <-theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
+    legend.position = 'top',
+    # legend.position = c(0.8,0.8),
+    #legend.position = c(.1, .95),
+    # axis.text.x = element_text(size=12),#hjust = 1, size = 14, angle = 60
+    axis.text.x = element_text(hjust = 1, size = 10, angle = 60),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
+    #legend.position = "none"
+    )
+
+# logos/icons
+crabpot <- here::here('tradeoffs','full_analysis_samhourietal','figures','crab pot graphic with crab.jpg')
+hump <-  here::here('tradeoffs','full_analysis_samhourietal','figures','Humpback whale silhuoutte gray.jpg')
+blue <- here::here('tradeoffs','full_analysis_samhourietal','figures','Blue whale silhuoutte blue.jpg')
+
+
+# vertical option
+plot_blue_risk_prepost_statewide_pointrange2 <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_n_risk_blue,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = mean_n_risk_blue - se_n_risk_blue,
+                  ymax = mean_n_risk_blue + se_n_risk_blue),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  ylab("Normalized risk") + #\n (mean +/- SE)") +
+  ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_shape_manual(values=c(1,16,16))+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+                     # this is a hacky way to make room for the legend, but don't plot it
+                     # guide = guide_legend(override.aes = list(color = "white")))+
+  # scale_color_manual(values=c("#000000","#D55E00","#56B4E9"))+
+  # scale_colour_viridis_d(option="C", begin=0, end=1, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) +
+  # guides(col="none",fill="none")+
+  # guides(shape='none')+
+  theme_fig3+
+  theme(axis.text.x=element_blank())
+  # theme(
+  #       legend.text = element_text(color = "white"),
+  #       legend.title = element_text(color = "white"),
+  #       legend.key = element_rect(fill = "white",color="white")
+  #   )
+  # theme(
+  #       legend.text = element_blank(),
+  #       legend.title = element_blank(),
+  #       legend.key = element_blank()
+  #   )
+
+plot_blue_risk_prepost_statewide_pointrange2
+plot_blue_risk_prepost_statewide_pointrange3<-ggdraw()+
+  draw_plot(plot_blue_risk_prepost_statewide_pointrange2)+
+  draw_image(blue,x=0,y=0,scale=0.3,vjust=-0.15,hjust=-0.25)
+plot_blue_risk_prepost_statewide_pointrange3
+
+plot_hump_risk_prepost_statewide_pointrange2 <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_n_risk_humpback,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = mean_n_risk_humpback - se_n_risk_humpback,
+                  ymax = mean_n_risk_humpback + se_n_risk_humpback),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  ylab("Normalized risk") + #\n (mean +/- SE)") +
+  ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+  scale_shape_manual(values=c(1,16,16))+
+  # scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # coord_flip() +
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) + 
+  guides(fill="none",col="none",shape="none")+
+  theme_fig3+
+  theme(axis.text.x = element_blank())
+
+plot_hump_risk_prepost_statewide_pointrange2
+plot_hump_risk_prepost_statewide_pointrange3<-ggdraw()+
+  draw_plot(plot_hump_risk_prepost_statewide_pointrange2)+
+  draw_image(hump,x=0,y=0,scale=0.2,vjust=-0.3,hjust=-0.3)
+plot_hump_risk_prepost_statewide_pointrange3
+
+plot_DCRB_rev_prepost_statewide_pointrange2 <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_DCRB_rev/10^7,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = (mean_DCRB_rev - se_DCRB_rev)/10^7,
+                  ymax = (mean_DCRB_rev + se_DCRB_rev)/10^7),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  scale_shape_manual(values=c(1,16,16))+
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  # ylab(expression(Fishery~revenue~("$,"~x10^7))) +
+  ylab("Fishery revenue")+
+  #ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+                     # this is a hacky way to make room for the legend, but don't plot it
+                     # guide = guide_legend(override.aes = list(color = "white")))+
+  # scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # coord_flip() +
+  guides(col="none",fill="none",shape="none")+
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) +  
+  theme_fig3
+  # theme(axis.title.y = element_text(vjust=-0.3))
+  # theme(
+  #       legend.text = element_text(color = "white"),
+  #       legend.title = element_text(color = "white"),
+  #       legend.key = element_rect(fill = "white",color="white")
+    # )
+  #add image
+  
+
+plot_DCRB_rev_prepost_statewide_pointrange3<-ggdraw()+
+  draw_plot(plot_DCRB_rev_prepost_statewide_pointrange2)+
+  draw_image(crabpot,x=0,y=0,scale=0.2,vjust=-0.4,hjust=-0.3)
+plot_DCRB_rev_prepost_statewide_pointrange3
+
+# together
+pv <- plot_grid(plot_blue_risk_prepost_statewide_pointrange3,plot_hump_risk_prepost_statewide_pointrange3,plot_DCRB_rev_prepost_statewide_pointrange3,
+                rel_heights = c(1,1,1.5),
+                label_x = 0.2,label_y=c(0.8,1,1),
+                ncol=1,labels = "auto")
+
+ggsave(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3_vertical.png"),pv,h=10,w=5)
+
+
+
+# png(here::here(
+#   "tradeoffs",
+#   "full_analysis_samhourietal",
+#   "figures",
+#   "fig3_vertical.png"), 
+#   width = 4, height = 8, units = "in", res = 300)
+# ggdraw() + 
+#   draw_plot(pv) +
+#   draw_image(
+#     crabpot,x=0.8,y=0,width=0.2,vjust=0
+#   )+
+#   draw_image(
+#     hump,x=0.25,y=0.2,width=0.25
+#   )+
+#   draw_image(
+#     blue,x=0.25,y=0.45,width=0.25
+#   )
+# invisible(dev.off())
+
+# ggdraw() + 
+#   draw_plot(pv) +
+#   draw_image(
+#     crabpot,x=0.25,y=-1,width=0.15
+#   )+
+#   draw_image(
+#     hump,x=0.25,y=0.2,width=0.15
+#   )+
+#   draw_image(
+#     blue,x=0.25,y=0.4,width=0.15
+#   )
+```
+
+```{r fig3all_facet}
+# full facetted version
+# make appropriate data for it by rearranging
+fig3df <- annual_df_focal_scenarios_statewide_ranks_pointrangefig %>%
+  mutate(mean_DCRB_rev=mean_DCRB_rev/1e7,se_DCRB_rev=se_DCRB_rev/1e7) %>% 
+  pivot_longer(mean_n_risk_blue:se_DCRB_rev,names_to="measure",values_to="value") %>% 
+  mutate(type=ifelse(grepl('mean',measure),'mean','se')) %>% 
+  mutate(spp=case_when(
+    grepl('blue',measure) ~ "blue",
+    grepl('humpback',measure)~"humpback",
+    grepl('DCRB',measure)~"dcrb"
+  )) %>% 
+  mutate(spp=factor(spp,levels=c('blue','humpback','dcrb'))) %>% 
+  select(-measure) %>% 
+  pivot_wider(names_from=type,values_from=value)
+  
+plot_fig3 <- ggplot(
+  data = fig3df,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean,
+    ymin=mean-se,
+    ymax=mean+se,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  coord_cartesian(expand = FALSE)+
+  ylim(0,NA) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_shape_manual(values=c(1,16,16))+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+  # labelling time
+  facet_wrap(~spp, scales = "free_y", nrow = 3, 
+              strip.position = "left", 
+              labeller = as_labeller(c(blue = "Normalized Risk", humpback = "Normalized Risk",dcrb="Fishery Revenue")))  +
+  ylab(NULL) +
+  geom_hline(yintercept=0)+
+  theme_fig3+
+  theme(strip.background = element_blank(),
+         strip.placement = "outside")
+plot_fig3
+
+# plot_blue_risk_prepost_statewide_pointrange2
+# plot_blue_risk_prepost_statewide_pointrange3<-ggdraw()+
+#   draw_plot(plot_blue_risk_prepost_statewide_pointrange2)+
+#   draw_image(blue,x=0,y=0,scale=0.3,vjust=-0.15,hjust=-0.25)
+# plot_blue_risk_prepost_statewide_pointrange3
+```
+
 # Figure 4
 
 Figure 4. Tradeoff plots indicating the expected (a) risk to blue whales or (b) risk to humpback whales in comparison to expected revenue to the California Dungeness crab fishery under a range of hypothetical alternative management scenarios, during each of three time periods representing before (2009-2014), during (2014-2018), and after (2018-2019) the Northeast Pacific Marine Heatwave. Larger points represent the median ±1SE for each scenario across years, smaller points represent values for individual years. Whale risk and DCRB revenue by scenario calculated in the run_analysis RUN SCENARIOS step
@@ -1283,6 +1547,21 @@ png(
 to_blue_n_pre_post_nolegend
 invisible(dev.off())
 
+to_blue_n_pre_post_nolegend2 <- ggdraw(to_blue_n_pre_post_nolegend) +
+  #draw_plot() +
+  draw_image(blue, scale=0.3, vjust = -0.4, hjust = 0.2) #, x=0.5, y=1, vjust = 1, valign = 1) hjust = 0.2, 
+to_blue_n_pre_post_nolegend2
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized blues only by pre_post_nolegend_silhouette_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_blue_n_pre_post_nolegend2
+invisible(dev.off())
+
 
 ```
 
@@ -1405,7 +1684,66 @@ png(
 to_hump_n_pre_post_nolegend
 invisible(dev.off())
 
+to_hump_n_pre_post_nolegend2 <- ggdraw(to_hump_n_pre_post_nolegend) +
+  #draw_plot() +
+  draw_image(hump, scale=0.2, vjust = -0.37, hjust = 0.2) #, x=0.5, y=1, vjust = 1, valign = 1) hjust = 0.2, 
+to_hump_n_pre_post_nolegend2
 
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized humps only by pre_post_nolegend_silhouette_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_hump_n_pre_post_nolegend2
+invisible(dev.off())
+
+to_hump_n_pre_post2 <- ggdraw(to_hump_n_pre_post) +
+  #draw_plot() +
+  draw_image(hump, scale=0.2, vjust = -0.37, hjust = 0.3) #, x=0.5, y=1, vjust = 1, valign = 1) hjust = 0.2, 
+to_hump_n_pre_post2
+
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - normalized humps only by pre_post_silhouette_",today(),".png")), 
+    width = 3.75, height = 6, units = "in", res = 300)
+to_hump_n_pre_post2
+invisible(dev.off())
+```
+
+## Together
+```{r tradeoff3}
+blue_labeled <- ggdraw(to_blue_n_pre_post_nolegend)+
+  # here are the labels- you may have to tweak them to be in the right place if you change the size of the plot
+  # the x and y coords are relative to the TOTAL plot width/height
+  draw_label("less",x=0.5,y=0.15)+
+  draw_label("more",x=0.7,y=0.25)
+
+# humpback plot with no y axis labels
+hump_pre_post_noy <- to_hump_n_pre_post+
+  theme(axis.text.y=element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank())
+
+# combined Fig 4
+fig4 <- plot_grid(blue_labeled,NULL,hump_pre_post_noy,ncol=3,rel_widths = c(1,-0.3, 1),scale=0.9)+
+  draw_text("Relative fishery revenue",x=0.45,y=0.04,size = 12)+ # common x-axis label
+  draw_text(letters[1:6],x=c(0.26,0.53,0.26,0.53,0.26,0.53),y=c(0.87,0.87,0.58,0.58,0.3,0.3),size=12)
+
+# write to file
+png(
+  here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  paste0("Tradeoff plot - blues and humps - js",today(),".png")), 
+    width = 7.5, height = 6, units = "in", res = 300)
+fig4
+invisible(dev.off())
 ```
 
 
@@ -2015,6 +2353,7 @@ invisible(dev.off())
 TS of cumulative monthly risk to blue and humpback whales
 ```{r fig2b_sm, echo=FALSE}
 
+#rm(list=ls())
 load(path_run_analysis_small_vessels)
 
 #risk_out_sq_sm <- risk_5km_yr_mth_sq_all
@@ -2806,6 +3145,211 @@ png(here::here(
 plot_DCRB_rev_prepost_statewide_pointrange_sm
 invisible(dev.off())
 
+```
+
+## Joining them all
+
+```{r fig3all_sm}
+
+theme_fig3 <-theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size = 26),
+    legend.text = element_text(size = 14),
+    legend.position = 'top',
+    # legend.position = c(0.8,0.8),
+    #legend.position = c(.1, .95),
+    # axis.text.x = element_text(size=12),#hjust = 1, size = 14, angle = 60
+    axis.text.x = element_text(hjust = 1, size = 10, angle = 60),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14)
+    #legend.position = "none"
+    )
+
+# logos/icons
+crabpot <- here::here('tradeoffs','full_analysis_samhourietal','figures','crab pot graphic with crab.jpg')
+hump <-  here::here('tradeoffs','full_analysis_samhourietal','figures','Humpback whale silhuoutte gray.jpg')
+blue <- here::here('tradeoffs','full_analysis_samhourietal','figures','Blue whale silhuoutte blue.jpg')
+
+
+# vertical option
+plot_blue_risk_prepost_statewide_pointrange2_sm <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_n_risk_blue,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = mean_n_risk_blue - se_n_risk_blue,
+                  ymax = mean_n_risk_blue + se_n_risk_blue),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  ylab("Normalized risk") + #\n (mean +/- SE)") +
+  ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_shape_manual(values=c(1,16,16))+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+                     # this is a hacky way to make room for the legend, but don't plot it
+                     # guide = guide_legend(override.aes = list(color = "white")))+
+  # scale_color_manual(values=c("#000000","#D55E00","#56B4E9"))+
+  # scale_colour_viridis_d(option="C", begin=0, end=1, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) +
+  # guides(col="none",fill="none")+
+  # guides(shape='none')+
+  theme_fig3+
+  theme(axis.text.x=element_blank())
+  # theme(
+  #       legend.text = element_text(color = "white"),
+  #       legend.title = element_text(color = "white"),
+  #       legend.key = element_rect(fill = "white",color="white")
+  #   )
+  # theme(
+  #       legend.text = element_blank(),
+  #       legend.title = element_blank(),
+  #       legend.key = element_blank()
+  #   )
+
+plot_blue_risk_prepost_statewide_pointrange2_sm
+plot_blue_risk_prepost_statewide_pointrange3_sm<-ggdraw()+
+  draw_plot(plot_blue_risk_prepost_statewide_pointrange2_sm)+
+  draw_image(blue,x=0,y=0,scale=0.3,vjust=-0.15,hjust=-0.25)
+plot_blue_risk_prepost_statewide_pointrange3_sm
+
+plot_hump_risk_prepost_statewide_pointrange2_sm <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_n_risk_humpback,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = mean_n_risk_humpback - se_n_risk_humpback,
+                  ymax = mean_n_risk_humpback + se_n_risk_humpback),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  ylab("Normalized risk") + #\n (mean +/- SE)") +
+  ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+  scale_shape_manual(values=c(1,16,16))+
+  # scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # coord_flip() +
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) + 
+  guides(fill="none",col="none",shape="none")+
+  theme_fig3+
+  theme(axis.text.x = element_blank())
+
+plot_hump_risk_prepost_statewide_pointrange2_sm
+plot_hump_risk_prepost_statewide_pointrange3_sm<-ggdraw()+
+  draw_plot(plot_hump_risk_prepost_statewide_pointrange2_sm)+
+  draw_image(hump,x=0,y=0,scale=0.2,vjust=-0.3,hjust=-0.3)
+plot_hump_risk_prepost_statewide_pointrange3_sm
+
+plot_DCRB_rev_prepost_statewide_pointrange2_sm <- ggplot(
+  data = annual_df_focal_scenarios_statewide_ranks_pointrangefig,
+  aes(
+    x = fct_reorder(scenario_names_fig,scenario_rank),
+    y = mean_DCRB_rev/10^7,
+    colour = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    # fill = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019")),
+    shape = factor(pre_post, levels = c("2009-2014", "2014-2018", "2018-2019"))
+    )
+  )  +
+  geom_pointrange(aes(ymin = (mean_DCRB_rev - se_DCRB_rev)/10^7,
+                  ymax = (mean_DCRB_rev + se_DCRB_rev)/10^7),
+                  position=position_dodge(width=0.5), alpha=0.6) +
+  # geom_point(position=position_dodge(width=0.5), alpha=0.6) +
+  scale_shape_manual(values=c(1,16,16))+
+  # geom_line(aes(group=scenario_names_fig),
+  #           position=position_dodge(width=0.5), alpha=0.6) +
+  xlab("") + # "Scenario"
+  # ylab(expression(Fishery~revenue~("$,"~x10^7))) +
+  ylab("Fishery revenue")+
+  #ylim(0,0.4) +
+  # scale_color_manual(values=inferno(100)[c(5,70,45)])+
+  scale_color_manual(values=c("#3B4992FF","#EE0000FF","#3B4992FF"))+
+                     # this is a hacky way to make room for the legend, but don't plot it
+                     # guide = guide_legend(override.aes = list(color = "white")))+
+  # scale_colour_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1) +
+  # scale_fill_viridis_d(option="cividis", begin=0.2, end=0.8, direction = -1, alpha=0.2) +
+  scale_x_discrete(labels = wrap_format(30)) + 
+  # coord_flip() +
+  guides(col="none",fill="none",shape="none")+
+  # guides(fill = guide_legend(reverse = TRUE), colour = guide_legend(reverse = TRUE)) +  
+  theme_fig3
+  # theme(axis.title.y = element_text(vjust=-0.3))
+  # theme(
+  #       legend.text = element_text(color = "white"),
+  #       legend.title = element_text(color = "white"),
+  #       legend.key = element_rect(fill = "white",color="white")
+    # )
+  #add image
+  
+
+plot_DCRB_rev_prepost_statewide_pointrange3_sm<-ggdraw()+
+  draw_plot(plot_DCRB_rev_prepost_statewide_pointrange2_sm)+
+  draw_image(crabpot,x=0,y=0,scale=0.2,vjust=-0.4,hjust=-0.3)
+plot_DCRB_rev_prepost_statewide_pointrange3_sm
+
+# together
+pv_sm <- plot_grid(plot_blue_risk_prepost_statewide_pointrange3_sm,plot_hump_risk_prepost_statewide_pointrange3_sm,plot_DCRB_rev_prepost_statewide_pointrange3_sm,
+                rel_heights = c(1,1,1.5),
+                label_x = 0.2,label_y=c(0.8,1,1),
+                ncol=1,labels = "auto")
+
+ggsave(here::here(
+  "tradeoffs",
+  "full_analysis_samhourietal",
+  "figures",
+  "fig3_vertical_sm.png"),pv_sm,h=10,w=5)
+
+
+
+# png(here::here(
+#   "tradeoffs",
+#   "full_analysis_samhourietal",
+#   "figures",
+#   "fig3_vertical.png"), 
+#   width = 4, height = 8, units = "in", res = 300)
+# ggdraw() + 
+#   draw_plot(pv) +
+#   draw_image(
+#     crabpot,x=0.8,y=0,width=0.2,vjust=0
+#   )+
+#   draw_image(
+#     hump,x=0.25,y=0.2,width=0.25
+#   )+
+#   draw_image(
+#     blue,x=0.25,y=0.45,width=0.25
+#   )
+# invisible(dev.off())
+
+# ggdraw() + 
+#   draw_plot(pv) +
+#   draw_image(
+#     crabpot,x=0.25,y=-1,width=0.15
+#   )+
+#   draw_image(
+#     hump,x=0.25,y=0.2,width=0.15
+#   )+
+#   draw_image(
+#     blue,x=0.25,y=0.4,width=0.15
+#   )
 ```
 
 
