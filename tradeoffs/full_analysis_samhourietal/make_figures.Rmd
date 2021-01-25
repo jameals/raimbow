@@ -2053,7 +2053,7 @@ png(
   "full_analysis_samhourietal",
   "figures",
   paste0("Cost effectiveness plot - blues by pre_post_nolegend_",today(),".png")), 
-    width = 3.75, height = 5, units = "in", res = 300)
+    width = 7.5, height = 7.5, units = "in", res = 300)
 ce_blue_pre_post
 invisible(dev.off())
 
@@ -2089,6 +2089,7 @@ ce_hump_pre_post <- ggplot(
                   hjust = 1,
                   segment.size = 0.2) + 
   geom_line() + 
+  geom_point() +
   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
                          labels = function(x) str_wrap(x, width = 10)) +
   scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
@@ -2105,12 +2106,12 @@ ce_hump_pre_post <- ggplot(
   theme(
     #title = element_text(size = 26),
     legend.position = "none",
-    legend.box="vertical", 
+    #legend.box="vertical", 
     #legend.margin=margin(),
     axis.text.x = element_text(size = 12),
     axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
-    legend.text = element_text(size=10),
+    #legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
 ce_hump_pre_post
@@ -2121,7 +2122,7 @@ png(
   "full_analysis_samhourietal",
   "figures",
   paste0("Cost effectiveness plot - humps by pre_post_nolegend_",today(),".png")), 
-    width = 3.75, height = 5, units = "in", res = 300)
+    width = 7.5, height = 7.5, units = "in", res = 300)
 ce_hump_pre_post
 invisible(dev.off())
 
