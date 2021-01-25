@@ -1017,25 +1017,38 @@ annual_df_ranks <- annual_statewide_df %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump), # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    rank_cbblwh = row_number(costs_benefits_blwh) # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    # rank_cbhump = row_number(costs_benefits_hump), # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # rank_cbblwh = row_number(costs_benefits_blwh) # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # 
+    rank_bchump = row_number(benefits_costs_hump), 
+    rank_bcblwh = row_number(benefits_costs_blwh) 
+    
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
-         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,rank_cbhump,rank_cbblwh,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         #rank_cbhump,rank_cbblwh,
+         rank_bchump, rank_bcblwh,
+         
          n_risk_humpback,relative_hump_risk_n,
          n_risk_blue,relative_blwh_risk_n,
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         #costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_ranks)
@@ -1049,7 +1062,7 @@ annual_df_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 # by period, ranked by various response variables
@@ -1061,8 +1074,11 @@ annual_df_ranks_period <- annual_statewide_df %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1076,8 +1092,11 @@ annual_df_ranks_period <- annual_statewide_df %>%
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    
+    mean_bchump = mean(benefits_costs_hump, na.rm=TRUE),
+    mean_bcblwh = mean(benefits_costs_blwh, na.rm=TRUE),
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1087,20 +1106,26 @@ annual_df_ranks_period <- annual_statewide_df %>%
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
     .groups = "drop"
   ) %>%
   select(pre_post, 
          scenario_number, pretty_scenario_names,
-         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,rank_cbhump,rank_cbblwh,
+         rank_hump,rank_blwh,rank_both,rank_dollars,rank_pounds,
+         # rank_cbhump,rank_cbblwh,
+         rank_bchump,rank_bcblwh,
          mean_n_risk_humpback, mean_relative_hump_risk_n,
          mean_n_risk_blue, mean_relative_blwh_risk_n,
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,mean_cbblwh
+         mean_bchump,mean_bcblwh
   )
 
 #glimpse(annual_df_ranks_period)
@@ -1130,7 +1155,8 @@ annual_df_ranks_period_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 
@@ -1158,15 +1184,23 @@ annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1176,7 +1210,8 @@ annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_ranks)
@@ -1190,7 +1225,8 @@ annual_df_focal_scenarios_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump,benefits_costs_blwh) %>% 
   knitr::kable()
   
 
@@ -1202,8 +1238,12 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0)
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1217,8 +1257,10 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1228,8 +1270,10 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -1240,8 +1284,10 @@ annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
   )
 
 #glimpse(annual_df_ranks_period_focal)
@@ -1290,7 +1336,8 @@ annual_df_ranks_period_focal_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_hump, 
@@ -1320,15 +1367,21 @@ annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1338,7 +1391,8 @@ annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_statewide_ranks)
@@ -1352,7 +1406,8 @@ annual_df_focal_scenarios_statewide_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 annual_df_focal_scenarios_statewide_ranks %>%
@@ -1375,8 +1430,12 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1390,8 +1449,10 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1401,8 +1462,10 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -1413,8 +1476,11 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
+
   )
 
 #glimpse(annual_df_ranks_period_focal_statewide)
@@ -1477,7 +1543,8 @@ annual_df_ranks_period_focal_statewide_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 write_csv(annual_df_focal_scenarios_statewide_ranks, 
@@ -1512,15 +1579,22 @@ annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
+
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1530,7 +1604,8 @@ annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_focal_scenarios_cenCA_ranks)
@@ -1544,7 +1619,8 @@ annual_df_focal_scenarios_cenCA_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 # by period, ranked by various response variables
@@ -1557,8 +1633,12 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1572,8 +1652,11 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
+
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1583,8 +1666,11 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
+
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -1595,8 +1681,10 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
   )
 
 #glimpse(annual_df_ranks_period_focal_cenCA)
@@ -1626,7 +1714,8 @@ annual_df_ranks_period_focal_cenCA_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 write_csv(annual_df_ranks_period_focal_cenCA_hump, 
@@ -1646,15 +1735,22 @@ annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
+
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1664,7 +1760,8 @@ annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_ranks)
@@ -1678,7 +1775,8 @@ annual_df_supplement_scenarios_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 # by period, ranked by various response variables
@@ -1689,8 +1787,12 @@ annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1704,8 +1806,11 @@ annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
+
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1715,8 +1820,11 @@ annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
+
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -1727,8 +1835,11 @@ annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
+
   )
 
 #glimpse(annual_df_ranks_period_supplement)
@@ -1758,7 +1869,8 @@ annual_df_ranks_period_supplement_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 
@@ -1785,15 +1897,22 @@ annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
+
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1803,7 +1922,8 @@ annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_statewide_ranks)
@@ -1817,7 +1937,8 @@ annual_df_supplement_scenarios_statewide_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 # by period, ranked by various response variables
@@ -1830,8 +1951,12 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1845,8 +1970,11 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
+
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1856,8 +1984,8 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -1868,8 +1996,11 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
+
   )
 
 #glimpse(annual_df_ranks_period_supplement_statewide)
@@ -1899,7 +2030,8 @@ annual_df_ranks_period_supplement_statewide_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_statewide_hump, 
@@ -1927,15 +2059,21 @@ annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
     rank_hump = row_number(relative_hump_risk_n),
     rank_blwh = row_number(relative_blwh_risk_n),
     rank_both = row_number(relative_both_risk_n),
     rank_dollars = row_number(relative_dollars),
     rank_pounds = row_number(relative_pounds),
-    rank_cbhump = row_number(costs_benefits_hump),
-    rank_cbblwh = row_number(costs_benefits_blwh)
+    # rank_cbhump = row_number(costs_benefits_hump),
+    # rank_cbblwh = row_number(costs_benefits_blwh)
+    rank_bchump = row_number(benefits_costs_hump),
+    rank_bcblwh = row_number(benefits_costs_blwh)
   ) %>%
   select(crab_year, plotting_year, pre_post, 
          scenario_number, pretty_scenario_names,
@@ -1945,7 +2083,8 @@ annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
          n_risk_both, relative_both_risk_n,
          DCRB_rev,relative_dollars,
          DCRB_lbs,relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh
   )
 
 #glimpse(annual_df_supplement_scenarios_cenCA_ranks)
@@ -1959,7 +2098,8 @@ annual_df_supplement_scenarios_cenCA_ranks %>%
   select(scenario_number, pretty_scenario_names,
          n_risk_humpback, n_risk_blue, n_risk_both, relative_hump_risk_n, relative_blwh_risk_n, relative_both_risk_n,
          DCRB_rev, DCRB_lbs, relative_dollars, relative_pounds,
-         costs_benefits_hump, costs_benefits_blwh) %>% 
+         # costs_benefits_hump, costs_benefits_blwh
+         benefits_costs_hump, benefits_costs_blwh) %>% 
   knitr::kable()
 
 # by period, ranked by various response variables
@@ -1972,8 +2112,12 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
     relative_dollars_cost = 100 - relative_dollars,
-    costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    
+    benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
+    benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
+    
   ) %>%
   group_by(scenario_number, pretty_scenario_names, pre_post) %>%
   summarise(
@@ -1987,8 +2131,10 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
     mean_relative_dollars = mean(relative_dollars),
     mean_DCRB_lbs = mean(DCRB_lbs),
     mean_relative_pounds = mean(relative_pounds),
-    mean_cbhump = mean(costs_benefits_hump),
-    mean_cbblwh = mean(costs_benefits_blwh),
+    # mean_cbhump = mean(costs_benefits_hump),
+    # mean_cbblwh = mean(costs_benefits_blwh),
+    mean_bchump = mean(benefits_costs_hump),
+    mean_bcblwh = mean(benefits_costs_blwh),
     .groups = "drop"
   ) %>%
   group_by(pre_post) %>%
@@ -1998,8 +2144,11 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
     rank_both = row_number(mean_relative_both_risk_n),
     rank_dollars = row_number(mean_relative_dollars),
     rank_pounds = row_number(mean_relative_pounds),
-    rank_cbhump = row_number(mean_cbhump),
-    rank_cbblwh = row_number(mean_cbblwh),
+    # rank_cbhump = row_number(mean_cbhump),
+    # rank_cbblwh = row_number(mean_cbblwh),
+    rank_bchump = row_number(mean_bchump),
+    rank_bcblwh = row_number(mean_bcblwh),
+
     .groups = "drop"
   ) %>%
   select(pre_post, 
@@ -2010,8 +2159,10 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
          mean_n_risk_both, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_relative_dollars,
          mean_DCRB_lbs, mean_relative_pounds,
-         mean_cbhump,
-         mean_cbblwh
+         # mean_cbhump,
+         # mean_cbblwh
+         mean_bchump,
+         mean_bcblwh
   )
 
 #glimpse(annual_df_ranks_period_supplement_cenCA)
@@ -2041,7 +2192,8 @@ annual_df_ranks_period_supplement_cenCA_hump %>%
   select(pre_post, scenario_number, pretty_scenario_names,
          mean_n_risk_humpback, mean_n_risk_blue, mean_n_risk_both, mean_relative_hump_risk_n, mean_relative_blwh_risk_n, mean_relative_both_risk_n,
          mean_DCRB_rev, mean_DCRB_lbs, mean_relative_dollars, mean_relative_pounds,
-         mean_cbhump, mean_cbblwh) %>% 
+         # mean_cbhump, mean_cbblwh
+         mean_bchump, mean_bcblwh) %>% 
   knitr::kable()
 
 write_csv(annual_df_ranks_period_supplement_cenCA_hump, 
@@ -2240,8 +2392,8 @@ percent_diff_period_df <- annual_df_ranks_period_hump %>%
     percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
     percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
     percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
-    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
-    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    percent_diff_bchump = 100 * (mean_bchump-lag(mean_bchump))/lag(mean_bchump),
+    percent_diff_bcblwh = 100 * (mean_bcblwh-lag(mean_bcblwh))/lag(mean_bcblwh),
     .groups = "drop") %>%
   bind_cols(annual_df_ranks_period_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
 
@@ -2273,8 +2425,8 @@ percent_diff_period_focal_statewide_df <- annual_df_ranks_period_focal_statewide
     percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
     percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
     percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
-    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
-    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    percent_diff_bchump = 100 * (mean_bchump-lag(mean_bchump))/lag(mean_bchump),
+    percent_diff_bcblwh = 100 * (mean_bcblwh-lag(mean_bcblwh))/lag(mean_bcblwh),
     .groups = "drop") %>%
   bind_cols(annual_df_ranks_period_focal_statewide_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
 
@@ -2306,8 +2458,8 @@ percent_diff_period_focal_cenCA_df <- annual_df_ranks_period_focal_cenCA_hump %>
     percent_diff_relative_blwh_risk_n = 100 * (mean_relative_both_risk_n-lag(mean_relative_both_risk_n))/lag(mean_relative_both_risk_n),
     percent_diff_relative_dollars = 100 * (mean_relative_dollars-lag(mean_relative_dollars))/lag(mean_relative_dollars),
     percent_diff_relative_pounds = 100 * (mean_relative_pounds-lag(mean_relative_pounds))/lag(mean_relative_pounds),
-    percent_diff_cbhump = 100 * (mean_cbhump-lag(mean_cbhump))/lag(mean_cbhump),
-    percent_diff_cbblwh = 100 * (mean_cbblwh-lag(mean_cbblwh))/lag(mean_cbblwh),
+    percent_diff_bchump = 100 * (mean_bchump-lag(mean_bchump))/lag(mean_bchump),
+    percent_diff_bcblwh = 100 * (mean_bcblwh-lag(mean_bcblwh))/lag(mean_bcblwh),
     .groups = "drop") %>%
   bind_cols(annual_df_ranks_period_focal_cenCA_hump %>% select(scenario_number, pre_post) %>% arrange(scenario_number, pre_post) %>% select(-scenario_number))
 

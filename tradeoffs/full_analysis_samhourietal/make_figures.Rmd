@@ -96,7 +96,7 @@ if (user == "JS") {
   
   path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
-  path_run_analysis <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_2021-01-06.Rdata"
+  path_run_analysis <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_2021-01-25.Rdata"
     
   path_run_analysis_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_small_2021-01-14.Rdata"
   
@@ -1990,7 +1990,11 @@ Blues
 ```{r ce1, echo = FALSE}
 
 # ce for blues, 
-# did not remove scenarios where whale risk is higher than SQ on avg
+# removed scenarios where whale risk is higher than SQ on avg
+
+# annual_df_ranks_period_focal_hump$labels_pre <- ifelse(
+#   annual_df_ranks_period_focal_hump$pre_post == "2009-2014", annual_df_ranks_period_focal_hump$pretty_scenario_names,""
+# )
 
 ce_blue_pre_post <- ggplot(
   annual_df_ranks_period_focal_hump %>% 
@@ -2002,19 +2006,26 @@ ce_blue_pre_post <- ggplot(
     ), # %>% filter(mean_relative_blwh_risk_n < 0 | mean_relative_hump_risk_n < 0),
   aes(
     x=pre_post,
-    y=mean_cbblwh,
+    y=mean_bcblwh,
     group=pretty_scenario_names,
     fill=pretty_scenario_names,
     colour=pretty_scenario_names,
-    label=pretty_scenario_names
+    label=pretty_scenario_names_label
   )
 ) + 
-  geom_text_repel(size=1, alpha=0.8) + 
+  geom_text_repel(alpha=0.8,
+                  force = 0.5,
+                  nudge_x = -0.5,
+                  direction = "y",
+                  hjust = 1,
+                  segment.size = 0.2) + #size=1, 
   geom_line() + 
+  geom_point() +
   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
                          labels = function(x) str_wrap(x, width = 10)) +
   scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
                        labels = function(x) str_wrap(x, width = 10)) +
+  scale_x_discrete(expand = expansion(mult = c(2,0.3))) + 
   #scale_shape_manual(values=c(21:25, 4, 8) ) +
   ylab("Cost effectiveness") + #  to humps\n(normalized)
   xlab("Period") + #  to the Dungeness crab fishery
@@ -2026,12 +2037,12 @@ ce_blue_pre_post <- ggplot(
   theme(
     #title = element_text(size = 26),
     legend.position = "none",
-    legend.box="vertical", 
+    #legend.box="vertical", 
     #legend.margin=margin(),
     axis.text.x = element_text(size = 12),
     axis.text.y = element_text(size = 12),
     #axis.title = element_text(size = 14),
-    legend.text = element_text(size=10),
+    #legend.text = element_text(size=10),
     #strip.text = element_text(size=14),
     ) 
 ce_blue_pre_post
@@ -2064,20 +2075,26 @@ ce_hump_pre_post <- ggplot(
     ), # %>% filter(mean_relative_blwh_risk_n < 0 | mean_relative_hump_risk_n < 0),
   aes(
     x=pre_post,
-    y=mean_cbhump,
+    y=mean_bchump,
     group=pretty_scenario_names,
     fill=pretty_scenario_names,
     colour=pretty_scenario_names,
-    label=pretty_scenario_names
+    label=pretty_scenario_names_label
   )
 ) + 
-  geom_text_repel(size=1, alpha=0.8) + 
+  geom_text_repel(alpha=0.8,
+                  force = 0.5,
+                  nudge_x = -0.5,
+                  direction = "y",
+                  hjust = 1,
+                  segment.size = 0.2) + 
   geom_line() + 
   scale_colour_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
                          labels = function(x) str_wrap(x, width = 10)) +
   scale_fill_viridis_d(option="inferno", begin=0.2, end=0.8, direction = -1, alpha=0.8,
                        labels = function(x) str_wrap(x, width = 10)) +
   #scale_shape_manual(values=c(21:25, 4, 8) ) +
+  scale_x_discrete(expand = expansion(mult = c(2,0.3))) + 
   ylab("Cost effectiveness") + #  to humps\n(normalized)
   xlab("Period") + #  to the Dungeness crab fishery
   #scale_y_continuous(breaks=seq(-25, 100, 25),limits=c(-30,100)) +
