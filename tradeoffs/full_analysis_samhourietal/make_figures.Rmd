@@ -96,7 +96,7 @@ if (user == "JS") {
   
   path_BlueWhale_5km_long_monthly <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
-  path_run_analysis <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_2021-01-25.Rdata"
+  path_run_analysis <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_2021-02-03.Rdata"
     
   path_run_analysis_small_vessels <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/run_analysis_data_small_2021-01-14.Rdata"
   
@@ -2063,7 +2063,7 @@ Humpbacks
 ```{r ce2, echo = FALSE}
 
 # ce for humps
-# did not remove scenarios where whale risk is higher than SQ on avg
+# removed scenarios where whale risk is higher than SQ on avg
 
 ce_hump_pre_post <- ggplot(
   annual_df_ranks_period_focal_hump %>% 

@@ -1016,10 +1016,14 @@ CALCULATE SCENARIO RANKS
 annual_df_ranks <- annual_statewide_df %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
     #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
     #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1073,10 +1077,14 @@ annual_df_ranks %>%
 annual_df_ranks_period <- annual_statewide_df %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
   ) %>%
@@ -1183,10 +1191,14 @@ write_csv(annual_df_ranks_period_hump,
 annual_df_focal_scenarios_ranks <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1237,10 +1249,14 @@ annual_df_focal_scenarios_ranks %>%
 annual_df_ranks_period_focal <- annual_statewide_df_focal_scenarios %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0)
     
@@ -1366,10 +1382,14 @@ annual_df_focal_scenarios_statewide_ranks <- annual_statewide_df_focal_scenarios
   filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
+    
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1429,10 +1449,14 @@ annual_df_ranks_period_focal_statewide <- annual_statewide_df_focal_scenarios %>
   filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1578,10 +1602,14 @@ annual_df_focal_scenarios_cenCA_ranks <- annual_statewide_df_focal_scenarios %>%
   filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1632,10 +1660,14 @@ annual_df_ranks_period_focal_cenCA <- annual_statewide_df_focal_scenarios %>%
   filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1734,10 +1766,14 @@ write_csv(annual_df_ranks_period_focal_cenCA_hump,
 annual_df_supplement_scenarios_ranks <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1786,10 +1822,14 @@ annual_df_supplement_scenarios_ranks %>%
 annual_df_ranks_period_supplement <- annual_statewide_df_supplement %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1896,10 +1936,14 @@ annual_df_supplement_scenarios_statewide_ranks <- annual_statewide_df_supplement
   filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -1950,10 +1994,14 @@ annual_df_ranks_period_supplement_statewide <- annual_statewide_df_supplement %>
   filter(!stringr::str_detect(pretty_scenario_names, 'CenCA|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -2058,10 +2106,14 @@ annual_df_supplement_scenarios_cenCA_ranks <- annual_statewide_df_supplement %>%
   filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -2111,10 +2163,14 @@ annual_df_ranks_period_supplement_cenCA <- annual_statewide_df_supplement %>%
   filter(!stringr::str_detect(pretty_scenario_names, 'Statewide|BIA')) %>%
   group_by(crab_year) %>%
   mutate(
-    relative_dollars_cost = 100 - relative_dollars,
-    # costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n, # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
-    # costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n # note these are messed up because negative values are bad, as they reflect risk that increased relative to status quo
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
+    relative_dollars_cost = ifelse(relative_dollars >=99, 1 , 100 - relative_dollars),
+    #costs_benefits_hump = relative_dollars_cost / relative_hump_risk_n,
+    #costs_benefits_blwh = relative_dollars_cost / relative_blwh_risk_n,
     
+    # calculate cost effectiveness. 
+    # if risk goes up, set benefit-cost ratio equal to zero
+    # if revenue changes by <=1%, set relative_dollars_cost equal to 1
     benefits_costs_hump = ifelse(relative_hump_risk_n >=0, relative_hump_risk_n/relative_dollars_cost, 0),
     benefits_costs_blwh = ifelse(relative_blwh_risk_n >=0, relative_blwh_risk_n/relative_dollars_cost, 0),
     
@@ -2636,6 +2692,42 @@ data.frame(total_num_vessels,
            total_landings) %>%
   knitr::kable()
 
+# make some histograms by depth. added 020121 from "evaluate fishing depths.R"
+
+tmp <- dcrb_ca_vms_tix_analysis %>% 
+  filter(NGDC_M <= 0 & NGDC_M >= -12000) 
+dim(tmp)
+dim(dcrb_ca_vms_tix_analysis)
+length(which(tmp$NGDC_M >0))
+length(which(tmp$NGDC_M <= -12000))
+range(tmp$NGDC_M)
+unique(tmp$DEPTH_CATM)
+
+tmp %>% 
+  ggplot(aes(NGDC_M/10)) + geom_boxplot()
+
+tmp %>% 
+  ggplot(aes(x=1,y=NGDC_M/10)) + geom_violin()
+
+probs <- c(0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975)
+quantiles <- quantile(tmp$NGDC_M/10, prob=probs)
+
+tmp %>% 
+  ggplot(aes(NGDC_M/10, stat(density)))+
+  geom_histogram(fill='#33638DFF', alpha=0.8, binwidth=5)+
+  geom_vline(aes(xintercept=quantiles[1]),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=quantiles[3]),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=quantiles[4]),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=quantiles[5]),
+             color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=quantiles[7]),
+             color="red", linetype="dashed", size=1) +
+  labs(x='Depth (m)')
+
+quantile(tmp$NGDC_M/10, prob=0.39)
 
 ```
 
