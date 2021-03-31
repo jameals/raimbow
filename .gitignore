@@ -45,3 +45,6 @@ maps_tmp*
 *exp*
 *.pptx
 *.pdf
+
+# large spatial files
+wdfw/data/

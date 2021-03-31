@@ -1,0 +1,186 @@
+---
+title: "Untitled"
+author: "cbn"
+date: "8/28/2020"
+output: html_document
+---
+
+## What this is
+
+This takes the logs compilation created in *Read and prep crab logbook data-2020.Rmd* and turns it into a GIS file using the sf package. I also save into an ArcGIS geodatabase using the arcgisbinding program.
+
+```{r}
+library(sf)
+library(data.table)
+library(ggplot2)
+library(dplyr)
+
+library(arcgisbinding)
+
+# need a license to make this work
+arc.check_product()
+```
+
+If logs isn't already in the Global Environment, bring it in from the csv file. 
+
+```{r}
+logs <- fread(paste0(here::here(), 
+                     "/output/",
+                     "WDFW-Dcrab-logbooks-compied_2020-08-28.csv"))
+
+logs
+```
+
+Drop the records with no matching sets. 
+
+```{r}
+logs <- logs[!is.na(IDsets), ]
+```
+
+## Stack Coordinates
+
+```{r}
+log_coords <- rbind(logs[, .(lat = LATBEG,
+               lon = LONGBEG,
+               coord_type = "begin"), keyby = SetID],
+      logs[, .(lat = LATEND,
+               lon = LONGEND,
+               coord_type = "end"), keyby = SetID])
+
+log_coords <- log_coords[complete.cases(log_coords), ]
+```
+
+## Rejoin Attributes
+
+This is an inner join using standard data.table syntax (i.e. select rows of logs, filtering on SetIDs that appear in log_coords, and nomatch=NULL tells it to drop rows with no matches.)
+
+```{r}
+logs_sf_pts <- logs[log_coords, on = "SetID", nomatch = NULL]
+```
+
+## Make the spatial points object
+
+First, convert to a data.frame because sf and data.table have not played nicely at times.
+
+I create two versions, one using the geographic coordinate system WGS84 g and then another transformed to projected coordinate system UTM10N.
+
+```{r}
+logs_sf_pts <- logs[log_coords, on = "SetID"]
+
+setDF(logs_sf_pts )
+
+logs_sf_pts <- st_as_sf(logs_sf_pts, coords = c("lon", "lat"), agr = "identity", crs = 4326)
+
+logs_sf_pts_utm <- st_transform(logs_sf_pts, crs = 32610) 
+```
+
+
+## Create Spatial Lines
+
+First check to see if all SetIDs have both start and end coordinates. When last run, there are almost 800 with only one coordinate type.
+
+```{r}
+sets_incomplete <- log_coords[, uniqueN(coord_type), 
+           keyby = SetID][V1 != 2, ]
+```
+
+The %chin% is data.table's IN for character data type.
+
+```{r}
+log_coords_full <- log_coords[!(SetID %chin% sets_incomplete$SetID), ]
+```
+
+Repeat the creation of points. 
+
+```{r}
+logs_sf_lines <- st_as_sf(log_coords_full, coords = c("lon", "lat"), 
+                          agr = "identity", crs = 4326)
+```
+
+Now convert to spatial lines. The syntax I figured out by following [this github issue](https://github.com/r-spatial/sf/issues/321). 
+
+**Note:** The conversion from points to lines can take ~20 minutes 
+
+
+```{r}
+logs_sf_lines <- logs_sf_lines %>% 
+  group_by(SetID) %>% 
+  summarize(do_union = FALSE) %>% 
+  st_cast(to = "LINESTRING")
+```
+
+I join the attributes after creating the lines, because the lines will drop the attributes. I convert to data.table for the join for speed. I can't find a join that doesn't then raise the need to reconvert back to sf with st_as_sf(). In the future that might be skippable. 
+
+```{r}
+setDT(logs_sf_lines)
+
+logs_sf_lines <- logs[logs_sf_lines, on = "SetID", nomatch = NULL]
+
+setDF(logs_sf_lines)
+
+logs_sf_lines <- st_as_sf(logs_sf_lines)
+```
+
+Create a UTM version
+
+```{r}
+logs_sf_lines_utm <- logs_sf_lines %>% 
+  st_transform(crs = 32610) 
+```
+
+## Check plots
+
+This just quickly check to see if worked. 
+
+```{r}
+ggplot(logs_sf_pts %>% filter(season == "2011-2012")) + 
+  geom_sf() +
+  facet_wrap(~season, nrow = 5) +
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(logs_sf_lines_utm %>% filter(season == "2011-2012")) + 
+  geom_sf() +
+  facet_wrap(~season, nrow = 5) +
+  theme_minimal()
+```
+
+## Save R objects
+
+```{r}
+saveRDS(logs_sf_pts, paste0(here::here(), "/output/", "WA-crab-log-spatial-points-WGS84.rds"))
+
+saveRDS(logs_sf_pts_utm, paste0(here::here(), "/output/", "WA-crab-log-spatial-points-UTM.rds"))
+        
+saveRDS(logs_sf_lines, paste0(here::here(), "/output/", "WA-crab-log-spatial-lines.rds"))  
+        
+saveRDS(logs_sf_lines_utm, paste0(here::here(), "/output/", "WA-crab-log-spatial-lines-UTM.rds"))        
+```
+
+
+## Save to ArcGIS
+
+The argisbinding package provided input-ouput functionality for moving geospatial data between R and ArcGIS. It is quite handy and improved over what was available before ESRI created it. 
+
+You can write sf objects to various ESRI compatible formats. I prefer writing them as "feature classes" to a file geodatabase. There's no way to create the geodatase from R, as far as I can tell. So I did it manually. You can see the name of it in the filepaths fed to the arc.write() function. I don't think there's a way to create a geodatabse using the arcgisbinding()
+
+Writing to geodatabase does take some time. I got an error when trying to write the spatial lines without the validate argument. Yet it still wrote the file to the gdb. I don't quite understand what validate does. 
+
+```{r}
+gdb_path <- paste0(here::here(), "/output/WDFW-crab-logbooks.gdb")
+
+arc.write(path = paste0(gdb_path, "/crab_log_points"), 
+          data = logs_sf_pts)
+
+arc.write(path = paste0(gdb_path, "/crab_log_lines"), 
+          data = logs_sf_lines, validate = TRUE, overwrite = TRUE)
+
+arc.write(path = paste0(gdb_path, "/crab_log_lines_utm"), 
+          data = logs_sf_lines_utm, 
+          validate = TRUE, 
+          overwrite = TRUE)
+```
+
+

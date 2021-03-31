@@ -1,0 +1,265 @@
+---
+title: "Load and Process Dungeness Crab Logbooks"
+author: "cbn"
+date: "8/28/2020"
+---
+
+## 0. What this is
+
+This notebook takes the Dungeness crab input data, combines individual years and tables into one, does some minimal error checking for dates, adds some columns, and saves a csv file. 
+
+```{r}
+library(data.table)
+library(stringr)
+library(magrittr)
+library(lubridate)
+# I also us the here package, called with ::
+```
+
+## 1. Original Data
+
+WDFW enters logbooks into separate Access database files, one for each season. Using ODBC to read them in. So I manually exported the tables from each database as comma separated text files. 
+
+## 2. Read Logbook Function
+
+The only real purpose of this function is to add the season field while reading in the text file. It grabs it from the file name. The databases themselves do not have a field to identify season. And I do it this way, rather than use the date fields later on, because we've noticed some errors in the dates. The na.strings argument is needed to tell it that blank records are NAs. Otherwise fread() brings the records in as an empty character string.
+
+```{r}
+read_in_logs <- function(file) {
+  dt <- fread(file, check.names = TRUE, na.strings = "")
+  dt[, season := str_extract(file, 
+                        "[0-9]{4}-[0-9]{4}")]
+    } 
+```
+
+## 3. Read in the data
+
+Get a list of all the files.
+
+```{r}
+header_tables_ls <- list.files(here::here("/data"), 
+                               pattern = "Header",
+                               full.names = TRUE)
+
+sets_tables_ls <- list.files(here::here("/data"), 
+                               pattern = "Sets",
+                               full.names = TRUE)
+```
+
+Read each in with fread() and combine into single tables with rbindlist().
+
+```{r}
+headers <- lapply(header_tables_ls, read_in_logs) %>% 
+  rbindlist(fill = TRUE)
+
+sets <- lapply(sets_tables_ls, read_in_logs) %>% 
+  rbindlist(fill = TRUE)
+```
+
+## 4. Join header and sets
+
+Looking at Carol's Access files, she does a query called All Sets where she joins the header and sets table using the Primary Logbook Page field. This does the same type of join. 
+
+I do a "full join" to keep records with no matches. With data.table, you need to use merge() to get a full join. I use the suffixes argument identifies which table a column came from (by default, it would use .x and .y, which is harder to remember which is which). 
+
+```{r}
+logs <- merge(headers, sets, 
+              by = c("Primary.Logbook.Page", "season"), all = TRUE, 
+              suffixes = c(".header", ".sets"))
+
+logs
+```
+## 5. Delete Extraneous columns
+
+These deletes two extraneous columns.
+
+```{r}
+logs[, `:=`(Data.Type = NULL, Field1 = NULL)]
+```
+
+## 6. Change to "CamelCase" 
+
+This takes out the periods from the column names. The periods were added by fread() because I set check.names to TRUE. Taking the periods out is just a matter of preference. 
+
+```{r}
+setnames(logs, old = colnames(logs), 
+         new = str_replace_all(colnames(logs), "\\.", ""))
+```
+
+## 7. Missing Primary Logbook Pages
+
+There are records without matches. I did not investigate the records much to see why there was no match or what it might mean. 
+
+Here's a count of rows where no sets were found for a header, by season.
+
+```{r}
+logs[is.na(IDsets), .N, keyby = season]
+```
+And here are counts of sets that didn't have a matching header. 
+
+```{r}
+logs[is.na(IDheader), .N, keyby = season]
+```
+
+## 8. Convert Dates
+
+The dates load in as datetime format but they're really just dates. 
+
+```{r}
+logs[, `:=`(LandingDate = mdy_hms(LandingDate),
+            SetDate = mdy_hms(SetDate))]
+```
+
+## 9. Check for errors
+
+There should only be two years within a season. The coastal crab folks may have fixed some of the errors from last time, so I re-exported the Access files for a couple of seasons. Yet errors still exist. 
+
+```{r}
+logs[, .(year = unique(year(LandingDate))), 
+     keyby = season][, dcast(.SD, season ~ year)]
+```
+
+```{r}
+logs[, .(year = unique(year(SetDate))), 
+     keyby = season][, dcast(.SD, season ~ year)]
+```
+### A. Set Dates
+
+First, get the season start and ending years.  
+
+```{r}
+logs[, c("start_year", "end_year") := tstrsplit(season, "-")
+     ][, `:=`(start_year = as.numeric(start_year), 
+              end_year = as.numeric(end_year))]
+```
+
+Test to see if the Set Date year matches one of those years. I compared the set date to fish ticket dates in a separate notebook. The Set Dates are all one year after the date on the fish ticket.
+
+```{r}
+check_setdate <- logs[year(SetDate) != start_year &
+       year(SetDate) != end_year, ]
+
+check_setdate 
+```
+### B. Landing Dates
+
+```{r}
+check_land_date <- logs[year(LandingDate) != start_year &
+                          year(LandingDate) != end_year, ]
+
+check_land_date 
+```
+## 10. Correct Errors
+
+I couldn't figure a cleaner way just to change the year, and the lubridate year() assignment (e.g. `year(x) <- 2014`) wasn't working within data.table. So I came up with this function. 
+
+```{r}
+correct_year <- function(date, correct_year) {
+  lubridate::year(date) <- correct_year
+  return(date)
+  }
+```
+
+### A. SetDates
+
+I compared the dates against the fish ticket database (WAFT) in the *Check-log-dates-against-WAFT.Rmd* notebook. The SetDates were all one year ahead of where they should be. This corrects that. 
+
+```{r}
+logs[IDsets %in% check_setdate$IDsets, SetDate := correct_year(SetDate, year(SetDate) - 1)]
+```
+
+If this returns a season, then there are still errors. As last run, it's showing no more than 2 unique years per season. 
+
+```{r}
+logs[, .(year = uniqueN(year(SetDate), na.rm = TRUE)), 
+     keyby = season][year > 2, ]
+```
+### B. LandingDate
+
+As with the SetDate, I compared the LandingsDates to WAFT in the other notebook. They too were off by a year, all one year later than they should be. 
+
+```{r}
+logs[IDheader %in% check_land_date$IDheader, LandingDate := correct_year(LandingDate, year(LandingDate) - 1)]
+```
+
+This returns no seasons with more than 2 unique years. So the errors are corrected.
+
+```{r}
+logs[, .(year = uniqueN(year(LandingDate), na.rm = TRUE)), 
+     keyby = season][year > 2, ]
+```
+
+## 11. Add Season Start Dates
+
+The dates are from Dan and Robert's standard summary report that they provide folks. The code basically takes their format and converts to R's date format. The WA fishery has two opening dates, the "South of Klipsan" or early opening date. 
+
+```{r}
+start_dates <- data.table(
+  season = logs[, .(season = unique(season)), keyby = season][, season],
+  south_season_start = c("Dec. 1", "Dec. 1", "Dec. 15", "Dec. 31", "Dec. 16", "Dec. 1", "Jan. 4", "Jan. 1", "Jan. 15", "Jan. 4"),
+  north_season_start = c("Jan. 2", "Jan. 15", "Jan. 24", "Jan. 24", "Jan. 15", "Jan. 3", "Jan. 4", "Jan. 7", "Jan. 28", "Jan. 10")
+  )
+
+start_dates[, c("start_year", "end_year") := tstrsplit(season, "-")
+     ][, `:=`(start_year = as.numeric(start_year), 
+              end_year = as.numeric(end_year))]
+
+start_dates[, c("start_month_s", "start_day_s") := tstrsplit(south_season_start, 
+                                                       split = "\\.")]
+
+start_dates[, c("start_month_n", "start_day_n") := tstrsplit(north_season_start, 
+                                                       split = "\\.")]
+
+start_dates[, south_season_start := fifelse(start_month_s == "Dec",
+                                     ymd(paste(start_year, 
+                                               start_month_s,
+                                               start_day_s, sep = "-")),
+                                         ymd(paste(end_year, 
+                                               start_month_s,
+                                               start_day_s, sep = "-")))]
+
+start_dates[, north_season_start := fifelse(start_month_n == "Dec",
+                                     ymd(paste(start_year, 
+                                               start_month_n,
+                                               start_day_n, sep = "-")),
+                                         ymd(paste(end_year, 
+                                               start_month_n,
+                                               start_day_n, sep = "-")))]
+
+logs <- logs[start_dates[, .(season, 
+                             south_season_start, 
+                             north_season_start)], on = "season"]
+
+logs
+```
+## 12. Add Coordinates
+
+Except for the more recent season, the database doesn't include coordinates in digital degree format. This will create the same fields from the later seasons for all records.
+
+```{r}
+logs[is.na(LATEND),
+     `:=`(LATBEG = LatitudeBeginDegrees + LatitudeBeginMinutes/60,
+          LONGBEG = -1 * (LongitudeBeginDegrees + LongitudeBeginMinutes/60),
+          LATEND = LatitudeEndDegrees + LatitudeEndMinutes/60,
+          LONGEND = -1 * (LongitudeEndDegrees + LongitudeEndMinutes/60))]
+```
+
+## 13. Add Set ID
+
+```{r}
+logs[, SetID := paste0(season, "_", IDsets)]
+```
+
+
+## 14. Save as csv
+
+```{r}
+fwrite(logs, paste0(here::here(), 
+                    "/output/", 
+                    "WDFW-Dcrab-logbooks-compied", 
+                    "_", 
+                    Sys.Date(), ".csv"))
+```
+
+
+
