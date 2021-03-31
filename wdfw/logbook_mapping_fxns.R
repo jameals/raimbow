@@ -26,8 +26,15 @@ options(dplyr.summarise.inform = FALSE)
 
 # if you have to load the logs you can do it here
 # using the 2017-2018 slice provided by Leena
+#Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
-                 col_types = 'dcdcdccTcccccdTddddddddddddddddiddccddddcddc')
+                 col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+
+# QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
+# These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
+logs %<>% filter(FishTicket1 != "Q999999")
+
+
 # QC: for each variable/column in the logs, count how many NA values there are
 numNA <- logs %>% summarise(across(everything(),~sum(is.na(.x))))
 
