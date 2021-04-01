@@ -32,7 +32,7 @@ logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_se
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
-logs %<>% filter(FishTicket1 != "Q999999")
+logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
 
 
 # QC: for each variable/column in the logs, count how many NA values there are
