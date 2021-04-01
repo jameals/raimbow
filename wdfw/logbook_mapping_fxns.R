@@ -7,10 +7,8 @@ library(raster)
 library(fasterize)
 select <- dplyr::select
 library(rnaturalearth)
-library(marmap)
 library(viridis)
 library(magrittr)
-library(SpatialKDE)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
