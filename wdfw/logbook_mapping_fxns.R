@@ -112,6 +112,12 @@ place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
   traps_sf %<>%
     mutate(depth=bathy.points/10)
   
+  # find points on land and collect their SetIDs to a list
+  traps_on_land <- traps_sf %>% filter(depth > 0) 
+  unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+  # Remove ALL points whose Set_ID appears on that list
+  traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+  
   return(traps_sf)  
 }
 
