@@ -65,12 +65,16 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 # df<- logs;year_choice=2018;month_choice=2;period_choice=2
 
-place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
+#place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
+place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   df %<>%
-    dplyr::select(Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+   #dplyr::select(Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+    dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
     # filter for the desired dates
-    mutate(yr=year(SetDate),m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
-    filter(yr%in%year_choice,m%in%month_choice,period%in%period_choice) %>% 
+   #mutate(yr=year(SetDate),m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+    mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+   #filter(yr%in%year_choice,m%in%month_choice,period%in%period_choice) %>% 
+    filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice) %>% 
     distinct() %>% 
     # make sure each set has a beginning and end
     group_by(SetID) %>% 
@@ -207,7 +211,8 @@ map_traps <- function(gridded_traps){
 
 ## USE BELOW TO TEST OUT THE ABOVE FUNCTIONS ###
 
-testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
+#testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
+testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice = 5,period_choice = 2)
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
