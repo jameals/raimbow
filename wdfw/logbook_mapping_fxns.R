@@ -9,6 +9,7 @@ select <- dplyr::select
 library(rnaturalearth)
 library(viridis)
 library(magrittr)
+library(gridExtra)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
