@@ -216,3 +216,31 @@ testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2017-2018',mont
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
+
+
+######
+##A start for looping through different crab_year, month and period combinations
+
+make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
+  place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
+    join_grid(gkey) %>% 
+    map_traps()
+}
+
+# all together
+test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice=5,period_choice=2,gkey = grd_area_key)
+test_map
+
+# for a loop across multiple months or periods
+scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:6,period_choice=1:2)
+tm <- proc.time()
+plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
+proc.time()-tm
+#Time taken to do 4 maps is 3.5 minutes, 6 maps is 8.5 minutes
+
+###EXPORT IN PDF
+ggsave(
+  filename = "plots.pdf", 
+  plot = marrangeGrob(plts, nrow=1, ncol=1), 
+  width = 15, height = 9
+)
