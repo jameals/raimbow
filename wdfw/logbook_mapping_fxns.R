@@ -210,9 +210,23 @@ map_traps <- function(gridded_traps){
 }
 
 ## USE BELOW TO TEST OUT THE ABOVE FUNCTIONS ###
+# if you want to use all of the functions together
+make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
+  place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
+    join_grid(gkey) %>% 
+    map_traps()
+}
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
 testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice = 5,period_choice = 2)
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
+
+# all together
+test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice=5,period_choice=2,gkey = grd_area_key)
+test_map
+
+# for a loop across multiple months or periods
+scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
+plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
