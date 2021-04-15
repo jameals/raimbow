@@ -36,6 +36,7 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
+#bathypoint <- read_sf(here::here('data', 'vms_bath0to200m_pts_geo.shp'))
 
 # example spatial grid
 # 5x5 grid shapefile
@@ -118,9 +119,9 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
     mutate(depth=bathy.points/10)
   
   # find points on land and collect their SetIDs to a list
-  traps_on_land <- traps_sf %>% filter(depth > 0) 
+  #traps_on_land <- traps_sf %>% filter(depth > 0) 
   # if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use something like
-  # traps_sf %>% filter(depth < -500 & depth > -1000 | depth > 0)
+  traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
   unique_SetIDs_on_land <- unique(traps_on_land$SetID)
   
   # Remove ALL points whose Set_ID appears on that list
@@ -232,16 +233,17 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice=5,period_choice=2,gkey = grd_area_key)
 test_map
 
-# for a loop across multiple months or periods
-scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:6,period_choice=1:2)
+# for a loop across multiple months and periods #note that code won't work if there is a month-period combo with no data 
+scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
-#Time taken to do 4 maps is 3.5 minutes, 6 maps is 8.5 minutes
+#Time taken to do 8 maps 11.3 minutes
+
 
 ###EXPORT IN PDF
 ggsave(
-  filename = "plots.pdf", 
+  filename = "2017-2018_Jan-Aug.pdf", 
   plot = marrangeGrob(plts, nrow=1, ncol=1), 
   width = 15, height = 9
 )
