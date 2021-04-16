@@ -72,7 +72,7 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-df<- logs;crab_year_choice='2017-2018';month_choice=2;period_choice=2
+# df<- logs;crab_year_choice='2017-2018';month_choice=2;period_choice=2
 
 #place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
