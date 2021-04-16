@@ -27,6 +27,7 @@ options(dplyr.summarise.inform = FALSE)
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
                  col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#logs <- read_csv(here('data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
@@ -266,3 +267,22 @@ ggsave(
   plot = marrangeGrob(plts, nrow=1, ncol=1), 
   width = 15, height = 9
 )
+
+
+######Manually setting legend limits
+#Use summary(summtraps$trapdens) to get the max value for the selected season (e.g.2017-2018) (because there are NAs max() just returns NA)
+#Replace the final part of the map_traps function with this, where you use the max trapdens to set the limits and labels
+#I couldn't get the limits and labels to work within the scale_fill_viridis()
+map_out <- summtraps %>% 
+  ggplot()+
+  geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+  geom_sf(data=coaststates,col=NA,fill='gray50')+
+  scale_fill_continuous(low="blue", high="yellow",limits=c(0,115), breaks=c(0,115),labels=c("low","high"))+
+  #scale_fill_viridis(na.value='grey70',option="C")+
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  labs(x='',y='',fill='Traps per\nsq. km',title='')+
+  theme(axis.text.x.bottom = element_text(angle=45),
+        legend.position = c(0.8,0.3),
+        title=element_text(size=16),
+        legend.title = element_text(size=10))
+return(map_out)
