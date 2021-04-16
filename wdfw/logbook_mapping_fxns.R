@@ -243,8 +243,10 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 }
 
 # all together
+t <- proc.time()
 test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice=5,period_choice=2,gkey = grd_area_key)
 test_map
+proc.time()-t
 
 # for a loop across multiple months or periods
 scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
