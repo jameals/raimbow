@@ -10,6 +10,7 @@ library(rnaturalearth)
 library(viridis)
 library(magrittr)
 library(gridExtra)
+library(nngeo)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -36,7 +37,13 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
+# crop bathymetry to extent of logbook data
+ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
+bathy <- bathy %>% crop(ex)
+
 #bathypoint <- read_sf(here::here('data', 'vms_bath0to200m_pts_geo.shp'))
+# bathy <- read_sf(here::here('wdfw','data','Shapefile points 0-200m','vms_bath0to200m_pts_geo.shp')) %>% 
+  # st_transform(32610)
 
 # example spatial grid
 # 5x5 grid shapefile
@@ -65,7 +72,7 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-# df<- logs;year_choice=2018;month_choice=2;period_choice=2
+df<- logs;crab_year_choice='2017-2018';month_choice=2;period_choice=2
 
 #place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
@@ -106,7 +113,7 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   # find depth of traps
   traps_sf <- traps %>%
     st_as_sf(coords=c('x','y'),crs=32610) %>% 
-    st_transform(4326) %>% 
+    st_transform(4326) %>%
     select(-id)
   
   # do the raster extract with the bathymetry grid
