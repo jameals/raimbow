@@ -259,6 +259,7 @@ plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_
 
 # for a loop across multiple months and periods #note that code won't work if there is a month-period combo with no data 
 scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
+# scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:7),period_choice=1:2)
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
