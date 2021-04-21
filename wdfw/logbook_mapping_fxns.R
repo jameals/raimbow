@@ -50,9 +50,6 @@ bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
 ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
 bathy <- bathy %>% crop(ex)
 
-#bathypoint <- read_sf(here::here('data', 'vms_bath0to200m_pts_geo.shp'))
-# bathy <- read_sf(here::here('wdfw','data','Shapefile points 0-200m','vms_bath0to200m_pts_geo.shp')) %>% 
-  # st_transform(32610)
 
 # example spatial grid
 # 5x5 grid shapefile
