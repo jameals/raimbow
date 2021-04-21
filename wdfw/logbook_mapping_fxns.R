@@ -175,11 +175,12 @@ join_grid <- function(traps_sf,gkey){
   # just return the grid with month, season, period labels (so we can still label the map later)
   
   if(is.character(traps_sf)) {
-    warning("Traps data frame is empty. Returning empty map.")
-
+    
     empty_grd <- gkey %>% left_join(grd_xy,by="GRID5KM_ID") %>% 
       mutate(month_name=traps_sf[1],period=traps_sf[2],season=traps_sf[3])
-      
+    warning(paste0("Traps data frame is empty. Returning empty map for ",
+                   traps_sf[2], " of ",traps_sf[1]," for season ",traps_sf[3]))
+
     return(empty_grd)
   }
   
@@ -284,7 +285,7 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 }
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
-testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice = 1,period_choice = 2)
+testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice = 11,period_choice = 2)
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
