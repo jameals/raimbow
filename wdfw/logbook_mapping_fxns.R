@@ -156,9 +156,6 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   # Remove ALL points whose Set_ID appears on that list
   traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
   
-  # labels for season, month, and period
-  mnth <- month.name[month_choice]
-  p <- ifelse(period_choice==1,"first half","second half")
   
   traps_sf %<>% mutate(month_name=mnth,period=p,season=crab_year_choice)
   
