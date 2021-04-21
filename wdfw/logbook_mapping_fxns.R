@@ -18,6 +18,10 @@ plot_theme <-   theme_minimal()+
         legend.text = element_text(size=14),
         axis.title=element_text(family="sans",size=14,color="black"),
         axis.text=element_text(family="sans",size=8,color="black"),
+        axis.text.x.bottom = element_text(angle=45),
+        legend.position = c(0.8,0.3),
+        title=element_text(size=12),
+        legend.title = element_text(size=10),
         panel.grid.major = element_line(color="gray50",linetype=3))
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
@@ -25,9 +29,9 @@ options(dplyr.summarise.inform = FALSE)
 # if you have to load the logs you can do it here
 # using the 2017-2018 slice provided by Leena
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
-                 col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-#logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+# logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
+                 # col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
@@ -57,10 +61,16 @@ names(grd)
 
 # spatial area matching key of each grid cell (because the grid has been trimmed to the coastline)
 # also matches to areas with specific port and embayment codes (NGDC_GRID) based on the bathymetry grid
-
 grd_area_key <- grd %>% 
   select(GRID5KM_ID,NGDC_GRID,AREA) %>%
   mutate(is_port_or_bay=ifelse(NGDC_GRID==-999999,F,T))
+
+# rasterized grid, for extracting evenly spaced centroid coordinates for later plotting
+grd_r <- fasterize(grd_area_key,raster = raster(grd_area_key,res=5000,crs=crs(grd_area_key)),field="GRID5KM_ID")
+grd_xy <- rasterToPoints(grd_r) %>% as_tibble() %>% set_colnames(c("x","y","GRID5KM_ID")) %>%
+  st_as_sf(coords=c('x','y'),crs=st_crs(grd_area_key))
+grd_xy <- grd_xy %>% st_coordinates() %>% as_tibble() %>% mutate(GRID5KM_ID=grd_xy$GRID5KM_ID) %>%
+  set_colnames(c("grd_x","grd_y","GRID5KM_ID"))
 
 # background map (coastline)
 coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
@@ -77,19 +87,26 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-# df<- logs;crab_year_choice='2017-2018';month_choice=2;period_choice=2
+# df<- logs;crab_year_choice='2009-2010';month_choice=11;period_choice=2
 
-#place_traps <- function(df,bathy,year_choice,month_choice,period_choice){
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
+  
+  # labels for season, month, and period of choice
+  mnth <- month.name[month_choice]
+  p <- ifelse(period_choice==1,"first half","second half")
+  
   df %<>%
    #dplyr::select(Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
     dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
-    # filter for the desired dates
-   #mutate(yr=year(SetDate),m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+    # filter for the desired dates 
     mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
-   #filter(yr%in%year_choice,m%in%month_choice,period%in%period_choice) %>% 
     filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice) %>% 
-    distinct() %>% 
+    distinct() 
+  
+  # IF THE ABOVE FILTER COMES UP EMPTY, JUST RETURN A STRING VECTOR OF MONTH,SEASON, PERIOD
+  if(nrow(df)==0) return(c(mnth,p,crab_year_choice))
+  
+  df %<>% 
     # make sure each set has a beginning and end
     group_by(SetID) %>% 
     mutate(n=n()) %>% 
@@ -139,6 +156,12 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   # Remove ALL points whose Set_ID appears on that list
   traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
   
+  # labels for season, month, and period
+  mnth <- month.name[month_choice]
+  p <- ifelse(period_choice==1,"first half","second half")
+  
+  traps_sf %<>% mutate(month_name=mnth,period=p,season=crab_year_choice)
+  
   return(traps_sf)  
 }
 
@@ -147,18 +170,22 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
 # trapssf is the spatial (sf) dataframe produced in the previous function,gkey is the grid with matching key
 
 join_grid <- function(traps_sf,gkey){
+  
+  # if the data are empty (i.e., no observations matching choice of month, period, season)
+  # just return the grid with month, season, period labels (so we can still label the map later)
+  
+  if(is.character(traps_sf)) {
+    warning("Traps data frame is empty. Returning empty map.")
 
+    empty_grd <- gkey %>% left_join(grd_xy,by="GRID5KM_ID") %>% 
+      mutate(month_name=traps_sf[1],period=traps_sf[2],season=traps_sf[3])
+      
+    return(empty_grd)
+  }
+  
   traps_sf %<>%
     # convert to planar projection to match the grid
     st_transform(st_crs(gkey))
-  
-  # rasterized grid, for extracting evenly spaced centroid coordinates for later plotting
-   grd_r <- fasterize(gkey,raster = raster(grd,res=5000,crs=crs(gkey)),field="GRID5KM_ID")
-
-   grd_xy <- rasterToPoints(grd_r) %>% as_tibble() %>% set_colnames(c("x","y","GRID5KM_ID")) %>%
-     st_as_sf(coords=c('x','y'),crs=st_crs(gkey))
-   grd_xy <- grd_xy %>% st_coordinates() %>% as_tibble() %>% mutate(GRID5KM_ID=grd_xy$GRID5KM_ID) %>%
-     set_colnames(c("grd_x","grd_y","GRID5KM_ID"))
   
   # Spatially join traps to 5k grid, with grid/area matching key
   traps_g <- traps_sf %>%
@@ -171,6 +198,29 @@ join_grid <- function(traps_sf,gkey){
 # Finally, a function to draw a map
 # Function takes the output of the previous function, applies a correction for double counting
 map_traps <- function(gridded_traps){
+  
+  # labels for plot titles
+  month_label=unique(gridded_traps$month_name)
+  period_label=unique(gridded_traps$period)
+  season_label=paste("Season:",unique(gridded_traps$season))
+  t <- paste0(season_label,"\n",month_label,", ",period_label)
+  
+  # if the traps dataframe is empty, return a map with zeroes everywhere
+  if(!('SetID' %in% names(gridded_traps))){
+    bbox = c(800000,1650000,1013103,1970000)
+    map_out <- gridded_traps %>% 
+      st_set_geometry(NULL) %>% 
+      mutate(trapdens=0) %>% 
+      ggplot()+
+      geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+      geom_sf(data=coaststates,col=NA,fill='gray50')+
+      scale_fill_viridis(na.value='grey70',option="C")+
+      coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+      labs(x='',y='',fill='Traps per\nsq. km',title=t)
+    
+    return(map_out)
+  }
+  
   summtraps <- gridded_traps %>% 
     st_set_geometry(NULL) %>%
     filter(!is.na(GRID5KM_ID)) %>% 
@@ -214,11 +264,8 @@ map_traps <- function(gridded_traps){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     scale_fill_viridis(na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-    labs(x='',y='',fill='Traps per\nsq. km',title='')+
-    theme(axis.text.x.bottom = element_text(angle=45),
-          legend.position = c(0.8,0.3),
-          title=element_text(size=16),
-          legend.title = element_text(size=10))
+    labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  
   return(map_out)
     
 }
@@ -226,30 +273,34 @@ map_traps <- function(gridded_traps){
 ## USE BELOW TO TEST OUT THE ABOVE FUNCTIONS ###
 # if you want to use all of the functions together
 make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
-  place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
+  
+  traps <- place_traps(df,bathy,crab_year_choice,month_choice,period_choice) 
+  
+  traps_map <- traps %>% 
     join_grid(gkey) %>% 
     map_traps()
+  
+  return(traps_map)
 }
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
-testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice = 5,period_choice = 2)
+testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice = 1,period_choice = 2)
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
 
-
 ######
 ##A start for looping through different crab_year, month and period combinations
 
-make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
-  place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
-    join_grid(gkey) %>% 
-    map_traps()
-}
+# make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
+#   place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
+#     join_grid(gkey) %>% 
+#     map_traps()
+# }
 
 # all together
 t <- proc.time()
-test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2017-2018',month_choice=5,period_choice=2,gkey = grd_area_key)
+test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice=3,period_choice=2,gkey = grd_area_key)
 test_map
 proc.time()-t
 
