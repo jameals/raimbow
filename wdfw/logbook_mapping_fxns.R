@@ -285,7 +285,7 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 }
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
-testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice = 11,period_choice = 2)
+testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice = 9,period_choice = 2)
 test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
 test_map<- test_traps_grid %>% map_traps()
 test_map
