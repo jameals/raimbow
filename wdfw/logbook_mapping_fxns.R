@@ -252,35 +252,48 @@ map_traps <- function(gridded_traps){
   ############################################################################# 
    # if the summtraps$trapdens is only NAs, return an empty map
   #Test 1
-  if(all(is.na(summtraps$trapdens))){
-    bbox = c(800000,1650000,1013103,1970000)
-    map_out <- gridded_traps  %>% 
-     st_set_geometry(NULL) %>% 
-     mutate(trapdens=0) %>% 
-     ggplot()+
-     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
-     geom_sf(data=coaststates,col=NA,fill='gray50')+
-     scale_fill_viridis(na.value='grey70',option="C")+
-     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-     labs(x='',y='',fill='Traps per\nsq. km',title=t)
-  return(map_out)
-  }
-  
+  # if(all(is.na(summtraps$trapdens))){
+  #   bbox = c(800000,1650000,1013103,1970000)
+  #   map_out <- gridded_traps  %>% 
+  #    st_set_geometry(NULL) %>% 
+  #    mutate(trapdens=0) %>% 
+  #    ggplot()+
+  #    geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+  #    geom_sf(data=coaststates,col=NA,fill='gray50')+
+  #    scale_fill_viridis(na.value='grey70',option="C")+
+  #    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  #    labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  # return(map_out)
+  # }
+  # 
   #Test 2
+  # if(all(is.na(summtraps$trapdens))){
+  #   bbox = c(800000,1650000,1013103,1970000)
+  #   map_out <- gridded_traps  %>% 
+  #     st_set_geometry(NULL) %>% 
+  #     # mutate(trapdens=0) %>% 
+  #     ggplot()+
+  #     # geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+  #     geom_sf(data=coaststates,col=NA,fill='gray50')+
+  #     scale_fill_viridis(na.value='grey70',option="C")+
+  #     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  #     labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  # return(map_out)
+  # } 
+  
+  # Test 3: change color scaling for all NA traps
   if(all(is.na(summtraps$trapdens))){
     bbox = c(800000,1650000,1013103,1970000)
     map_out <- gridded_traps  %>% 
       st_set_geometry(NULL) %>% 
-      # mutate(trapdens=0) %>% 
+      mutate(trapdens=NA) %>%
       ggplot()+
-      # geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+      geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=F,fill='gray70',alpha=0.8)+
       geom_sf(data=coaststates,col=NA,fill='gray50')+
-      scale_fill_viridis(na.value='grey70',option="C")+
       coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
       labs(x='',y='',fill='Traps per\nsq. km',title=t)
-  return(map_out)
+    return(map_out)
   } 
-  
   
   # Make a map
   # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
