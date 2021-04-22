@@ -248,6 +248,39 @@ map_traps <- function(gridded_traps){
     left_join(confidential_cells,by="GRID5KM_ID") %>% 
     mutate(tottraps=ifelse(is_confidential,NA,tottraps),
            trapdens=ifelse(is_confidential,NA,trapdens))
+
+  ############################################################################# 
+   # if the summtraps$trapdens is only NAs, return an empty map
+  #Test 1
+  if(all(is.na(summtraps$trapdens))){
+    bbox = c(800000,1650000,1013103,1970000)
+    map_out <- gridded_traps  %>% 
+     st_set_geometry(NULL) %>% 
+     mutate(trapdens=0) %>% 
+     ggplot()+
+     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+     geom_sf(data=coaststates,col=NA,fill='gray50')+
+     scale_fill_viridis(na.value='grey70',option="C")+
+     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+     labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  return(map_out)
+  }
+  
+  #Test 2
+  if(all(is.na(summtraps$trapdens))){
+    bbox = c(800000,1650000,1013103,1970000)
+    map_out <- gridded_traps  %>% 
+      st_set_geometry(NULL) %>% 
+      # mutate(trapdens=0) %>% 
+      ggplot()+
+      # geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+      geom_sf(data=coaststates,col=NA,fill='gray50')+
+      scale_fill_viridis(na.value='grey70',option="C")+
+      coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+      labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  return(map_out)
+  } 
+  
   
   # Make a map
   # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
@@ -295,7 +328,7 @@ test_map
 
 # all together
 t <- proc.time()
-test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2009-2010',month_choice=3,period_choice=2,gkey = grd_area_key)
+test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice=9,period_choice=2,gkey = grd_area_key)
 test_map
 proc.time()-t
 
