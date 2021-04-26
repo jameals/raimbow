@@ -33,6 +33,9 @@ options(dplyr.summarise.inform = FALSE)
                  # col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
+# jameal
+logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
 logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
@@ -46,6 +49,10 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
+
+# jameal
+bathy <- raster("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/vms_composite_bath.txt")
+
 # crop bathymetry to extent of logbook data
 ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
 bathy <- bathy %>% crop(ex)
@@ -54,6 +61,10 @@ bathy <- bathy %>% crop(ex)
 # example spatial grid
 # 5x5 grid shapefile
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
+names(grd)
+
+# jameal
+grd <- read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid Apr 2021/fivekm_grid_polys_shore_lamb.shp")
 names(grd)
 
 # spatial area matching key of each grid cell (because the grid has been trimmed to the coastline)
@@ -74,6 +85,34 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
   st_transform(st_crs(grd))
 
+# use SetDate and season to define new columns designating month and month_interval 
+# head(logs$season)
+# head(logs$SetDate)
+# logs[1:5,] %>%
+#   mutate(
+#     m = month(SetDate, label=TRUE, abbr = FALSE),
+#     season_month = paste0(season,"_",m),
+#     month_interval = paste0(season_month,
+#                             "_",
+#                             ifelse(day(SetDate)<=15,1,2)
+#                             )
+#   ) %>%
+#   select(
+#     season_month, m, month_interval
+#   )
+
+logs %<>%
+  mutate(
+    m = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",m),
+    month_interval = paste0(season_month, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+                            )
+    )
+  
+# tail(data.frame(logs))
+
 # Main steps for these functions
 # 1. make strings into individual pots by segmentizing lines (sf::st_line_sample())
 # 2. remove points on land by using a bathymetry layer
@@ -84,7 +123,95 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-# df<- logs;crab_year_choice='2009-2010';month_choice=11;period_choice=2
+df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=0
+
+# jameal makes a new place_traps_ts function for making the data frame used for making time series.
+  # period_choice can take values of 1, 2, or 0 where 0 indicates the full month
+place_traps_ts <- function(df,bathy,crab_year_choice,month_choice,period_choice){
+  
+  # labels for season, month, and period of choice
+  mnth <- month.name[month_choice]
+  p <- ifelse(period_choice==1,
+              "first half",
+              ifelse(period_choice == 2, "second half", "full month")
+  )
+  
+  # if we want a month-level summary
+  if(p == "full month"){
+    df %<>%
+    dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      mutate(m=month(SetDate), d=day(SetDate), period=0) %>%
+      filter(season%in%crab_year_choice,m%in%month_choice) %>% 
+    distinct() 
+  } else {
+  # if we want a period-level summary
+    df %<>%
+      #dplyr::select(Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      # filter for the desired dates 
+      mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+      filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice) %>% 
+      distinct() 
+  }
+  
+  # IF THE ABOVE FILTER COMES UP EMPTY, JUST RETURN A STRING VECTOR OF MONTH,SEASON, PERIOD
+  if(nrow(df)==0) return(c(mnth,p,crab_year_choice))
+  
+  df %<>% 
+    # make sure each set has a beginning and end
+    group_by(SetID) %>% 
+    mutate(n=n()) %>% 
+    filter(n==2,!is.na(PotsFished)) %>%
+    # convert to sf points
+    st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
+    st_transform(32610) %>% 
+    # create linestrings
+    group_by(Vessel,SetID,PotsFished,SetDate) %>% 
+    summarise(do_union = FALSE) %>% 
+    st_cast("LINESTRING")
+  
+  traps <- df %>% 
+    ungroup() %>% 
+    # now use those linestrings to place pots using sf::st_line_sample
+    mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
+                                .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
+    # pull out the x/y coordinates of the traps
+    mutate(trapcoords=purrr::map(traplocs,
+                                 function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
+    select(Vessel,SetID,PotsFished,SetDate,trapcoords) %>% 
+    # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
+    st_set_geometry(NULL) %>% 
+    unnest(cols=c(trapcoords))
+  
+  # find depth of traps
+  traps_sf <- traps %>%
+    st_as_sf(coords=c('x','y'),crs=32610) %>% 
+    st_transform(4326) %>%
+    select(-id)
+  
+  # do the raster extract with the bathymetry grid
+  # Note- I think this would be faster with a vector representation (points) of the bathy grid
+  bathy.points <- raster::extract(bathy,traps_sf)
+  
+  # add depth as a column variable
+  # divide by 10 to go from decimeters to meters
+  traps_sf %<>%
+    mutate(depth=bathy.points/10)
+  
+  # find points on land and collect their SetIDs to a list
+  #traps_on_land <- traps_sf %>% filter(depth > 0) 
+  # if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use something like
+  traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+  unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+  
+  # Remove ALL points whose Set_ID appears on that list
+  traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+  
+  
+  traps_sf %<>% mutate(month_name=mnth,period=p,season=crab_year_choice)
+  
+  return(traps_sf)  
+}
 
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
