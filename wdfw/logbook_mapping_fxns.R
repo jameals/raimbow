@@ -86,6 +86,43 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   st_transform(st_crs(grd))
 
 # use SetDate and season to define new columns designating month and month_interval 
+logs %<>%
+  mutate(
+    m = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",m),
+    month_interval = paste0(season_month, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+                            )
+    )
+
+# tail(data.frame(logs))
+
+# make a summary df that represents the summed number of traps in WA during each interval
+dat<- logs
+# interval<- season_month; regions<- NULL
+
+# sum_traps <- function(dat,interval,regions){
+  
+  dat2 <-  dat %>% #dat[1:100,]
+    distinct(SetID, .keep_all = TRUE) %>%
+    #group_by(interval, regions) %>%
+    group_by(season_month) %>%
+    mutate(
+      sum_traps=sum(PotsFished, na.rm=TRUE),
+      sum_lost=sum(PotsLost, na.rm=TRUE)
+    ) %>%
+    distinct(season_month, .keep_all = TRUE) %>%
+    select(
+      season, season_month, m, month_interval, 
+      sum_traps, sum_lost
+    )
+  
+  
+#   return(dat2)
+# }
+
+
 # head(logs$season)
 # head(logs$SetDate)
 # logs[1:5,] %>%
@@ -101,18 +138,6 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 #     season_month, m, month_interval
 #   )
 
-logs %<>%
-  mutate(
-    m = month(SetDate, label=TRUE, abbr = FALSE),
-    season_month = paste0(season,"_",m),
-    month_interval = paste0(season_month, 
-                            "_", 
-                            ifelse(day(SetDate)<=15,1,2)
-                            )
-    )
-  
-# tail(data.frame(logs))
-
 # Main steps for these functions
 # 1. make strings into individual pots by segmentizing lines (sf::st_line_sample())
 # 2. remove points on land by using a bathymetry layer
@@ -123,7 +148,7 @@ logs %<>%
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=0
+df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=1
 
 # jameal makes a new place_traps_ts function for making the data frame used for making time series.
   # period_choice can take values of 1, 2, or 0 where 0 indicates the full month
@@ -290,6 +315,8 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
 # It also joins the grid id matching key to identify ports and bays and assign correct grid cell areas
 # trapssf is the spatial (sf) dataframe produced in the previous function,gkey is the grid with matching key
 
+gkey <- grd_area_key
+
 join_grid <- function(traps_sf,gkey){
   
   # if the data are empty (i.e., no observations matching choice of month, period, season)
@@ -316,6 +343,32 @@ join_grid <- function(traps_sf,gkey){
   
   return(traps_g)
 }
+
+
+
+# make a summary df that represents the summed number of traps in each 5km grid cell during each monthly interval
+
+traps_g2 <-  traps_g %>% #traps_g[1:100,]
+  mutate(
+    season_month = paste0(season,"_",month_name), 
+    month_interval = paste0(season_month,"_",period)
+  ) %>% 
+  group_by(season_month, GRID5KM_ID) %>% 
+  mutate(
+    sum_traps = n(),
+    num_vessels = length(unique(Vessel)) #add count of unique vessels
+  ) %>%
+  mutate(
+    GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)
+  ) %>%
+  st_drop_geometry() %>%
+  distinct(GRID5KM_ID_season_month, .keep_all = TRUE) %>%
+  select(
+    GRID5KM_ID, AREA, depth, NGDC_GRID, is_port_or_bay,
+    season_month, month_name, 
+    sum_traps, num_vessels
+  )
+
 
 # Finally, a function to draw a map
 # Function takes the output of the previous function, applies a correction for double counting
