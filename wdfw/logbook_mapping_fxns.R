@@ -99,7 +99,9 @@ logs %<>%
 # tail(data.frame(logs))
 
 # make a summary df that represents the summed number of traps in WA during each interval
-dat<- logs
+#There are some cases where SetDate was NA, and therefore m ends up being NA too
+dat <- logs %>% filter(!is.na(SetDate))
+
 # interval<- season_month; regions<- NULL
 
 # sum_traps <- function(dat,interval,regions){
@@ -121,7 +123,15 @@ dat<- logs
   
 #   return(dat2)
 # }
-
+###PLOTTING TIME SERIES OF SUM TRAPS####
+  dat3 <- dat2 %>%   
+    filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+    as.factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))
+    
+  logs_ts <- ggplot(dat3, aes(x=m, y=sum_traps, colour=season,  group=season))+
+    geom_line()
+  logs_ts
+  
 
 # head(logs$season)
 # head(logs$SetDate)
@@ -241,7 +251,7 @@ place_traps_ts <- function(df,bathy,crab_year_choice,month_choice,period_choice)
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
-  #mnth <- month.name[month_choice]
+  mnth <- month.name[month_choice]
   #mnth <- month.name[as.numeric(month_choice)]
   p <- ifelse(period_choice==1,"first half","second half")
   
