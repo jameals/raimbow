@@ -484,7 +484,8 @@ map_traps <- function(gridded_traps){
     ggplot()+
     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
-    scale_fill_viridis(na.value='grey70',option="C")+
+    scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
+    #scale_fill_viridis(na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='Traps per\nsq. km',title=t)
   
@@ -530,17 +531,17 @@ proc.time()-t
 scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 
-# for a loop across multiple months and periods #note that code won't work if there is a month-period combo with no data 
+# for a loop across multiple months and periods  
 #scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
 
-scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:7),period_choice=1:2)
+scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_choice=1:2)
 #month_list <- c('12','1','2','3','4','5','6','7','8','9','10','11')
 #month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
 #scenarios <- crossing(crab_year_choice='2014-2015',month_choice=month_list,period_choice=1:2)
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
-#Time taken to do 8 maps 11.3 minutes
+
 
 
 ###EXPORT IN PDF
