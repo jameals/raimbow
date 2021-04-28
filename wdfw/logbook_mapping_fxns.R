@@ -26,13 +26,12 @@ plot_theme <-   theme_minimal()+
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
-# if you have to load the logs you can do it here
-# using the 2017-2018 slice provided by Leena
+
+#### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 # logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
                  # col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-
 # jameal
 logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
@@ -47,9 +46,10 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 # QC: for each variable/column in the logs, count how many NA values there are
 # numNA <- logs %>% summarise(across(everything(),~sum(is.na(.x))))
 
+
+#### READ IN BATHYMETRY DATA ####
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
-
 # jameal
 bathy <- raster("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/vms_composite_bath.txt")
 
@@ -58,6 +58,7 @@ ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
 bathy <- bathy %>% crop(ex)
 
 
+#### READ IN SPATIAL GRID DATA ####
 # example spatial grid
 # 5x5 grid shapefile
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
@@ -85,6 +86,8 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
   st_transform(st_crs(grd))
 
+
+
 # use SetDate and season to define new columns designating month and month_interval 
 logs %<>%
   mutate(
@@ -95,15 +98,15 @@ logs %<>%
                             ifelse(day(SetDate)<=15,1,2)
                             )
     )
-
 # tail(data.frame(logs))
 
-# make a summary df that represents the summed number of traps in WA during each interval
+
+
+# make a summary df that represents the summed number of traps in WA during each interval as reported by PotsFished column in logbooks
 #There are some cases where SetDate was NA, and therefore m ends up being NA too
 dat <- logs %>% filter(!is.na(SetDate))
 
 # interval<- season_month; regions<- NULL
-
 # sum_traps <- function(dat,interval,regions){
   
   dat2 <-  dat %>% #dat[1:100,]
@@ -119,19 +122,39 @@ dat <- logs %>% filter(!is.na(SetDate))
       season, season_month, m, month_interval, 
       sum_traps, sum_lost
     )
-  
-  
 #   return(dat2)
 # }
 ###PLOTTING TIME SERIES OF SUM TRAPS####
   dat3 <- dat2 %>%   
     filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
-    as.factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))
-    
-  logs_ts <- ggplot(dat3, aes(x=m, y=sum_traps, colour=season,  group=season))+
-    geom_line()
+    mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+    mutate(sum_traps_1000 = sum_traps/1000)
+
+ 
+  logs_ts <- ggplot(dat3, aes(x=m, y=sum_traps_1000, colour=season,  group=season))+
+    geom_line(size=1.2) +
+    scale_colour_brewer(palette = "PRGn") +
+    #scale_colour_viridis_d(option = "plasma") + 
+    ylab("Summed no. of pots\nfished (thousands)") +
+    xlab("Month") +
+    scale_y_continuous(breaks=seq(0, 600, 200),limits=c(0,600))+
+    theme(legend.title = element_blank(),
+          #title = element_text(size = 32),
+          legend.text = element_text(size=12),
+          axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+          axis.text.y = element_text(size = 12),
+          axis.title = element_text(size = 12),
+          legend.position = c(0.9, 0.8)
+          )
   logs_ts
   
+  png(here::here(
+    "wdfw",
+    "DRAFT_ts plot_sum no. of traps in WA_by season.png"), 
+    width = 7.5, height = 5, units = "in", res = 300
+    )
+  logs_ts
+  invisible(dev.off())
 
 # head(logs$season)
 # head(logs$SetDate)
