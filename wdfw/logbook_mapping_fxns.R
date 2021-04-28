@@ -241,7 +241,7 @@ place_traps_ts <- function(df,bathy,crab_year_choice,month_choice,period_choice)
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
-  mnth <- month.name[month_choice]
+  #mnth <- month.name[month_choice]
   #mnth <- month.name[as.numeric(month_choice)]
   p <- ifelse(period_choice==1,"first half","second half")
   
@@ -534,9 +534,9 @@ plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_
 #scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
 
 scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:7),period_choice=1:2)
-month_list <- c('12','1','2','3','4','5','6','7','8','9','10','11')
-month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
-scenarios <- crossing(crab_year_choice='2014-2015',month_choice=month_list,period_choice=1:2)
+#month_list <- c('12','1','2','3','4','5','6','7','8','9','10','11')
+#month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
+#scenarios <- crossing(crab_year_choice='2014-2015',month_choice=month_list,period_choice=1:2)
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
