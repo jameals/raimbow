@@ -480,14 +480,24 @@ map_traps <- function(gridded_traps){
   # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
   bbox = c(800000,1650000,1013103,1970000)
   
-  map_out <- summtraps %>% 
+  map_out <- summtraps %>%
     ggplot()+
     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
-    scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
-    #scale_fill_viridis(na.value='grey70',option="C")+
+    #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
+    scale_fill_viridis(na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  
+  # map_out <- summtraps %>% 
+  #   ggplot()+
+  #   geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+  #   geom_sf(data=coaststates,col=NA,fill='gray50')+
+  #   scale_fill_continuous(low="blue", high="yellow", breaks = quantile(summtraps$trapdens, probs = c(0, 0.5, 1), na.rm=TRUE),na.value='grey70')+
+  #   #scale_fill_viridis(na.value='grey70',option="C")+
+  #   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  #   labs(x='',y='',fill='Traps per\nsq. km',title='')
+  # map_out
   
   return(map_out)
     
