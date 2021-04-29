@@ -63,7 +63,6 @@ bathy <- bathy %>% crop(ex)
 # 5x5 grid shapefile
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
 names(grd)
-
 # jameal
 grd <- read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid Apr 2021/fivekm_grid_polys_shore_lamb.shp")
 names(grd)
@@ -513,12 +512,15 @@ map_traps <- function(gridded_traps){
   # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
   bbox = c(800000,1650000,1013103,1970000)
   
+  max_trapdens <- 62.019
+  
   map_out <- summtraps %>%
     ggplot()+
     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
-    scale_fill_viridis(na.value='grey70',option="C")+
+    #scale_fill_viridis(na.value='grey70',option="C")+
+    scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='Traps per\nsq. km',title=t)
   
