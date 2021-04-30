@@ -180,7 +180,8 @@ dat <- logs %>% filter(!is.na(SetDate))
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=1
+df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=0
+
 
 # jameal makes a new place_traps_ts function for making the data frame used for making time series.
   # period_choice can take values of 1, 2, or 0 where 0 indicates the full month
@@ -378,7 +379,7 @@ join_grid <- function(traps_sf,gkey){
 }
 
 
-
+###########################################
 # make a summary df that represents the summed number of traps in each 5km grid cell during each monthly interval
 
 traps_g2 <-  traps_g %>% #traps_g[1:100,]
@@ -403,6 +404,71 @@ traps_g2 <-  traps_g %>% #traps_g[1:100,]
   )
 
 
+
+#subset a season
+#logs20182019 <- logs %>% filter(season=='2018-2019')
+#df <- logs20182019
+#Run first 2 functions adjusted for full seasons (no month or period choices) at the bottom of script to get traps_g for the subset season
+traps_g3 <-  traps_g %>% #traps_g[1:100,]
+  mutate(
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name), 
+    #month_interval = paste0(season_month,"_",period)
+    ) %>% 
+  st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA, season_month) %>% #,month_interval
+  summarise(ntraps_vessel_set_cell=n()) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(Vessel,GRID5KM_ID,grd_x,grd_y,AREA, season_month) %>% #,month_interval
+  summarise(ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(GRID5KM_ID,grd_x,grd_y,AREA, season_month) %>% #,month_interval
+  summarise(tottraps=sum(ntraps_vessel_cell)) %>% 
+  # trap density is total traps divided by area (in sq. km) of each cell
+  mutate(trapdens=tottraps/(AREA/1e6)) %>% 
+  ungroup() %>% 
+  mutate(GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)) %>% 
+  filter(!is.na(tottraps)) %>% 
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name))
+
+traps_g4 <-  traps_g3 %>%
+  group_by(season_month) %>% 
+  summarise(trap_sum_month = sum(tottraps)) %>% 
+  #mutate(trap_sum_month = sum(tottraps))
+  mutate(season_month = factor(season_month,
+                                  levels = c('2018-2019_December',
+                                             '2018-2019_January',
+                                             '2018-2019_February',
+                                             '2018-2019_March',
+                                             '2018-2019_April',
+                                             '2018-2019_May',
+                                             '2018-2019_June',
+                                             '2018-2019_July',
+                                             '2018-2019_August',
+                                             '2018-2019_September',
+                                             '2018-2019_October',
+                                             '2018-2019_November')))
+
+ts_plots <- ggplot(traps_g4, aes(x=season_month, y=trap_sum_month))+ #aim for x=month and group_by season_month...?
+  geom_point(size=1.5) +
+  ylab("Total no. of traps") +
+  xlab("Season_Month") 
+  
+ts_plots
+#this seems to produce somethin g much closer to wdfw CP plot of lines in water
+
+
+
+
+
+
+
+######################################
 # Finally, a function to draw a map
 # Function takes the output of the previous function, applies a correction for double counting
 map_traps <- function(gridded_traps){
