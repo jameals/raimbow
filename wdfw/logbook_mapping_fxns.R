@@ -101,7 +101,7 @@ logs %<>%
 
 
 
-# make a summary df that represents the summed number of traps in WA during each interval as reported by PotsFished column in logbooks
+# make a summary df that represents the summed number of traps in WA during each interval as reported by PotsFished column in logbooks. This will overcount traps
 #There are some cases where SetDate was NA, and therefore m ends up being NA too
 dat <- logs %>% filter(!is.na(SetDate))
 
@@ -382,27 +382,75 @@ join_grid <- function(traps_sf,gkey){
 ###########################################
 # make a summary df that represents the summed number of traps in each 5km grid cell during each monthly interval
 
-traps_g2 <-  traps_g %>% #traps_g[1:100,]
+# traps_g2 <-  traps_g[1:100,] %>% #traps_g[1:100,]
+#   mutate(
+#     season_month = paste0(season,"_",month_name), 
+#     month_interval = paste0(season_month,"_",period)
+#   ) %>% 
+#   group_by(season_month, GRID5KM_ID) %>% 
+#   mutate(
+#     sum_traps = n(),
+#     num_vessels = length(unique(Vessel)) #add count of unique vessels
+#   ) %>%
+#   mutate(
+#     GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)
+#   ) %>%
+#   st_drop_geometry() %>%
+#   distinct(GRID5KM_ID_season_month, .keep_all = TRUE) %>%
+#   select(
+#     GRID5KM_ID, AREA, depth, NGDC_GRID, is_port_or_bay,
+#     season_month, month_name, 
+#     sum_traps, num_vessels
+#   )
+
+summtraps5km <- traps_g %>% #traps_g[1:100,]
+  st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
   mutate(
     season_month = paste0(season,"_",month_name), 
     month_interval = paste0(season_month,"_",period)
   ) %>% 
-  group_by(season_month, GRID5KM_ID) %>% 
-  mutate(
-    sum_traps = n(),
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month, Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>% 
+  summarise(
+    ntraps_vessel_set_cell=n()
+    ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month, Vessel,GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    ntraps_vessel_cell=mean(ntraps_vessel_set_cell)#,
+    #sd_traps_vessel_cell=sd(ntraps_vessel_set_cell) # want to come back and think about how to aggregate uncertainty
+    ) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(season_month, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    tottraps=sum(ntraps_vessel_cell),
     num_vessels = length(unique(Vessel)) #add count of unique vessels
-  ) %>%
+    ) %>% 
+  # trap density is total traps divided by area (in sq. km) of each cell
   mutate(
-    GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)
-  ) %>%
-  st_drop_geometry() %>%
-  distinct(GRID5KM_ID_season_month, .keep_all = TRUE) %>%
-  select(
-    GRID5KM_ID, AREA, depth, NGDC_GRID, is_port_or_bay,
-    season_month, month_name, 
-    sum_traps, num_vessels
-  )
+    trapdens=tottraps/(AREA/1e6)
+    ) %>% 
+  ungroup() %>% 
+  filter(!is.na(tottraps))
+glimpse(summtraps5km)
 
+# now we want a summary for each season_month based on the above for all of WA
+summtrapsWA <- summtraps5km %>%
+  group_by(season_month) %>%
+  summarise(
+    tottraps = sum(tottraps),
+    meantrapdens = mean(trapdens),
+    sdtrapdens = sd(trapdens),
+    mediantrapdens = median(trapdens),
+    percentile_975th = quantile(trapdens, probs=0.975, na.rm=TRUE),
+    percentile_75th = quantile(trapdens, probs=0.75, na.rm=TRUE),
+    percentile_25th = quantile(trapdens, probs=0.25, na.rm=TRUE),
+    percentile_025th = quantile(trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(summtrapsWA)
 
 
 #subset a season
