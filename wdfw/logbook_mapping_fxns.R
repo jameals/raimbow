@@ -681,29 +681,27 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 }
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
-testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice = 9,period_choice = 2)
-test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
-test_map<- test_traps_grid %>% map_traps()
-test_map
+#testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice = 9,period_choice = 2)
+#test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
+#test_map<- test_traps_grid %>% map_traps()
+#test_map
 
-######
+
+
+
+##################
 ##A start for looping through different crab_year, month and period combinations
 
-
 # all together
-t <- proc.time()
-test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice=9,period_choice=2,gkey = grd_area_key)
-test_map
-proc.time()-t
+#t <- proc.time()
+#test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice=9,period_choice=2,gkey = grd_area_key)
+#test_map
+#proc.time()-t
 
 # for a loop across multiple months or periods
-scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
-plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
-
-# for a loop across multiple months and periods  
-#scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
-
-scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_choice=1:2)
+#scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
+#plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
+#scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_choice=1:2)
 
 #testing re-ordering of plots. If make month numbers as factors, scenario list is accurate (starts from 12, then 1,2...)
 #BUT in plts, first map IS first half of Dec BUT the label is first half of Jan
@@ -711,7 +709,7 @@ scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_c
 #month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
 #scenarios <- crossing(crab_year_choice='2013-2014',month_choice=month_list,period_choice=1:2)
 
-##What seems to work fo re-ordering plots is to re-order the scenarios tibble after it has been created:
+##What seems to work for re-ordering plots is to re-order the scenarios tibble after it has been created:
 scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:12),period_choice=1:2)
 s1 <- scenarios[1:22,]
 s2 <- scenarios[23:24,]
