@@ -271,7 +271,7 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
   mnth <- month.name[month_choice]
-  #mnth <- month.name[as.numeric(month_choice)]
+  #mnth <- month.name[as.numeric(month_choice)] #trying to reorder plots
   p <- ifelse(period_choice==1,"first half","second half")
   
   df %<>%
@@ -704,9 +704,19 @@ plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_
 #scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
 
 scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_choice=1:2)
+
+#testing re-ordering of plots. If make month numbers as factors, scenario list is accurate (starts from 12, then 1,2...)
+#BUT in plts, first map IS first half of Dec BUT the label is first half of Jan
 #month_list <- c('12','1','2','3','4','5','6','7','8','9','10','11')
 #month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
-#scenarios <- crossing(crab_year_choice='2014-2015',month_choice=month_list,period_choice=1:2)
+#scenarios <- crossing(crab_year_choice='2013-2014',month_choice=month_list,period_choice=1:2)
+
+##What seems to work fo re-ordering plots is to re-order the scenarios tibble after it has been created:
+scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:12),period_choice=1:2)
+s1 <- scenarios[1:22,]
+s2 <- scenarios[23:24,]
+scenarios <- rbind(s2,s1)
+#then run the functions
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
