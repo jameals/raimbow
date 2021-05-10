@@ -86,7 +86,12 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   st_transform(st_crs(grd))
 
 
-
+#####################
+#Here is where user can decide whether they want 'confidential' maps or not
+#When make_confidential_maps is TRUE, grid cells with fewer than 3 unique vessels contributing to that cell's data will be greyed out and won't show trap density value
+#When make_confidential_maps is FALSE, all grid cells will be coloured based on trap density, regardless of the number of unique vessels in the cell
+make_confidential_maps <- FALSE
+#####################
 
 
 # use SetDate and season to define new columns designating month and month_interval 
@@ -608,6 +613,7 @@ map_traps <- function(gridded_traps){
     ungroup() %>% 
     filter(!is.na(tottraps))
   
+  
   # CONFIDENTIALITY CHECK: RULE OF 3
   # "grey out" any cell for which there are less than 3 unique vessels contributing to that cell's data
   confidential_cells <- gridded_traps %>%
@@ -617,11 +623,23 @@ map_traps <- function(gridded_traps){
     ungroup() %>% 
     mutate(is_confidential=ifelse(nvessels<3,T,F))
   
-  summtraps %<>%
-    left_join(confidential_cells,by="GRID5KM_ID") %>% 
-    mutate(tottraps=ifelse(is_confidential,NA,tottraps),
-           trapdens=ifelse(is_confidential,NA,trapdens))
+  #If user wants maps where grids with <3 vessels are confidential, replace totrap and trapdens values with NAs
+  #else just join dataframe with the confidential_cells, just so that info is retained in the working dataframe
+  if(make_confidential_maps == TRUE){
+    summtraps %<>%
+      left_join(confidential_cells,by="GRID5KM_ID") %>% 
+      mutate(tottraps=ifelse(is_confidential,NA,tottraps),
+             trapdens=ifelse(is_confidential,NA,trapdens))
+  } else {
+    summtraps %<>%
+      left_join(confidential_cells,by="GRID5KM_ID")
+  }
+    # summtraps %<>%
+  #   left_join(confidential_cells,by="GRID5KM_ID") %>% 
+  #   mutate(tottraps=ifelse(is_confidential,NA,tottraps),
+  #          trapdens=ifelse(is_confidential,NA,trapdens))
 
+  
   
   # Test 3: change color scaling for all NA traps
   if(all(is.na(summtraps$trapdens))){
@@ -710,7 +728,7 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 #scenarios <- crossing(crab_year_choice='2013-2014',month_choice=month_list,period_choice=1:2)
 
 ##What seems to work for re-ordering plots is to re-order the scenarios tibble after it has been created:
-scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:12),period_choice=1:2)
+scenarios <- crossing(crab_year_choice='2013-2014',month_choice=c(1:12),period_choice=1:2)
 s1 <- scenarios[1:22,]
 s2 <- scenarios[23:24,]
 scenarios <- rbind(s2,s1)
