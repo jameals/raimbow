@@ -89,6 +89,10 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
+#Note that Quinault SMA borders have moved a lot, including within seasons 
+#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
+QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
+  st_transform(st_crs(grd)) #make it have same projection as the grid
 
 
 #####################
@@ -593,6 +597,7 @@ map_traps <- function(gridded_traps){
       geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
       geom_sf(data=coaststates,col=NA,fill='gray50')+
       geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+      geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
       scale_fill_viridis(na.value='grey70',option="C")+
       coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
       labs(x='',y='',fill='Traps per\nsq. km',title=t)
@@ -657,6 +662,7 @@ map_traps <- function(gridded_traps){
       geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=F,fill='gray70',alpha=0.8)+
       geom_sf(data=coaststates,col=NA,fill='gray50')+
       geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+      geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
       coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
       labs(x='',y='',fill='Traps per\nsq. km',title=t)
     return(map_out)
@@ -673,6 +679,7 @@ map_traps <- function(gridded_traps){
     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
     #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
     #scale_fill_viridis(na.value='grey70',option="C")+
     scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
@@ -736,7 +743,7 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 #scenarios <- crossing(crab_year_choice='2013-2014',month_choice=month_list,period_choice=1:2)
 
 ##What seems to work for re-ordering plots is to re-order the scenarios tibble after it has been created:
-scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:12),period_choice=1:2)
+scenarios <- crossing(crab_year_choice='2013-2014',month_choice=c(1:12),period_choice=1:2)
 s1 <- scenarios[1:22,]
 s2 <- scenarios[23:24,]
 scenarios <- rbind(s2,s1)
@@ -764,6 +771,7 @@ map_out <- summtraps %>%
   geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
   geom_sf(data=coaststates,col=NA,fill='gray50')+
   geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+  geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
   scale_fill_continuous(low="blue", high="yellow",limits=c(0,115), breaks=c(0,115),labels=c("low","high"))+
   #scale_fill_viridis(na.value='grey70',option="C")+
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
@@ -924,6 +932,7 @@ df <- logs20182019
         geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
         geom_sf(data=coaststates,col=NA,fill='gray50')+
         geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+        geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
         #max_trapdens across all seasons from 2013-2019 is 62.019
         #scale_fill_continuous(low="darkblue", high="yellow",limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"), na.value='grey70')+
         scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
