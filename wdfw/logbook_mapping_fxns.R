@@ -26,12 +26,14 @@ plot_theme <-   theme_minimal()+
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
-# if you have to load the logs you can do it here
-# using the 2017-2018 slice provided by Leena
+
+#### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 # logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
                  # col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+# jameal
+logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
@@ -44,16 +46,25 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 # QC: for each variable/column in the logs, count how many NA values there are
 # numNA <- logs %>% summarise(across(everything(),~sum(is.na(.x))))
 
+
+#### READ IN BATHYMETRY DATA ####
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
+# jameal
+bathy <- raster("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/vms_composite_bath.txt")
+
 # crop bathymetry to extent of logbook data
 ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
 bathy <- bathy %>% crop(ex)
 
 
+#### READ IN SPATIAL GRID DATA ####
 # example spatial grid
 # 5x5 grid shapefile
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
+names(grd)
+# jameal
+grd <- read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid Apr 2021/fivekm_grid_polys_shore_lamb.shp")
 names(grd)
 
 # spatial area matching key of each grid cell (because the grid has been trimmed to the coastline)
@@ -74,7 +85,101 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
   st_transform(st_crs(grd))
 
-# Main steps for these functions
+#borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
+MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
+  st_transform(st_crs(grd)) #make it have same projection as the grid
+
+#Note that Quinault SMA borders have moved a lot, including within seasons 
+#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
+QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
+  st_transform(st_crs(grd)) #make it have same projection as the grid
+
+
+#####################
+#Here is where user can decide whether they want 'confidential' maps or not
+#When make_confidential_maps is TRUE, grid cells with fewer than 3 unique vessels contributing to that cell's data will be greyed out and won't show trap density value
+#When make_confidential_maps is FALSE, all grid cells will be coloured based on trap density, regardless of the number of unique vessels in the cell
+make_confidential_maps <- FALSE
+#####################
+
+
+# use SetDate and season to define new columns designating month and month_interval 
+logs %<>%
+  mutate(
+    m = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",m),
+    month_interval = paste0(season_month, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+                            )
+    )
+# tail(data.frame(logs))
+
+
+#######################################
+# make a summary df that represents the summed number of traps in WA during each interval as reported by PotsFished column in logbooks. 
+#This is not very good as it overcounts traps!!
+#There are some cases where SetDate was NA, and therefore m ends up being NA too
+# dat <- logs %>% filter(!is.na(SetDate))
+
+# interval<- season_month; regions<- NULL
+# sum_traps <- function(dat,interval,regions){
+  
+#   dat2 <-  dat %>% #dat[1:100,]
+#     distinct(SetID, .keep_all = TRUE) %>%
+#     #group_by(interval, regions) %>%
+#     group_by(season_month) %>%
+#     mutate(
+#       sum_traps=sum(PotsFished, na.rm=TRUE),
+#       sum_lost=sum(PotsLost, na.rm=TRUE)
+#     ) %>%
+#     distinct(season_month, .keep_all = TRUE) %>%
+#     select(
+#       season, season_month, m, month_interval, 
+#       sum_traps, sum_lost
+#     )
+# #   return(dat2)
+# # }
+# ###PLOTTING TIME SERIES OF SUM TRAPS####
+#   dat3 <- dat2 %>%   
+#     filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+#     mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+#     mutate(sum_traps_1000 = sum_traps/1000)
+# 
+#  
+#   logs_ts <- ggplot(dat3, aes(x=m, y=sum_traps_1000, colour=season,  group=season))+
+#     geom_line(size=1.2) +
+#     scale_colour_brewer(palette = "PRGn") +
+#     #scale_colour_viridis_d(option = "plasma") + 
+#     ylab("Summed no. of pots\nfished (thousands)") +
+#     xlab("Month") +
+#     scale_y_continuous(breaks=seq(0, 600, 200),limits=c(0,600))+
+#     theme(legend.title = element_blank(),
+#           #title = element_text(size = 32),
+#           legend.text = element_text(size=12),
+#           axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+#           axis.text.y = element_text(size = 12),
+#           axis.title = element_text(size = 12),
+#           legend.position = c(0.9, 0.8)
+#           )
+#   logs_ts
+#   
+#   png(here::here(
+#     "wdfw",
+#     "DRAFT_ts plot_sum no. of traps in WA_by season.png"), 
+#     width = 7.5, height = 5, units = "in", res = 300
+#     )
+#   logs_ts
+#   invisible(dev.off())
+
+
+
+
+
+
+
+#######################################
+# Main steps for mapping functions
 # 1. make strings into individual pots by segmentizing lines (sf::st_line_sample())
 # 2. remove points on land by using a bathymetry layer
 # 3. filter to desired year, month, and period (period is 1 or 2 for the first or second half of the month)
@@ -84,12 +189,103 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 # df is the logbooks dataframe
 # bathy is a raster representation of bathymetry
 
-# df<- logs;crab_year_choice='2009-2010';month_choice=11;period_choice=2
+df<- logs;crab_year_choice='2013-2014';month_choice=1;period_choice=0
+
+
+# jameal makes a new place_traps_ts function for making the data frame used for making time series.
+  # period_choice can take values of 1, 2, or 0 where 0 indicates the full month
+place_traps_ts <- function(df,bathy,crab_year_choice,month_choice,period_choice){
+  
+  # labels for season, month, and period of choice
+  mnth <- month.name[month_choice]
+  p <- ifelse(period_choice==1,
+              "first half",
+              ifelse(period_choice == 2, "second half", "full month")
+  )
+  
+  # if we want a month-level summary
+  if(p == "full month"){
+    df %<>%
+    dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      mutate(m=month(SetDate), d=day(SetDate), period=0) %>%
+      filter(season%in%crab_year_choice,m%in%month_choice) %>% 
+    distinct() 
+  } else {
+  # if we want a period-level summary
+    df %<>%
+      #dplyr::select(Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+      # filter for the desired dates 
+      mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+      filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice) %>% 
+      distinct() 
+  }
+  
+  # IF THE ABOVE FILTER COMES UP EMPTY, JUST RETURN A STRING VECTOR OF MONTH,SEASON, PERIOD
+  if(nrow(df)==0) return(c(mnth,p,crab_year_choice))
+  
+  df %<>% 
+    # make sure each set has a beginning and end
+    group_by(SetID) %>% 
+    mutate(n=n()) %>% 
+    filter(n==2,!is.na(PotsFished)) %>%
+    # convert to sf points
+    st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
+    st_transform(32610) %>% 
+    # create linestrings
+    group_by(Vessel,SetID,PotsFished,SetDate) %>% 
+    summarise(do_union = FALSE) %>% 
+    st_cast("LINESTRING")
+  
+  traps <- df %>% 
+    ungroup() %>% 
+    # now use those linestrings to place pots using sf::st_line_sample
+    mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
+                                .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
+    # pull out the x/y coordinates of the traps
+    mutate(trapcoords=purrr::map(traplocs,
+                                 function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
+    select(Vessel,SetID,PotsFished,SetDate,trapcoords) %>% 
+    # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
+    st_set_geometry(NULL) %>% 
+    unnest(cols=c(trapcoords))
+  
+  # find depth of traps
+  traps_sf <- traps %>%
+    st_as_sf(coords=c('x','y'),crs=32610) %>% 
+    st_transform(4326) %>%
+    select(-id)
+  
+  # do the raster extract with the bathymetry grid
+  # Note- I think this would be faster with a vector representation (points) of the bathy grid
+  bathy.points <- raster::extract(bathy,traps_sf)
+  
+  # add depth as a column variable
+  # divide by 10 to go from decimeters to meters
+  traps_sf %<>%
+    mutate(depth=bathy.points/10)
+  
+  # find points on land and collect their SetIDs to a list
+  #traps_on_land <- traps_sf %>% filter(depth > 0) 
+  # if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use something like
+  traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+  unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+  
+  # Remove ALL points whose Set_ID appears on that list
+  traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+  
+  
+  traps_sf %<>% mutate(month_name=mnth,period=p,season=crab_year_choice)
+  
+  return(traps_sf)  
+}
+
 
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
   mnth <- month.name[month_choice]
+  #mnth <- month.name[as.numeric(month_choice)] #trying to reorder plots
   p <- ifelse(period_choice==1,"first half","second half")
   
   df %<>%
@@ -159,9 +355,13 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   return(traps_sf)  
 }
 
+
+
 # This next function spatially joins Blake's 5km grid (or some other grid) to the data
 # It also joins the grid id matching key to identify ports and bays and assign correct grid cell areas
 # trapssf is the spatial (sf) dataframe produced in the previous function,gkey is the grid with matching key
+
+gkey <- grd_area_key
 
 join_grid <- function(traps_sf,gkey){
   
@@ -190,6 +390,193 @@ join_grid <- function(traps_sf,gkey){
   return(traps_g)
 }
 
+
+###########################################
+# make a summary df that represents the summed number of traps in each 5km grid cell during each monthly interval
+
+# traps_g2 <-  traps_g[1:100,] %>% #traps_g[1:100,]
+#   mutate(
+#     season_month = paste0(season,"_",month_name), 
+#     month_interval = paste0(season_month,"_",period)
+#   ) %>% 
+#   group_by(season_month, GRID5KM_ID) %>% 
+#   mutate(
+#     sum_traps = n(),
+#     num_vessels = length(unique(Vessel)) #add count of unique vessels
+#   ) %>%
+#   mutate(
+#     GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)
+#   ) %>%
+#   st_drop_geometry() %>%
+#   distinct(GRID5KM_ID_season_month, .keep_all = TRUE) %>%
+#   select(
+#     GRID5KM_ID, AREA, depth, NGDC_GRID, is_port_or_bay,
+#     season_month, month_name, 
+#     sum_traps, num_vessels
+#   )
+
+
+#getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
+traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw','data','traps_g_for all logs full seasons.rds'))
+traps_g <- traps_g_for_all_logs_full_seasons
+# this version of traps_g requires columns for season and month
+traps_g <- traps_g %>% 
+  mutate(
+    season = str_sub(SetID,1,9),
+    month_name = month(SetDate, label=TRUE, abbr = FALSE)
+     )
+#For now look at 2013-2019
+traps_g <- traps_g %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
+
+
+summtraps5km <- traps_g %>% #traps_g[1:100,]
+  st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
+  mutate(
+    season_month = paste0(season,"_",month_name), 
+   # month_interval = paste0(season_month,"_",period)
+  ) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month, Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>% 
+  summarise(
+    ntraps_vessel_set_cell=n()
+    ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month, Vessel,GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    ntraps_vessel_cell=mean(ntraps_vessel_set_cell)#,
+    #sd_traps_vessel_cell=sd(ntraps_vessel_set_cell) # want to come back and think about how to aggregate uncertainty
+    ) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(season_month, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    tottraps=sum(ntraps_vessel_cell),
+    num_vessels = length(unique(Vessel)) #add count of unique vessels
+    ) %>% 
+  # trap density is total traps divided by area (in sq. km) of each cell
+  mutate(
+    trapdens=tottraps/(AREA/1e6)
+    ) %>% 
+  ungroup() %>% 
+  filter(!is.na(tottraps))
+glimpse(summtraps5km)
+
+# now we want a summary for each season_month based on the above for all of WA
+summtrapsWA <- summtraps5km %>%
+  group_by(season_month) %>%
+  summarise(
+    tottraps = sum(tottraps),
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them
+    meantrapdens = mean(trapdens),
+    sdtrapdens = sd(trapdens),
+    mediantrapdens = median(trapdens),
+    percentile_975th = quantile(trapdens, probs=0.975, na.rm=TRUE),
+    percentile_75th = quantile(trapdens, probs=0.75, na.rm=TRUE),
+    percentile_25th = quantile(trapdens, probs=0.25, na.rm=TRUE),
+    percentile_025th = quantile(trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(summtrapsWA)
+
+#If working with full years from RDS
+summtrapsWA <- summtrapsWA %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name))
+
+#PLOT
+logs_ts <- ggplot(summtrapsWA, aes(x= month_name, y= mediantrapdens, colour=season,  group=season))+
+  geom_line(size=1.2) +
+  #scale_colour_brewer(palette = "PRGn") +
+  scale_colour_viridis_d(option = "plasma") + 
+  ylab("Median of trapdens across \ngrid cells for entire WA") +
+  xlab("Month") +
+  #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position = c(0.9, 0.8)
+  )
+logs_ts
+
+png(here::here(
+  "wdfw",
+  "DRAFT_mean of trapdens across grid cells for entire WA.png"), 
+  width = 7.5, height = 5, units = "in", res = 300
+)
+logs_ts
+invisible(dev.off())
+
+#subset a season
+#logs20182019 <- logs %>% filter(season=='2018-2019')
+#df <- logs20182019
+#Run first 2 functions adjusted for full seasons (no month or period choices) at the bottom of script to get traps_g for the subset season
+# traps_g3 <-  traps_g %>% #traps_g[1:100,]
+#   mutate(
+#     month_name = month(SetDate, label=TRUE, abbr = FALSE),
+#     season_month = paste0(season,"_",month_name), 
+#     #month_interval = paste0(season_month,"_",period)
+#     ) %>% 
+#   st_set_geometry(NULL) %>%
+#   filter(!is.na(GRID5KM_ID)) %>% 
+#   # count the total number of traps in each grid cell in each set
+#   group_by(Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA, season_month) %>% #,month_interval
+#   summarise(ntraps_vessel_set_cell=n()) %>% 
+#   # average the number of pots per vessel per grid cell
+#   ungroup() %>% 
+#   group_by(Vessel,GRID5KM_ID,grd_x,grd_y,AREA, season_month) %>% #,month_interval
+#   summarise(ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
+#   # finally, sum the total traps per grid cell, across vessels
+#   ungroup() %>% 
+#   group_by(GRID5KM_ID,grd_x,grd_y,AREA, season_month) %>% #,month_interval
+#   summarise(tottraps=sum(ntraps_vessel_cell)) %>% 
+#   # trap density is total traps divided by area (in sq. km) of each cell
+#   mutate(trapdens=tottraps/(AREA/1e6)) %>% 
+#   ungroup() %>% 
+#   mutate(GRID5KM_ID_season_month = paste0(GRID5KM_ID,"_",season_month)) %>% 
+#   filter(!is.na(tottraps)) %>% 
+#   separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+#   mutate(season_month = paste0(season,"_",month_name))
+# 
+# traps_g4 <-  traps_g3 %>%
+#   group_by(season_month) %>% 
+#   summarise(trap_sum_month = sum(tottraps)) %>% 
+#   #mutate(trap_sum_month = sum(tottraps))
+#   mutate(season_month = factor(season_month,
+#                                   levels = c('2018-2019_December',
+#                                              '2018-2019_January',
+#                                              '2018-2019_February',
+#                                              '2018-2019_March',
+#                                              '2018-2019_April',
+#                                              '2018-2019_May',
+#                                              '2018-2019_June',
+#                                              '2018-2019_July',
+#                                              '2018-2019_August',
+#                                              '2018-2019_September',
+#                                              '2018-2019_October',
+#                                              '2018-2019_November')))
+# 
+# ts_plots <- ggplot(traps_g4, aes(x=season_month, y=trap_sum_month))+ #aim for x=month and group_by season_month...?
+#   geom_point(size=1.5) +
+#   ylab("Total no. of traps") +
+#   xlab("Season_Month") 
+#   
+# ts_plots
+# #this seems to produce somethin g much closer to wdfw CP plot of lines in water
+
+
+
+
+
+
+
+######################################
 # Finally, a function to draw a map
 # Function takes the output of the previous function, applies a correction for double counting
 map_traps <- function(gridded_traps){
@@ -209,6 +596,8 @@ map_traps <- function(gridded_traps){
       ggplot()+
       geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
       geom_sf(data=coaststates,col=NA,fill='gray50')+
+      geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+      geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
       scale_fill_viridis(na.value='grey70',option="C")+
       coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
       labs(x='',y='',fill='Traps per\nsq. km',title=t)
@@ -235,6 +624,7 @@ map_traps <- function(gridded_traps){
     ungroup() %>% 
     filter(!is.na(tottraps))
   
+  
   # CONFIDENTIALITY CHECK: RULE OF 3
   # "grey out" any cell for which there are less than 3 unique vessels contributing to that cell's data
   confidential_cells <- gridded_traps %>%
@@ -244,42 +634,23 @@ map_traps <- function(gridded_traps){
     ungroup() %>% 
     mutate(is_confidential=ifelse(nvessels<3,T,F))
   
-  summtraps %<>%
-    left_join(confidential_cells,by="GRID5KM_ID") %>% 
-    mutate(tottraps=ifelse(is_confidential,NA,tottraps),
-           trapdens=ifelse(is_confidential,NA,trapdens))
+  #If user wants maps where grids with <3 vessels are confidential, replace totrap and trapdens values with NAs
+  #else just join dataframe with the confidential_cells, just so that info is retained in the working dataframe
+  if(make_confidential_maps == TRUE){
+    summtraps %<>%
+      left_join(confidential_cells,by="GRID5KM_ID") %>% 
+      mutate(tottraps=ifelse(is_confidential,NA,tottraps),
+             trapdens=ifelse(is_confidential,NA,trapdens))
+  } else {
+    summtraps %<>%
+      left_join(confidential_cells,by="GRID5KM_ID")
+  }
+    # summtraps %<>%
+  #   left_join(confidential_cells,by="GRID5KM_ID") %>% 
+  #   mutate(tottraps=ifelse(is_confidential,NA,tottraps),
+  #          trapdens=ifelse(is_confidential,NA,trapdens))
 
-  ############################################################################# 
-   # if the summtraps$trapdens is only NAs, return an empty map
-  #Test 1
-  # if(all(is.na(summtraps$trapdens))){
-  #   bbox = c(800000,1650000,1013103,1970000)
-  #   map_out <- gridded_traps  %>% 
-  #    st_set_geometry(NULL) %>% 
-  #    mutate(trapdens=0) %>% 
-  #    ggplot()+
-  #    geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
-  #    geom_sf(data=coaststates,col=NA,fill='gray50')+
-  #    scale_fill_viridis(na.value='grey70',option="C")+
-  #    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-  #    labs(x='',y='',fill='Traps per\nsq. km',title=t)
-  # return(map_out)
-  # }
-  # 
-  #Test 2
-  # if(all(is.na(summtraps$trapdens))){
-  #   bbox = c(800000,1650000,1013103,1970000)
-  #   map_out <- gridded_traps  %>% 
-  #     st_set_geometry(NULL) %>% 
-  #     # mutate(trapdens=0) %>% 
-  #     ggplot()+
-  #     # geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
-  #     geom_sf(data=coaststates,col=NA,fill='gray50')+
-  #     scale_fill_viridis(na.value='grey70',option="C")+
-  #     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-  #     labs(x='',y='',fill='Traps per\nsq. km',title=t)
-  # return(map_out)
-  # } 
+  
   
   # Test 3: change color scaling for all NA traps
   if(all(is.na(summtraps$trapdens))){
@@ -290,6 +661,8 @@ map_traps <- function(gridded_traps){
       ggplot()+
       geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=F,fill='gray70',alpha=0.8)+
       geom_sf(data=coaststates,col=NA,fill='gray50')+
+      geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+      geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
       coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
       labs(x='',y='',fill='Traps per\nsq. km',title=t)
     return(map_out)
@@ -299,13 +672,29 @@ map_traps <- function(gridded_traps){
   # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
   bbox = c(800000,1650000,1013103,1970000)
   
-  map_out <- summtraps %>% 
+  max_trapdens <- 62.019
+  
+  map_out <- summtraps %>%
     ggplot()+
     geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
-    scale_fill_viridis(na.value='grey70',option="C")+
+    geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
+    #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
+    #scale_fill_viridis(na.value='grey70',option="C")+
+    scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='Traps per\nsq. km',title=t)
+  
+  # map_out <- summtraps %>% 
+  #   ggplot()+
+  #   geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+  #   geom_sf(data=coaststates,col=NA,fill='gray50')+
+  #   scale_fill_continuous(low="blue", high="yellow", breaks = quantile(summtraps$trapdens, probs = c(0, 0.5, 1), na.rm=TRUE),na.value='grey70')+
+  #   #scale_fill_viridis(na.value='grey70',option="C")+
+  #   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  #   labs(x='',y='',fill='Traps per\nsq. km',title='')
+  # map_out
   
   return(map_out)
     
@@ -325,37 +714,44 @@ make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice
 }
 
 #testtraps <- place_traps(df=logs,bathy=bathy,year_choice = 2018,month_choice = 5,period_choice = 2)
-testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice = 9,period_choice = 2)
-test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
-test_map<- test_traps_grid %>% map_traps()
-test_map
+#testtraps <- place_traps(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice = 9,period_choice = 2)
+#test_traps_grid <- testtraps%>% join_grid(gkey=grd_area_key)
+#test_map<- test_traps_grid %>% map_traps()
+#test_map
 
-######
+
+
+
+##################
 ##A start for looping through different crab_year, month and period combinations
 
-# make_effort_map <- function(df,bathy,crab_year_choice,month_choice,period_choice, gkey){
-#   place_traps(df,bathy,crab_year_choice,month_choice,period_choice) %>% 
-#     join_grid(gkey) %>% 
-#     map_traps()
-# }
-
 # all together
-t <- proc.time()
-test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice=9,period_choice=2,gkey = grd_area_key)
-test_map
-proc.time()-t
+#t <- proc.time()
+#test_map <- make_effort_map(df=logs,bathy=bathy,crab_year_choice = '2014-2015',month_choice=9,period_choice=2,gkey = grd_area_key)
+#test_map
+#proc.time()-t
 
 # for a loop across multiple months or periods
-scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
-plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
+#scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:4,period_choice=1:2)
+#plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
+#scenarios <- crossing(crab_year_choice='2018-2019',month_choice=c(1:12),period_choice=1:2)
 
-# for a loop across multiple months and periods #note that code won't work if there is a month-period combo with no data 
-scenarios <- crossing(crab_year_choice=unique(logs$season),month_choice=1:8,period_choice=1:2)
-# scenarios <- crossing(crab_year_choice='2014-2015',month_choice=c(1:7),period_choice=1:2)
+#testing re-ordering of plots. If make month numbers as factors, scenario list is accurate (starts from 12, then 1,2...)
+#BUT in plts, first map IS first half of Dec BUT the label is first half of Jan
+#month_list <- c('12','1','2','3','4','5','6','7','8','9','10','11')
+#month_list <- factor(month_list, levels = c('12','1','2','3','4','5','6','7','8','9','10','11'))
+#scenarios <- crossing(crab_year_choice='2013-2014',month_choice=month_list,period_choice=1:2)
+
+##What seems to work for re-ordering plots is to re-order the scenarios tibble after it has been created:
+scenarios <- crossing(crab_year_choice='2013-2014',month_choice=c(1:12),period_choice=1:2)
+s1 <- scenarios[1:22,]
+s2 <- scenarios[23:24,]
+scenarios <- rbind(s2,s1)
+#then run the functions
 tm <- proc.time()
 plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_key)
 proc.time()-tm
-#Time taken to do 8 maps 11.3 minutes
+
 
 
 ###EXPORT IN PDF
@@ -374,6 +770,8 @@ map_out <- summtraps %>%
   ggplot()+
   geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
   geom_sf(data=coaststates,col=NA,fill='gray50')+
+  geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+  geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
   scale_fill_continuous(low="blue", high="yellow",limits=c(0,115), breaks=c(0,115),labels=c("low","high"))+
   #scale_fill_viridis(na.value='grey70',option="C")+
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
@@ -383,3 +781,287 @@ map_out <- summtraps %>%
         title=element_text(size=16),
         legend.title = element_text(size=10))
 return(map_out)
+
+
+
+
+####################################
+#Max trap density for full seasons
+#season       max(trapdens)
+# 2013-2014     62.019
+# 2014-2015     55.2899
+# 2015-2016     46.904
+# 2016-2017     40.304
+# 2017-2018     37.8061 -- note that actually was 113.3558 but it was a clear outlier
+# 2018-2019     54.5422
+max_trapdens <- 62.019
+
+#Running functions on full seasons (no month or period choices) -- no need to dela with empty df etc as full season won't have that problem
+#subset a season
+logs20182019 <- logs %>% filter(season=='2018-2019')
+df <- logs20182019
+
+#place_traps_full <- function(df,bathy,crab_year_choice){
+  
+  # labels for season, month, and period of choice
+  season_label1 <- unique(df$season)
+  #season_label1 <- crab_year_choice
+  
+  df %<>%
+    dplyr::select(season, Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+    #filter(season%in%crab_year_choice) %>% 
+    distinct() 
+
+  df %<>% 
+    # make sure each set has a beginning and end
+    group_by(SetID) %>% 
+    mutate(n=n()) %>% 
+    filter(n==2,!is.na(PotsFished)) %>%
+    # convert to sf points
+    st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
+    st_transform(32610) %>% 
+    # create linestrings
+    group_by(Vessel,SetID,PotsFished,SetDate) %>% 
+    summarise(do_union = FALSE) %>% 
+    st_cast("LINESTRING")
+  
+  traps <- df %>% 
+    ungroup() %>% 
+    # now use those linestrings to place pots using sf::st_line_sample
+    mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
+                                .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
+    # pull out the x/y coordinates of the traps
+    mutate(trapcoords=purrr::map(traplocs,
+                                 function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
+    select(Vessel,SetID,PotsFished,SetDate,trapcoords) %>% 
+    # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
+    st_set_geometry(NULL) %>% 
+    unnest(cols=c(trapcoords))
+  
+  # find depth of traps
+  traps_sf <- traps %>%
+    st_as_sf(coords=c('x','y'),crs=32610) %>% 
+    st_transform(4326) %>%
+    select(-id)
+  
+  # do the raster extract with the bathymetry grid
+  # Note- I think this would be faster with a vector representation (points) of the bathy grid
+  bathy.points <- raster::extract(bathy,traps_sf)
+  
+  # add depth as a column variable
+  # divide by 10 to go from decimeters to meters
+  traps_sf %<>%
+    mutate(depth=bathy.points/10)
+  
+  # find points on land and collect their SetIDs to a list
+  #traps_on_land <- traps_sf %>% filter(depth > 0) 
+  # if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use something like
+  traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+  unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+  
+  # Remove ALL points whose Set_ID appears on that list
+  traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+  
+  traps_sf %<>% mutate(season=season_label1)
+  
+#  return(traps_sf)  
+#}
+
+
+  gkey <- grd_area_key
+#  join_grid_full <- function(traps_sf,gkey){
+    
+    traps_sf %<>%
+      # convert to planar projection to match the grid
+      st_transform(st_crs(gkey))
+    
+    # Spatially join traps to 5k grid, with grid/area matching key
+    traps_g <- traps_sf %>%
+      st_join(gkey) %>% 
+      left_join(grd_xy,by="GRID5KM_ID")
+    
+#    return(traps_g)
+#  }
+
+  gridded_traps <- traps_g
+#    map_traps_full <- function(gridded_traps){
+      
+      # labels for plot titles
+      season_label=paste("Full season:",unique(gridded_traps$season))
+      t <- paste0(season_label)
+      
+      summtraps <- gridded_traps %>% 
+        st_set_geometry(NULL) %>%
+        filter(!is.na(GRID5KM_ID)) %>% 
+        # count the total number of traps in each grid cell in each set
+        group_by(Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>% 
+        summarise(ntraps_vessel_set_cell=n()) %>% 
+        # average the number of pots per vessel per grid cell
+        ungroup() %>% 
+        group_by(Vessel,GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+        summarise(ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
+        # finally, sum the total traps per grid cell, across vessels
+        ungroup() %>% 
+        group_by(GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+        summarise(tottraps=sum(ntraps_vessel_cell)) %>% 
+        # trap density is total traps divided by area (in sq. km) of each cell
+        mutate(trapdens=tottraps/(AREA/1e6)) %>% 
+        ungroup() %>% 
+        filter(!is.na(tottraps))
+      
+      # CONFIDENTIALITY CHECK: RULE OF 3
+      # "grey out" any cell for which there are less than 3 unique vessels contributing to that cell's data
+      confidential_cells <- gridded_traps %>%
+        st_set_geometry(NULL) %>% 
+        group_by(GRID5KM_ID) %>% 
+        summarise(nvessels=n_distinct(Vessel,na.rm=T)) %>% 
+        ungroup() %>% 
+        mutate(is_confidential=ifelse(nvessels<3,T,F))
+      
+      summtraps %<>%
+        left_join(confidential_cells,by="GRID5KM_ID") %>% 
+        mutate(tottraps=ifelse(is_confidential,NA,tottraps),
+               trapdens=ifelse(is_confidential,NA,trapdens))
+      
+      # Make a map
+      # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
+      bbox = c(800000,1650000,1013103,1970000)
+      
+      map_out <- summtraps %>%
+        ggplot()+
+        geom_tile(aes(grd_x,grd_y,fill=trapdens),na.rm=T,alpha=0.8)+
+        geom_sf(data=coaststates,col=NA,fill='gray50')+
+        geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+        geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
+        #max_trapdens across all seasons from 2013-2019 is 62.019
+        #scale_fill_continuous(low="darkblue", high="yellow",limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"), na.value='grey70')+
+        scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
+        coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+        labs(x='',y='',fill='Traps per\nsq. km',title=t)
+    
+     
+#      return(map_out)
+# }  
+
+      
+# make_effort_map_full <- function(df,bathy,crab_year_choice, gkey){
+#         
+#  traps <- place_traps_full(df,bathy,crab_year_choice) 
+#         
+#  traps_map <- traps %>% 
+#   join_grid_full(gkey) %>% 
+#   map_traps_full()
+#         
+#  return(traps_map)
+# }
+
+
+
+#test_map <- make_effort_map_full(df=logs,bathy=bathy,crab_year_choice = '2013-2014',gkey = grd_area_key)
+#test_map
+
+# scenarios <- crossing(crab_year_choice=c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
+# tm <- proc.time()
+# plts <- scenarios %>% pmap(.f=make_effort_map_full,df=logs,bathy=bathy,gkey=grd_area_key)
+# proc.time()-tm
+      
+      
+      
+###EXPORT IN PDF
+ ggsave(
+  filename = "DRAFT_constant legend across seasons_full season_2013-2014.pdf", 
+  plot = map_out, 
+  width = 15, height = 9
+  )      
+
+ 
+ 
+#########################################
+#Plotting (simulated) pots by depth bin
+ 
+#use the full set of logbook data for this (no breakdown by particular year or period etc) 
+#from raw logs, need to run place_traps function to create the traps along each line and get their depth
+#running place_traps on the full logs dataframe takes really long, so ran it once and saved it as traps_sf_for_all_logs_and_seasons_2009-2019.rds
+#and uploaded it to Kiteworks
+
+traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_sf_for_all_logs_and_seasons_2009-2019.rds'))
+ 
+logs_all <- traps_sf_all_logs %>% 
+ st_set_geometry(NULL) %>% 
+ mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+ mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
+ mutate(season = str_sub(SetID,1,9)) %>% 
+ mutate(season_month = paste0(season,"_",m))
+#dataset has higly negative values (~ -30000) to denote port and bay areas - remove those. 
+#Also note that place_traps function already removes depths <200m as crab fishing at deeper depths is not likely
+logs_all %<>% filter(depth > -1000)
+ 
+logs_all %<>% mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) 
+
+#Testing some plotting
+
+ggplot(logs_all, aes(depth)) +
+  geom_histogram()
+
+#simple histogram by season
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i]), aes(depth)) +
+    geom_histogram(binwidth = 5) +
+    scale_y_continuous(breaks=seq(0, 255000, 50000),limits=c(0,255000))+
+    ggtitle((paste(ids[i])))
+  plot_list[[i]] = p
+}
+plot_list
+
+
+#simple bar chart by season, by depth bin
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i]), aes(depth)) +
+    geom_bar() +
+    scale_x_binned() +
+    scale_y_continuous(breaks=seq(0, 255000, 50000),limits=c(0,255000))+
+    ggtitle((paste(ids[i])))
+  plot_list[[i]] = p
+}
+plot_list 
+
+
+#stacked histogram of depth by month in season
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i]), aes(depth, fill = m)) +
+    geom_histogram(binwidth = 5) +
+    scale_y_continuous(breaks=seq(0, 255000, 50000),limits=c(0,255000))+
+    ggtitle((paste(ids[i]))) +
+    theme(legend.position = c(0.3,0.6))
+  plot_list[[i]] = p
+}
+plot_list
+ 
+
+#frequency polygon of depth by month in season
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i]), aes(depth, colour = m)) +
+    geom_freqpoly(binwidth = 5) +
+    scale_y_continuous(breaks=seq(0, 255000, 50000),limits=c(0,255000))+
+    ggtitle((paste(ids[i]))) +
+    theme(legend.position = c(0.3,0.6))
+  plot_list[[i]] = p
+}
+plot_list
+
+
+#to save to a pdf.
+pdf("NAME.pdf")
+for (i in 1:length(ids)) {
+  print(plot_list[[i]])
+}
+dev.off()
+
