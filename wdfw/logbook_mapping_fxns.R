@@ -493,6 +493,14 @@ summtrapsWA <- summtrapsWA %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   filter(!is.na(month_name)) 
 
+#could look into using bins (categorical variable) to specify line width in plot (curently continuous variable)
+#summtrapsWA <- summtrapsWA %>% 
+#mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
+#       number_obs_bins = as.factor(number_obs_bins))
+#and then in plotting code change geom_line call to this:
+#geom_line(aes(size=factor(number_obs_bins)))
+#the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
+
 #PLOT for Option 1
 logs_ts <- ggplot(summtrapsWA, aes(x= month_name, y= mediantrapdens, colour=season,  group=season))+
   #make line width reflect the area/no. of grid cells used
