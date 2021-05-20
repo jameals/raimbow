@@ -502,12 +502,12 @@ summtrapsWA <- summtrapsWA %>%
 #the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
 
 #PLOT for Option 1
-logs_ts <- ggplot(summtrapsWA, aes(x= month_name, y= mediantrapdens, colour=season,  group=season))+
+logs_ts <- ggplot(summtrapsWA, aes(x= month_name, y= meantrapdens, colour=season,  group=season))+
   #make line width reflect the area/no. of grid cells used
-  geom_line(aes(size=number_obs)) + #size=number_obs; size=totarea
+  geom_line(aes(size=totarea),lineend = "round") + #size=number_obs; size=totarea
   scale_colour_brewer(palette = "PRGn") +
   #scale_colour_viridis_d(option = "plasma") + 
-  ylab("Median of trapdens across \ngrid cells for entire WA") +
+  ylab("Mean of trapdens across \ngrid cells for entire WA") +
   xlab("Month") + #Month_1st or 2nd half
   #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
@@ -583,7 +583,7 @@ summtrapsWA <- summtrapsWA %>%
 #PLOT for Option 2 - not very good looking, lines overlap too much
 logs_ts <- ggplot(summtrapsWA, aes(x= month_interval, y= mediantrapdens, colour=season,  group=season))+
   #make line width reflect the area/no. of grid cells used
-  geom_line(aes(size=number_obs)) + #size=number_obs; size=totarea
+  geom_line(aes(size=number_obs),lineend = "round") + #size=number_obs; size=totarea
   scale_colour_brewer(palette = "PRGn") +
   #scale_colour_viridis_d(option = "plasma") + 
   ylab("Median of trapdens across \ngrid cells for entire WA") +
