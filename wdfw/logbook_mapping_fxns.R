@@ -1156,6 +1156,17 @@ for (i in 1:length(ids)) {
 }
 plot_list
 
+# bar chart of proportions instead of counts by season, by depth bin
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i])) +
+    geom_bar(aes(x=depth, y=stat(prop))) +
+    scale_x_binned() +
+    ggtitle((paste(ids[i])))
+  plot_list[[i]] = p
+  }
+plot_list 
 
 #to save to a pdf.
 pdf("NAME.pdf")
