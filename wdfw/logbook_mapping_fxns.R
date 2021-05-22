@@ -1038,7 +1038,8 @@ for (i in 1:length(ids)) {
     geom_histogram(binwidth = 5) +
     scale_y_continuous(breaks=seq(0, 255000, 50000),limits=c(0,255000))+
     ggtitle((paste(ids[i]))) +
-    theme(legend.position = c(0.3,0.6))
+    theme(legend.position = c(0.3,0.6))+
+    scale_fill_discrete(name = "Month",drop = FALSE)
   plot_list[[i]] = p
 }
 plot_list
