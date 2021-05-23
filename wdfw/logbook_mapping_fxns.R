@@ -1163,6 +1163,7 @@ for (i in 1:length(ids)) {
   p = ggplot(subset(logs_all, season == ids[i])) +
     geom_bar(aes(x=depth, y=stat(prop))) +
     scale_x_binned() +
+    scale_y_continuous(breaks=seq(0.0, 0.5, 0.1),limits=c(0.0,0.5))+
     ggtitle((paste(ids[i])))
   plot_list[[i]] = p
   }
