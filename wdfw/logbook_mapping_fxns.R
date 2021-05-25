@@ -1276,3 +1276,52 @@ testdf %<>%
 glimpse(testdf)
 
 
+################################################################
+#alternative adjustment method (M2)
+#note that the original place_traps code retained column for vessel name, but did not retain 'License' (needed to join pot limit info)
+#re-ran place_traps and join_grid to retain 'License', but only on 2013-2019 data due to R memory limits
+
+#step 1: do place_traps and join_grid --> so start with traps_g df (traps are simulated and joined to grid)  
+#RDS can be found in Kiteworks folder
+traps_g_license_logs_2013_2019 <- read_rds(here::here('data','traps_g_license_logs_2013_2019.rds'))
+traps_g <- traps_g_license_logs_2013_2019
+
+traps_g %<>%
+  mutate(
+    season = str_sub(SetID,1,9),
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name),
+    month_interval = paste0(month_name, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+    ),
+    season_month_interval = paste0(season, 
+                                   "_", 
+                                   month_interval)
+  )
+
+
+#step 2: read in and join license & pot limit info
+WA_pot_limit_info <- read_csv(here::here('data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+
+#join Pot_Limit to traps_g -- this will take ~2min to run
+traps_g %<>%
+  left_join(WA_pot_limit_info,by=c("License"))
+
+
+#step 3: apply weighting based on permitted max pot number
+adj_traps_g <- traps_g %>% 
+  st_set_geometry(NULL) %>% 
+  filter(!is.na(GRID5KM_ID)) %>% #this was in summtraps code
+  # count up traps for vessel in 2-week period
+  group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  #do we need to retain other columns here?: GRID5KM_ID,grd_x,grd_y,SetID,AREA
+  #group_by(season_month_interval, Vessel, License, Pot_Limit,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  summarise(
+    M2_n_traps_vessel=n() 
+  ) %>% 
+  mutate(M2_prop_trap = M2_n_traps_vessel/Pot_Limit) #create a column with weighting - proportion of max allowed traps
+
+
