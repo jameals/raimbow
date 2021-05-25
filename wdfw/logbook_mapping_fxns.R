@@ -1283,7 +1283,7 @@ glimpse(testdf)
 
 #step 1: do place_traps and join_grid --> so start with traps_g df (traps are simulated and joined to grid)  
 #RDS can be found in Kiteworks folder
-traps_g_license_logs_2013_2019 <- read_rds(here::here('data','traps_g_license_logs_2013_2019.rds'))
+traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 traps_g <- traps_g_license_logs_2013_2019
 
 traps_g %<>%
@@ -1302,7 +1302,7 @@ traps_g %<>%
 
 
 #step 2: read in and join license & pot limit info
-WA_pot_limit_info <- read_csv(here::here('data','WA_pot_limit_info_May2021.csv'))
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
 WA_pot_limit_info %<>%
   rename(License = License_ID)
