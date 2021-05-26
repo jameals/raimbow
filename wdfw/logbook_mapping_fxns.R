@@ -744,10 +744,7 @@ map_traps <- function(gridded_traps){
     summtraps %<>%
       left_join(confidential_cells,by="GRID5KM_ID")
   }
-    # summtraps %<>%
-  #   left_join(confidential_cells,by="GRID5KM_ID") %>% 
-  #   mutate(tottraps=ifelse(is_confidential,NA,tottraps),
-  #          trapdens=ifelse(is_confidential,NA,trapdens))
+
 
   
   
@@ -1332,22 +1329,140 @@ adj_traps_g <- traps_g %>%
 traps_g %<>%
   left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit'))
 
-# NOW YOU CAN GO ABOUT SUMMING THE POTS AS BEFORE, JUST USE 'trap_limit_weight' to sum, instead of n().
-# for example
+# do M1 calculations, group by season_month_interval 
+M1_summtraps <- traps_g %>% 
+  st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  summarise(
+    M1_ntraps_vessel_set_cell=n()
+  ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_ntraps_vessel_cell=mean(M1_ntraps_vessel_set_cell)#,
+    #sd_traps_vessel_cell=sd(ntraps_vessel_set_cell) # want to come back and think about how to aggregate uncertainty
+  ) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(season_month_interval, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_tottraps=sum(M1_ntraps_vessel_cell),
+    nvessels=n_distinct(Vessel,na.rm=T) #add count of unique vessels for confidentiality check
+  ) %>% 
+  # trap density is total traps divided by area (in sq. km) of each cell
+  mutate(
+    M1_trapdens=M1_tottraps/(AREA/1e6)
+  ) %>% 
+  ungroup() %>% 
+  filter(!is.na(M1_tottraps))
+glimpse(M1_summtraps)
 
+
+# NOW YOU CAN GO ABOUT SUMMING THE POTS AS BEFORE, JUST USE 'trap_limit_weight' to sum, instead of n().
 traps_summ <- traps_g %>% 
   st_set_geometry(NULL) %>% # REMOVING THE SPATIAL INFO MAKES THESE SUMMARIES RUN MUCH FASTER
-  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y) %>%  # or whatever grouping variables are applicable
-  summarise(weighted_traps=sum(trap_limit_weight)) %>%  # this is the new/key step
-  ungroup()
+  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  # or whatever grouping variables are applicable
+  summarise(weighted_traps=sum(trap_limit_weight)) %>%  # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
+  mutate(
+    M2_trapdens=weighted_traps/(AREA/1e6)
+  ) %>% ungroup() %>% 
+  filter(!is.na(weighted_traps))
 glimpse(traps_summ)
 
+
+#join results from M1 and M2 
+adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month_interval", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
+glimpse(adj_summtraps)
+
+
 # quick timeseries of trap numbers
-traps_summ %>% 
-  group_by(season_month_interval) %>% 
-  summarise(tot_traps=sum(weighted_traps)) %>% 
-  mutate(time=row_number()) %>% 
-  ungroup() %>% 
-  ggplot(aes(time,tot_traps/1000))+
-  geom_line()+
-  labs(x="Time (2-week periods)",y="Total Traps (Thousands)",title="Total Traps with Pot-Limit Weighting Applied")
+# traps_summ %>% 
+#   group_by(season_month_interval) %>% 
+#   summarise(tot_traps=sum(weighted_traps)) %>% 
+#   mutate(time=row_number()) %>% 
+#   ungroup() %>% 
+#   ggplot(aes(time,tot_traps/1000))+
+#   geom_line()+
+#   labs(x="Time (2-week periods)",y="Total Traps (Thousands)",title="Total Traps with Pot-Limit Weighting Applied")
+# 
+
+
+
+
+
+adj_summtraps_conf %<>%
+  separate(season_month_interval, into = c("season", "month_name", "period"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) %>% 
+  mutate(season_month_interval = paste0(season_month,"_",period)) %>% 
+  mutate(month_interval = paste0(month_name,"_",period)) %>%
+  mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
+glimpse(adj_summtraps_conf)
+
+#can we now use this df for everything: making maps (while still also having some type of loop/function to pump out lots of maps?)
+#but also for time series plots etc...?
+
+#tested making a sinlge map via basic filtering, but don't know how to feed new df into a looping function. 
+#also, in original looping had a step for making empty map if df was empty, unsure how to apply that with this new df
+map_traps <- function(adj_summtraps_conf){
+  
+  adj_summtraps_conf %<>%
+    filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice)
+  
+  # labels for plot titles
+  month_label=unique(adj_summtraps_conf$month_name)
+  period_label=ifelse(adj_summtraps_conf$period==1,"first half","second half")
+  season_label=paste("Season:",unique(adj_summtraps_conf$season))
+  t <- paste0(season_label,"\n",month_label,", ",period_label)
+  
+  # CONFIDENTIALITY CHECK: RULE OF 3
+  # "grey out" any cell for which there are less than 3 unique vessels contributing to that cell's data
+  adj_summtraps_conf <- adj_summtraps %>%
+    group_by(GRID5KM_ID) %>% 
+    mutate(is_confidential=ifelse(nvessels<3,T,F))
+  
+  if(make_confidential_maps == TRUE){
+    adj_summtraps_conf %<>%
+      mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+             M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+             weighted_traps=ifelse(is_confidential,NA,weighted_traps),
+             M2_trapdens=ifelse(is_confidential,NA,M2_trapdens))
+  } else {
+    adj_summtraps_conf
+  }
+  
+  # Make a map
+  # bbox=grd %>% filter(STATE %in% c("WA","OR")) %>% st_bbox()
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  #max_trapdens <- 62.019
+  
+  map_out <- adj_summtraps_conf %>%
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=M1_trapdens),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
+    #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
+    scale_fill_viridis(na.value='grey70',option="C")+
+    #scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    labs(x='',y='',fill='Traps per\nsq. km',title=t)
+
+  return(map_out)
+  
+}
+
+scenarios <- crossing(crab_year_choice='2013-2014',month_choice=c(1:12),period_choice=1:2)
+s1 <- scenarios[1:22,]
+s2 <- scenarios[23:24,]
+scenarios <- rbind(s2,s1)
+#then run the functions
+tm <- proc.time()
+plts <- scenarios %>% pmap(.f=map_traps,adj_summtraps_conf=adj_summtraps_conf)
+proc.time()-tm
+
