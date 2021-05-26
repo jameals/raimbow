@@ -1278,7 +1278,7 @@ glimpse(testdf)
 #note that the original place_traps code retained column for vessel name, but did not retain 'License' (needed to join pot limit info)
 #re-ran place_traps and join_grid to retain 'License', but only on 2013-2019 data due to R memory limits
 
-#step 1: do place_traps and join_grid --> so start with traps_g df (traps are simulated and joined to grid)  
+#Start with traps_g df (traps are simulated and joined to grid)  
 #RDS can be found in Kiteworks folder
 traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 traps_g <- traps_g_license_logs_2013_2019
@@ -1298,7 +1298,7 @@ traps_g %<>%
   )
 
 
-#step 2: read in and join license & pot limit info
+#Read in and join license & pot limit info
 WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
 WA_pot_limit_info %<>%
@@ -1309,19 +1309,18 @@ traps_g %<>%
   left_join(WA_pot_limit_info,by=c("License"))
 
 
-#step 3: apply weighting based on permitted max pot number
+#apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g <- traps_g %>% 
   st_set_geometry(NULL) %>% 
   filter(!is.na(GRID5KM_ID)) %>% #this was in summtraps code
   # count up traps for vessel in 2-week period
-  group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  #do we need to retain other columns here?: GRID5KM_ID,grd_x,grd_y,SetID,AREA
-  #group_by(season_month_interval, Vessel, License, Pot_Limit,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  
   summarise(
     M2_n_traps_vessel=n() 
   ) %>% 
-  #create a column with weighting - proportion of max allowed traps
-  # you actually want to divide pot limit by number of traps, not the other way around
-  # because you want to up-weight traps < pot_limit, and downweight traps <pot_limit
+  # create a column with weighting - proportion of max allowed traps
+  # divide pot limit by number of traps
+  # because you want to up-weight traps < pot_limit, and downweight traps < pot_limit
   mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% 
   ungroup()
 
@@ -1329,7 +1328,7 @@ adj_traps_g <- traps_g %>%
 traps_g %<>%
   left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit'))
 
-# do M1 calculations, group by season_month_interval 
+# do Method 1/M1 calculations/adjustment, group by season_month_interval 
 M1_summtraps <- traps_g %>% 
   st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
@@ -1361,7 +1360,7 @@ M1_summtraps <- traps_g %>%
 glimpse(M1_summtraps)
 
 
-# NOW YOU CAN GO ABOUT SUMMING THE POTS AS BEFORE, JUST USE 'trap_limit_weight' to sum, instead of n().
+# Now sum pots for M2 (just like for M1), use 'trap_limit_weight' to sum, instead of n().
 traps_summ <- traps_g %>% 
   st_set_geometry(NULL) %>% # REMOVING THE SPATIAL INFO MAKES THESE SUMMARIES RUN MUCH FASTER
   group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  # or whatever grouping variables are applicable
@@ -1393,7 +1392,7 @@ glimpse(adj_summtraps)
 
 
 
-adj_summtraps_conf %<>%
+adj_summtraps %<>%
   separate(season_month_interval, into = c("season", "month_name", "period"), sep = "_") %>%
   mutate(season_month = paste0(season,"_",month_name)) %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
@@ -1401,22 +1400,43 @@ adj_summtraps_conf %<>%
   mutate(season_month_interval = paste0(season_month,"_",period)) %>% 
   mutate(month_interval = paste0(month_name,"_",period)) %>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
-glimpse(adj_summtraps_conf)
+glimpse(adj_summtraps)
 
-#can we now use this df for everything: making maps (while still also having some type of loop/function to pump out lots of maps?)
-#but also for time series plots etc...?
 
-#tested making a sinlge map via basic filtering, but don't know how to feed new df into a looping function. 
-#also, in original looping had a step for making empty map if df was empty, unsure how to apply that with this new df
-map_traps <- function(adj_summtraps_conf){
+#CAN WE NOW USE THIS DF FOR EVERYTHING? e.g., for making maps (while still also having some type of loop/function to pump out lots of maps?)
+#and also for time series plots etc...?
+
+
+#tested making a sinlge map via basic filtering, using the M1 trapdens, 
+#and that's fine, looks the same as before = didn't break our original adjustment method
+#also by changing fill=M2_trapdens you get a map with the new adjustment method
+testmap <- adj_summtraps_conf %>% filter(season_month_interval == "2013-2014_March_1")
+map_out <- testmap  %>%
+  ggplot()+
+  geom_tile(aes(grd_x,grd_y,fill=M1_trapdens),na.rm=T,alpha=0.8)+
+  geom_sf(data=coaststates,col=NA,fill='gray50')+
+  geom_sf(data=MA_shp,col="black", size=1, fill=NA)+
+  geom_sf(data=QSMA_shp,col="black", linetype = "11", size=1.1, fill=NA)+
+  #scale_fill_continuous(low="blue", high="yellow",limits=c(0,55), breaks=c(0,55),labels=c("low (0)","high(55)"))+
+  scale_fill_viridis(na.value='grey70',option="C")+
+  #scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+  labs(x='',y='',fill='Traps per\nsq. km',title=t)
+map_out
+
+
+#BUT
+# I don't know how to feed new df into a looping function. 
+#also, in original looping had a step for making an empty map if df was empty, unsure how to apply that with this new df
+map_traps <- function(adj_summtraps){
   
-  adj_summtraps_conf %<>%
+  adj_summtraps %<>%
     filter(season%in%crab_year_choice,m%in%month_choice,period%in%period_choice)
   
   # labels for plot titles
-  month_label=unique(adj_summtraps_conf$month_name)
-  period_label=ifelse(adj_summtraps_conf$period==1,"first half","second half")
-  season_label=paste("Season:",unique(adj_summtraps_conf$season))
+  month_label=unique(adj_summtraps$month_name)
+  period_label=ifelse(adj_summtraps$period==1,"first half","second half")
+  season_label=paste("Season:",unique(adj_summtraps$season))
   t <- paste0(season_label,"\n",month_label,", ",period_label)
   
   # CONFIDENTIALITY CHECK: RULE OF 3
@@ -1452,7 +1472,7 @@ map_traps <- function(adj_summtraps_conf){
     #scale_fill_viridis(limits=c(0,max_trapdens), breaks=c(0,max_trapdens),labels=c("low (0)","high(62)"),na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='Traps per\nsq. km',title=t)
-
+  
   return(map_out)
   
 }
