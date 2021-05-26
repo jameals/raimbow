@@ -1407,10 +1407,32 @@ glimpse(adj_summtraps)
 #and also for time series plots etc...?
 
 
-#tested making a sinlge map via basic filtering, using the M1 trapdens, 
+#tested making a singe map via basic filtering, using the M1 trapdens, 
 #and that's fine, looks the same as before = didn't break our original adjustment method
 #also by changing fill=M2_trapdens you get a map with the new adjustment method
-testmap <- adj_summtraps_conf %>% filter(season_month_interval == "2013-2014_March_1")
+testmap <- adj_summtraps %>% filter(season_month_interval == "2013-2014_March_1")
+# labels for plot titles
+month_label=unique(adj_summtraps$month_name)
+period_label=ifelse(adj_summtraps$period==1,"first half","second half")
+season_label=paste("Season:",unique(adj_summtraps$season))
+t <- paste0(season_label,"\n",month_label,", ",period_label)
+
+# CONFIDENTIALITY CHECK: RULE OF 3
+# "grey out" any cell for which there are less than 3 unique vessels contributing to that cell's data
+adj_summtraps_conf <- adj_summtraps %>%
+  group_by(GRID5KM_ID) %>% 
+  mutate(is_confidential=ifelse(nvessels<3,T,F))
+
+if(make_confidential_maps == TRUE){
+  adj_summtraps_conf %<>%
+    mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+           M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+           weighted_traps=ifelse(is_confidential,NA,weighted_traps),
+           M2_trapdens=ifelse(is_confidential,NA,M2_trapdens))
+} else {
+  adj_summtraps_conf
+}
+bbox = c(800000,1650000,1013103,1970000)
 map_out <- testmap  %>%
   ggplot()+
   geom_tile(aes(grd_x,grd_y,fill=M1_trapdens),na.rm=T,alpha=0.8)+
