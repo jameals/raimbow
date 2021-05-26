@@ -1,4 +1,6 @@
 ## This script has the 'original' mapping functions for WDFW logbook data 
+#(to loop through 2-week periods based on crab-year/month/period choices)
+#as well as code adjusted from the functions to be run on 'full' dataset (all logs 2013-2019)
 
 library(tidyverse)
 library(lubridate)
