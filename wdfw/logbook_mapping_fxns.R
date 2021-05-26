@@ -1322,7 +1322,32 @@ adj_traps_g <- traps_g %>%
   summarise(
     M2_n_traps_vessel=n() 
   ) %>% 
-  mutate(M2_prop_trap = M2_n_traps_vessel/Pot_Limit) #create a column with weighting - proportion of max allowed traps
+  #create a column with weighting - proportion of max allowed traps
+  # you actually want to divide pot limit by number of traps, not the other way around
+  # because you want to up-weight traps < pot_limit, and downweight traps <pot_limit
+  mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% 
+  ungroup()
 
-#next, sum pots by grid - so should grid be retianed above? does that affect  the weighting ratio part?
+# join the "weighting key" back to the simulated pots data
+traps_g %<>%
+  left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit'))
 
+# NOW YOU CAN GO ABOUT SUMMING THE POTS AS BEFORE, JUST USE 'trap_limit_weight' to sum, instead of n().
+# for example
+
+traps_summ <- traps_g %>% 
+  st_set_geometry(NULL) %>% # REMOVING THE SPATIAL INFO MAKES THESE SUMMARIES RUN MUCH FASTER
+  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y) %>%  # or whatever grouping variables are applicable
+  summarise(weighted_traps=sum(trap_limit_weight)) %>%  # this is the new/key step
+  ungroup()
+glimpse(traps_summ)
+
+# quick timeseries of trap numbers
+traps_summ %>% 
+  group_by(season_month_interval) %>% 
+  summarise(tot_traps=sum(weighted_traps)) %>% 
+  mutate(time=row_number()) %>% 
+  ungroup() %>% 
+  ggplot(aes(time,tot_traps/1000))+
+  geom_line()+
+  labs(x="Time (2-week periods)",y="Total Traps (Thousands)",title="Total Traps with Pot-Limit Weighting Applied")
