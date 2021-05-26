@@ -100,6 +100,17 @@ make_confidential_maps <- FALSE
 #####################
 
 
+#######################################
+# Main steps for mapping functions
+# 1. make strings into individual pots by segmentizing lines (sf::st_line_sample())
+# 2. remove points on land by using a bathymetry layer
+# 3. filter to desired year, month, and period (period is 1 or 2 for the first or second half of the month)
+# 4. map
+
+# this function makes the traps and filters for bathymetry
+# df is the logbooks dataframe
+# bathy is a raster representation of bathymetry
+
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
