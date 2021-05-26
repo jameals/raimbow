@@ -149,7 +149,6 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
     select(-id)
   
   # do the raster extract with the bathymetry grid
-  # Note- I think this would be faster with a vector representation (points) of the bathy grid
   bathy.points <- raster::extract(bathy,traps_sf)
   
   # add depth as a column variable
