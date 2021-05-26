@@ -1324,4 +1324,5 @@ adj_traps_g <- traps_g %>%
   ) %>% 
   mutate(M2_prop_trap = M2_n_traps_vessel/Pot_Limit) #create a column with weighting - proportion of max allowed traps
 
+#next, sum pots by grid - so should grid be retianed above? does that affect  the weighting ratio part?
 
