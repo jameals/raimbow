@@ -1081,6 +1081,7 @@ df <- logs20182019
 #and uploaded it to Kiteworks
 
 traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_sf_for_all_logs_and_seasons_2009-2019.rds'))
+#the depth plotting could also be done using the new df traps_g_license_all_logs_2013_2019.rds
  
 logs_all <- traps_sf_all_logs %>% 
  st_set_geometry(NULL) %>% 
