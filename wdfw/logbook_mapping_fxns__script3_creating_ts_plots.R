@@ -34,9 +34,6 @@ options(dplyr.summarise.inform = FALSE)
 #getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
 traps_g <- traps_g_for_all_logs_full_seasons
-#For now look at 2013-2019
-traps_g <- traps_g %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
 
 traps_g <- traps_g %>% 
   mutate(
@@ -52,13 +49,17 @@ traps_g <- traps_g %>%
                                    month_interval)
   )
 
+#For now look at 2013-2019
+traps_g <- traps_g %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
 
 
 ##For df with M1 and M2 will have to bring in adj_summtraps (result from script 2)
+adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 
 
-##FOLLOWING CODE CURRENTLY USING M1 ONLY
+##FOLLOWING CODE CURRENTLY USING M1 
 #OPTION 1: group by season_month 
 summtraps5km <- traps_g %>% 
   st_set_geometry(NULL) %>%
@@ -230,3 +231,108 @@ png(here::here(
 logs_ts
 invisible(dev.off())
 
+
+##FOLLOWING CODE CURRENTLY USING M2 
+#OPTION 1: group by season_month 
+
+# now we want a summary for each season_month based on the above for all of WA
+M2_summtrapsWA <- adj_summtraps %>%
+  group_by(season_month) %>%  
+  summarise(
+    M2_tottraps = sum(weighted_traps),
+    M2_number_obs = n(), #no. of grid cells in that season_month that had traps in them
+    M2_totarea = sum(AREA/1e6), #in km2
+    M2_meantrapdens = mean(M2_trapdens),
+    M2_sdtrapdens = sd(M2_trapdens),
+    M2_mediantrapdens = median(M2_trapdens),
+    M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(M2_summtrapsWA)
+
+M2_summtrapsWA <- M2_summtrapsWA %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) 
+
+#could look into using bins (categorical variable) to specify line width in plot (curently continuous variable)
+#summtrapsWA <- summtrapsWA %>% 
+#mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
+#       number_obs_bins = as.factor(number_obs_bins))
+#and then in plotting code change geom_line call to this:
+#geom_line(aes(size=factor(number_obs_bins)))
+#the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
+
+#PLOT for Option 1
+logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season))+
+  #make line width reflect the area/no. of grid cells used
+  geom_line(aes(size=M2_totarea),lineend = "round") + #size=number_obs; size=totarea
+  scale_colour_brewer(palette = "PRGn") +
+  #scale_colour_viridis_d(option = "plasma") + 
+  ylab("Mean of trapdens across \ngrid cells for entire WA") +
+  xlab("Month") + #Month_1st or 2nd half
+  #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+logs_ts
+
+
+#OPTION 2: group by season_month_interval -- not as good as option 1
+
+# now we want a summary for each season_month_interval based on the above for all of WA
+M2_summtrapsWA <- adj_summtraps %>%
+  group_by(season_month_interval) %>%  
+  summarise(
+    M2_tottraps = sum(weighted_traps),
+    M2_number_obs = n(), #no. of grid cells in that season_month that had traps in them
+    M2_totarea = sum(AREA/1e6), #in km2
+    M2_meantrapdens = mean(M2_trapdens),
+    M2_sdtrapdens = sd(M2_trapdens),
+    M2_mediantrapdens = median(M2_trapdens),
+    M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(M2_summtrapsWA)
+
+M2_summtrapsWA <- M2_summtrapsWA %>%
+  separate(season_month_interval, into = c("season", "month_name", "period"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) %>% 
+  mutate(season_month_interval = paste0(season_month,"_",period)) %>% 
+  mutate(month_interval = paste0(month_name,"_",period)) %>%
+  mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
+
+#PLOT for Option 2 - not very good looking, lines overlap too much
+logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_interval, y= M2_meantrapdens, colour=season,  group=season))+
+  #make line width reflect the area/no. of grid cells used
+  geom_line(aes(size=M2_number_obs),lineend = "round") + #size=number_obs; size=totarea
+  scale_colour_brewer(palette = "PRGn") +
+  #scale_colour_viridis_d(option = "plasma") + 
+  ylab("Mean of trapdens across \ngrid cells for entire WA") +
+  xlab("Month_1st or 2nd half") + #Month_1st or 2nd half
+  #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+logs_ts
