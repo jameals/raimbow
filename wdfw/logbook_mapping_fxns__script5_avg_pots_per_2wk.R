@@ -36,11 +36,14 @@ options(dplyr.summarise.inform = FALSE)
 #getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 
 #the next lines, up to filtering for years, are same as the first steps in making a ts plot
-traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
+#traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
 
-#could this work also be done using the new df traps_g_license_all_logs_2013_2019.rds
+#could this work also be done using the new df traps_g_license_logs_2013_2019.rds
+traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 
-traps_g <- traps_g_for_all_logs_full_seasons
+#traps_g <- traps_g_for_all_logs_full_seasons
+traps_g <- traps_g_license_logs_2013_2019
+
 
 traps_g <- traps_g %>% 
   mutate(
@@ -57,32 +60,35 @@ traps_g <- traps_g %>%
   )
 
 #For now look at 2013-2019
-traps_g <- traps_g %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
+#traps_g <- traps_g %>% 
+#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
 
 #modifying the summtraps code that adjust for double counting
 testdf <- traps_g %>% 
   st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
   # count the total number of traps in each grid cell in each set
-  group_by(season_month_interval, Vessel,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  group_by(season_month_interval, Vessel, License,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
   summarise(
     ntraps_vessel_set_cell=n()
   ) %>% 
   # average the number of pots per vessel per grid cell
   ungroup() %>% 
-  group_by(season_month_interval, Vessel,GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
   summarise(
     ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
   # finally, sum the total traps per Vessel, across all grid cells in the 2-week period in question
   ungroup() %>% 
-  group_by(season_month_interval, Vessel) %>% 
+  group_by(season_month_interval, Vessel, License) %>% 
   summarise(
-    adjusted_tottraps=sum(ntraps_vessel_cell))
+    M1_adjusted_tottraps=sum(ntraps_vessel_cell))
 glimpse(testdf)
 
 
-#bring in raw logs - code at the beginning of script
+#bring in raw logs 
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
+
 #sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
 logsdf <- logs %>% 
   mutate(
@@ -131,4 +137,17 @@ testdf %<>%
 glimpse(testdf)
 
 
+#Read in and join license & pot limit info
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+
+#join Pot_Limit info
+testdf %<>%
+  left_join(WA_pot_limit_info,by=c("License"))
+glimpse(testdf)
+
+testdf %<>% select(season, month_name, interval, month_interval, Vessel, License, M1_adjusted_tottraps, sum_PotsFished,Pot_Limit, count_FishTicket)
+glimpse(testdf)
 ################################################################
