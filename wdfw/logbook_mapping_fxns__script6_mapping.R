@@ -5,6 +5,11 @@ library(viridis)
 library(cowplot)
 library(here)
 library(rnaturalearth)
+library(fasterize)
+library(sp)
+library(magrittr)
+library(raster)
+select <- dplyr::select
 
 
 # ggplot theme
