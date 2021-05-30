@@ -4,6 +4,8 @@ library(sf)
 library(viridis)
 library(cowplot)
 library(here)
+library(rnaturalearth)
+
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
