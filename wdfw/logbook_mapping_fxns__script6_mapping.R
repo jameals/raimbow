@@ -10,7 +10,7 @@ library(sp)
 library(magrittr)
 library(raster)
 select <- dplyr::select
-
+library(scales)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -98,7 +98,7 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80))+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='Traps per\nsq. km',title=t1)
   
@@ -108,7 +108,7 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80))+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='Traps per\nsq. km',title=t2)
   
