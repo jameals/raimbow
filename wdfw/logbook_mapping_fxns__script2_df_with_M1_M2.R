@@ -139,5 +139,14 @@ glimpse(adj_summtraps)
 #but can't use this df for plotting depth distribution of pots, as this df is already on grid scale
 #and depth dist pots require pots to be indiv data points
 
+pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
+pairs(~ M1_tottraps + weighted_traps, data = adj_summtraps)
 
+library(ggplot2)                    
+library(GGally)
 
+ggpairs(adj_summtraps[, c(10, 13)])
+ggpairs(adj_summtraps, columns = c(10, 13), ggplot2::aes(colour=season))
+
+ggpairs(adj_summtraps[, c(8, 12)])
+ggpairs(adj_summtraps, columns = c(8, 12), ggplot2::aes(colour=season))
