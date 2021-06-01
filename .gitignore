@@ -49,3 +49,5 @@ maps_tmp*
 # large spatial files
 wdfw/data/
 wdfw/maps/
+wdfw/vms_maps/
+
