@@ -28,7 +28,7 @@ Risk calculations follow those in Samhouri et al. (in review)
 # read in status quo fishing data
 # JS 
 x.orig.noinfo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds")
-glimpse(x.orig.noinfo) # looks like there is no column M2_tottraps???
+glimpse(x.orig.noinfo) # there is no column M2_tottraps, but it is the same as weighted_traps
 
 
 # grab whale data
@@ -83,6 +83,34 @@ CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
   "grid-prep",
   "CA_fishing_metrics_range_2009_2019.rds")
 )
+
+```
+
+# Simple status quo risk
+
+For status quo risk, we can simply join the fishing and whale data frames and multiply
+```{r, join_fishing_whales}
+
+# make column for year month for fishing data, make avg value for traps for each yr month
+x.orig.noinfo2 <- x.orig.noinfo %>%
+  group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    # sum_M1_tottraps = sum(M1_tottraps), 
+    # sum_M2_tottraps = sum(weighted_traps), 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    # M1_sdtrapdens = sd(M1_trapdens), 
+    # M2_sdtrapdens = sd(M2_trapdens)
+  ) %>%
+  mutate(
+    year_month = # translate season_month
+  )
+
+joined_df <- x.orig.noinfo2 %>%
+  left_join(x.whale)
+
+# multiply Blue_occurrence_mean or Humpback_abund_mean by effort to get raw risk
 
 ```
 
