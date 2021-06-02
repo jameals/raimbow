@@ -1,0 +1,158 @@
+---
+title: "Calculate risk"
+author: "Jameal Samhouri"
+date: "6/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(here)
+library(lubridate)
+library(here)
+library(sf)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this script is to calculate risk to blue and humpback whales due to Dungeness crab fishing in Washington state. 
+
+It relies on antecedent scripts that process raw logbook data, and that join whale model outputs to a custom 5km grid developed by Blake Feist.
+
+Risk calculations follow those in Samhouri et al. (in review)
+
+# Read in data
+```{r, read_data}
+
+# read in status quo fishing data
+# JS 
+x.orig.noinfo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds")
+glimpse(x.orig.noinfo) # looks like there is no column M2_tottraps???
+
+
+# grab whale data
+# JS 
+x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds")
+
+# Load and prep grid cell - area key
+load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
+area.key <- grid.5km.lno %>% 
+  st_drop_geometry() %>% 
+  select(GRID5KM_ID, area_km_lno) %>% 
+  distinct()
+
+                          
+
+```
+
+# Read in functions
+
+```{r, functions}
+
+# 1) helper  function
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+
+# 2) shift effort function
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+# 3) calculate risk function
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+
+```
+
+# Make season start date key and a fishing metrics range file
+
+```{r, make_keys}
+
+# read in season start date key. we need to make a file like this that is WA-specific. see add_day_of_season.Rmd
+
+# JS 
+season.st.date.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
+
+### Calculate and summarize risk for sq scenario with normalized outputs
+# we need to make a file like this that is WA-specific. see prep_data_for_scenario_df_function.R
+CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
+```
+
+# Produce a data frame that is easy to apply the risk calculation function to
+
+This chunk calculates effort in every grid cell 
+
+```{r, shift_effort}
+##### summarize effort for sq scenario
+
+# STATUS QUO
+scenario.output.df.noinfo.sq <- effort_mgmt(
+  x = x.orig.noinfo,
+  season.st.key = season.st.date.key, 
+  preseason.days = 3,
+  season.st.backstop = NULL, 
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method = NULL,
+  delay.method.fidelity = NULL,
+  closure.date = NULL,
+  closure.region = NULL,
+  closure.method = NULL,
+  closure.redist.percent = 100,
+  depth.shallow = NULL, 
+  depth.deep = NULL, 
+  reduction.before.date = NULL,
+  reduction.before.percent = 50,
+  reduction.before.region = NULL,
+  reduction.after.date = NULL,
+  reduction.after.percent = 50,
+  reduction.after.region = NULL
+)
+
+
+```
+
+# Calculate risk and write out data frames
+
+Calculate risk
+```{r, calculate}
+
+risk_out_sq <- risk_mgmt(
+  x = scenario.output.df.noinfo.sq, 
+  x.col = Num_DCRB_VMS_pings, 
+  y = x.whale,
+  risk.unit = "dens", 
+  area.key = area.key,
+  scale.list = CA_fishing_metrics_range_2009_2019, 
+  ym.min = "2009_11", 
+  ym.max = "2019_07"
+)
+glimpse(risk_out_sq)
+
+range(risk_out_sq$Num_DCRB_VMS_pings) # max value for pings
+
+```
+
+Write to files
+```{r, write}
+
+# write out for use in downstream mapping and figure plotting by yr_mth
+# (we previously used this with tradeoff figures Rmd)
+write_rds(risk_out_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_",today(),".rds"))
+
+risk_out_sq_list_by_yr_mth <- risk_out_sq %>% split(.$year_month)
+
+# write out for use in downstream mapping and figure plotting for each yr_mth separately
+# (we previously used this with prioritizr)
+# write_rds(risk_out_sq_list_by_yr_mth, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_list_by_yr_mth_",today(),".rds"))
+
+```
