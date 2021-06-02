@@ -261,14 +261,15 @@ proc.time()-tm
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 
 M2_summtrapsWA_test <- adj_summtraps %>% 
-  group_by(season_month,GRID5KM_ID, grd_x, grd_y) %>% 
+  group_by(season_month,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
   summarise( 
-    M2_tottraps = sum(weighted_traps), 
-    M2_number_obs = n(), #no. of grid cells in that season_month that had traps in them 
-    M2_totarea = sum(AREA/1e6), #in km2 
-    M2_meantrapdens = mean(M2_trapdens), 
-    M2_sdtrapdens = sd(M2_trapdens), 
-    M2_mediantrapdens = median(M2_trapdens), 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    sum_M1_tottraps = sum(M1_tottraps), 
+    sum_M2_tottraps = sum(weighted_traps), 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    M1_sdtrapdens = sd(M1_trapdens), 
+    M2_sdtrapdens = sd(M2_trapdens)
   ) 
 glimpse(M2_summtrapsWA_test)
 
