@@ -79,9 +79,6 @@ adj_summtraps_MaySep <- adj_summtraps %>%
   filter(is_May1_Sep15 == 'Y')
 
 
-
-
-
 #average M1 and M2 trap density for each grid cell
 MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
@@ -112,18 +109,19 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
  
   MaySep_map_out <- MaySep_summtrapsWA %>% 
     ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M1_trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,90),breaks=c(0,30,60,90),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0, 20, 40,60,80),oob=squish)+
+    #scale_fill_viridis(na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='average trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',season_label))
 
   # saving
   if(saveplot){
     pt <- unique(MaySep_summtrapsWA$season)
-    ggsave(here('wdfw','may_sep_maps',paste0('May 1 - Sep 15',pt,'.png')),MaySep_map_out,w=6,h=5)
+    ggsave(here('wdfw','may_sep_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_map_out,w=6,h=5)
   }
   return(MaySep_map_out)
 }
