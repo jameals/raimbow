@@ -35,8 +35,8 @@ options(dplyr.summarise.inform = FALSE)
 adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 
-##FOLLOWING CODE CURRENTLY USING M2 
-#OPTION 1: group by season_month 
+##FOLLOWING CODE CURRENTLY USING df that has M1 and M2 
+#OPTION 1: group by season_month (makes nicer plots than season_month_interval)
 
 # now we want a summary for each season_month based on the above for all of WA
 M2_summtrapsWA <- adj_summtraps %>%
@@ -69,6 +69,7 @@ M2_summtrapsWA <- M2_summtrapsWA %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   filter(!is.na(month_name)) 
 
+#try ^2 totareas for nicer changes in line thickness
 #could look into using bins (categorical variable) to specify line width in plot (curently continuous variable)
 #summtrapsWA <- summtrapsWA %>% 
 #mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
@@ -158,7 +159,11 @@ logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_interval, y= M1_meantrapdens, col
 logs_ts
 
 
-################################
+
+
+
+################################################################
+#Original code, when workin on df that only had M1 -- not relevant any more
 ##USING M1 ONLY
 #getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
