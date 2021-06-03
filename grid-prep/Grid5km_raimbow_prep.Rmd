@@ -33,7 +33,10 @@ library(sf)
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
-  path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS"
+  # CA
+  # path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/VMS/CA_DCRB_vms_fishing_daily_2009-2019_all_vessels.RDS"
+  # WA
+  path.fish <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds"
   path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
   path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
   
@@ -43,8 +46,14 @@ if (user == "JS") {
   path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
   path.bia.shp <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/BIAs/CetMap_BIA_WGS84/CetMap_BIA_WGS84.shp"
   
+  # CA
   file.out.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key.rds"
-  file.out.whale <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  # WA
+  file.out.key <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_key_WA.rds"
+  # CA
+  # file.out.whale <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds"
+  # WA
+  file.out.whale <- "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale_WA.rds"
   
   
 } else if (user == "SMW") {
@@ -106,7 +115,10 @@ If desired, you can visualize the study area extent, as well as where the study 
 ```{r, eval=FALSE}
 # Code not run
 stopifnot(
-  !anyNA(x.fish$Num_DCRB_VMS_pings), 
+  # CA
+  # !anyNA(x.fish$Num_DCRB_VMS_pings), 
+  # WA
+  !anyNA(x.fish$M1_tottraps),
   !anyNA(x.hump$Humpback_dens_mean), 
   !anyNA(x.blue$Blue_occurrence_mean)
 )
@@ -235,6 +247,8 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 stopifnot(all(grid.studyarea.id %in% grid.depth$GRID5KM_ID))
+# length(which(grid.studyarea.id %in% grid.depth$GRID5KM_ID == FALSE))
+# for WA, 22 cells are in the study area but do not have a depth. don't worry about that
 
 grid.key <- left_join(grid.key, grid.depth, by = "GRID5KM_ID")
 ```
