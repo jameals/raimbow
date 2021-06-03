@@ -28,15 +28,18 @@ Risk calculations follow those in Samhouri et al. (in review)
 # read in status quo fishing data
 # JS 
 x.orig.noinfo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds")
+#x.orig.noinfo <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 glimpse(x.orig.noinfo) # there is no column M2_tottraps, but it is the same as weighted_traps
 
 
 # grab whale data
 # JS 
 x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale.rds")
+#x.whale <- read_rds(here::here('wdfw','data','Grid5km_whale.rds'))
 
 # Load and prep grid cell - area key
 load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
+#load("E:\\Leena\\Documents\\Projects\\raimbow\\wdfw\\data\\Grid_5km_landerased.RDATA")
 area.key <- grid.5km.lno %>% 
   st_drop_geometry() %>% 
   select(GRID5KM_ID, area_km_lno) %>% 
@@ -102,13 +105,33 @@ x.orig.noinfo2 <- x.orig.noinfo %>%
     mean_M2_trapdens = mean(M2_trapdens), 
     # M1_sdtrapdens = sd(M1_trapdens), 
     # M2_sdtrapdens = sd(M2_trapdens)
-  ) %>%
-  mutate(
-    year_month = # translate season_month
   )
 
-joined_df <- x.orig.noinfo2 %>%
-  left_join(x.whale)
+
+x.orig.noinfo3 <- x.orig.noinfo2 %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  separate(season, into = c("yr_start", "yr_end"), sep = "-") %>%
+  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) #change month to two digit number
+
+
+df1 <- x.orig.noinfo3 %>%
+  filter(month_name=='December')
+df2 <- x.orig.noinfo3 %>%
+  filter(month_name !='December')
+df1 <- df1 %>%
+  mutate(year_month = paste0(yr_start,"_",month))
+df2 <- df2 %>%
+  mutate(year_month = paste0(yr_end,"_",month))
+  
+x.orig.noinfo4 <- rbind(df1,df2)
+
+
+
+
+
+joined_df <- x.orig.noinfo4 %>%
+  left_join(x.whale,by=c("year_month","GRID5KM_ID"))
 
 # multiply Blue_occurrence_mean or Humpback_abund_mean by effort to get raw risk
 
