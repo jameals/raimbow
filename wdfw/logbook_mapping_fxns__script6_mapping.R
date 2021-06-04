@@ -27,6 +27,7 @@ plot_theme <-   theme_minimal()+
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
+
 ## Cleaned and summarized, simulated crab trap data
 dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 #### READ IN SPATIAL GRID DATA ####
@@ -186,7 +187,7 @@ vms20132014_g_DCRB <- vms20132014_g_DCRB %>%
                                    month_interval)
   )
 
-
+#calculate vms point density if want to work on a monthly step 
 vms20132014_g_mapping_DCRB <- vms20132014_g_DCRB %>% 
   st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
@@ -255,6 +256,47 @@ proc.time()-tm
 
 
 
+#average VMS density for May - Sep
+vms20132014_g_mapping_DCRB_MaySep <- vms20132014_g_DCRB %>%  
+  mutate(is_May1_Sep15 = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
+                  ,'Y', 'N')) %>% 
+  filter(is_May1_Sep15 == 'Y')
+
+vms20132014_g_mapping_DCRB_MaySep <- vms20132014_g_mapping_DCRB_MaySep %>%
+  st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
+  #first get density of VMS points/cell on a 2-weekly step
+  # count the total number of VMS points in each grid cell 
+  group_by(season_month_interval,season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(n_vms_points_cell=n()) %>% 
+  # vms point density is total vms points divided by area (in sq. km) of each cell
+  mutate(vms_dens=n_vms_points_cell/(AREA/1e6)) %>% 
+  ungroup() %>% 
+  filter(!is.na(n_vms_points_cell)) %>% 
+  #then get average density of vms points per grid cell in may-sep
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_vms_dens = sum(vms_dens),
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_vms_trapdens = sum_vms_dens/number_obs,
+  )
+glimpse(vms20132014_g_mapping_DCRB_MaySep)
+
+#making individual map of May-Sep
+bbox = c(800000,1650000,1013103,1970000)
+
+vms_map_DCRB_MaySep <- vms20132014_g_mapping_DCRB_MaySep %>%
+  ggplot()+
+  geom_tile(aes(grd_x,grd_y,fill=log(mean_vms_trapdens)),na.rm=T,alpha=0.8)+
+  geom_sf(data=coaststates,col=NA,fill='gray50')+
+  geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+  geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+  scale_fill_viridis(na.value='grey70',option="D")+
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+  labs(x='',y='',fill='log VMS points\nper sq. km',title='W only, DCRB target sp trips only')
+vms_map_DCRB_MaySep
+
 
 #logbook maps on monthly step - average trap density in grid cell for the time period
 
@@ -273,6 +315,31 @@ M2_summtrapsWA_test <- adj_summtraps %>%
   ) 
 glimpse(M2_summtrapsWA_test)
 
+
+#average M1 and M2 trap density for each grid cell for May-Sep period
+adj_summtraps_MaySep <- adj_summtraps %>% 
+  mutate(is_May1_Sep15 = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
+                  ,'Y', 'N')) %>% 
+  filter(is_May1_Sep15 == 'Y')
+
+MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M1_trapdens = sum(M1_trapdens),
+    sum_M2_trapdens = sum(M2_trapdens),
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_M1_trapdens = sum_M1_trapdens/number_obs,
+    mean_M2_trapdens = sum_M2_trapdens/number_obs
+    #include some measure of variance or CV as well
+    #M2_sdtrapdens = sd(M2_trapdens),
+    #M2_mediantrapdens = median(M2_trapdens),
+    #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    #M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    #M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(MaySep_summtrapsWA)
 
 # #making individual maps
 # d_test <- M2_summtrapsWA_test %>% 
