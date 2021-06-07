@@ -132,8 +132,23 @@ all_maps <- purrr::map(unique(dat$season_month_interval),function(x){
 })
 proc.time()-tm
 
+####################################################################
+#If want to create non-confidential maps
+#use conf_dat as input in the above mapping loop, if want cells with < 3 vessels to be gray
+#or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
 
+dat <- dat %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F))
 
+conf_dat <-  dat %>% 
+  mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+         M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+         weighted_traps=ifelse(is_confidential,NA,weighted_traps),
+         M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
+         )
+
+conf_dat2 <-  conf_dat %>%
+  filter(is_confidential == FALSE)
 ####################################################################
 #VMS comparison maps
 #note that you have to read in MA borders at the top of script
