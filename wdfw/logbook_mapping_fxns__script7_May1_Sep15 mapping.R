@@ -85,6 +85,7 @@ MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
   summarise(
     sum_M1_trapdens = sum(M1_trapdens),
     sum_M2_trapdens = sum(M2_trapdens),
+    sum_nvessels = sum(nvessels),
     number_obs = n(), #no. of grid cells being used for averaging
     mean_M1_trapdens = sum_M1_trapdens/number_obs,
     mean_M2_trapdens = sum_M2_trapdens/number_obs
@@ -137,7 +138,23 @@ proc.time()-tm
 
 
 
+####################################################################
+#If want to create non-confidential maps
+#include sum_nvessels = sum(nvessels) in creation of MaySep_summtrapsWA
+#use conf_MaySep_summtrapsWA as input in the above mapping loop, if want cells with < 3 vessels to be gray
+#or use conf_MaySep_summtrapsWA2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
 
+conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
+  mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
+
+conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>% 
+  mutate(mean_M1_trapdens = ifelse(is_confidential,NA,mean_M1_trapdens),
+         mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
+  )
+
+conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
+  filter(is_confidential == FALSE)
+####################################################################
 
 
 #crab_year_choice = '2018-2019'
@@ -158,7 +175,8 @@ proc.time()-tm
 
 bbox = c(800000,1650000,1013103,1970000)
 
-MaySep_map_out <- MaySep_summtrapsWA %>% 
+MaySep_map_out <- conf_MaySep_summtrapsWA2 %>% 
+  filter(season == crab_year_choice) %>% 
   ggplot()+
   geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
   geom_sf(data=coaststates,col=NA,fill='gray50')+
