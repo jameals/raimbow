@@ -171,6 +171,70 @@ write_rds(joined_df, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Lo
 
 ```
 
+## Summarize simple status quo risk
+
+```{r, summarize_sq_risk}
+
+joined_df <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/simple_sq_risk_df.rds") %>%
+  mutate(
+    season = case_when(
+      month_name == "December" | month_name == "January" | month_name == "February" | month_name == "March" | month_name == "April" ~ "Winter",
+      month_name == "May" | month_name == "June" | month_name == "July" | month_name == "August" | month_name == "September" ~ "Spring/Summer"
+    )
+  )
+glimpse(joined_df)
+  
+# make a df for dec-april of each crab season
+
+joined_df_winter <- joined_df %>%
+  filter(season == "Winter") %>%
+  group_by(yr_end, GRID5KM_ID) %>%
+  summarise(
+    Blue_occurrence_mean = mean(Blue_occurrence_mean),
+    Humpback_abund_mean = mean(Humpback_abund_mean),
+    mean_M1_trapdens = mean(mean_M1_trapdens),
+    mean_M2_trapdens = mean(mean_M2_trapdens),
+    blue_risk_M1 = mean(blue_risk_M1),
+    blue_risk_M2 = mean(blue_risk_M2),
+    hump_risk_M1 = mean(hump_risk_M1),
+    hump_risk_M2 = mean(hump_risk_M2)
+    ) %>%
+  mutate(
+    season = "Winter"
+  )
+glimpse(joined_df_winter)
+  
+
+# make a df for may-sept of each crab season
+
+joined_df_sprsum <- joined_df %>%
+  filter(season != "Winter") %>%
+  group_by(yr_end, GRID5KM_ID) %>%
+  summarise(
+    Blue_occurrence_mean = mean(Blue_occurrence_mean),
+    Humpback_abund_mean = mean(Humpback_abund_mean),
+    mean_M1_trapdens = mean(mean_M1_trapdens),
+    mean_M2_trapdens = mean(mean_M2_trapdens),
+    blue_risk_M1 = mean(blue_risk_M1),
+    blue_risk_M2 = mean(blue_risk_M2),
+    hump_risk_M1 = mean(hump_risk_M1),
+    hump_risk_M2 = mean(hump_risk_M2)
+    ) %>%
+  mutate(
+    season = "Spring/Summer"
+  )
+glimpse(joined_df_sprsum)
+
+# make a single seasonal df
+names(joined_df_sprsum) == names(joined_df_winter)
+joined_df_season <- rbind(joined_df_winter,joined_df_sprsum)
+glimpse(joined_df_season)
+
+write_rds(joined_df_season, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/simple_sq_risk_df_annual_byseason.rds")
+
+
+```
+
 # Produce a data frame that is easy to apply the risk calculation function to
 
 This chunk calculates effort in every grid cell 
