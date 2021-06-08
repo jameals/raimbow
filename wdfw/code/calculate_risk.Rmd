@@ -1,0 +1,307 @@
+---
+title: "Calculate risk"
+author: "Jameal Samhouri"
+date: "6/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(here)
+library(lubridate)
+library(here)
+library(sf)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this script is to calculate risk to blue and humpback whales due to Dungeness crab fishing in Washington state. 
+
+It relies on antecedent scripts that process raw logbook data, and that join whale model outputs to a custom 5km grid developed by Blake Feist.
+
+Risk calculations follow those in Samhouri et al. (in review)
+
+# Read in data
+```{r, read_data}
+
+# read in status quo fishing data
+# JS 
+x.orig.noinfo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds")
+#x.orig.noinfo <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+glimpse(x.orig.noinfo) # there is no column M2_tottraps, but it is the same as weighted_traps
+
+
+# grab whale data
+# JS 
+x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale_WA.rds")
+#x.whale <- read_rds(here::here('wdfw','data','Grid5km_whale.rds'))
+
+# Load and prep grid cell - area key
+load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
+#load("E:\\Leena\\Documents\\Projects\\raimbow\\wdfw\\data\\Grid_5km_landerased.RDATA")
+area.key <- grid.5km.lno %>% 
+  st_drop_geometry() %>% 
+  select(GRID5KM_ID, area_km_lno) %>% 
+  distinct()
+
+                          
+
+```
+
+# Read in functions
+
+```{r, functions}
+
+# 1) helper  function
+simpleCap <- function(x) {
+  s <- sapply(strsplit(x, " "), function(i) i[[1]])
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+
+# 2) shift effort function
+source("tradeoffs/Management scenarios/Mgmt_scenarios_shift_effort.R")
+
+# 3) calculate risk function
+source("tradeoffs/Management scenarios/Mgmt_scenarios_risk.R")
+
+```
+
+# Make season start date key and a fishing metrics range file
+
+```{r, make_keys}
+
+# read in season start date key. we need to make a file like this that is WA-specific. see add_day_of_season.Rmd
+
+# JS 
+season.st.date.key <- readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Input_Data/season_start_dates/start_dates_by_CA_region.rds") %>% 
+  mutate(crab_year = gsub("-", "_", .data$crab_season), 
+         Region = unname(sapply(CA_region, simpleCap))) %>% 
+  select(crab_year, Region, start_of_season_oneperc)
+
+### Calculate and summarize risk for sq scenario with normalized outputs
+# we need to make a file like this that is WA-specific. see prep_data_for_scenario_df_function.R
+CA_fishing_metrics_range_2009_2019 <- read_rds(here:: here(
+  "grid-prep",
+  "CA_fishing_metrics_range_2009_2019.rds")
+)
+
+```
+
+# Simple status quo risk
+
+For status quo risk, we can simply join the fishing and whale data frames and multiply
+```{r, join_fishing_whales}
+
+# make avg value for traps for each yr month
+x.orig.noinfo2 <- x.orig.noinfo %>%
+  group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    # sum_M1_tottraps = sum(M1_tottraps), 
+    # sum_M2_tottraps = sum(weighted_traps), 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    # M1_sdtrapdens = sd(M1_trapdens), 
+    # M2_sdtrapdens = sd(M2_trapdens)
+  )
+
+# make column for year month for fishing data
+## step 1, make some columns that we can use
+x.orig.noinfo3 <- x.orig.noinfo2 %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  separate(season, into = c("yr_start", "yr_end"), sep = "-") %>%
+  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) #change month to two digit number
+## step 2, grab yr_start for December effort and make a year_month column in a new df
+df1 <- x.orig.noinfo3 %>%
+  filter(month_name=='December')
+df1 <- df1 %>%
+  mutate(year_month = paste0(yr_start,"_",month))
+## step 3, grab yr_end for non-December effort and make a year_month column in a new df
+df2 <- x.orig.noinfo3 %>%
+  filter(month_name !='December')
+df2 <- df2 %>%
+  mutate(year_month = paste0(yr_end,"_",month))
+# squish the December and non-December df's together  
+x.orig.noinfo4 <- rbind(df1,df2)
+
+# join the whale and fishing data
+joined_df <- x.orig.noinfo4 %>%
+  left_join(x.whale,by=c("year_month","GRID5KM_ID"))
+
+# check how many NAs are there
+length(which(is.na(joined_df))) # 6887, that is a lot. let's find them
+# let's focus on NA in the columns we really really need
+length(which(is.na(joined_df$GRID5KM_ID))) # 0, good
+length(which(is.na(joined_df$mean_M1_trapdens))) # 0, good
+length(which(is.na(joined_df$mean_M2_trapdens))) # 0, good
+length(which(is.na(joined_df$Blue_occurrence_mean))) # 1675
+length(which(is.na(joined_df$Humpback_abund_mean))) # 182
+
+# so the NA problems are with the whale data, but i suspect that those are grid cells we never had whale predictions for (there were 140 cells like that). see grid.5km.na from Grid5km_raimbow_prep.Rmd (pasted below)
+
+length(unique(joined_df$GRID5KM_ID[which(is.na(joined_df$Blue_occurrence_mean))])) # 192, more than the 140
+
+# multiply Blue_occurrence_mean or Humpback_abund_mean by effort to get raw risk
+joined_df <- joined_df %>%
+  mutate(
+    blue_risk_M1 = Blue_occurrence_mean * mean_M1_trapdens,
+    blue_risk_M2 = Blue_occurrence_mean * mean_M2_trapdens,
+    hump_risk_M1 = Humpback_abund_mean * mean_M1_trapdens,
+    hump_risk_M2 = Humpback_abund_mean * mean_M2_trapdens
+  )
+
+write_rds(joined_df, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/simple_sq_risk_df.rds")
+
+# unique(grid.5km.na$GRID5KM_ID)
+#   [1] 117642 118300 118630 118960 119290 119620 120942 122261 122589 122591 122592 122919
+#  [13] 122920 125550 125551 125552 125553 125554 125555 125556 125557 125880 125881 125882
+#  [25] 125883 125884 125885 125886 126209 126210 126211 126212 126213 126214 126215 126216
+#  [37] 126538 126539 126540 126541 126542 126543 126544 126545 126546 126868 126869 126870
+#  [49] 126871 126872 126873 126874 126875 127197 127198 127199 127200 127201 127202 127203
+#  [61] 127204 127527 127528 127529 127530 127531 127532 127533 127534 127857 127858 127859
+#  [73] 127860 127861 127862 127863 127864 127865 128186 128187 128188 128189 128190 128191
+#  [85] 128192 128193 128194 128516 128517 128518 128519 128520 128521 128522 128523 128846
+#  [97] 128847 128848 128849 128850 128851 129176 129177 129178 129179 129180 129181 129506
+# [109] 129507 129508 129509 129510 129837 129838 129839 129840 129841 130167 130168 130169
+# [121] 130170 130497 130498 130499 130827 130828 130829 131157 131158 131159 131488 131818
+# [133] 131819 132148 132149 132478 132479 132809 132810 133140
+
+```
+
+## Summarize simple status quo risk
+
+```{r, summarize_sq_risk}
+
+joined_df <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/simple_sq_risk_df.rds") %>%
+  mutate(
+    season = case_when(
+      month_name == "December" | month_name == "January" | month_name == "February" | month_name == "March" | month_name == "April" ~ "Winter",
+      month_name == "May" | month_name == "June" | month_name == "July" | month_name == "August" | month_name == "September" ~ "Spring/Summer"
+    )
+  )
+glimpse(joined_df)
+  
+# make a df for dec-april of each crab season
+
+joined_df_winter <- joined_df %>%
+  filter(season == "Winter") %>%
+  group_by(yr_end, GRID5KM_ID) %>%
+  summarise(
+    Blue_occurrence_mean = mean(Blue_occurrence_mean),
+    Humpback_abund_mean = mean(Humpback_abund_mean),
+    mean_M1_trapdens = mean(mean_M1_trapdens),
+    mean_M2_trapdens = mean(mean_M2_trapdens),
+    blue_risk_M1 = mean(blue_risk_M1),
+    blue_risk_M2 = mean(blue_risk_M2),
+    hump_risk_M1 = mean(hump_risk_M1),
+    hump_risk_M2 = mean(hump_risk_M2)
+    ) %>%
+  mutate(
+    season = "Winter"
+  )
+glimpse(joined_df_winter)
+  
+
+# make a df for may-sept of each crab season
+
+joined_df_sprsum <- joined_df %>%
+  filter(season != "Winter") %>%
+  group_by(yr_end, GRID5KM_ID) %>%
+  summarise(
+    Blue_occurrence_mean = mean(Blue_occurrence_mean),
+    Humpback_abund_mean = mean(Humpback_abund_mean),
+    mean_M1_trapdens = mean(mean_M1_trapdens),
+    mean_M2_trapdens = mean(mean_M2_trapdens),
+    blue_risk_M1 = mean(blue_risk_M1),
+    blue_risk_M2 = mean(blue_risk_M2),
+    hump_risk_M1 = mean(hump_risk_M1),
+    hump_risk_M2 = mean(hump_risk_M2)
+    ) %>%
+  mutate(
+    season = "Spring/Summer"
+  )
+glimpse(joined_df_sprsum)
+
+# make a single seasonal df
+names(joined_df_sprsum) == names(joined_df_winter)
+joined_df_season <- rbind(joined_df_winter,joined_df_sprsum)
+glimpse(joined_df_season)
+
+write_rds(joined_df_season, "/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/simple_sq_risk_df_annual_byseason.rds")
+
+
+```
+
+# Produce a data frame that is easy to apply the risk calculation function to
+
+This chunk calculates effort in every grid cell 
+
+```{r, shift_effort}
+##### summarize effort for sq scenario
+
+# STATUS QUO
+scenario.output.df.noinfo.sq <- effort_mgmt(
+  x = x.orig.noinfo,
+  season.st.key = season.st.date.key, 
+  preseason.days = 3,
+  season.st.backstop = NULL, 
+  early.data.method = "remove", 
+  delay.date = NULL,
+  delay.region = NULL,
+  delay.method = NULL,
+  delay.method.fidelity = NULL,
+  closure.date = NULL,
+  closure.region = NULL,
+  closure.method = NULL,
+  closure.redist.percent = 100,
+  depth.shallow = NULL, 
+  depth.deep = NULL, 
+  reduction.before.date = NULL,
+  reduction.before.percent = 50,
+  reduction.before.region = NULL,
+  reduction.after.date = NULL,
+  reduction.after.percent = 50,
+  reduction.after.region = NULL
+)
+
+
+```
+
+# Calculate risk and write out data frames
+
+Calculate risk
+```{r, calculate}
+
+risk_out_sq <- risk_mgmt(
+  x = scenario.output.df.noinfo.sq, 
+  x.col = Num_DCRB_VMS_pings, 
+  y = x.whale,
+  risk.unit = "dens", 
+  area.key = area.key,
+  scale.list = CA_fishing_metrics_range_2009_2019, 
+  ym.min = "2009_11", 
+  ym.max = "2019_07"
+)
+glimpse(risk_out_sq)
+
+range(risk_out_sq$Num_DCRB_VMS_pings) # max value for pings
+
+```
+
+Write to files
+```{r, write}
+
+# write out for use in downstream mapping and figure plotting by yr_mth
+# (we previously used this with tradeoff figures Rmd)
+write_rds(risk_out_sq, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_yr_mth_",today(),".rds"))
+
+risk_out_sq_list_by_yr_mth <- risk_out_sq %>% split(.$year_month)
+
+# write out for use in downstream mapping and figure plotting for each yr_mth separately
+# (we previously used this with prioritizr)
+# write_rds(risk_out_sq_list_by_yr_mth, paste0("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Samhouri et al. whales risk/Output_Data/scenario_output_dataframes/status_quo_risk_2009_2019_list_by_yr_mth_",today(),".rds"))
+
+```
