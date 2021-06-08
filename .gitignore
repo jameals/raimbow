@@ -48,3 +48,4 @@ maps_tmp*
 
 # large spatial files
 wdfw/data/
+.DS_Store
