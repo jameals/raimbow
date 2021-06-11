@@ -33,7 +33,7 @@ options(dplyr.summarise.inform = FALSE)
 
 
 ## Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 
 
 
@@ -63,7 +63,8 @@ p2 <- adj_summtraps_wintersummer %>%
 p2
 
 
-# bar chart of proportions instead of counts 
+# bar chart of proportions
+#all data
 p3 <- adj_summtraps_wintersummer %>% 
   ggplot(aes(color=wintersummer, fill=wintersummer)) +
   geom_bar(aes(x=M1_trapdens, y=stat(prop)), position = "dodge") +
@@ -79,7 +80,7 @@ p4 <- adj_summtraps_wintersummer %>%
 p4
 
 map_out <- plot_grid(p3,p4,nrow=1)
-ggsave(here('plots',paste0('Plot of trap densitites','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites','.png')),map_out,w=12,h=10)
 
 #frequency polygon 
 p5 <- adj_summtraps_wintersummer %>% 
@@ -96,3 +97,25 @@ p6
 
 
 ################
+#by crab season
+#bar chart of proportions  
+p13 <- adj_summtraps_wintersummer %>% 
+  filter(season=='2018-2019') %>% 
+  ggplot(aes(color=wintersummer, fill=wintersummer)) +
+  geom_bar(aes(x=M1_trapdens, y=stat(prop)), position = "dodge") +
+  scale_x_binned(breaks=seq(0, 85, 5)) + #n.breaks = 15
+  theme(legend.position = "none") +
+  ggtitle('2018-2019 - M1')
+p13
+
+p14 <- adj_summtraps_wintersummer %>% 
+  filter(season=='2018-2019') %>% 
+  ggplot(aes(color=wintersummer, fill=wintersummer)) +
+  geom_bar(aes(x=M2_trapdens, y=stat(prop)), position = "dodge") +
+  scale_x_binned(breaks=seq(0, 145, 5)) +
+  theme(legend.position = "none") +
+  ggtitle('2018-2019 - M2')
+p14
+
+map_out <- plot_grid(p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,nrow=6)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites by crab seasin','.png')),map_out,w=12,h=10)
