@@ -448,3 +448,32 @@ test_ts_6
 map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
 # saving
 ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 2.5 and 97.5 percentiles','.png')),map_out,w=12,h=10)
+
+
+test <- M2_summtrapsWA %>% filter(season=='2018-2019')
+test_ts_6 <- ggplot()+
+  #make line width reflect the area/no. of grid cells used
+  geom_line(data=test, aes(x=month_name, y= M1_meantrapdens, size=totarea^2), group=1, lineend = "round", color='blue') + #size=number_obs; size=totarea
+  geom_line(data=test, aes(x=month_name, y= M1_percentile_75th), group=1, color='blue') +
+  geom_line(data=test, aes(x=month_name, y= M1_percentile_25th), group=1, color='blue') +
+  geom_line(data=test, aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + #size=number_obs; size=totarea
+  geom_line(data=test, aes(x=month_name, y= M2_percentile_75th), group=1, color='black') +
+  geom_line(data=test, aes(x=month_name, y= M2_percentile_25th), group=1, color='black') +
+  ylab("trapdens across \ngrid cells for entire WA") +
+  xlab("Month") + #Month_1st or 2nd half
+  #guides(color = guide_legend(override.aes = list(size = 2))) +
+  ggtitle('2018-2019') +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom" 
+  )
+test_ts_6
+
+map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
+# saving
+ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 25 and 75 percentiles','.png')),map_out,w=12,h=10)
