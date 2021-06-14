@@ -419,6 +419,10 @@ dat_scale01 <- dat %>%
   )
 
 
+dat_scale01 %>% 
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
 map_traps <- function(gridded_traps,saveplot=TRUE){
   
   # labels for plot titles
@@ -438,7 +442,7 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     #scale_fill_viridis(na.value='grey70',option="A")+
     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
-    labs(x='',y='',fill='M2-M1 vairance',title=t1)
+    labs(x='',y='',fill='M2-M1 variance',title=t1)
 
   #map_out <- plot_grid(M1_map_out,M2_map_out,nrow=1)
   # saving
