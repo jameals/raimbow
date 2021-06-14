@@ -136,7 +136,56 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
 })
 proc.time()-tm
 
+#----------------------------------
+#scaling M1 and M2 densities 0-1_v1
+#First average M1 and M2 trap density for each grid cell, then scale 
+MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
+  mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
+         M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+         scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
+  )
+glimpse(MaySep_summtrapsWA_scale01)
 
+
+MaySep_summtrapsWA_scale01 %>% 
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+
+#then map scaled May 1- Sep 15
+map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
+  
+  # labels for plot titles
+  season_label=unique(MaySep_summtrapsWA_scale01 $season)
+  
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
+  
+  # saving
+  if(saveplot){
+    pt <- unique(MaySep_summtrapsWA_scale01 $season)
+    ggsave(here('wdfw','may_sep_maps', 'scaled 0 1',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+  }
+  return(MaySep_scaled_map_out)
+}
+
+# Loop and save comparison maps
+tm <- proc.time()
+all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
+  MaySep_summtrapsWA_scale01_v2  %>% 
+    filter(season==x) %>% 
+    map_maysep()
+})
+proc.time()-tm
 
 ####################################################################
 #If want to create non-confidential maps
