@@ -169,8 +169,9 @@ check_lines_in_water <- check_lines_in_water %>%
 check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFished /1000, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
-  ylab("check tottraps(1000s) across \ngrid entire WA") +
+  ylab("tottraps(1000s) across \ngrid entire WA") +
   xlab("Month") + #Month_1st or 2nd half
+  scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
