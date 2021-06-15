@@ -161,6 +161,41 @@ logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_interval, y= M1_tottraps/1000, co
 logs_ts
 
 
+#once trap counts have been summarised across all grid cells on a 2-weekly step, then average
+#to get to monthly step
+M2_summtrapsWA_month <- M2_summtrapsWA %>%
+  group_by(season_month) %>%  
+  summarise(
+    M1_mean_tottraps = mean(M1_tottraps), 
+    M2_mean_tottraps = mean(M2_tottraps)
+  )
+glimpse(M2_summtrapsWA_month)
+
+M2_summtrapsWA_month <- M2_summtrapsWA_month %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) 
+glimpse(M2_summtrapsWA_month)
+
+logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M1_mean_tottraps/1000, colour=season,  group=season))+
+  #make line width reflect the area/no. of grid cells used
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("M1_mean_tottraps (1000) across \ngrid cells for entire WA") +
+  xlab("Month") + #Month_1st or 2nd half
+  scale_y_continuous(breaks=seq(0, 50, 10),limits=c(0,50))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+logs_ts_month
 
 
 
