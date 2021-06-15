@@ -36,9 +36,9 @@ options(dplyr.summarise.inform = FALSE)
 #running place_traps on the full logs dataframe takes really long, so ran it once and saved it as traps_sf_for_all_logs_and_seasons_2009-2019.rds
 #and uploaded it to Kiteworks
 
-traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_sf_for_all_logs_and_seasons_2009-2019.rds'))
+#traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_sf_for_all_logs_and_seasons_2009-2019.rds'))
 #the depth plotting could also be done using the new df traps_g_license_logs_2013_2019.rds - output of script 1
-#traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
+traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 
 logs_all <- traps_sf_all_logs %>% 
   st_set_geometry(NULL) %>% 
@@ -46,8 +46,8 @@ logs_all <- traps_sf_all_logs %>%
   mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
   mutate(season = str_sub(SetID,1,9)) %>% 
   mutate(season_month = paste0(season,"_",m))
-#dataset has higly negative values (~ -30000) to denote port and bay areas - remove those. 
-#Also note that place_traps function already removes depths <200m as crab fishing at deeper depths is not likely
+#dataset has highly negative values (~ -30000) to denote port and bay areas - remove those. 
+#Also note that place_traps function already removes depths >200m as crab fishing at deeper depths is not likely
 logs_all %<>% filter(depth > -1000)
 
 logs_all %<>% mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) 
