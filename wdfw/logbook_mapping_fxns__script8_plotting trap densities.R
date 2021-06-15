@@ -36,6 +36,10 @@ options(dplyr.summarise.inform = FALSE)
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 
 
+#Looks like GRID5KM_ID 122588 exists in the data twice but with different AREA values
+#test to see what happens if remove grid cell
+adj_summtraps <- adj_summtraps %>% 
+  filter(GRID5KM_ID != 122588)
 
 #create a column in df to indicate whether data are winter or summer 
 #summer is data after May 1 
@@ -80,7 +84,7 @@ p4 <- adj_summtraps_wintersummer %>%
 p4
 
 map_out <- plot_grid(p3,p4,nrow=1)
-ggsave(here('wdfw','plots',paste0('Plot of trap densitites','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites_grid122588removed','.png')),map_out,w=12,h=10)
 
 #frequency polygon 
 p5 <- adj_summtraps_wintersummer %>% 
@@ -118,4 +122,4 @@ p14 <- adj_summtraps_wintersummer %>%
 p14
 
 map_out <- plot_grid(p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,nrow=6)
-ggsave(here('wdfw','plots',paste0('Plot of trap densitites by crab seasin','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites by crab season_grid122588removed','.png')),map_out,w=12,h=10)
