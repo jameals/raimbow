@@ -138,13 +138,14 @@ M2_summtrapsWA <- M2_summtrapsWA %>%
   mutate(month_interval = paste0(month_name,"_",period)) %>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 
-#PLOT for Option 2 - not very good looking, lines overlap too much
-logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_interval, y= M2_tottraps/1000, colour=season,  group=season))+
+#PLOT for Option 2 - not great for plotting mean trap densities, but the correct way to plot total trap counts
+logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_interval, y= M1_tottraps/1000, colour=season,  group=season))+
   #make line width reflect the area/no. of grid cells used
-  geom_line(aes(size=totarea^2),lineend = "round") + #size=number_obs; size=totarea
+  geom_line(size=1.5, lineend = "round") + 
+  #geom_line(aes(size=totarea^2),lineend = "round") + #making line thickness vary by area good for trap density plotting, but perhaps not for lines in water plotting
   scale_colour_brewer(palette = "PRGn") +
   #scale_colour_viridis_d(option = "plasma") + 
-  ylab("M2 total traps (1000s) across \ngrid cells for entire WA") +
+  ylab("M1 total traps (1000s) across \ngrid cells for entire WA") +
   xlab("Month_1st or 2nd half") + #Month_1st or 2nd half
   #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
