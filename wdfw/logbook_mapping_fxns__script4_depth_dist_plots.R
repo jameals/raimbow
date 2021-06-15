@@ -31,11 +31,9 @@ options(dplyr.summarise.inform = FALSE)
 ###########################################################################################
 #Plotting (simulated) pots by depth bin
 
-#use the full set of logbook data for this (no breakdown by particular year or period etc) 
-#from raw logs, need to run place_traps function to create the traps along each line and get their depth
-#running place_traps on the full logs dataframe takes really long, so ran it once and saved it as traps_sf_for_all_logs_and_seasons_2009-2019.rds
-#and uploaded it to Kiteworks
 
+#from raw logs, need to run place_traps function to create the traps along each line and get their depth
+#running place_traps on the full logs dataframe takes really long, so ran it once and saved it as traps_sf_for_all_logs_and_seasons_2009-2019.rds and uploaded it to Kiteworks
 #traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_sf_for_all_logs_and_seasons_2009-2019.rds'))
 #the depth plotting could also be done using the new df traps_g_license_logs_2013_2019.rds - output of script 1
 traps_sf_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
@@ -97,20 +95,6 @@ for (i in 1:length(ids)) {
 }
 plot_list
 
-#blake's mod of stacked histogram of depth by month in season
-#orders months in legend starting with dec, all plot legends have all months listed and switched "m" in legend to "Month"
-ids <- unique(logs_all$season)
-plot_list = list()
-for (i in 1:length(ids)) {
-  p = ggplot(subset(logs_all, season == ids[i]), aes(depth, fill = m)) +
-    geom_histogram(binwidth = 10) +
-    scale_y_continuous(breaks=seq(0, 350000, 50000),limits=c(0,350000))+
-    ggtitle((paste(ids[i]))) +
-    theme(legend.position = c(0.3,0.6))+
-    scale_fill_discrete(name = "Month",drop = FALSE)
-  plot_list[[i]] = p
-}
-plot_list
 
 #frequency polygon of depth by month in season
 ids <- unique(logs_all$season)
