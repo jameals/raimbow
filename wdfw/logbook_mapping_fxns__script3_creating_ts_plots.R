@@ -37,14 +37,14 @@ adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 
 ##FOLLOWING CODE CURRENTLY USING df that has M1 and M2 
-#OPTION 1: group by season_month (makes nicer plots than season_month_interval)
+#OPTION 1: group by season_month (makes nicer plots than season_month_interval -- BUT CALCULATES TOTAL TRAP COUNT WRONG)
 
 # now we want a summary for each season_month based on the above for all of WA
 M2_summtrapsWA <- adj_summtraps %>%
   group_by(season_month) %>%  
   summarise(
-    M1_tottraps = sum(M1_tottraps),
-    M2_tottraps = sum(weighted_traps),
+    M1_tottraps = sum(M1_tottraps)/2, #just summing here is wrong as then will 'double count' the same pots of a vessel from both halves of the month
+    M2_tottraps = sum(weighted_traps)/2, #but neither is just dividing by 2 right
     number_obs = n(), #no. of grid cells in that season_month that had traps in them
     totarea = sum(AREA/1e6), #in km2
     M1_meantrapdens = mean(M1_trapdens),
