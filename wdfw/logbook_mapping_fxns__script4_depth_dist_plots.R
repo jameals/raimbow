@@ -96,6 +96,21 @@ for (i in 1:length(ids)) {
 plot_list
 
 
+#blake's mod of stacked histogram of depth by month in season
+#orders months in legend starting with dec, all plot legends have all months listed and switched "m" in legend to "Month"
+ids <- unique(logs_all$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(logs_all, season == ids[i]), aes(depth, fill = m)) +
+    geom_histogram(binwidth = 10) +
+    scale_y_continuous(breaks=seq(0, 350000, 50000),limits=c(0,350000))+
+    ggtitle((paste(ids[i]))) +
+    theme(legend.position = c(0.3,0.6))+
+    scale_fill_discrete(name = "Month",drop = FALSE)
+  plot_list[[i]] = p
+}
+plot_list
+
 #frequency polygon of depth by month in season
 ids <- unique(logs_all$season)
 plot_list = list()
