@@ -408,3 +408,62 @@ all_maps <- purrr::map(unique(M2_summtrapsWA_test$season_month),function(x){
     map_log_monthly()
 })
 proc.time()-tm
+
+####################################################################
+#scaling M1 and M2 densities 0-1
+
+dat_scale01 <- dat %>% 
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+
+dat_scale01 %>% 
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+map_traps <- function(gridded_traps,saveplot=TRUE){
+  
+  # labels for plot titles
+  month_label=unique(gridded_traps$month_name)
+  period_label=unique(gridded_traps$period)
+  season_label=paste("Season:",unique(gridded_traps$season))
+  t1 <- paste0(season_label,"\n",month_label,", ",period_label, " M2 - M1")
+  
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  diff_map_out <- gridded_traps %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    #scale_fill_viridis(na.value='grey70',option="A")+
+    scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    labs(x='',y='',fill='M2-M1 variance',title=t1)
+
+  #map_out <- plot_grid(M1_map_out,M2_map_out,nrow=1)
+  # saving
+  if(saveplot){
+    pt <- unique(gridded_traps$season_month_interval)
+    ggsave(here('wdfw','scaled_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+  }
+  return(diff_map_out)
+}
+
+# Loop and save comparison maps
+tm <- proc.time()
+all_maps <- purrr::map(unique(dat_scale01$season_month_interval),function(x){
+  dat_scale01 %>% 
+    filter(season_month_interval==x) %>% 
+    map_traps()
+})
+proc.time()-tm
+
+
+
+
+
+

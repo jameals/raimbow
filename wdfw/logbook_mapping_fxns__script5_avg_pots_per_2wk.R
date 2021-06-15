@@ -151,3 +151,35 @@ glimpse(testdf)
 testdf %<>% select(season, month_name, interval, month_interval, Vessel, License, M1_adjusted_tottraps, sum_PotsFished,Pot_Limit, count_FishTicket)
 glimpse(testdf)
 ################################################################
+
+#some checks
+
+check_lines_in_water <- testdf %>% 
+  group_by(season, month_name, `Pot_Limit`) %>% 
+  na.omit() %>% 
+  summarise(numberoflicenses=n_distinct(License), na.rm=TRUE) %>% 
+  mutate(check_PotsFished=sum(numberoflicenses * `Pot_Limit`)) %>% 
+  select(season, month_name, check_PotsFished) %>% 
+  distinct() %>% 
+  collect()
+
+check_lines_in_water <- check_lines_in_water %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))  
+
+check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFished /1000, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("check tottraps(1000s) across \ngrid entire WA") +
+  xlab("Month") + #Month_1st or 2nd half
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+check_plot
+
