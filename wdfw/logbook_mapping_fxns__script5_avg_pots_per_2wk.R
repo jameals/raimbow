@@ -184,3 +184,12 @@ check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFishe
   )
 check_plot
 
+#------------------------------
+active_vessels_by_month <- testdf %>% 
+  group_by(season, month_name) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+
+write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month.csv"))
+
