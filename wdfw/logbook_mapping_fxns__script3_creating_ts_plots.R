@@ -496,9 +496,9 @@ ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 2.5 and 97.
 test <- M2_summtrapsWA %>% filter(season=='2018-2019')
 test_ts_6 <- ggplot()+
   #make line width reflect the area/no. of grid cells used
-  geom_line(data=test, aes(x=month_name, y= M1_meantrapdens, size=totarea^2), group=1, lineend = "round", color='blue') + #size=number_obs; size=totarea
-  geom_line(data=test, aes(x=month_name, y= M1_percentile_75th), group=1, color='blue') +
-  geom_line(data=test, aes(x=month_name, y= M1_percentile_25th), group=1, color='blue') +
+  #geom_line(data=test, aes(x=month_name, y= M1_meantrapdens, size=totarea^2), group=1, lineend = "round", color='blue') + #size=number_obs; size=totarea
+  #geom_line(data=test, aes(x=month_name, y= M1_percentile_75th), group=1, color='blue') +
+  #geom_line(data=test, aes(x=month_name, y= M1_percentile_25th), group=1, color='blue') +
   geom_line(data=test, aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + #size=number_obs; size=totarea
   geom_line(data=test, aes(x=month_name, y= M2_percentile_75th), group=1, color='black') +
   geom_line(data=test, aes(x=month_name, y= M2_percentile_25th), group=1, color='black') +
@@ -519,4 +519,4 @@ test_ts_6
 
 map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
 # saving
-ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 25 and 75 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('M2 ts plots with 25 and 75 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
