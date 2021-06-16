@@ -35,6 +35,12 @@ options(dplyr.summarise.inform = FALSE)
 ##For df with M1 and M2 will have to bring in adj_summtraps (result from script 2)
 adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
+#Looks like GRID5KM_IDs 117310, 117311, 117640, 120280, 120610, 120940, 122258, 122259, 122588 
+#exists in the data twice but with different AREA values
+#test to see what happens if remove grid cell
+adj_summtraps <- adj_summtraps %>% 
+  filter(!GRID5KM_ID %in% c(117310, 117311, 117640, 120280, 120610, 120940, 122258, 122259, 122588))
+
 
 ##FOLLOWING CODE CURRENTLY USING df that has M1 and M2 
 #OPTION 1: group by season_month (makes nicer plots than season_month_interval -- BUT CALCULATES TOTAL TRAP COUNT WRONG)
@@ -80,12 +86,12 @@ M2_summtrapsWA <- M2_summtrapsWA %>%
 #the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
 
 #PLOT for Option 1
-logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_name, y= M2_tottraps/1000, colour=season,  group=season))+
+logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season))+
   #make line width reflect the area/no. of grid cells used
   geom_line(aes(size=totarea^2),lineend = "round") + #size=number_obs; size=totarea
   scale_colour_brewer(palette = "PRGn") +
   #scale_colour_viridis_d(option = "plasma") + 
-  ylab("M2 tottraps(1000s) across \ngrid cells for entire WA") +
+  ylab("M2 mean of trapdens across \ngrid cells for entire WA") +
   xlab("Month") + #Month_1st or 2nd half
   #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
   #scale_y_continuous(breaks=seq(2, 16, 2),limits=c(2,16))+
@@ -100,7 +106,7 @@ logs_ts <- ggplot(M2_summtrapsWA, aes(x= month_name, y= M2_tottraps/1000, colour
         legend.position="bottom"
   )
 logs_ts
-
+ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities_alldblgridsremoved','.png')),logs_ts,w=12,h=10)
 
 #OPTION 2: group by season_month_interval -- not as good as option 1
 
@@ -196,6 +202,7 @@ logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M1_mean_tottr
         legend.position="bottom"
   )
 logs_ts_month
+ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities_alldblgridsremoved','.png')),logs_ts,w=12,h=10)
 
 
 
@@ -483,7 +490,7 @@ test_ts_6
 
 map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
 # saving
-ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 2.5 and 97.5 percentiles','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 2.5 and 97.5 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
 
 
 test <- M2_summtrapsWA %>% filter(season=='2018-2019')
@@ -512,4 +519,4 @@ test_ts_6
 
 map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
 # saving
-ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 25 and 75 percentiles','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 25 and 75 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
