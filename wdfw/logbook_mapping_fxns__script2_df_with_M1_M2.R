@@ -122,6 +122,26 @@ glimpse(traps_summ) #no NAs for weighted_traps or M2_trapdens here
 adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month_interval", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
 glimpse(adj_summtraps) #20 NAs for weighted_traps and M2_trapdens here, also NAs for NGDC_GRID, no NA's once used drop_na(Pot_Limit) earlier
 
+
+#fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
+#will have a separate polygon #within a given bay or estuary that will have the same Grid5km_ID value as the adjacent 
+#portion #of the 5km grid cell that does not fall within a bay or estuary. 
+#Therefore, if you want to calculate total area of each grid cell that falls on water, 
+#sum the total area for that grid cell by its Grid5km_ID value.
+#joining data for portions of grids with same grid ID
+adj_summtraps_check <- adj_summtraps %>% 
+  group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
+  summarise(
+    AREA = sum(AREA),
+    M1_tottraps = sum(M1_tottraps),
+    nvessels = sum(nvessels),
+    M1_trapdens = M1_tottraps/(AREA/1e6),
+    weighted_traps = sum(weighted_traps),
+    M2_trapdens = weighted_traps/(AREA/1e6)
+  )
+glimpse(adj_summtraps_check)
+
+
 adj_summtraps %<>%
   separate(season_month_interval, into = c("season", "month_name", "period"), sep = "_") %>%
   mutate(season_month = paste0(season,"_",month_name)) %>%
