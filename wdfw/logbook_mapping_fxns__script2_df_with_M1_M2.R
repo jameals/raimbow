@@ -14,19 +14,15 @@ library(magrittr)
 library(gridExtra)
 library(nngeo)
 
-################################################################
 
+#-------------------------------------------------------------
 
-#link here to script with the original functions?
-
-
-################################################################
-
-#Start with traps_g df (traps are simulated and joined to grid)  
+#Start with traps_g df (traps are simulated and joined to grid, script 1)  
 #RDS can be found in Kiteworks folder
-traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
-traps_g <- traps_g_license_logs_2013_2019
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 
+
+#create columns for season, month etc
 traps_g %<>%
   st_set_geometry(NULL) %>% 
   mutate(
@@ -49,15 +45,14 @@ WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May20
 WA_pot_limit_info %<>%
   rename(License = License_ID)
 
-#join Pot_Limit to traps_g -- this will take ~2min to run
+#join Pot_Limit to traps_g 
 traps_g %<>%
   left_join(WA_pot_limit_info,by=c("License")) %>% 
-  drop_na(Pot_Limit)
+  drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
 
 
 #apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g <- traps_g %>% 
-  #st_set_geometry(NULL) %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
   # count up traps for vessel in 2-week period
   group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  
@@ -65,9 +60,9 @@ adj_traps_g <- traps_g %>%
     M2_n_traps_vessel=n(), na.rm=TRUE 
   ) %>% 
   # create a column with weighting - proportion of max allowed traps
-  # divide pot limit by number of traps
-  # because you want to up-weight traps < pot_limit, and downweight traps < pot_limit
-  mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% #trap_limit_weight ends up having 2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
+  # divide pot limit by number of simulated traps
+  # because you want to up-weight traps < pot_limit, and downweight traps > pot_limit
+  mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% 
   ungroup()
 
 # join the "weighting key" back to the simulated pots data
@@ -76,7 +71,6 @@ traps_g %<>%
 
 # do Method 1/M1 calculations/adjustment, group by season_month_interval 
 M1_summtraps <- traps_g %>% 
-  #st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
   # count the total number of traps in each grid cell in each set
   group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
@@ -95,9 +89,10 @@ M1_summtraps <- traps_g %>%
   group_by(season_month_interval, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
   summarise(
     M1_tottraps=sum(M1_ntraps_vessel_cell),
-    nvessels=n_distinct(Vessel,na.rm=T) #add count of unique vessels for confidentiality check, this could be done here or in mapping phase
+  #add count of unique vessels for confidentiality check, this could be done here or in mapping phase
+    nvessels=n_distinct(Vessel,na.rm=T) 
   ) %>% 
-  # trap density is total traps divided by area (in sq. km) of each cell
+  # trap density (in sq. km) is total traps divided by area (which is in sq. m) of each cell
   mutate(
     M1_trapdens=M1_tottraps/(AREA/1e6)
   ) %>% 
@@ -108,26 +103,27 @@ glimpse(M1_summtraps)
 
 # Now sum pots for M2 (just like for M1), use 'trap_limit_weight' to sum, instead of n().
 traps_summ <- traps_g %>% 
-  #st_set_geometry(NULL) %>% 
-  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  # or whatever grouping variables are applicable
-  summarise(weighted_traps=sum(trap_limit_weight)) %>%  # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
+  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  
+  # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
+  summarise(weighted_traps=sum(trap_limit_weight)) %>%  
   mutate(
     M2_trapdens=weighted_traps/(AREA/1e6)
   ) %>% ungroup() %>% 
   filter(!is.na(weighted_traps))
-glimpse(traps_summ) #no NAs for weighted_traps or M2_trapdens here
+glimpse(traps_summ) 
 
 
 #join results from M1 and M2 
 adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month_interval", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
-glimpse(adj_summtraps) #20 NAs for weighted_traps and M2_trapdens here, also NAs for NGDC_GRID, no NA's once used drop_na(Pot_Limit) earlier
+glimpse(adj_summtraps) 
 
 
 #fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
-#will have a separate polygon #within a given bay or estuary that will have the same Grid5km_ID value as the adjacent 
-#portion #of the 5km grid cell that does not fall within a bay or estuary. 
-#Therefore, if you want to calculate total area of each grid cell that falls on water, 
+#will have a separate polygon within said bay or estuary that will have the same Grid5km_ID value as the adjacent 
+#portion of the 5km grid cell that does not fall within the bay or estuary. 
+#Therefore, if you want to calculate total area of each grid cell that falls in water, 
 #sum the total area for that grid cell by its Grid5km_ID value.
+
 #joining data for portions of grids with same grid ID
 adj_summtraps_check <- adj_summtraps %>% 
   group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
@@ -154,11 +150,9 @@ glimpse(adj_summtraps)
 
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps.rds"))
 
-#CAN WE NOW USE THIS DF FOR EVERYTHING? e.g., for making maps (while still also having some type of loop/function to pump out lots of maps?)
-#and also for time series plots etc...?
-#but can't use this df for plotting depth distribution of pots, as this df is already on grid scale
-#and depth dist pots require pots to be indiv data points
 
+#----------------------------------------------------------------------------
+#Few visuals
 pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
 pairs(~ M1_tottraps + weighted_traps, data = adj_summtraps)
 
