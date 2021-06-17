@@ -1,6 +1,6 @@
-## This script has the 'original' mapping functions for WDFW logbook data 
-#(to loop through 2-week periods based on crab-year/month/period choices)
-#as well as code adjusted from the functions to be run on 'full' dataset (all logs 2013-2019)
+## This script has the 'original' mapping functions for WDFW logbook data:
+#place_traps, join_grid() and original mapping function, looping through 2-week periods based on crab-year/month/period choices
+#as well as code adjusted from the above mentioned functions to be run on 'full' data set (all logs 2013-2019)
 
 library(tidyverse)
 library(lubridate)
@@ -30,13 +30,12 @@ theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
 
+#---------------------------------- 
 #### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-# logs <- read_csv(here('wdfw','data','WDFW-Dcrab-logbooks-compiled_stackcoords_season20172018.csv'),
-# col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 # jameal
-logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
@@ -50,7 +49,7 @@ logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to ret
 # bathymetry
 bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
 # jameal
-bathy <- raster("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/vms_composite_bath.txt")
+#bathy <- raster("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/vms_composite_bath.txt")
 
 # crop bathymetry to extent of logbook data
 ex <- logs %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
@@ -63,8 +62,8 @@ bathy <- bathy %>% crop(ex)
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
 names(grd)
 # jameal
-grd <- read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid Apr 2021/fivekm_grid_polys_shore_lamb.shp")
-names(grd)
+#grd <- read_sf("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid Apr 2021/fivekm_grid_polys_shore_lamb.shp")
+
 
 # spatial area matching key of each grid cell (because the grid has been trimmed to the coastline)
 # also matches to areas with specific port and embayment codes (NGDC_GRID) based on the bathymetry grid
@@ -86,13 +85,14 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 #borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
 MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
-  st_transform(st_crs(grd)) #make it have same projection as the grid
+  st_transform(st_crs(grd)) #set same projection as the grid
 
-#Note that Quinault SMA borders have moved a lot, including within seasons 
-#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
+#Note that Quinault SMA borders can move within seasons 
+#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, + extra line for Joe Creek 
+#shapefile available on Kiteworks folder
 QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
-  st_transform(st_crs(grd)) #make it have same projection as the grid
-
+  st_transform(st_crs(grd)) #set same projection as the grid
+#---------------------------------- 
 
 #####################
 #Here is where user can decide whether they want 'confidential' maps or not
@@ -188,7 +188,7 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
 
 # This next function spatially joins Blake's 5km grid (or some other grid) to the data
 # It also joins the grid id matching key to identify ports and bays and assign correct grid cell areas
-# trapssf is the spatial (sf) dataframe produced in the previous function,gkey is the grid with matching key
+# traps_sf is the spatial (sf) dataframe produced in the previous function,gkey is the grid with matching key
 join_grid <- function(traps_sf,gkey){
   
   # if the data are empty (i.e., no observations matching choice of month, period, season)
@@ -351,14 +351,11 @@ plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_
 proc.time()-tm
 
 
-################################################################
+#---------------------------------------------------------------
 #Running above functions on 'full' logbook data sets 
 #(i.e. not actually specifying the functions, or crab-year/month/period choices)
-################################################################
-#Run adjusted version of place_traps() on 'full' dataset to retain 'License' column (original place_traps() did not retian this column)
-#Run join_grid()  
 
-#run place_traps() to retain 'License', but only on 2013-2019 data due to memory limits
+#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
 logs2013_2019 <- logs %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) 
 
@@ -435,4 +432,4 @@ traps_g <- traps_sf %>%
 #running join_grid on 2013-2019 logs subset took about 8min
 #write_rds(traps_g,here::here('data', "traps_g_license_all_logs_2013_2019.rds"))
 
-################################################################
+#--------------------------------------------------------------------------------
