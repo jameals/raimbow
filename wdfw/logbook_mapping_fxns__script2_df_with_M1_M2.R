@@ -105,11 +105,11 @@ glimpse(M1_summtraps)
 traps_summ <- traps_g %>% 
   group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  
   # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
-  summarise(weighted_traps=sum(trap_limit_weight)) %>%  
+  summarise(M2_tottraps=sum(trap_limit_weight)) %>%  
   mutate(
-    M2_trapdens=weighted_traps/(AREA/1e6)
+    M2_trapdens=M2_tottraps/(AREA/1e6)
   ) %>% ungroup() %>% 
-  filter(!is.na(weighted_traps))
+  filter(!is.na(M2_tottraps))
 glimpse(traps_summ) 
 
 
@@ -125,17 +125,17 @@ glimpse(adj_summtraps)
 #sum the total area for that grid cell by its Grid5km_ID value.
 
 #joining data for portions of grids with same grid ID
-adj_summtraps_check <- adj_summtraps %>% 
+adj_summtraps %<>%
   group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
   summarise(
     AREA = sum(AREA),
     M1_tottraps = sum(M1_tottraps),
     nvessels = sum(nvessels),
     M1_trapdens = M1_tottraps/(AREA/1e6),
-    weighted_traps = sum(weighted_traps),
-    M2_trapdens = weighted_traps/(AREA/1e6)
+    M2_tottraps = sum(M2_tottraps),
+    M2_trapdens = M2_tottraps/(AREA/1e6)
   )
-glimpse(adj_summtraps_check)
+glimpse(adj_summtraps)
 
 
 adj_summtraps %<>%
