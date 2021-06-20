@@ -115,7 +115,7 @@ logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapde
         legend.position="bottom"
   )
 logs_ts_2week
-#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trap densities_2weekly','.png')),logs_ts,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trap densities_2weekly','.png')),logs_ts_2week,w=12,h=10)
 
 
 #-----------------------------------------------------------------------------------------
@@ -144,9 +144,9 @@ logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottr
   #make line width be consistent - tho see other code in script for how to make this vary by area used
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
-  ylab("M2_mean_tottraps (1000) across \ngrid cells for entire WA") +
+  ylab("Total traps (1000) in water \nfor entire WA") +
   xlab("Month") + 
-  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
   guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
@@ -158,7 +158,7 @@ logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottr
         legend.position="bottom"
   )
 logs_ts_month
-#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trap counts','.png')),logs_ts,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Mean M2 trap counts_lines in water_by month','.png')),logs_ts_month,w=12,h=10)
 
 
 
@@ -204,7 +204,7 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
   #have a constant line thickness (good when plotting no. of traps/lines in water)
   #geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
-  ylab("M2 mean of trapdens across \ngrid cells for entire WA") +
+  ylab("Mean trap density across \ngrid cells for entire WA") +
   xlab("Month") + 
   #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
   #scale_y_continuous(breaks=seq(2, 16, 2),limits=c(2,16))+
@@ -219,7 +219,7 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
         legend.position="bottom"
   )
 logs_ts_month_dens
-#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts_month_dens,w=12,h=10)
 
 
 
