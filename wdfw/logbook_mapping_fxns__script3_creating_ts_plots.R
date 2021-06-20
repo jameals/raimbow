@@ -40,17 +40,23 @@ adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 #------------------------------------------------------------------------------
 
-#try ^2 totareas for nicer changes in line thickness
-#could look into using bins (categorical variable) to specify line width in plot (currently continuous variable)
-#summtrapsWA <- summtrapsWA %>% 
-#mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
-#       number_obs_bins = as.factor(number_obs_bins))
-#and then in plotting code change geom_line call to this:
-#geom_line(aes(size=factor(number_obs_bins)))
-#the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
+# Making line thickness in ts plots reflect the area in use
+
+# If you want the ts plots to reflect how fishery is spread across a larger area in early season,
+# but contracts in space later in season, use: size=totarea in plotting code
+# column 'totarea' in the df is in km2
+
+# note though that line thickness point size in plots currently ranges between 1 and 6 (code: scale_size(range = c(1, 6)))
+# while the difference between the largest area and smallest are in use is much larger
+# for 2-weekly summary df, the min of total area (totarea column) is 113.1 sq.km, and max is 9547.9 sq.km
+# for 1-monthly summary df, the min of total area (totarea column) is 712.8 sq.km, and max is 18961.2 sq.km
+
+# Therefore the legend may not me very informative
+# consider leaving legend out (code: scale_size(range = c(1, 6), guide = FALSE)))
+# and explaining line thickness in figure legend (e.g. by mentioning min and max values)
+# OR work on the legend further than current code to make it more informative
 
 #------------------------------------------------------------------------------------
-
 
 #Plotting time series of trap COUNTS and DENSITIES on a 2-WEEKLY time step
 
@@ -89,16 +95,17 @@ M2_summtrapsWA_2w <- M2_summtrapsWA_2w %>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 
 #PLOT trap COUNTS (y=M2_tottraps/1000) and DENSITIES (y=M2_meantrapdens) on a 2-WEEKLY time step 
-logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapdens, colour=season,  group=season))+
+logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapdens, colour=season, group=season, size=totarea))+
     #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
-    geom_line(aes(size=totarea^2),lineend = "round") + #using totarea^2 instead of totarea produces better looking plots
+    geom_line(lineend = "round") + #using totarea^2 instead of totarea produces better looking plots
+    scale_size(range = c(1, 6), guide = FALSE) + #guide=FALSE here will remove line thickness from legend
     #OR 
     #have a constant line thickness (good when plotting no. of traps/lines in water)
     #geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("Mean trap density across \ngrid cells for entire WA") +
   xlab("Month_1st or 2nd half") + 
-  guides(color = guide_legend(override.aes = list(size = 2))) +
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
         legend.text = element_text(size=12),
@@ -132,15 +139,15 @@ M2_summtrapsWA_month <- M2_summtrapsWA_month %>%
   filter(!is.na(month_name)) 
 glimpse(M2_summtrapsWA_month)
 
-#PLOT for trap COUNTS on a MONTHLY time step 
+#PLOT for trap COUNTS (thousands) on a MONTHLY time step 
 logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottraps/1000, colour=season,  group=season))+
-  #make line width reflect the area/no. of grid cells used
+  #make line width be consistent - tho see other code in script for how to make this vary by area used
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("M2_mean_tottraps (1000) across \ngrid cells for entire WA") +
   xlab("Month") + 
   #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
-  guides(color = guide_legend(override.aes = list(size = 2))) +
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
         legend.text = element_text(size=12),
@@ -188,19 +195,20 @@ M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   filter(!is.na(month_name)) 
 
-#PLOT for trap DENSITITES on a monthly time step 
-logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season))+
-    #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
-    geom_line(aes(size=totarea^2),lineend = "round") + 
-    #OR 
-    #have a constant line thickness (good when plotting no. of traps/lines in water)
-    #geom_line(size=1.5, lineend = "round") + 
+#PLOT for trap DENSITITES on a MONTHLY time step 
+logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season, size=totarea))+
+  #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
+  geom_line(lineend = "round") + 
+  scale_size(range = c(1, 6), guide = FALSE) + #guide=FALSE here will remove line thickness from legend
+  #OR 
+  #have a constant line thickness (good when plotting no. of traps/lines in water)
+  #geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("M2 mean of trapdens across \ngrid cells for entire WA") +
   xlab("Month") + 
   #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
   #scale_y_continuous(breaks=seq(2, 16, 2),limits=c(2,16))+
-  guides(color = guide_legend(override.aes = list(size = 2))) +
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
         legend.text = element_text(size=12),
@@ -214,8 +222,9 @@ logs_ts_month_dens
 #ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts,w=12,h=10)
 
 
-#----------------------------------------------------------------------------------------------------------------
 
+
+#----------------------------------------------------------------------------------------------------------------
 
 #You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
 
@@ -225,9 +234,10 @@ plot_list = list()
 
 for (i in 1:length(ids)) {
   p = ggplot(subset(M2_summtrapsWA_month_dens, season == ids[i])) +
-    geom_line(aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + 
-    geom_line(aes(x=month_name, y= M2_percentile_75th), group=1, color='black') +
-    geom_line(aes(x=month_name, y= M2_percentile_25th), group=1, color='black') +
+    geom_line(aes(x=month_name, y=M2_meantrapdens, size=totarea), group=1, lineend = "round", color='black') + 
+    scale_size(range = c(1, 6)) +
+    geom_line(aes(x=month_name, y=M2_percentile_75th), group=1, color='black') +
+    geom_line(aes(x=month_name, y=M2_percentile_25th), group=1, color='black') +
     scale_y_continuous(breaks=seq(0, 20, 5),limits=c(0,20))+
     ylab("Trap density \n(no. of traps/sq.km) for entire WA") +
     xlab("Month") + 
@@ -247,5 +257,5 @@ plot_list
 
 map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
 # saving
-ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
 
