@@ -96,9 +96,9 @@ M2_summtrapsWA_2w <- M2_summtrapsWA_2w %>%
 
 #PLOT trap COUNTS (y=M2_tottraps/1000) and DENSITIES (y=M2_meantrapdens) on a 2-WEEKLY time step 
 logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapdens, colour=season, group=season, size=totarea))+
-    #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
-    geom_line(lineend = "round") + #using totarea^2 instead of totarea produces better looking plots
-    scale_size(range = c(1, 6), guide = FALSE) + #guide=FALSE here will remove line thickness from legend
+    #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
+    geom_line(lineend = "round") + 
+    scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
     #OR 
     #have a constant line thickness (good when plotting no. of traps/lines in water)
     #geom_line(size=1.5, lineend = "round") + 
@@ -197,9 +197,9 @@ M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
 
 #PLOT for trap DENSITITES on a MONTHLY time step 
 logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season, size=totarea))+
-  #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
+  #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
   geom_line(lineend = "round") + 
-  scale_size(range = c(1, 6), guide = FALSE) + #guide=FALSE here will remove line thickness from legend
+  scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
   #OR 
   #have a constant line thickness (good when plotting no. of traps/lines in water)
   #geom_line(size=1.5, lineend = "round") + 
