@@ -14,6 +14,7 @@ library(magrittr)
 library(gridExtra)
 library(nngeo)
 library(cowplot)
+library(ggpubr)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -36,6 +37,17 @@ options(dplyr.summarise.inform = FALSE)
 ##For df with M1 and M2 summaries bring in adj_summtraps (result from script 2)
 adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
+
+#------------------------------------------------------------------------------
+
+#try ^2 totareas for nicer changes in line thickness
+#could look into using bins (categorical variable) to specify line width in plot (currently continuous variable)
+#summtrapsWA <- summtrapsWA %>% 
+#mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
+#       number_obs_bins = as.factor(number_obs_bins))
+#and then in plotting code change geom_line call to this:
+#geom_line(aes(size=factor(number_obs_bins)))
+#the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
 
 #------------------------------------------------------------------------------------
 
@@ -176,15 +188,6 @@ M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   filter(!is.na(month_name)) 
 
-#try ^2 totareas for nicer changes in line thickness
-#could look into using bins (categorical variable) to specify line width in plot (currently continuous variable)
-#summtrapsWA <- summtrapsWA %>% 
-#mutate(number_obs_bins = cut(number_obs, breaks = c(0,50,100,150,200,250,300,350,400,450)),
-#       number_obs_bins = as.factor(number_obs_bins))
-#and then in plotting code change geom_line call to this:
-#geom_line(aes(size=factor(number_obs_bins)))
-#the problem is that with lots of bins it's hard to tell the width difference between them - unless can manually edit the widths...
-
 #PLOT for trap DENSITITES on a monthly time step 
 logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season))+
     #make line thickness reflect the area OR the no. of grid cells in use (good for trap density plotting)
@@ -211,93 +214,38 @@ logs_ts_month_dens
 #ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts,w=12,h=10)
 
 
-
 #----------------------------------------------------------------------------------------------------------------
+
 
 #You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
 
-#M2
-test <- M2_summtrapsWA %>% filter(season=='2018-2019')
-test_ts_6 <- ggplot()+
-  #make line width reflect the area/no. of grid cells used
-  geom_line(data=test, aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round") + #size=number_obs; size=totarea
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_975th), group=1) +
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_025th), group=1) +
-  ylab("M2 trapdens across \ngrid cells for entire WA") +
-  xlab("Month") + #Month_1st or 2nd half
-  #guides(color = guide_legend(override.aes = list(size = 2))) +
-  ggtitle('2018-2019') +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom" 
-  )
-test_ts_6
+#M2 - all seasons on the same scale
+ids <- unique(M2_summtrapsWA_month_dens$season)
+plot_list = list()
 
-map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
+for (i in 1:length(ids)) {
+  p = ggplot(subset(M2_summtrapsWA_month_dens, season == ids[i])) +
+    geom_line(aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + 
+    geom_line(aes(x=month_name, y= M2_percentile_75th), group=1, color='black') +
+    geom_line(aes(x=month_name, y= M2_percentile_25th), group=1, color='black') +
+    scale_y_continuous(breaks=seq(0, 20, 5),limits=c(0,20))+
+    ylab("Trap density \n(no. of traps/sq.km) for entire WA") +
+    xlab("Month") + 
+    ggtitle((paste(ids[i]))) +
+    theme(legend.title = element_blank(),
+          #title = element_text(size = 32),
+          legend.text = element_text(size=12),
+          axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+          axis.text.y = element_text(size = 12),
+          axis.title = element_text(size = 12),
+          #legend.position = c(0.9, 0.8) +
+          legend.position="none" #use "none" here to fully hide/remove legend
+    )
+  plot_list[[i]] = p
+}
+plot_list
+
+map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
 # saving
-ggsave(here('wdfw','plots',paste0('M2 ts plots with 2.5 and 97.5 percentiles','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
 
-
-
-#M1 & M2 on the same scale
-test <- M2_summtrapsWA %>% filter(season=='2018-2019')
-test_ts_6 <- ggplot()+
-  #make line width reflect the area/no. of grid cells used
-  geom_line(data=test, aes(x=month_name, y= M1_meantrapdens, size=totarea^2), group=1, lineend = "round", color='blue') + #size=number_obs; size=totarea
-  geom_line(data=test, aes(x=month_name, y= M1_percentile_975th), group=1, color='blue') +
-  geom_line(data=test, aes(x=month_name, y= M1_percentile_025th), group=1, color='blue') +
-  geom_line(data=test, aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + #size=number_obs; size=totarea
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_975th), group=1, color='black') +
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_025th), group=1, color='black') +
-  ylab("trapdens across \ngrid cells for entire WA") +
-  xlab("Month") + #Month_1st or 2nd half
-  #guides(color = guide_legend(override.aes = list(size = 2))) +
-  ggtitle('2018-2019') +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom" 
-  )
-test_ts_6
-
-map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
-# saving
-ggsave(here('wdfw','plots',paste0('M1 M2 ts plots on same sclae with 2.5 and 97.5 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
-
-
-test <- M2_summtrapsWA %>% filter(season=='2018-2019')
-test_ts_6 <- ggplot()+
-  #make line width reflect the area/no. of grid cells used
-  #geom_line(data=test, aes(x=month_name, y= M1_meantrapdens, size=totarea^2), group=1, lineend = "round", color='blue') + #size=number_obs; size=totarea
-  #geom_line(data=test, aes(x=month_name, y= M1_percentile_75th), group=1, color='blue') +
-  #geom_line(data=test, aes(x=month_name, y= M1_percentile_25th), group=1, color='blue') +
-  geom_line(data=test, aes(x=month_name, y= M2_meantrapdens, size=totarea^2), group=1, lineend = "round", color='black') + #size=number_obs; size=totarea
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_75th), group=1, color='black') +
-  geom_line(data=test, aes(x=month_name, y= M2_percentile_25th), group=1, color='black') +
-  ylab("trapdens across \ngrid cells for entire WA") +
-  xlab("Month") + #Month_1st or 2nd half
-  #guides(color = guide_legend(override.aes = list(size = 2))) +
-  ggtitle('2018-2019') +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom" 
-  )
-test_ts_6
-
-map_out <- plot_grid(test_ts_1,test_ts_2,test_ts_3,test_ts_4,test_ts_5,test_ts_6,nrow=2)
-# saving
-ggsave(here('wdfw','plots',paste0('M2 ts plots with 25 and 75 percentiles_alldblgridsremoved','.png')),map_out,w=12,h=10)
