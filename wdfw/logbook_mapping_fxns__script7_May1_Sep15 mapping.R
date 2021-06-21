@@ -30,6 +30,7 @@ plot_theme <-   theme_minimal()+
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
+#----------------------------------------------------------------------------------------
 
 ## Cleaned and summarized, simulated crab trap data
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
@@ -116,7 +117,7 @@ conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>%
          mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
   )
 
-# or use conf_MaySep_summtrapsWA2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+# or use conf_MaySep_summtrapsWA2 as input in mapping loop, if want cells with < 3 vessels to be fully removed
 conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
   filter(is_confidential == FALSE)
 #------------------------------------------------------------------------
@@ -159,6 +160,7 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
 }
 
 # Loop and save maps
+# change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
 tm <- proc.time()
 all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
   MaySep_summtrapsWA %>% 
@@ -167,13 +169,16 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
 })
 proc.time()-tm
 
-#----------------------------------
-# difference maps M2-M1
-# scaling M1 and M2 densities 0-1_v1
-# First average M1 and M2 trap density for each grid cell, then scale 
+
+#--------------------------------------------------------------------
+
+# difference maps of M2-M1 methods for May-Sep
+
+# First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
 MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
   )
 glimpse(MaySep_summtrapsWA_scale01)
@@ -184,7 +189,7 @@ MaySep_summtrapsWA_scale01 %>%
   geom_density(aes(scaled_M2_minus_M1))
 
 
-#then map scaled May 1- Sep 15
+# then make difference maps of scaled May 1- Sep 15
 map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
   
   # labels for plot titles
@@ -205,7 +210,7 @@ map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
   # saving
   if(saveplot){
     pt <- unique(MaySep_summtrapsWA_scale01 $season)
-    ggsave(here('wdfw','may_sep_maps', 'scaled 0 1',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+    ggsave(here('wdfw','may_sep_maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
   }
   return(MaySep_scaled_map_out)
 }
