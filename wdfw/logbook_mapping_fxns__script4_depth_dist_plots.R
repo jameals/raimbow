@@ -57,6 +57,10 @@ logs_all %<>% mutate(m = factor(m, levels = c('December','January','February','M
 
 glimpse(logs_all)
 
+
+###########################################################################################
+#JAMEAL'S DEPTH PLOTTING
+
 # quick check on embayments
 range(logs_all[(which(logs_all$is_port_or_bay==TRUE)),'depth'])
 
@@ -184,7 +188,148 @@ p2
 
 ggsave(here::here('wdfw','plots','Cumulative distribution of traps by depth all years, win v sprsum.png'), p2)
 
-#### LEENA'S PLOTTING BELOW
+
+###########################################################################################
+#LEENA'S VERSION OF JAMEAL'S DEPTH PLOTTING
+
+# quick check on embayments
+range(logs_all[(which(logs_all$is_port_or_bay==TRUE)),'depth'])
+
+# summarise the # pots fished by grid cell for each 2 wk interval. use 2 wk interval because that is the temporal scale at which the place_traps() function was applied
+traps_grd_depth_interval <- logs_all %>%
+  #group_by(GRID5KM_ID, depth, season_month, period) %>% #Don't group by grid
+  group_by(depth, season_month, period) %>%
+  summarise(
+    total_pots = sum(PotsFished, na.rm=TRUE)
+  ) %>%
+  ungroup() 
+
+glimpse(traps_grd_depth_interval)
+
+# summarise across all seasons and intervals for each depth
+# drop duplicated grid cells for now
+traps_grd_depth <- traps_grd_depth_interval %>%
+  #filter( #No need to filter for these
+   # GRID5KM_ID != 117310 &
+    #  GRID5KM_ID != 117311 &
+    #  GRID5KM_ID != 117640 & 
+    #  GRID5KM_ID != 120280 &
+    #  GRID5KM_ID != 120610 &
+    #  GRID5KM_ID != 120940 &
+    #  GRID5KM_ID != 122258 &
+    #  GRID5KM_ID != 122259 &
+    #  GRID5KM_ID != 122588
+  #) %>%
+  group_by(depth) %>%
+  summarise(
+    #mean_pots = mean(total_pots, na.rm=TRUE)
+    total_pots = sum(total_pots, na.rm=TRUE)
+  ) %>%
+  ungroup()
+glimpse(traps_grd_depth)
+
+# have a quick look at pots vs depth
+#ggplot(traps_grd_depth, aes(x=depth, y=mean_pots)) + #work in sums, not means
+ggplot(traps_grd_depth, aes(x=depth, y=total_pots)) +
+  geom_point()
+
+# add a perc_traps and cumperc to the df
+traps_grd_depth <- traps_grd_depth %>%
+  mutate(
+    perc_traps = 100*(total_pots/sum(total_pots))
+  ) %>%
+  # calculate cumulative sum
+  arrange(-depth) %>% 
+  mutate(cumperc=cumsum(perc_traps))
+
+# cumulative dist plot
+p1 <- traps_grd_depth %>% 
+  ggplot(aes(x=-depth,y=cumperc))+
+  geom_line()+
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  labs(x="Depth (m)",y="Cumulative % Traps") +
+  ggtitle("Distribution of crab pots by depth,\nall years and seasons")
+p1
+
+ggsave(here::here('wdfw','plots','Cumulative distribution of traps by depth all years and seasons_LEENA VERSION.png'), p1)
+
+# summarise for winter v spring seasons and intervals for each depth
+# drop duplicated grid cells for now
+
+spsum <- c("May","June","July","August","September")
+traps_grd_depth_season <- logs_all %>%
+  mutate(
+    win_or_spsum = case_when(
+      m %in% spsum ~ "SprSum",
+      TRUE ~ "Winter"
+    )
+  ) %>%
+  #group_by(GRID5KM_ID, depth, win_or_spsum, season_month, period) %>% #Don't group by grid
+  group_by(depth, win_or_spsum, season_month, period) %>%
+  summarise(
+    total_pots = sum(PotsFished, na.rm=TRUE)
+  ) %>%
+  ungroup() %>%
+  # filter( #No need to filter for these
+  #   GRID5KM_ID != 117310 &
+  #     GRID5KM_ID != 117311 &
+  #     GRID5KM_ID != 117640 & 
+  #     GRID5KM_ID != 120280 &
+  #     GRID5KM_ID != 120610 &
+  #     GRID5KM_ID != 120940 &
+  #     GRID5KM_ID != 122258 &
+  #     GRID5KM_ID != 122259 &
+  #     GRID5KM_ID != 122588
+  # ) %>%
+  group_by(depth, win_or_spsum) %>%
+  summarise(
+    #mean_pots = mean(total_pots, na.rm=TRUE) #work in sums, not means
+    total_pots = sum(total_pots, na.rm=TRUE)
+  ) %>%
+  ungroup()
+glimpse(traps_grd_depth_season)
+
+# have a quick look at pots vs depth
+#ggplot(traps_grd_depth_season, aes(x=depth, y=mean_pots, colour = win_or_spsum)) +
+ggplot(traps_grd_depth_season, aes(x=depth, y=total_pots, colour = win_or_spsum)) +
+  geom_point()
+
+# add a perc_traps and cumperc to the df
+traps_grd_depth_season_perc <- traps_grd_depth_season %>%
+  # group_by(win_or_spsum) %>%
+  # group_split() %>%
+  split(list(.$win_or_spsum)) %>%
+  purrr::map_dfr(
+    #.f = function(x) { x %>% mutate(perc_traps = 100*(mean_pots/sum(mean_pots)))}
+    .f = function(x) { x %>% mutate(perc_traps = 100*(total_pots/sum(total_pots)))}
+  ) %>%
+  # calculate cumulative sum
+  split(list(.$win_or_spsum)) %>%
+  purrr::map_dfr(
+    .f = function(x) { x %>% arrange(-depth) %>% 
+        mutate(cumperc=cumsum(perc_traps))}
+  )
+
+# quick check
+glimpse(traps_grd_depth_season_perc) 
+traps_grd_depth_season_perc %>% group_by(win_or_spsum) %>% summarise(perc_traps = sum(perc_traps),maxcumperc = max(cumperc))
+
+# cumulative dist plot
+p2 <- traps_grd_depth_season_perc %>% 
+  ggplot(aes(x=-depth,y=cumperc, colour = win_or_spsum))+
+  geom_line()+
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  labs(x="Depth (m)",y="Cumulative % Traps") +
+  ggtitle("Distribution of crab pots by depth,\nall years in Dec-Apr vs May-Sep") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+p2
+
+ggsave(here::here('wdfw','plots','Cumulative distribution of traps by depth all years, win v sprsum_LEENA VERSION.png'), p2)
+
+
+
+###########################################################################################################
+#### LEENA'S ORIGINAL TEST PLOTTING BELOW -- OLD
 
 #Testing some plotting
 
