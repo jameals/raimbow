@@ -1,5 +1,6 @@
 ## Mapping functions for WDFW logbook data 
 # creating ts plots of trap counts and densities
+# bar chart of proportions of trap densities
 
 library(tidyverse)
 library(lubridate)
@@ -15,6 +16,7 @@ library(gridExtra)
 library(nngeo)
 library(cowplot)
 library(ggpubr)
+library(scales)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -222,8 +224,6 @@ logs_ts_month_dens
 #ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts_month_dens,w=12,h=10)
 
 
-
-
 #----------------------------------------------------------------------------------------------------------------
 
 #You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
@@ -258,4 +258,69 @@ plot_list
 map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
 # saving
 #ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
+
+
+#----------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------
+
+# bar chart of proportions of trap densities
+
+# create a column in df to indicate whether data are 'winter' or 'summer' 
+# summer is data after May 1 
+# the 'periods' included in summer are:
+# May_1, May-2, June_1, June_2, July_1, July_2, August_1, August_2, September_1, September_2
+adj_summtraps_wintersummer <- adj_summtraps %>% 
+  mutate(wintersummer = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1','September_2')
+                  ,'summer', 'winter'))
+
+
+#-------------------------------------------------------------------
+
+# bar chart of proportions -- all years
+# you can save a comparison of M1 vs M2, or plot for M2 only
+
+p1 <- adj_summtraps_wintersummer %>% 
+  ggplot(aes(color=wintersummer, fill=wintersummer)) +
+  geom_bar(aes(x=M1_trapdens, y=stat(prop)), position = "dodge") +
+  scale_x_binned() + 
+  ggtitle('Bar chart of proportions - M1 trap densities in winter/summer')
+p1
+
+p2 <- adj_summtraps_wintersummer %>% 
+  ggplot(aes(color=wintersummer, fill=wintersummer)) +
+  geom_bar(aes(x=M2_trapdens, y=stat(prop)), position = "dodge") +
+  scale_x_binned() + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
+  ggtitle('Bar chart of proportions - M2 trap densities in winter/summer')
+p2
+
+map_out <- plot_grid(p1,p2,nrow=1)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites_winter vs summer_M2 only','.png')),p2,w=12,h=10)
+
+
+#------------------------------------------------------------------
+
+# bar chart of proportions -- by crab season 
+
+# currently M2 only
+# but code could be adjusted if wanted a comparison of M1 vs M2
+
+ids <- unique(adj_summtraps_wintersummer$season)
+plot_list = list()
+for (i in 1:length(ids)) {
+  p = ggplot(subset(adj_summtraps_wintersummer, season == ids[i]), aes(color=wintersummer, fill=wintersummer)) +
+    geom_bar(aes(x=M2_trapdens, y=stat(prop)), position = "dodge") +
+    scale_x_binned() +
+    theme(legend.position = "none") +
+    labs(x='Trap density (M2)') +
+    ggtitle((paste(ids[i])))
+  plot_list[[i]] = p
+}
+plot_list
+
+plot_out <- cowplot::plot_grid(plotlist = plot_list, ncol = 2)
+# saving
+ggsave(here('wdfw','plots',paste0('Plot of trap densitites_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+
 
