@@ -69,9 +69,13 @@ MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>%
 QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
-#create a column in df to indicate whether data fall between May1 and Sep15
-#the 'periods' included between May1 and Sep15 are:
-#May_1, May-2, June_1, June_2, July_1, July_2, AUgust_1, August_2, September_1
+
+#----------------------------------------------------------------------------------------
+
+# create a column in df to indicate whether data fall between May1 and Sep15
+# the 'periods' included between May1 and Sep15 are:
+# May_1, May-2, June_1, June_2, July_1, July_2, AUgust_1, August_2, September_1
+
 adj_summtraps_MaySep <- adj_summtraps %>% 
   mutate(is_May1_Sep15 = 
            ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
@@ -79,17 +83,17 @@ adj_summtraps_MaySep <- adj_summtraps %>%
   filter(is_May1_Sep15 == 'Y')
 
 
-#average M1 and M2 trap density for each grid cell
+# average M1 and M2 trap density for each grid cell
 MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
   summarise(
     sum_M1_trapdens = sum(M1_trapdens),
     sum_M2_trapdens = sum(M2_trapdens),
-    sum_nvessels = sum(nvessels),
+    sum_nvessels = sum(nvessels), # include this for creating non-confidential maps 
     number_obs = n(), #no. of grid cells being used for averaging
     mean_M1_trapdens = sum_M1_trapdens/number_obs,
     mean_M2_trapdens = sum_M2_trapdens/number_obs
-    #include some measure of variance or CV as well
+    #here can include some measure of variance or CV as well
     #M2_sdtrapdens = sd(M2_trapdens),
     #M2_mediantrapdens = median(M2_trapdens),
     #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
@@ -100,7 +104,34 @@ MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
 glimpse(MaySep_summtrapsWA)
 
 
-#then map May 1- Sep 15
+#----------------------------------------------------------------------
+# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
+
+conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
+  mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
+
+# use conf_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be gray
+conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>% 
+  mutate(mean_M1_trapdens = ifelse(is_confidential,NA,mean_M1_trapdens),
+         mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
+  )
+
+# or use conf_MaySep_summtrapsWA2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
+  filter(is_confidential == FALSE)
+#------------------------------------------------------------------------
+
+# map May 1- Sep 15
+# currently for M2 only, but can be edited to map M1 as well
+
+# Figure out good trap density scale
+MaySep_summtrapsWA %>%
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
+
+
+# change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+
 map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
   
   # labels for plot titles
@@ -110,11 +141,11 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
  
   MaySep_map_out <- MaySep_summtrapsWA %>% 
     ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=mean_M1_trapdens),na.rm=T,alpha=0.8)+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0, 20, 40,60,80),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,50),breaks=c(0, 25,50),oob=squish)+
     #scale_fill_viridis(na.value='grey70',option="C")+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     labs(x='',y='',fill='average trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',season_label))
@@ -127,7 +158,7 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
   return(MaySep_map_out)
 }
 
-# Loop and save comparison maps
+# Loop and save maps
 tm <- proc.time()
 all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
   MaySep_summtrapsWA %>% 
@@ -137,8 +168,9 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
 proc.time()-tm
 
 #----------------------------------
-#scaling M1 and M2 densities 0-1_v1
-#First average M1 and M2 trap density for each grid cell, then scale 
+# difference maps M2-M1
+# scaling M1 and M2 densities 0-1_v1
+# First average M1 and M2 trap density for each grid cell, then scale 
 MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
@@ -178,7 +210,7 @@ map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
   return(MaySep_scaled_map_out)
 }
 
-# Loop and save comparison maps
+# Loop and save maps
 tm <- proc.time()
 all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
   MaySep_summtrapsWA_scale01_v2  %>% 
@@ -187,58 +219,3 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x)
 })
 proc.time()-tm
 
-####################################################################
-#If want to create non-confidential maps
-#include sum_nvessels = sum(nvessels) in creation of MaySep_summtrapsWA
-#use conf_MaySep_summtrapsWA as input in the above mapping loop, if want cells with < 3 vessels to be gray
-#or use conf_MaySep_summtrapsWA2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
-
-conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
-  mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
-
-conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>% 
-  mutate(mean_M1_trapdens = ifelse(is_confidential,NA,mean_M1_trapdens),
-         mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
-  )
-
-conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
-  filter(is_confidential == FALSE)
-####################################################################
-
-
-#crab_year_choice = '2018-2019'
-#dat_test <- adj_summtraps_MaySep %>% 
-#  filter(season == crab_year_choice)
-
-## Figure out good trap density scale
-#MaySep_summtrapsWA %>% 
-#  ggplot()+
-#  geom_density(aes(mean_M1_trapdens))
-#MaySep_summtrapsWA %>% 
-#  ggplot()+
-#  geom_density(aes(mean_M2_trapdens))
-#max avg trap density by season
-#   13-14 14-15 15-16 16-17 17-18 18-19
-#M1 13.2  39.7  14.0  10.6  83.1  22.5
-#M2 37.9  26.7  25.9  44.0  94.5  85.7
-
-bbox = c(800000,1650000,1013103,1970000)
-
-MaySep_map_out <- conf_MaySep_summtrapsWA2 %>% 
-  filter(season == crab_year_choice) %>% 
-  ggplot()+
-  geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
-  geom_sf(data=coaststates,col=NA,fill='gray50')+
-  geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
-  geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-  scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
-  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-  labs(x='',y='',fill='average trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',crab_year_choice))
-MaySep_map_out
-
-
-ggsave(
-  filename = "2017-2018_Jan-Aug.pdf", 
-  plot = marrangeGrob(plts, nrow=1, ncol=1), 
-  width = 15, height = 9
-)
