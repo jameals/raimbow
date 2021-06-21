@@ -222,7 +222,7 @@ traps_grd_depth <- traps_grd_depth_interval %>%
   #) %>%
   group_by(depth) %>%
   summarise(
-    #mean_pots = mean(total_pots, na.rm=TRUE)
+    #mean_pots = mean(total_pots, na.rm=TRUE) #work in sums, not means
     total_pots = sum(total_pots, na.rm=TRUE)
   ) %>%
   ungroup()
