@@ -27,12 +27,15 @@ plot_theme <-   theme_minimal()+
 theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 
+#------------------------------------------------------------------------------
 
-## Cleaned and summarized, simulated crab trap data
+## Read in all data and shapefiles for mapping
+
+# Cleaned and summarized, simulated crab trap data
 dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
-#### READ IN SPATIAL GRID DATA ####
-# example spatial grid
-# 5x5 grid shapefile
+
+# Read in spatial grid data 
+# example spatial grid - 5x5 grid shapefile
 grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
 names(grd)
 
@@ -56,25 +59,27 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
   st_transform(st_crs(grd))
 
-#borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
+# borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
 MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
-#Note that Quinault SMA borders have moved a lot, including within seasons 
-#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
+# Note that Quinault SMA borders have moved a lot, including within seasons 
+# borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
 QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
+#------------------------------------------------------------------------------
+
 # we want to compare M1 (old summary) vs. M2 (new weighted density)
 dat %>% 
-  sample_n(1000) %>% 
+  #sample_n(1000) %>% 
   ggplot(aes(M1_trapdens,M2_trapdens))+
   geom_point()+
   geom_abline(slope=1,intercept=0)+
   annotate("text",x=20,y=10,label="1:1 Line")+
   labs(x="Old Summary",y="New Summary")
 
-## Figure out good trap density scale
+# Figure out good trap density scale
 dat %>% 
   ggplot()+
   geom_density(aes(M2_trapdens))
@@ -82,7 +87,9 @@ dat %>%
   ggplot()+
   geom_density(aes(M1_trapdens))
 
-# Function takes the output of the previous function, applies a correction for double counting
+
+# Mapping function
+# currently mapping all data, including grid cells with < 3 vessels (i.e. confidential data)
 map_traps <- function(gridded_traps,saveplot=TRUE){
   
   # labels for plot titles
@@ -132,10 +139,12 @@ all_maps <- purrr::map(unique(dat$season_month_interval),function(x){
 })
 proc.time()-tm
 
-####################################################################
-#If want to create non-confidential maps
-#use conf_dat as input in the above mapping loop, if want cells with < 3 vessels to be gray
-#or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+
+#------------------------------------------------------------------------------
+
+# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
+# use conf_dat as input in the above mapping loop, if want cells with < 3 vessels to be gray
+# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
 
 dat <- dat %>%
   mutate(is_confidential=ifelse(nvessels<3,T,F))
@@ -149,7 +158,10 @@ conf_dat <-  dat %>%
 
 conf_dat2 <-  conf_dat %>%
   filter(is_confidential == FALSE)
+
+
 ####################################################################
+
 #VMS comparison maps
 #note that you have to read in MA borders at the top of script
 #speed and depth filtered vms is output from pipeline step 5, naming convention yearmatched_fitered.rds
@@ -409,15 +421,19 @@ all_maps <- purrr::map(unique(M2_summtrapsWA_test$season_month),function(x){
 })
 proc.time()-tm
 
-####################################################################
-#scaling M1 and M2 densities 0-1
+#-----------------------------------------------------------------------------------------
 
+# difference maps
+# the following mapping code can be used to make maps to see whether the relative spatial 
+# distribution of effort varies between M1 and M2 -- no major difference observed
+
+# scaling M1 and M2 densities to range between 0-1
 dat_scale01 <- dat %>% 
   mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
          M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
          scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
   )
-
 
 dat_scale01 %>% 
   ggplot()+
@@ -439,16 +455,14 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    #scale_fill_viridis(na.value='grey70',option="A")+
     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='M2-M1 variance',title=t1)
 
-  #map_out <- plot_grid(M1_map_out,M2_map_out,nrow=1)
   # saving
   if(saveplot){
     pt <- unique(gridded_traps$season_month_interval)
-    ggsave(here('wdfw','scaled_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+    ggsave(here('wdfw','difference_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
   }
   return(diff_map_out)
 }
