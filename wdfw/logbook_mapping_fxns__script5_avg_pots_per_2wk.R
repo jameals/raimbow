@@ -30,20 +30,16 @@ options(dplyr.summarise.inform = FALSE)
 
 #########################################
 
-#Investigate the average pots per vessel per 2wk interval
+# Investigate the average pots per vessel per 2wk interval
 
-#Start with traps_g df for all seasons (traps are simulated and joined to grid)
-#getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
-
-#the next lines, up to filtering for years, are same as the first steps in making a ts plot
+# Start with traps_g df for all seasons (traps are simulated and joined to grid)
+# getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 #traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
-
-#could this work also be done using the new df traps_g_license_logs_2013_2019.rds
+# or use the new df traps_g_license_logs_2013_2019.rds
 traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 
 #traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2019
-
 
 traps_g <- traps_g %>% 
   mutate(
@@ -59,11 +55,11 @@ traps_g <- traps_g %>%
                                    month_interval)
   )
 
-#For now look at 2013-2019
+# For now look at 2013-2019, traps_g_license_logs_2013_2019.rds is already filtered for these years
 #traps_g <- traps_g %>% 
-#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
+# filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
 
-#modifying the summtraps code that adjust for double counting
+# modifying the summtraps code from script 2 that adjusts for double counting
 testdf <- traps_g %>% 
   st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
@@ -81,13 +77,13 @@ testdf <- traps_g %>%
   ungroup() %>% 
   group_by(season_month_interval, Vessel, License) %>% 
   summarise(
-    M1_adjusted_tottraps=sum(ntraps_vessel_cell))
+    M1_tottraps=sum(ntraps_vessel_cell))
 glimpse(testdf)
 
 
-#bring in raw logs 
+#bring in 'raw' logs 
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
+logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
 
 #sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
 logsdf <- logs %>% 
@@ -143,16 +139,22 @@ WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May20
 WA_pot_limit_info %<>%
   rename(License = License_ID)
 
-#join Pot_Limit info
+#join Pot_Limit info. 
 testdf %<>%
   left_join(WA_pot_limit_info,by=c("License"))
 glimpse(testdf)
 
-testdf %<>% select(season, month_name, interval, month_interval, Vessel, License, M1_adjusted_tottraps, sum_PotsFished,Pot_Limit, count_FishTicket)
+testdf %<>% 
+  select(season, month_name, interval, month_interval, Vessel, License, M1_tottraps, sum_PotsFished,Pot_Limit, count_FishTicket) %>% 
+  #Vessels pot limit in a 2-week interval is same as what is assumed to be its fished pot count using M2 method
+  rename(Pot_Limit_or_M2 = Pot_Limit)
 glimpse(testdf)
-################################################################
+# this summary df showcases the difference between pot counts via M1 or M2, an between summing raw pot count from logbooks
 
-#some checks
+#-------------------------------------------------------------------------------
+
+# some checks
+# calculating an estimate for lines in water as the sum of pot limits for those vessels that were active in a given time period 
 
 check_lines_in_water <- testdf %>% 
   group_by(season, month_name, `Pot_Limit`) %>% 
@@ -185,11 +187,14 @@ check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFishe
 check_plot
 
 #------------------------------
+
+# number of vessels that were active in each month as per logbook data
+
 active_vessels_by_month <- testdf %>% 
   group_by(season, month_name) %>% 
   na.omit() %>% 
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
 
-write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month.csv"))
+#write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month.csv"))
 
