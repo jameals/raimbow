@@ -126,7 +126,7 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
   
   # labels for plot titles
   month_label=unique(gridded_traps$month_name)
-  period_label=unique(gridded_traps$period)
+  period_label <- ifelse(gridded_traps$period==1,"first half", "second half")  
   season_label=paste("Season:",unique(gridded_traps$season))
   t1 <- paste0(season_label,"\n",month_label,", ",period_label, " Method 1")
   t2 <- paste0(season_label,"\n",month_label,", ",period_label, " Method 2")
@@ -326,7 +326,7 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
   # saving
   if(saveplot){
     pt <- unique(MaySep_summtrapsWA$season)
-    ggsave(here('wdfw','may_sep_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_map_out,w=6,h=5)
+    ggsave(here('wdfw','maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_map_out,w=6,h=5)
   }
   return(MaySep_map_out)
 }
