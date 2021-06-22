@@ -308,7 +308,7 @@ map_log_monthly <- function(M2_summtrapsWA_test,saveplot=TRUE){
   
   log_monthly_map_out <- M2_summtrapsWA_test %>% 
     ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=M2_meantrapdens),na.rm=T,alpha=0.8)+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
