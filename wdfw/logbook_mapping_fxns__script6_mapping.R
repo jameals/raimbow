@@ -1,4 +1,8 @@
-# Map outputs of logbook crab trap simulation exercise
+## Mapping functions for WDFW logbook data 
+# making maps on 2-weekly step
+# making maps on 1-monthly step
+# making summary maps for May 1-Sep 15 period
+
 library(tidyverse)
 library(sf)
 library(viridis)
@@ -12,6 +16,9 @@ library(raster)
 select <- dplyr::select
 library(scales)
 library(lubridate)
+library(gridExtra)
+library(nngeo)
+library(scales)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -54,6 +61,7 @@ grd_xy <- grd_xy %>%
   as_tibble() %>% 
   mutate(GRID5KM_ID=grd_xy$GRID5KM_ID) %>%
   set_colnames(c("grd_x","grd_y","GRID5KM_ID"))
+
 # background map (coastline)
 coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
@@ -70,26 +78,50 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 
 #------------------------------------------------------------------------------
 
-# we want to compare M1 (old summary) vs. M2 (new weighted density)
-dat %>% 
-  #sample_n(1000) %>% 
-  ggplot(aes(M1_trapdens,M2_trapdens))+
-  geom_point()+
-  geom_abline(slope=1,intercept=0)+
-  annotate("text",x=20,y=10,label="1:1 Line")+
-  labs(x="Old Summary",y="New Summary")
+# # we want to compare M1 (old summary) vs. M2 (new weighted density)
+# dat %>% 
+#   #sample_n(1000) %>% 
+#   ggplot(aes(M1_trapdens,M2_trapdens))+
+#   geom_point()+
+#   geom_abline(slope=1,intercept=0)+
+#   annotate("text",x=20,y=10,label="1:1 Line")+
+#   labs(x="Old Summary",y="New Summary")
+
+#------------------------------------------------------------------------------
+# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
+
+dat <- dat %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F))
+
+# use conf_dat as input in mapping loop, if want cells with < 3 vessels to be gray
+conf_dat <-  dat %>% 
+  mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+         M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+         weighted_traps=ifelse(is_confidential,NA,weighted_traps),
+         M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
+  )
+
+# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+conf_dat2 <-  conf_dat %>%
+  filter(is_confidential == FALSE)
+#------------------------------------------------------------------------------
+
+# Making maps on a 2-weekly time step
+
+# currently mapping all data, including grid cells with < 3 vessels (i.e. confidential data)
+# adjust max in colour scale depending on whether you want to focus on one season, or compare different seasons etc
+# change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+
 
 # Figure out good trap density scale
 dat %>% 
   ggplot()+
   geom_density(aes(M2_trapdens))
-dat %>% 
-  ggplot()+
-  geom_density(aes(M1_trapdens))
+# dat %>% 
+#   ggplot()+
+#   geom_density(aes(M1_trapdens))
 
 
-# Mapping function
-# currently mapping all data, including grid cells with < 3 vessels (i.e. confidential data)
 map_traps <- function(gridded_traps,saveplot=TRUE){
   
   # labels for plot titles
@@ -118,7 +150,7 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='Traps per\nsq. km',title=t2)
 
@@ -134,7 +166,8 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
   return(map_out)
 }
 
-# Loop and save comparison maps
+# Loop and save maps
+# change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
 tm <- proc.time()
 all_maps <- purrr::map(unique(dat$season_month_interval),function(x){
   dat %>% 
@@ -145,28 +178,294 @@ proc.time()-tm
 
 
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
+# Making maps on a 1-monthly time step
+
+# this will require using the df on a 2-weekly step and
+# taking the average trap density for each grid cell for the desired time period
+
+# this is the same df as used for other mapping
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+
+M2_summtrapsWA_month <- adj_summtraps %>% 
+  group_by(season_month,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    #M1_sdtrapdens = sd(M1_trapdens), 
+    #M2_sdtrapdens = sd(M2_trapdens)
+  ) 
+glimpse(M2_summtrapsWA_month)
+
+
+M2_summtrapsWA_month %>% 
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
+
+
+#making a loop of maps on monthly step
+map_log_monthly <- function(M2_summtrapsWA_month,saveplot=TRUE){
+  
+  # labels for plot titles
+  season_month_label=unique(M2_summtrapsWA_month$season_month)
+  
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  log_monthly_map_out <- M2_summtrapsWA_month %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    labs(x='',y='',fill='mean trap density\nper sq. km',title=season_month_label)
+  
+  # saving
+  if(saveplot){
+    pt <- unique(M2_summtrapsWA_month$season_month)
+    ggsave(here('wdfw','maps',paste0(pt,'.png')),log_monthly_map_out,w=6,h=5)
+  }
+  return(log_monthly_map_out)
+}
+
+# Loop and save comparison maps
+tm <- proc.time()
+all_maps <- purrr::map(unique(M2_summtrapsWA_month$season_month),function(x){
+  M2_summtrapsWA_month %>% 
+    filter(season_month==x) %>% 
+    map_log_monthly()
+})
+proc.time()-tm
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+# Making summary maps for May - Sep 15 period
+
+## Cleaned and summarized, simulated crab trap data
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+
+# create a column in df to indicate whether data fall between May1 and Sep15
+# the 'periods' included between May1 and Sep15 are:
+# May_1, May-2, June_1, June_2, July_1, July_2, AUgust_1, August_2, September_1
+
+adj_summtraps_MaySep <- adj_summtraps %>% 
+  mutate(is_May1_Sep15 = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
+                  ,'Y', 'N')) %>% 
+  filter(is_May1_Sep15 == 'Y')
+
+# average M1 and M2 trap density for each grid cell for May-Sep period
+MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M1_trapdens = sum(M1_trapdens),
+    sum_M2_trapdens = sum(M2_trapdens),
+    sum_nvessels = sum(nvessels), # include this for creating non-confidential maps 
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_M1_trapdens = sum_M1_trapdens/number_obs,
+    mean_M2_trapdens = sum_M2_trapdens/number_obs
+    #here can include some measure of variance or CV as well
+    #M2_sdtrapdens = sd(M2_trapdens),
+    #M2_mediantrapdens = median(M2_trapdens),
+    #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    #M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    #M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(MaySep_summtrapsWA)
+
+#--------------------------
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
-# use conf_dat as input in the above mapping loop, if want cells with < 3 vessels to be gray
-# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
 
-dat <- dat %>%
-  mutate(is_confidential=ifelse(nvessels<3,T,F))
+conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
+  mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
 
-conf_dat <-  dat %>% 
-  mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
-         M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
-         weighted_traps=ifelse(is_confidential,NA,weighted_traps),
-         M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
-         )
+# use conf_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be gray
+conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>% 
+  mutate(mean_M1_trapdens = ifelse(is_confidential,NA,mean_M1_trapdens),
+         mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
+  )
 
-conf_dat2 <-  conf_dat %>%
+# or use conf_MaySep_summtrapsWA2 as input in mapping loop, if want cells with < 3 vessels to be fully removed
+conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
   filter(is_confidential == FALSE)
+#----------------------------
+
+# map May 1- Sep 15
+# currently for M2 only, but can be edited to map M1 as well
+
+# Figure out good trap density scale
+MaySep_summtrapsWA %>%
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
 
 
-####################################################################
+# change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+
+map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
+  
+  # labels for plot titles
+  season_label=unique(MaySep_summtrapsWA$season)
+  
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  MaySep_map_out <- MaySep_summtrapsWA %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,50),breaks=c(0, 25,50),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    labs(x='',y='',fill='average trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',season_label))
+  
+  # saving
+  if(saveplot){
+    pt <- unique(MaySep_summtrapsWA$season)
+    ggsave(here('wdfw','may_sep_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_map_out,w=6,h=5)
+  }
+  return(MaySep_map_out)
+}
+
+# Loop and save maps
+# change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+tm <- proc.time()
+all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
+  MaySep_summtrapsWA %>% 
+    filter(season==x) %>% 
+    map_maysep()
+})
+proc.time()-tm
+
+#----------------------------
+
+# difference maps of M2-M1 methods for May-Sep
+# This code is only relevant if want to map the difference between M1 and M2 methods -- no major difference observed
+
+# # First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
+# MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
+#   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
+#          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+#          #calculate the difference as M2 minus M1
+#          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
+#   )
+# glimpse(MaySep_summtrapsWA_scale01)
+# 
+# 
+# MaySep_summtrapsWA_scale01 %>% 
+#   ggplot()+
+#   geom_density(aes(scaled_M2_minus_M1))
+# 
+# 
+# # then make difference maps of scaled May 1- Sep 15
+# map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   season_label=unique(MaySep_summtrapsWA_scale01 $season)
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+#     labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
+#   
+#   # saving
+#   if(saveplot){
+#     pt <- unique(MaySep_summtrapsWA_scale01 $season)
+#     ggsave(here('wdfw','may_sep_maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+#   }
+#   return(MaySep_scaled_map_out)
+# }
+# 
+# # Loop and save maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
+#   MaySep_summtrapsWA_scale01_v2  %>% 
+#     filter(season==x) %>% 
+#     map_maysep()
+# })
+# proc.time()-tm
+
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
+# difference maps
+# the following mapping code can be used to make maps to see whether the relative spatial 
+# distribution of effort varies between M1 and M2 -- no major difference observed
+
+# # scaling M1 and M2 densities to range between 0-1
+# dat_scale01 <- dat %>% 
+#   mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+#          M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+#          #calculate the difference as M2 minus M1
+#          scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+#   )
+# 
+# dat_scale01 %>% 
+#   ggplot()+
+#   geom_density(aes(scaled_M2_minus_M1))
+# 
+# map_traps <- function(gridded_traps,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   month_label=unique(gridded_traps$month_name)
+#   period_label=unique(gridded_traps$period)
+#   season_label=paste("Season:",unique(gridded_traps$season))
+#   t1 <- paste0(season_label,"\n",month_label,", ",period_label, " M2 - M1")
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   diff_map_out <- gridded_traps %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+#     labs(x='',y='',fill='M2-M1 variance',title=t1)
+# 
+#   # saving
+#   if(saveplot){
+#     pt <- unique(gridded_traps$season_month_interval)
+#     ggsave(here('wdfw','difference_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+#   }
+#   return(diff_map_out)
+# }
+# 
+# # Loop and save comparison maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(dat_scale01$season_month_interval),function(x){
+#   dat_scale01 %>% 
+#     filter(season_month_interval==x) %>% 
+#     map_traps()
+# })
+# proc.time()-tm
+
+
+
+
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
+
+
+
 
 #VMS comparison maps
+#MOVE TO DIFFERENT SCRIPT
 #note that you have to read in MA borders at the top of script
 #speed and depth filtered vms is output from pipeline step 5, naming convention yearmatched_fitered.rds
 vms20132014_raw <- read_rds(here::here('wdfw','data','2014matched_filtered.rds'))
@@ -424,64 +723,3 @@ all_maps <- purrr::map(unique(M2_summtrapsWA_test$season_month),function(x){
     map_log_monthly()
 })
 proc.time()-tm
-
-#-----------------------------------------------------------------------------------------
-
-# difference maps
-# the following mapping code can be used to make maps to see whether the relative spatial 
-# distribution of effort varies between M1 and M2 -- no major difference observed
-
-# scaling M1 and M2 densities to range between 0-1
-dat_scale01 <- dat %>% 
-  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
-         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
-         #calculate the difference as M2 minus M1
-         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
-  )
-
-dat_scale01 %>% 
-  ggplot()+
-  geom_density(aes(scaled_M2_minus_M1))
-
-map_traps <- function(gridded_traps,saveplot=TRUE){
-  
-  # labels for plot titles
-  month_label=unique(gridded_traps$month_name)
-  period_label=unique(gridded_traps$period)
-  season_label=paste("Season:",unique(gridded_traps$season))
-  t1 <- paste0(season_label,"\n",month_label,", ",period_label, " M2 - M1")
-  
-  bbox = c(800000,1650000,1013103,1970000)
-  
-  diff_map_out <- gridded_traps %>% 
-    ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
-    geom_sf(data=coaststates,col=NA,fill='gray50')+
-    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
-    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
-    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
-    labs(x='',y='',fill='M2-M1 variance',title=t1)
-
-  # saving
-  if(saveplot){
-    pt <- unique(gridded_traps$season_month_interval)
-    ggsave(here('wdfw','difference_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
-  }
-  return(diff_map_out)
-}
-
-# Loop and save comparison maps
-tm <- proc.time()
-all_maps <- purrr::map(unique(dat_scale01$season_month_interval),function(x){
-  dat_scale01 %>% 
-    filter(season_month_interval==x) %>% 
-    map_traps()
-})
-proc.time()-tm
-
-
-
-
-
-
