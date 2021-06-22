@@ -97,7 +97,7 @@ dat <- dat %>%
 conf_dat <-  dat %>% 
   mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
          M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
-         weighted_traps=ifelse(is_confidential,NA,weighted_traps),
+         M2_tottraps=ifelse(is_confidential,NA,M2_tottraps),
          M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
   )
 
@@ -151,7 +151,9 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
     scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
-    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='Traps per\nsq. km',title=t2)
 
   # comparison maps of M1 and M2 methods   
@@ -220,7 +222,9 @@ map_log_monthly <- function(M2_summtrapsWA_month,saveplot=TRUE){
     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
     scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
-    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
     labs(x='',y='',fill='mean trap density\nper sq. km',title=season_month_label)
   
   # saving
@@ -321,7 +325,9 @@ map_maysep <- function(MaySep_summtrapsWA,saveplot=TRUE){
     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
     scale_fill_viridis(na.value='grey70',option="C",limits=c(0,50),breaks=c(0, 25,50),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-    labs(x='',y='',fill='average trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',season_label))
+    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    labs(x='',y='',fill='Avg. trap density\nper sq. km',title=paste0('May 1 - Sep 15\n',season_label))
   
   # saving
   if(saveplot){
@@ -341,60 +347,7 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
 })
 proc.time()-tm
 
-#----------------------------
 
-# difference maps of M2-M1 methods for May-Sep
-# This code is only relevant if want to map the difference between M1 and M2 methods -- no major difference observed
-
-# # First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
-# MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
-#   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
-#          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
-#          #calculate the difference as M2 minus M1
-#          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
-#   )
-# glimpse(MaySep_summtrapsWA_scale01)
-# 
-# 
-# MaySep_summtrapsWA_scale01 %>% 
-#   ggplot()+
-#   geom_density(aes(scaled_M2_minus_M1))
-# 
-# 
-# # then make difference maps of scaled May 1- Sep 15
-# map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
-#   
-#   # labels for plot titles
-#   season_label=unique(MaySep_summtrapsWA_scale01 $season)
-#   
-#   bbox = c(800000,1650000,1013103,1970000)
-#   
-#   MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
-#     ggplot()+
-#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
-#     geom_sf(data=coaststates,col=NA,fill='gray50')+
-#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
-#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
-#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-#     labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
-#   
-#   # saving
-#   if(saveplot){
-#     pt <- unique(MaySep_summtrapsWA_scale01 $season)
-#     ggsave(here('wdfw','may_sep_maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
-#   }
-#   return(MaySep_scaled_map_out)
-# }
-# 
-# # Loop and save maps
-# tm <- proc.time()
-# all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
-#   MaySep_summtrapsWA_scale01_v2  %>% 
-#     filter(season==x) %>% 
-#     map_maysep()
-# })
-# proc.time()-tm
 
 
 #-----------------------------------------------------------------------------------------
@@ -455,7 +408,61 @@ proc.time()-tm
 
 
 
+#----------------------------
 
+
+# difference maps of M2-M1 methods for May-Sep period
+# This code is only relevant if want to map the difference between M1 and M2 methods -- no major difference observed
+
+# # First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
+# MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
+#   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
+#          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+#          #calculate the difference as M2 minus M1
+#          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
+#   )
+# glimpse(MaySep_summtrapsWA_scale01)
+# 
+# 
+# MaySep_summtrapsWA_scale01 %>% 
+#   ggplot()+
+#   geom_density(aes(scaled_M2_minus_M1))
+# 
+# 
+# # then make difference maps of scaled May 1- Sep 15
+# map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   season_label=unique(MaySep_summtrapsWA_scale01 $season)
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+#     labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
+#   
+#   # saving
+#   if(saveplot){
+#     pt <- unique(MaySep_summtrapsWA_scale01 $season)
+#     ggsave(here('wdfw','may_sep_maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+#   }
+#   return(MaySep_scaled_map_out)
+# }
+# 
+# # Loop and save maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
+#   MaySep_summtrapsWA_scale01_v2  %>% 
+#     filter(season==x) %>% 
+#     map_maysep()
+# })
+# proc.time()-tm
 
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
@@ -637,7 +644,7 @@ M2_summtrapsWA_test <- adj_summtraps %>%
   summarise( 
     number_obs = n(), #no. of grid cells in that season_month that had traps in them 
     sum_M1_tottraps = sum(M1_tottraps), 
-    sum_M2_tottraps = sum(weighted_traps), 
+    sum_M2_tottraps = sum(M2_tottraps), 
     mean_M1_trapdens = mean(M1_trapdens), 
     mean_M2_trapdens = mean(M2_trapdens), 
     M1_sdtrapdens = sd(M1_trapdens), 
