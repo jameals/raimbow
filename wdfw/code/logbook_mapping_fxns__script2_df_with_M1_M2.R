@@ -17,12 +17,12 @@ library(nngeo)
 
 #-------------------------------------------------------------
 
-#Start with traps_g df (traps are simulated and joined to grid, script 1)  
-#RDS can be found in Kiteworks folder
+# Start with traps_g df (traps are simulated and joined to grid, script 1)  
+# RDS can be found in Kiteworks folder
 traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
 
 
-#create columns for season, month etc
+# create columns for season, month etc
 traps_g %<>%
   st_set_geometry(NULL) %>% 
   mutate(
@@ -39,19 +39,19 @@ traps_g %<>%
   )
 
 
-#Read in and join license & pot limit info
+# Read in and join license & pot limit info
 WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
 WA_pot_limit_info %<>%
   rename(License = License_ID)
 
-#join Pot_Limit to traps_g 
+# join Pot_Limit to traps_g 
 traps_g %<>%
   left_join(WA_pot_limit_info,by=c("License")) %>% 
   drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
 
 
-#apply weighting based on permitted max pot number (this is Method 2 or M2)
+# apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g <- traps_g %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
   # count up traps for vessel in 2-week period
@@ -89,7 +89,7 @@ M1_summtraps <- traps_g %>%
   group_by(season_month_interval, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
   summarise(
     M1_tottraps=sum(M1_ntraps_vessel_cell),
-  #add count of unique vessels for confidentiality check, this could be done here or in mapping phase
+  # add count of unique vessels for confidentiality check, this could be done here or in mapping phase
     nvessels=n_distinct(Vessel,na.rm=T) 
   ) %>% 
   # trap density (in sq. km) is total traps divided by area (which is in sq. m) of each cell
@@ -113,18 +113,18 @@ traps_summ <- traps_g %>%
 glimpse(traps_summ) 
 
 
-#join results from M1 and M2 
+# join results from M1 and M2 
 adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month_interval", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
 glimpse(adj_summtraps) 
 
 
-#fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
-#will have a separate polygon within said bay or estuary that will have the same Grid5km_ID value as the adjacent 
-#portion of the 5km grid cell that does not fall within the bay or estuary. 
-#Therefore, if you want to calculate total area of each grid cell that falls in water, 
-#sum the total area for that grid cell by its Grid5km_ID value.
+# fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
+# will have a separate polygon within said bay or estuary that will have the same Grid5km_ID value as the adjacent 
+# portion of the 5km grid cell that does not fall within the bay or estuary. 
+# Therefore, if you want to calculate total area of each grid cell that falls in water, 
+# sum the total area for that grid cell by its Grid5km_ID value.
 
-#joining data for portions of grids with same grid ID
+# joining data for portions of grids with same grid ID
 adj_summtraps %<>%
   group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
   summarise(
@@ -152,15 +152,16 @@ glimpse(adj_summtraps)
 
 
 #----------------------------------------------------------------------------
-#Few visuals
+
+# Few visuals comapring the M1 and M2 methods
 pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
-pairs(~ M1_tottraps + weighted_traps, data = adj_summtraps)
+pairs(~ M1_tottraps + M2_tottraps, data = adj_summtraps)
 
 library(ggplot2)                    
 library(GGally)
 
-ggpairs(adj_summtraps[, c(10, 13)])
-ggpairs(adj_summtraps, columns = c(10, 13), ggplot2::aes(colour=season))
+ggpairs(adj_summtraps[, c(10, 12)])
+ggpairs(adj_summtraps, columns = c(10, 12), ggplot2::aes(colour=season))
 
-ggpairs(adj_summtraps[, c(8, 12)])
-ggpairs(adj_summtraps, columns = c(8, 12), ggplot2::aes(colour=season))
+ggpairs(adj_summtraps[, c(8, 11)])
+ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
