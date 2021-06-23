@@ -157,10 +157,10 @@ glimpse(testdf)
 # calculating an estimate for lines in water as the sum of pot limits for those vessels that were active in a given time period 
 
 check_lines_in_water <- testdf %>% 
-  group_by(season, month_name, `Pot_Limit`) %>% 
+  group_by(season, month_name, Pot_Limit_or_M2) %>% 
   na.omit() %>% 
   summarise(numberoflicenses=n_distinct(License), na.rm=TRUE) %>% 
-  mutate(check_PotsFished=sum(numberoflicenses * `Pot_Limit`)) %>% 
+  mutate(check_PotsFished=sum(numberoflicenses * Pot_Limit_or_M2)) %>% 
   select(season, month_name, check_PotsFished) %>% 
   distinct() %>% 
   collect()
