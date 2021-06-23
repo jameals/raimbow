@@ -327,6 +327,32 @@ p2
 ggsave(here::here('wdfw','plots','Cumulative distribution of traps by depth all years, win v sprsum_LEENA VERSION.png'), p2)
 
 
+#### OWEN'S TRY (06/23/21)
+owen_pots_by_depth <- logs_all %>%
+  mutate(
+    win_or_spsum = case_when(
+      m %in% spsum ~ "SprSum",
+      TRUE ~ "Winter"
+    )
+  ) %>%
+  count(win_or_spsum,depth) %>% 
+  ungroup() %>% 
+  rename(pots=n) %>% 
+  # do cumulative counts
+  mutate(depth=-depth) %>% 
+  group_by(win_or_spsum) %>% 
+  arrange(depth) %>% 
+  mutate(cumulative_pots=cumsum(pots),perc_pots=cumulative_pots/last(cumulative_pots)*100)
+glimpse(traps_grd_depth_season)
+
+p3 <- owen_pots_by_depth %>% 
+  ggplot(aes(x=depth,y=perc_pots, colour = win_or_spsum))+
+  geom_line()+
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  labs(x="Depth (m)",y="Cumulative % Traps") +
+  ggtitle("Distribution of crab pots by depth,\nall years in Dec-Apr vs May-Sep") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+p3
 
 ###########################################################################################################
 #### LEENA'S ORIGINAL TEST PLOTTING BELOW -- OLD
