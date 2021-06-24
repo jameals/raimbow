@@ -80,7 +80,7 @@ depth_dist_all_data <- pots_by_depth_all_data %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_all_data
 
-#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years and seasons','.png')),depth_dist_all_data,w=12,h=10)
 
 
 # Cumulative distribution of pots by depth - by season
@@ -106,7 +106,7 @@ depth_dist_by_season <- pots_by_depth_by_season %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_by_season
 
-#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_by season','.png')),depth_dist_by_season,w=12,h=10)
 
 #--------------------------
 
@@ -142,6 +142,9 @@ depth_dist_spsumvswinter <- pots_by_depth_spsumvswinter %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_spsumvswinter
 
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_win v sprsum','.png')),depth_dist_spsumvswinter,w=12,h=10)
+
+
 
 # Cumulative distribution of pots by depth - by season - winter vs spring/summer
 
@@ -176,12 +179,8 @@ for (i in 1:length(ids)) {
 }
 plot_list
 
-plot_out <- cowplot::plot_grid(plotlist = plot_list, ncol = 2)
-
-
-
-
-
+plot_out <- cowplot::plot_grid(plotlist = plot_list, nrow = 2)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum','.png')),plot_out,w=14,h=10)
 
 
 #-------------------------------------------------------------
