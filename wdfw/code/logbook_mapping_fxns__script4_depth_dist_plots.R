@@ -328,7 +328,10 @@ ggsave(here::here('wdfw','plots','Cumulative distribution of traps by depth all 
 
 
 #### OWEN'S TRY (06/23/21)
-owen_pots_by_depth <- logs_all %>%
+
+spsum <- c("May","June","July","August","September")
+
+pots_by_depth_spsumvswinter <- logs_all %>%
   mutate(
     win_or_spsum = case_when(
       m %in% spsum ~ "SprSum",
@@ -343,9 +346,9 @@ owen_pots_by_depth <- logs_all %>%
   group_by(win_or_spsum) %>% 
   arrange(depth) %>% 
   mutate(cumulative_pots=cumsum(pots),perc_pots=cumulative_pots/last(cumulative_pots)*100)
-glimpse(traps_grd_depth_season)
+glimpse(pots_by_depth_spsumvswinter)
 
-p3 <- owen_pots_by_depth %>% 
+p3 <- pots_by_depth_spsumvswinter %>% 
   ggplot(aes(x=depth,y=perc_pots, colour = win_or_spsum))+
   geom_line()+
   #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
@@ -353,6 +356,55 @@ p3 <- owen_pots_by_depth %>%
   ggtitle("Distribution of crab pots by depth,\nall years in Dec-Apr vs May-Sep") + 
   theme(legend.position = ("top"),legend.title=element_blank())
 p3
+
+#Cumulative distribution of pots by depth - all years and seasons (no winter vs spring/summer breakdown)
+pots_by_depth_all_data <- logs_all %>%
+  count(depth) %>% 
+  ungroup() %>% 
+  rename(pots=n) %>% 
+  # do cumulative counts
+  mutate(depth=-depth) %>% 
+  arrange(depth) %>% 
+  mutate(cumulative_pots=cumsum(pots),perc_pots=cumulative_pots/last(cumulative_pots)*100)
+glimpse(pots_by_depth_all_data)
+
+depth_dist_all_data <- pots_by_depth_all_data %>% 
+  ggplot(aes(x=depth,y=perc_pots))+
+  geom_line()+
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  labs(x="Depth (m)",y="Cumulative % Traps") +
+  ggtitle("Distribution of crab pots by depth,\nall years and seasons") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+depth_dist_all_data
+
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+
+#Cumulative pot by depth - by season
+pots_by_depth_by_season <- logs_all %>%
+  count(season, depth) %>% 
+  ungroup() %>% 
+  rename(pots=n) %>% 
+  # do cumulative counts
+  mutate(depth=-depth) %>% 
+  group_by(season) %>%
+  arrange(depth) %>% 
+  mutate(cumulative_pots=cumsum(pots),perc_pots=cumulative_pots/last(cumulative_pots)*100)
+glimpse(pots_by_depth_by_season)
+
+depth_dist_by_season <- pots_by_depth_by_season %>% 
+  ggplot(aes(x=depth,y=perc_pots, colour = season, group=season))+
+  geom_line(size=1.5)+
+  scale_colour_brewer(palette = "PRGn") +
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  labs(x="Depth (m)",y="Cumulative % Traps") +
+  ggtitle("Distribution of crab pots by depth,\nall years in Dec-Apr vs May-Sep") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+depth_dist_by_season
+
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+
+
+
 
 ###########################################################################################################
 #### LEENA'S ORIGINAL TEST PLOTTING BELOW -- OLD
