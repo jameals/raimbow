@@ -169,15 +169,18 @@ place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   traps_sf %<>%
     mutate(depth=bathy.points/10)
   
-  # find points on land and collect their SetIDs to a list
-  #traps_on_land <- traps_sf %>% filter(depth > 0) 
-  # if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use 
-  traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
-  unique_SetIDs_on_land <- unique(traps_on_land$SetID)
-  
-  # Remove ALL points whose Set_ID appears on that list
-  traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
-  
+  # DEPTH FILTER
+  # current code:
+  # only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
+  traps_sf %<>% 
+    filter(depth <= 0) %>% #keep points in water
+    filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
+  # ALTERNATIVE DEPTH FILTER OPTION
+  # find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
+  #traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+  #unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+  # Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
+  #traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
   
   traps_sf %<>% mutate(month_name=mnth,period=p,season=crab_year_choice)
   
@@ -405,14 +408,18 @@ bathy.points <- raster::extract(bathy,traps_sf)
 traps_sf %<>%
   mutate(depth=bathy.points/10)
 
-# find points on land and collect their SetIDs to a list
-#traps_on_land <- traps_sf %>% filter(depth > 0) 
-# if want to also filter out pots at unreasonable depth, while retaining very low values for ports/embayments use 
-traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
-unique_SetIDs_on_land <- unique(traps_on_land$SetID)
-
-# Remove ALL points whose Set_ID appears on that list
-traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+# DEPTH FILTER
+# current code:
+# only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
+traps_sf %<>% 
+  filter(depth <= 0) %>% #keep points in water
+  filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
+# ALTERNATIVE DEPTH FILTER OPTION
+# find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
+#traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+#unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+# Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
+#traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
 
 #running place_traps on 2013-2019 logs subset took about 15min
 #write_rds(traps_sf,here::here('data', "traps_sf_license_all_logs_2013_2019.rds"))
