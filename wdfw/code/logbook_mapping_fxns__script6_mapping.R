@@ -357,17 +357,33 @@ proc.time()-tm
 # the following mapping code can be used to make maps to see whether the relative spatial 
 # distribution of effort varies between M1 and M2 -- no major difference observed
 
-# # scaling M1 and M2 densities to range between 0-1
-# dat_scale01 <- dat %>% 
-#   mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
-#          M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
-#          #calculate the difference as M2 minus M1
-#          scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
-#   )
-# 
-# dat_scale01 %>% 
-#   ggplot()+
-#   geom_density(aes(scaled_M2_minus_M1))
+dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+dat_v2 <- read_rds(here::here('wdfw','data','adj_summtraps_v2.rds'))
+
+# scaling M1 and M2 densities to range between 0-1
+#This one is not fine
+dat_scale01 <- dat %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+#This one seems fine
+dat_scale01_v2 <- dat_v2 %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+dat_scale01 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+dat_scale01_v2 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
 # 
 # map_traps <- function(gridded_traps,saveplot=TRUE){
 #   
