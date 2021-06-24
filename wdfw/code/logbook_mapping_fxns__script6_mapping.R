@@ -392,7 +392,7 @@ proc.time()-tm
 #   # saving
 #   if(saveplot){
 #     pt <- unique(gridded_traps$season_month_interval)
-#     ggsave(here('wdfw','difference_maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+#     ggsave(here('wdfw','maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
 #   }
 #   return(diff_map_out)
 # }
@@ -450,7 +450,7 @@ proc.time()-tm
 #   # saving
 #   if(saveplot){
 #     pt <- unique(MaySep_summtrapsWA_scale01 $season)
-#     ggsave(here('wdfw','may_sep_maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+#     ggsave(here('wdfw','maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
 #   }
 #   return(MaySep_scaled_map_out)
 # }
