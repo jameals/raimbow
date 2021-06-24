@@ -221,7 +221,7 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
         legend.position="bottom"
   )
 logs_ts_month_dens
-#ggsave(here('wdfw','plots',paste0('Plot of mean M2 trapdensities','.png')),logs_ts_month_dens,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Mean M2 trap densities by month','.png')),logs_ts_month_dens,w=12,h=10)
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ p2 <- adj_summtraps_wintersummer %>%
 p2
 
 map_out <- plot_grid(p1,p2,nrow=1)
-ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
 ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only','.png')),p2,w=12,h=10)
 
 
