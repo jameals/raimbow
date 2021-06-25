@@ -106,7 +106,7 @@ depth_dist_by_season <- pots_by_depth_by_season %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_by_season
 
-#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_by season','.png')),depth_dist_by_season,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_by season','.png')),depth_dist_by_season,w=12,h=10)
 
 #--------------------------
 
@@ -170,7 +170,7 @@ plot_list = list()
 for (i in 1:length(ids)) {
   p = ggplot(subset(pots_by_depth_spsumvswinter_byseason, season == ids[i]), aes(color=win_or_spsum)) +
     geom_line(aes(x=depth,y=perc_pots), size=1)+
-    geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+    #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
     scale_x_continuous(breaks=seq(0, 200, 20),limits=c(0,200))+
     labs(x="Depth (m)",y="Cumulative % Traps") +
     theme(legend.position = ("top"),legend.title=element_blank()) +
