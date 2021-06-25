@@ -125,6 +125,7 @@ glimpse(adj_summtraps)
 # sum the total area for that grid cell by its Grid5km_ID value.
 
 # joining data for portions of grids with same grid ID
+# Somehow this chunk of code 'breaks' trying to scale from 0-1 for making difference maps
 adj_summtraps %<>%
   group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
   summarise(
@@ -149,6 +150,9 @@ adj_summtraps %<>%
 glimpse(adj_summtraps)
 
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
+#the code on lines 129-139, i.e. don't join the grid IDs that are in few pieces
+
 
 
 #----------------------------------------------------------------------------
@@ -165,3 +169,145 @@ ggpairs(adj_summtraps, columns = c(10, 12), ggplot2::aes(colour=season))
 
 ggpairs(adj_summtraps[, c(8, 11)])
 ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
+
+
+#-----------------------------------------------------------------------------------------
+
+# difference maps
+# the following mapping code can be used to make maps to see whether the relative spatial 
+# distribution of effort varies between M1 and M2 -- no major difference observed
+
+
+# Note that fixing the repeating grid IDs on lines 129-139 seems to break the scaling function below
+# Leave this for now, and come back to try to fix it later
+
+
+dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds')) #this file saved in this script line 152
+dat_v2 <- read_rds(here::here('wdfw','data','adj_summtraps_v2.rds')) #this file saved in this script line 153
+
+# scaling M1 and M2 densities to range between 0-1
+#This one is not fine
+dat_scale01 <- dat %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+#This one seems fine
+dat_scale01_v2 <- dat_v2 %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+#both centered around 0 but very different spread
+dat_scale01 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+dat_scale01_v2 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+
+#to make the maps will also need to load the various grid and shapefiles, see scipt 6
+# 
+# map_traps <- function(gridded_traps,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   month_label=unique(gridded_traps$month_name)
+#   period_label=unique(gridded_traps$period)
+#   season_label=paste("Season:",unique(gridded_traps$season))
+#   t1 <- paste0(season_label,"\n",month_label,", ",period_label, " M2 - M1")
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   diff_map_out <- gridded_traps %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+#     labs(x='',y='',fill='M2-M1 variance',title=t1)
+# 
+#   # saving
+#   if(saveplot){
+#     pt <- unique(gridded_traps$season_month_interval)
+#     ggsave(here('wdfw','maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+#   }
+#   return(diff_map_out)
+# }
+# 
+# # Loop and save comparison maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(dat_scale01$season_month_interval),function(x){
+#   dat_scale01 %>% 
+#     filter(season_month_interval==x) %>% 
+#     map_traps()
+# })
+# proc.time()-tm
+
+
+
+#----------------------------
+
+
+# difference maps of M2-M1 methods for May-Sep period
+# This code is only relevant if want to map the difference between M1 and M2 methods -- no major difference observed
+
+# # First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
+# MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
+#   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
+#          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+#          #calculate the difference as M2 minus M1
+#          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
+#   )
+# glimpse(MaySep_summtrapsWA_scale01)
+# 
+# 
+# MaySep_summtrapsWA_scale01 %>% 
+#   ggplot()+
+#   geom_density(aes(scaled_M2_minus_M1))
+# 
+# 
+# # then make difference maps of scaled May 1- Sep 15
+# map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   season_label=unique(MaySep_summtrapsWA_scale01 $season)
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+#     labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
+#   
+#   # saving
+#   if(saveplot){
+#     pt <- unique(MaySep_summtrapsWA_scale01 $season)
+#     ggsave(here('wdfw','maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+#   }
+#   return(MaySep_scaled_map_out)
+# }
+# 
+# # Loop and save maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
+#   MaySep_summtrapsWA_scale01_v2  %>% 
+#     filter(season==x) %>% 
+#     map_maysep()
+# })
+# proc.time()-tm
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
