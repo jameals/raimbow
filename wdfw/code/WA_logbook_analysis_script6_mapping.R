@@ -1,4 +1,4 @@
-## Mapping functions for WDFW logbook data 
+## WA logbook analysis 
 # making maps on 2-weekly step
 # making maps on 1-monthly step
 # making summary maps for May 1-Sep 15 period
@@ -39,7 +39,7 @@ options(dplyr.summarise.inform = FALSE)
 ## Read in all data and shapefiles for mapping
 
 # Cleaned and summarized, simulated crab trap data
-dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -67,20 +67,20 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   filter(name %in% c('California','Oregon','Washington','Nevada')) %>%  
   st_transform(st_crs(grd))
 
-# borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
+# borders for 'static' WA management areas (MA)
 MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
-# Note that Quinault SMA borders have moved a lot, including within seasons 
-# borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, shapefile available on Kiteworks folder
+# Note that Quinault SMA borders can move within seasons, but that is not incorporated here
+# static or 'default' borders for Quinault SMA, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault
 QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
   st_transform(st_crs(grd)) #make it have same projection as the grid
 
 #------------------------------------------------------------------------------
 
 # # we want to compare M1 (old summary) vs. M2 (new weighted density)
-# dat %>% 
-#   #sample_n(1000) %>% 
+# adj_summtraps %>%
+#   #sample_n(1000) %>%
 #   ggplot(aes(M1_trapdens,M2_trapdens))+
 #   geom_point()+
 #   geom_abline(slope=1,intercept=0)+
@@ -90,11 +90,11 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 #------------------------------------------------------------------------------
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
 
-dat <- dat %>%
+adj_summtraps <- adj_summtraps %>%
   mutate(is_confidential=ifelse(nvessels<3,T,F))
 
 # use conf_dat as input in mapping loop, if want cells with < 3 vessels to be gray
-conf_dat <-  dat %>% 
+conf_dat <-  adj_summtraps %>% 
   mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
          M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
          M2_tottraps=ifelse(is_confidential,NA,M2_tottraps),
@@ -109,15 +109,15 @@ conf_dat2 <-  conf_dat %>%
 # Making maps on a 2-weekly time step
 
 # currently mapping all data, including grid cells with < 3 vessels (i.e. confidential data)
-# adjust max in colour scale depending on whether you want to focus on one season, or compare different seasons etc
+# adjust the max value in colour scale depending on whether you want to focus on one season, or compare different seasons 
 # change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
 
 
 # Figure out good trap density scale
-dat %>% 
+adj_summtraps %>% 
   ggplot()+
   geom_density(aes(M2_trapdens))
-# dat %>% 
+# adj_summtraps %>% 
 #   ggplot()+
 #   geom_density(aes(M1_trapdens))
 
@@ -171,8 +171,8 @@ map_traps <- function(gridded_traps,saveplot=TRUE){
 # Loop and save maps
 # change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
 tm <- proc.time()
-all_maps <- purrr::map(unique(dat$season_month_interval),function(x){
-  dat %>% 
+all_maps <- purrr::map(unique(adj_summtraps$season_month_interval),function(x){
+  adj_summtraps %>% 
     filter(season_month_interval==x) %>% 
     map_traps()
 })
@@ -184,12 +184,8 @@ proc.time()-tm
 
 # Making maps on a 1-monthly time step
 
-# this will require using the df on a 2-weekly step and
+# this will require using the df on a 2-weekly step (adj_summtraps) and
 # taking the average trap density for each grid cell for the desired time period
-
-# this is the same df as used for other mapping
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
-
 M2_summtrapsWA_month <- adj_summtraps %>% 
   group_by(season_month,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
   summarise( 
