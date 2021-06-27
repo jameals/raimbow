@@ -1,4 +1,4 @@
-## Mapping functions for WDFW logbook data 
+## WA logbook analysis 
 # creating ts plots of trap counts and densities
 # bar chart of proportions of trap densities
 
@@ -36,7 +36,7 @@ options(dplyr.summarise.inform = FALSE)
 #------------------------------------------------------------------------------
 
 
-##For df with M1 and M2 summaries bring in adj_summtraps (result from script 2)
+# For df with M1 and M2 summaries bring in adj_summtraps (result from script 2)
 adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 
@@ -44,16 +44,17 @@ adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 
 # Making line thickness in ts plots reflect the area in use
 
-# If you want the ts plots to reflect how fishery is spread across a larger area in early season,
-# but contracts in space later in season, use: size=totarea in plotting code
-# column 'totarea' in the df is in km2
+# If you want the ts plots to reflect how the fishery is spread across a larger area in early season,
+# but contracts in space later in season, use: 
+# size=totarea in plotting code, column 'totarea' in the df created below is in km2 
+# (OR, use size=number_obs in plotting code, column 'number_obs' in the df created below is the no. of grid cells with data)
 
-# note though that line thickness point size in plots currently ranges between 1 and 6 (code: scale_size(range = c(1, 6)))
+# Note though that line thickness point size in plots currently ranges between 1 and 6 (code: scale_size(range = c(1, 6)))
 # while the difference between the largest area and smallest are in use is much larger
 # for 2-weekly summary df, the min of total area (totarea column) is 113.1 sq.km, and max is 9547.9 sq.km
 # for 1-monthly summary df, the min of total area (totarea column) is 712.8 sq.km, and max is 18961.2 sq.km
 
-# Therefore the legend may not me very informative
+# Therefore the legend may not be very informative
 # consider leaving legend out (code: scale_size(range = c(1, 6), guide = FALSE)))
 # and explaining line thickness in figure legend (e.g. by mentioning min and max values)
 # OR work on the legend further than current code to make it more informative
@@ -68,7 +69,7 @@ M2_summtrapsWA_2w <- adj_summtraps %>%
   summarise(
     M1_tottraps = sum(M1_tottraps), #summing total traps like this is fine when working on 2-week step
     M2_tottraps = sum(M2_tottraps),
-    M2_number_obs = n(), #no. of grid cells in that season_month that had traps in them
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them
     totarea = sum(AREA/1e6), #in km2
     M1_meantrapdens = mean(M1_trapdens),
     M2_meantrapdens = mean(M2_trapdens),
@@ -96,7 +97,8 @@ M2_summtrapsWA_2w <- M2_summtrapsWA_2w %>%
   mutate(month_interval = paste0(month_name,"_",period)) %>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 
-#PLOT trap COUNTS (y=M2_tottraps/1000) and DENSITIES (y=M2_meantrapdens) on a 2-WEEKLY time step 
+
+# PLOT trap COUNTS (y=M2_tottraps/1000) and DENSITIES (y=M2_meantrapdens) on a 2-WEEKLY time step 
 logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapdens, colour=season, group=season, size=totarea))+
     #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
     geom_line(lineend = "round") + 
@@ -109,9 +111,8 @@ logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapde
   xlab("Month_1st or 2nd half") + 
   guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
         legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.x = element_blank(),
         axis.text.y = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.position="bottom"
@@ -122,10 +123,10 @@ logs_ts_2week
 
 #-----------------------------------------------------------------------------------------
 
-#Plotting time series of trap COUNTS on a MONTHLY time step
+# Plotting time series of trap COUNTS on a MONTHLY time step
 
-#once trap counts have been summarised across all grid cells on a 2-weekly step, 
-#then can average them to get to monthly step for accurate summaries of total trap counts
+# once trap counts have been summarised across all grid cells on a 2-weekly step, 
+# then they can be averaged to get to a monthly time step with accurate summaries of total trap counts
 M2_summtrapsWA_month <- M2_summtrapsWA_2w %>%
   group_by(season_month) %>%  
   summarise(
@@ -141,9 +142,10 @@ M2_summtrapsWA_month <- M2_summtrapsWA_month %>%
   filter(!is.na(month_name)) 
 glimpse(M2_summtrapsWA_month)
 
-#PLOT for trap COUNTS (thousands) on a MONTHLY time step 
-logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottraps/1000, colour=season,  group=season))+
-  #make line width be consistent - tho see other code in script for how to make this vary by area used
+
+# PLOT for trap COUNTS (thousands) on a MONTHLY time step 
+logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottraps/1000, colour=season, group=season))+
+  # make line width be consistent - tho see other code in script for how to make this vary by area used
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("Total traps (1000) in water \nfor entire WA") +
@@ -151,12 +153,10 @@ logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottr
   scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
   guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
         legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.x = element_blank(),
         axis.text.y = element_text(size = 12),
         axis.title = element_text(size = 12),
-        #legend.position = c(0.9, 0.8) +
         legend.position="bottom"
   )
 logs_ts_month
@@ -164,14 +164,14 @@ logs_ts_month
 
 
 
-#Plotting time series of trap DENSITIES on a MONTHLY time step
+# Plotting time series of trap DENSITIES on a MONTHLY time step
 
 # we want a summary for each season_month for all of WA
 M2_summtrapsWA_month_dens <- adj_summtraps %>%
   group_by(season_month) %>%  
   summarise(
-    #note that just summing trap counts as done on 2-w step is wrong as it would 'double count' the same pots of a vessel from both halves of the month
-    #see the above code for plotting trap COUNTS, and use this code to plot trap DENSITIES on a 1-month step
+    # note that just summing trap counts as done on 2-w step is wrong as it would 'double count' the same pots of a vessel from both halves of the month
+    # see the above code for plotting trap COUNTS, and use this code to plot trap DENSITIES on a 1-month step
     number_obs = n(), #no. of grid cells in that season_month that had traps in them
     totarea = sum(AREA/1e6), #in km2
     M1_meantrapdens = mean(M1_trapdens),
@@ -197,7 +197,8 @@ M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   filter(!is.na(month_name)) 
 
-#PLOT for trap DENSITITES on a MONTHLY time step 
+
+# PLOT for trap DENSITITES on a MONTHLY time step 
 logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season, size=totarea))+
   #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
   geom_line(lineend = "round") + 
@@ -208,16 +209,12 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
   scale_colour_brewer(palette = "PRGn") +
   ylab("Mean trap density across \ngrid cells for entire WA") +
   xlab("Month") + 
-  #scale_y_continuous(breaks=seq(0, 60000, 10000),limits=c(0,60000))+
-  #scale_y_continuous(breaks=seq(2, 16, 2),limits=c(2,16))+
   guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
         legend.text = element_text(size=12),
         axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
         axis.text.y = element_text(size = 12),
         axis.title = element_text(size = 12),
-        #legend.position = c(0.9, 0.8) +
         legend.position="bottom"
   )
 logs_ts_month_dens
@@ -226,9 +223,9 @@ logs_ts_month_dens
 
 #----------------------------------------------------------------------------------------------------------------
 
-#You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
+# You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
 
-#M2 - all seasons on the same scale
+# M2 - all seasons on the same scale
 ids <- unique(M2_summtrapsWA_month_dens$season)
 plot_list = list()
 
@@ -243,12 +240,10 @@ for (i in 1:length(ids)) {
     xlab("Month") + 
     ggtitle((paste(ids[i]))) +
     theme(legend.title = element_blank(),
-          #title = element_text(size = 32),
           legend.text = element_text(size=12),
           axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
           axis.text.y = element_text(size = 12),
           axis.title = element_text(size = 12),
-          #legend.position = c(0.9, 0.8) +
           legend.position="none" #use "none" here to fully hide/remove legend
     )
   plot_list[[i]] = p
@@ -294,9 +289,11 @@ p2 <- adj_summtraps_wintersummer %>%
   ggtitle('Bar chart of proportions - M2 trap densities in winter/summer')
 p2
 
-map_out <- plot_grid(p1,p2,nrow=1)
-#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
+
 ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only','.png')),p2,w=12,h=10)
+
+#map_out <- plot_grid(p1,p2,nrow=1)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
 
 
 #------------------------------------------------------------------
