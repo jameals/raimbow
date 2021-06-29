@@ -52,7 +52,7 @@ adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
 # Note though that line thickness point size in plots currently ranges between 1 and 6 (code: scale_size(range = c(1, 6)))
 # while the difference between the largest area and smallest are in use is much larger
 # for 2-weekly summary df, the min of total area (totarea column) is 113.1 sq.km, and max is 9547.9 sq.km
-# for 1-monthly summary df, the min of total area (totarea column) is 712.8 sq.km, and max is 18961.2 sq.km
+# for 1-monthly summary df, the min of total area (totarea column) is 712.8 sq.km, and max is 10992.0 sq.km
 
 # Therefore the legend may not be very informative
 # consider leaving legend out (code: scale_size(range = c(1, 6), guide = FALSE)))
@@ -173,7 +173,6 @@ M2_summtrapsWA_month_dens <- adj_summtraps %>%
     # note that just summing trap counts as done on 2-w step is wrong as it would 'double count' the same pots of a vessel from both halves of the month
     # see the above code for plotting trap COUNTS, and use this code to plot trap DENSITIES on a 1-month step
     number_obs = n(), #no. of grid cells in that season_month that had traps in them
-    totarea = sum(AREA/1e6), #in km2
     M1_meantrapdens = mean(M1_trapdens),
     M2_meantrapdens = mean(M2_trapdens),
     M1_sdtrapdens = sd(M1_trapdens),
@@ -189,6 +188,18 @@ M2_summtrapsWA_month_dens <- adj_summtraps %>%
     M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
     M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE)
   )
+# Note that it would not be correct in the above to summarise totarea = sum(AREA/1e6)  
+# as that would double count the area for grids that appear in both halves of the month
+# You need to take unique grids that appear in a given month and then sum the AREA column
+summary_totarea <- adj_summtraps %>% 
+  group_by(season_month) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(totarea = sum(AREA/1e6)) #in km2
+
+#join totarea calculation to rest of the df
+M2_summtrapsWA_month_dens %<>%
+  left_join(summary_totarea,by=c("season_month"))
+
 glimpse(M2_summtrapsWA_month_dens)
 
 M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
