@@ -144,10 +144,29 @@ testdf %<>%
   left_join(WA_pot_limit_info,by=c("License"))
 glimpse(testdf)
 
+# apply 2019 summer pot limit reduction, which took effect July 1, 2019 
+# and was in effect through the end of the season (Sept. 15, 2019)
+## create season_month column
+testdf %<>%
+  mutate(season_month = paste0(season,"_",month_name))
+## make a new column for summer pot limit reduction
 testdf %<>% 
-  select(season, month_name, interval, month_interval, Vessel, License, M1_tottraps, sum_PotsFished,Pot_Limit, count_FishTicket) %>% 
+  mutate(Pot_Limit_SummerReduction = Pot_Limit)
+## split df to pre and post reduction periods
+df1 <- testdf %>%
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+df2 <- testdf %>%
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+## adjust pot limit post 1 July 2019
+df2 %<>% 
+  mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
+## join dfs back together  
+testdf <- rbind(df1,df2)
+
+testdf %<>% 
+  select(season, month_name, season_month, interval, month_interval, Vessel, License, M1_tottraps, sum_PotsFished, Pot_Limit_SummerReduction, count_FishTicket) %>% 
   #Vessels pot limit in a 2-week interval is same as what is assumed to be its fished pot count using M2 method
-  rename(Pot_Limit_or_M2 = Pot_Limit)
+  rename(Pot_Limit_or_M2 = Pot_Limit_SummerReduction)
 glimpse(testdf)
 # this summary df showcases the difference between pot counts via M1 or M2, an between summing raw pot count from logbooks
 
