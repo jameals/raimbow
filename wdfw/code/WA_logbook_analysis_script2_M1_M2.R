@@ -51,23 +51,40 @@ traps_g %<>%
   drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
 
 
+# apply 2019 summer pot limit reduction, which took effect July 1, 2019 
+# and was in effect through the end of the season (Sept. 15, 2019)
+## make a new column for summer pot limit reduction
+traps_g %<>% 
+  mutate(Pot_Limit_SummerReduction = Pot_Limit)
+## split df to pre and post reduction periods
+df1 <- traps_g %>%
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+df2 <- traps_g %>%
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+## adjust pot limit post 1 July 2019
+df2 %<>% 
+  mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
+## join dfs back together  
+traps_g <- rbind(df1,df2)
+
+
 # apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g <- traps_g %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
   # count up traps for vessel in 2-week period
-  group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  
+  group_by(season_month_interval, Vessel, License, Pot_Limit, Pot_Limit_SummerReduction) %>%  
   summarise(
     M2_n_traps_vessel=n(), na.rm=TRUE 
   ) %>% 
   # create a column with weighting - proportion of max allowed traps
   # divide pot limit by number of simulated traps
   # because you want to up-weight traps < pot_limit, and downweight traps > pot_limit
-  mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% 
+  mutate(trap_limit_weight = Pot_Limit_SummerReduction/M2_n_traps_vessel) %>% 
   ungroup()
 
 # join the "weighting key" back to the simulated pots data
 traps_g %<>%
-  left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit'))
+  left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit','Pot_Limit_SummerReduction'))
 
 # do Method 1/M1 calculations/adjustment, group by season_month_interval 
 M1_summtraps <- traps_g %>% 
@@ -157,7 +174,7 @@ glimpse(adj_summtraps)
 
 #----------------------------------------------------------------------------
 
-# Few visuals comapring the M1 and M2 methods
+# Few visuals comparing the M1 and M2 methods
 pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
 pairs(~ M1_tottraps + M2_tottraps, data = adj_summtraps)
 
