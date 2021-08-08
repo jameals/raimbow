@@ -195,7 +195,7 @@ ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
 # distribution of effort varies between M1 and M2 -- no major difference observed
 
 
-# Note that fixing the repeating grid IDs on lines 129-139 seems to break the scaling function below
+# Note that fixing the repeating grid IDs on lines 146-156 seems to break the scaling function below
 # Leave this for now, and come back to try to fix it later
 
 
