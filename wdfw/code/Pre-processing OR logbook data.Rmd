@@ -5,7 +5,10 @@ date: "11/08/2021"
 output: html_document
 ---
 
-# Pre-processing OR logbook data so that code used for WDFW logbook analysis can be used
+# Pre-processing OR logbook data so that the code used for WDFW logbook analysis and mapping can be used for OR as well
+# The code here are based on code files received from WDFW:
+# 'Read and prep crab logbook data_2020-08-28.Rmd' and
+# 'Create-and-save-GIS-sf_and_gdb.Rmd'
 
 ```{r}
 library(tidyverse)
@@ -14,37 +17,38 @@ library(data.table)
 library(stringr)
 library(magrittr)
 library(lubridate)
+library(sf)
 
 ```
 # Read in data
 
 In the logbook data folder received from ODFW, there was a file Samhouri_CrabLogData_sent030620.xlsx
-which weas saved as csv 
 This file has logbook data covering seasons from 2007-2008 to 2017-2018
+and it was saved as csv prior to loading into R
 
 ```{r}
 logs <- read_csv(here::here('wdfw','data','OR','Samhouri_CrabLogData_sent030620.csv'),col_types = 'cdccddddddddddccc')
+#fields such as vessel ID is often a  number, but want to read it in as a character
 
-#rename some variables to match WDFW
+#rename some variables to match WDFW data
 logs %<>% 
-  rename(season = Season, Vessel=VessID,SetDate=Date, Depth_fth=Depth, PotsFished=Pots,adj_lbs=AdjLbs,adj_val=AdjVal,LATBEG=BegLat,LONGBEG=Beglon,LATEND=EndLat,LONGEND=EndLon)
+  rename(season=Season, Vessel=VessID, SetDate=Date, Depth_fth=Depth, PotsFished=Pots, adj_lbs=AdjLbs, adj_val=AdjVal, LATBEG=BegLat, LONGBEG=Beglon, LATEND=EndLat, LONGEND=EndLon)
 
 glimpse(logs)
 #note that not all columns exist in both WA and OR logbook data
 ```
-
-Format SetDate column
+# Format SetDate column
 ```{r}
 logs %<>%
   mutate(SetDate=as.Date(SetDate,"%d-%b-%y"))
 
 ```
+# Add an ID
 
-Add an ID
-
-Each row in the OR logbook data should reflect an individual stringline of pots
+Each row in the OR logbook data should reflect an individual string-line of pots
 First add an arbitrary ID value starting from 1 for the entire data set
 Then create a 'SetID' that incorporates the season in question, and the ID number
+The value of the SetID doesn't matter that much, but we want to make sure each string-line has a unique value
 
 ```{r}
 logs$IDsets <- seq.int(nrow(logs))
@@ -52,9 +56,14 @@ logs$IDsets <- seq.int(nrow(logs))
 logs$SetID <- paste0(logs$season, "_", logs$IDsets)
 
 ```
+#The following is from 'Create-and-save-GIS-sf_and_gdb.Rmd' from WDFW
+this Rmd was ran up to line 58 (in the original Rmd from WDFW) for both WA and OR logbook data
 
-Stack Coordinates
+# Stack Coordinates
+the code is from WDFW and uses data.table - convert to data.table first to run the code
 ```{r}
+setDT(logs) 
+
 log_coords <- rbind(logs[, .(lat = LATBEG,
                lon = LONGBEG,
                coord_type = "begin"), keyby = SetID],
@@ -64,10 +73,36 @@ log_coords <- rbind(logs[, .(lat = LATBEG,
 
 log_coords <- log_coords[complete.cases(log_coords), ]
 ```
+# Rejoin Attributes
+
+This is an inner join using standard data.table syntax (i.e. select rows of logs, filtering on SetIDs that appear in log_coords, and nomatch=NULL tells it to drop rows with no matches.)
+```{r}
+logs_sf_pts <- logs[log_coords, on = "SetID", nomatch = NULL]
+```
+## ran WDFW code on WA logs data up to this point
 
 
-stack coordinates
+Export as csv
+```{r}
 
+fwrite(logs_sf_pts, paste0(here::here(), 
+                    "/wdfw/", "/data/", "/OR/", 
+                    "ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018", 
+                    "_", 
+                    Sys.Date(), ".csv"))
+
+#after exporting order data in excel
+```
 remove any records for whom the spatial information is unreasonable (variable `SpatialFlag==T`)??
+```{r}
+
+```
 
 including season start dates? checking for some errors?
+```{r}
+
+```
+
+
+
+
