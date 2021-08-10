@@ -1,0 +1,73 @@
+---
+title: "Pre-processing OR logbook data"
+author: "Leena"
+date: "11/08/2021"
+output: html_document
+---
+
+# Pre-processing OR logbook data so that code used for WDFW logbook analysis can be used
+
+```{r}
+library(tidyverse)
+library(here)
+library(data.table)
+library(stringr)
+library(magrittr)
+library(lubridate)
+
+```
+# Read in data
+
+In the logbook data folder received from ODFW, there was a file Samhouri_CrabLogData_sent030620.xlsx
+which weas saved as csv 
+This file has logbook data covering seasons from 2007-2008 to 2017-2018
+
+```{r}
+logs <- read_csv(here::here('wdfw','data','OR','Samhouri_CrabLogData_sent030620.csv'),col_types = 'cdccddddddddddccc')
+
+#rename some variables to match WDFW
+logs %<>% 
+  rename(season = Season, Vessel=VessID,SetDate=Date, Depth_fth=Depth, PotsFished=Pots,adj_lbs=AdjLbs,adj_val=AdjVal,LATBEG=BegLat,LONGBEG=Beglon,LATEND=EndLat,LONGEND=EndLon)
+
+glimpse(logs)
+#note that not all columns exist in both WA and OR logbook data
+```
+
+Format SetDate column
+```{r}
+logs %<>%
+  mutate(SetDate=as.Date(SetDate,"%d-%b-%y"))
+
+```
+
+Add an ID
+
+Each row in the OR logbook data should reflect an individual stringline of pots
+First add an arbitrary ID value starting from 1 for the entire data set
+Then create a 'SetID' that incorporates the season in question, and the ID number
+
+```{r}
+logs$IDsets <- seq.int(nrow(logs))
+
+logs$SetID <- paste0(logs$season, "_", logs$IDsets)
+
+```
+
+Stack Coordinates
+```{r}
+log_coords <- rbind(logs[, .(lat = LATBEG,
+               lon = LONGBEG,
+               coord_type = "begin"), keyby = SetID],
+      logs[, .(lat = LATEND,
+               lon = LONGEND,
+               coord_type = "end"), keyby = SetID])
+
+log_coords <- log_coords[complete.cases(log_coords), ]
+```
+
+
+stack coordinates
+
+remove any records for whom the spatial information is unreasonable (variable `SpatialFlag==T`)??
+
+including season start dates? checking for some errors?
