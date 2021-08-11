@@ -48,7 +48,7 @@ logs %<>%
 Each row in the OR logbook data should reflect an individual string-line of pots
 First add an arbitrary ID value starting from 1 for the entire data set
 Then create a 'SetID' that incorporates the season in question, and the ID number
-The value of the SetID doesn't matter that much, but we want to make sure each string-line has a unique value
+The value of the SetID doesn't matter that much, but we want to make sure each string-line has a unique ID
 
 ```{r}
 logs$IDsets <- seq.int(nrow(logs))
@@ -72,6 +72,8 @@ log_coords <- rbind(logs[, .(lat = LATBEG,
                coord_type = "end"), keyby = SetID])
 
 log_coords <- log_coords[complete.cases(log_coords), ]
+
+log_coords$lon <- log_coords$lon*(-1)
 ```
 # Rejoin Attributes
 
@@ -79,10 +81,9 @@ This is an inner join using standard data.table syntax (i.e. select rows of logs
 ```{r}
 logs_sf_pts <- logs[log_coords, on = "SetID", nomatch = NULL]
 ```
-## ran WDFW code on WA logs data up to this point
+## we only ran 'Create-and-save-GIS-sf_and_gdb.Rmd'on WA logs data up to this point
 
-
-Export as csv
+#Export as csv
 ```{r}
 
 fwrite(logs_sf_pts, paste0(here::here(), 
@@ -93,16 +94,39 @@ fwrite(logs_sf_pts, paste0(here::here(),
 
 #after exporting order data in excel
 ```
+# OPTIONAL
 remove any records for whom the spatial information is unreasonable (variable `SpatialFlag==T`)??
+Alternatively, leave in and they should get removed in script 1 when removing points too deep or on land
+
 ```{r}
 
 ```
+# COuple additional check from 'Read and prep crab logbook data_2020-08-28.Rmd'
+## Check for errors
 
-including season start dates? checking for some errors?
+There should only be two years within a season. 
+2015-2016 and 2017-2018 only have data in the latter years - Fits because season opening data was only in January
+
+First, get the season start and ending years. Test to see if the Set Date year matches one of those years.
+
+The OR logs did not come with landing dates, but they could probably be retrieved using FishTicket numbers
+```{r}
+#logs_sf_pts[, .(year = unique(year(SetDate))), 
+#     keyby = season][, dcast(.SD, season ~ year)]
+
+#logs_sf_pts[, c("start_year", "end_year") := tstrsplit(season, "-")
+#     ][, `:=`(start_year = as.numeric(start_year), 
+#              end_year = as.numeric(end_year))]
+
+#check_setdate <- logs_sf_pts[year(SetDate) != start_year &
+#       year(SetDate) != end_year, ]
+
+#check_setdate #empty
+```
+The WA logbook coding from WDFW added start dates into the df
+But these were not used in analysis and mapping
+
 ```{r}
 
 ```
-
-
-
 
