@@ -74,6 +74,7 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
   filter(Year >= 2013) %>% 
   select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
 
+#vector size too large, might need to try running in subsets
 traps_g_joined <- fuzzy_left_join(
   traps_g, OR_pot_limit_info_v2,
   by = c(
@@ -82,8 +83,8 @@ traps_g_joined <- fuzzy_left_join(
     "SetDate" = "Enddate"
   ),
   match_fun = list(`==`, `>=`, `<=`)
-) %>%
-  select(id, category = category.x, other_info, date, start, end)
+) #%>%
+  #select(column_name, category = category.x, column_name, column_name)
 
 
 
