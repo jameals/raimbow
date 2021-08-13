@@ -71,6 +71,7 @@ OR_pot_limit_info %<>%
   mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
     
 OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
+  filter(Year >= 2013) %>% 
   select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
 
 traps_g_joined <- fuzzy_left_join(
