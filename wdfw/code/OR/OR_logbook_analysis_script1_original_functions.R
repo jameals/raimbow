@@ -33,14 +33,14 @@ options(dplyr.summarise.inform = FALSE)
 #---------------------------------- 
 #### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018_2021-08-11.csv'),col_types = 'cdccddddddddddcccdcddc') #no parsing errors with these col_types
+logs_raw <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018_2021-08-11.csv'),col_types = 'cdccddddddddddcccdcddc') #no parsing errors with these col_types
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 
 ##FORMAT SETDATE COLUMN
-logs %<>%
-  mutate(SetDate=as.Date(SetDate,"%d/%m/%y"))
+logs  <-  logs_raw %>% 
+  mutate(SetDate=as.Date(SetDate,"%d/%m/%Y"))
 
 
 ## IS THERE AN OR EQUIVALENT FOR THIS:
@@ -450,7 +450,7 @@ traps_g <- traps_sf %>%
   left_join(grd_xy,by="GRID5KM_ID")
 
 #running join_grid on WA 2013-2019 logs subset took about 8min
-#running join_grid on OR 2013-2018 logs subset took about ??min
+#running everything on OR 2013-2018 logs subset took about 8min
 #write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018.rds"))
 
 #--------------------------------------------------------------------------------
