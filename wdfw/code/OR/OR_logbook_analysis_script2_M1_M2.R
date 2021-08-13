@@ -1,4 +1,4 @@
-## Mapping functions for WDFW logbook data 
+## This script has been modified from the mapping functions for WDFW logbook data to fit OR data:
 # creating df with both adjustment methods (M1 and M2) for double counting of traps
 
 library(tidyverse)
@@ -13,17 +13,18 @@ library(viridis)
 library(magrittr)
 library(gridExtra)
 library(nngeo)
+library(fuzzyjoin)
 
 
 #-------------------------------------------------------------
 
 # Start with traps_g df (traps are simulated and joined to grid, script 1)  
 # RDS can be found in Kiteworks folder
-traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
+traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
 
 
 # create columns for season, month etc
-traps_g %<>%
+traps_g <- traps_g_raw %>% 
   st_set_geometry(NULL) %>% 
   mutate(
     season = str_sub(SetID,1,9),
@@ -39,8 +40,130 @@ traps_g %<>%
   )
 
 
+###BIT OF A MESS, TRYING TO GET POT LIMIT FOR OR#####
+
+#OR permits: 
+#in folder from ODFW had OregonCrabPermitData2007-2019.xlsx, saved as csv 
 # Read in and join license & pot limit info
-WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
+
+OR_pot_limit_info <- OR_pot_limit_info_raw %>% 
+  rename(Vessel = Docnum,
+         PermitNumber = Number)
+
+OR_pot_limit_info %<>%
+  mutate(Begindate=as.Date(Begindate,"%m/%d/%Y"),
+         Enddate=as.Date(Enddate,"%m/%d/%Y"))
+
+
+OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
+#OR permits - a permit can change from vessel to vessel sometimes 
+#but does the pot limit for a given permit number stay the same?
+test <- OR_pot_limit_info %>%                              
+  group_by(PermitNumber) %>%
+  summarise(count = n_distinct(Potlimit))
+# Yes, except for 2 instances: Permit Numbers 96125 and 96262 have 2 unique pot limit values
+cases <- OR_pot_limit_info %>% 
+  filter(PermitNumber == 96125 | PermitNumber == 96262)
+#96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
+#96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside yers of interest anyway
+OR_pot_limit_info %<>%
+  mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
+    
+OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
+  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
+
+traps_g_joined <- fuzzy_left_join(
+  traps_g, OR_pot_limit_info_v2,
+  by = c(
+    "Vessel" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+) %>%
+  select(id, category = category.x, other_info, date, start, end)
+
+
+
+
+
+#Majority of vessels only ever have one pot limit
+#but some cases that a vessels has had different pot limit values, even in the same year - different permits?
+test2 <- OR_pot_limit_info %>%                              
+  group_by(Docnum, Number) %>%
+  summarise(count = n_distinct(Potlimit))
+test3 <- OR_pot_limit_info %>%                              
+  group_by(Docnum, Year) %>%
+  summarise(count = n_distinct(Potlimit))
+#96(??) instances where single vessel ID has more than 1 pot limits in a single year
+#Do these changes happen in the middle of season? or between seasons?
+multi_pot_counts <- test3 %>% 
+  filter(count == 2)
+vessels_multi_pot_counts <- unique(multi_pot_counts$Docnum)
+subset_vessels_multi_pot_counts <- OR_pot_limit_info %>% 
+  dplyr::filter(Docnum %in% vessels_multi_pot_counts)
+subset_vessels_multi_pot_counts_2013onwards <- subset_vessels_multi_pot_counts %>% 
+  dplyr::filter(Year >= 2013)
+test4 <- subset_vessels_multi_pot_counts_2013onwards %>%                              
+  group_by(Docnum, Year) %>%
+  summarise(count = n_distinct(Potlimit))
+#If only focus on 2013 onwards
+OR_pot_limit_info_2013onwards <- OR_pot_limit_info %>% 
+  dplyr::filter(Year >= 2013)
+test5 <- OR_pot_limit_info_2013onwards %>%                              
+  group_by(Docnum, Year) %>%
+  summarise(count = n_distinct(Potlimit))
+multi_pot_counts_2013onwards <- test5 %>% 
+  filter(count == 2)
+#35 vessels left
+vessels_multi_pot_counts_2013onwards <- unique(multi_pot_counts_2013onwards$Docnum)
+subset_vessels_multi_pot_counts_2013onwards <- OR_pot_limit_info_2013onwards %>% 
+  dplyr::filter(Docnum %in% vessels_multi_pot_counts_2013onwards)
+
+
+#what if we tried to link Docnum/VesselID with Number/PermitNumber in an earlier step
+#can they be easily joined?
+#How many 'Docnum' (=VesselID) have different 'Number' (=Permit Number)?
+testxx <- OR_pot_limit_info %>%                              
+  group_by(Vessel) %>%
+  summarise(count = n_distinct(PermitNumber))
+#136
+#if looking at post 2013
+testyy <- OR_pot_limit_info %>%  
+  filter(Year >= 2013) %>% 
+  group_by(Vessel) %>%
+  summarise(count = n_distinct(PermitNumber))
+#56
+
+#So these vessels only ever have one permit number, so the permit number can be joined to vessel ID
+Docnum_with_only_1_permit_number_2013onwards <- testyy %>% 
+  filter(count == 1) 
+List_Docnum_with_only_1_permit_number_2013onwards <- unique(Docnum_with_only_1_permit_number_2013onwards$Vessel)
+
+OR_pot_limit_info_2013onwards <- OR_pot_limit_info %>% 
+  dplyr::filter(Year >= 2013)
+
+traps_g_Docnum_with_only_1_permit_number_2013onwards <- traps_g %>% 
+  filter(Vessel %in% List_Docnum_with_only_1_permit_number_2013onwards)
+traps_g_Docnum_with_only_1_permit_number_2013onwards %<>%
+  left_join(OR_pot_limit_info_2013onwards, by = c("Vessel")) #%>% 
+  #drop_na(Pot_Limit)
+
+
+#these have more than one permit number, so the permit number CANNOT be easily joined to vessel ID
+Docnum_with_more_than_1_permit_number_2013onwards <- testyy %>% 
+  filter(count > 1)
+List_Docnum_with_more_than_1_permit_number_2013onwards <- unique(Docnum_with_more_than_1_permit_number_2013onwards$Vessel)
+
+subset_Docnum_with_more_than_1_permit_number_2013onwards <- OR_pot_limit_info_2013onwards %>% 
+  dplyr::filter(Vessel %in% List_Docnum_with_more_than_1_permit_number_2013onwards)
+
+
+
+
+
+###BACK TO ORIGINAL WA CODE, NOT YET EDITED FOR OR####
 
 WA_pot_limit_info %<>%
   rename(License = License_ID)
