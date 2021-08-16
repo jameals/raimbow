@@ -76,7 +76,7 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 
 #vector size too large, might need to try running in subsets
 traps_g_joined <- fuzzy_left_join(
-  traps_g, OR_pot_limit_info_v2,
+  traps_g_20132014, OR_pot_limit_info_v2,
   by = c(
     "Vessel" = "Vessel",
     "SetDate" = "Begindate",
@@ -85,6 +85,19 @@ traps_g_joined <- fuzzy_left_join(
   match_fun = list(`==`, `>=`, `<=`)
 ) #%>%
   #select(column_name, category = category.x, column_name, column_name)
+
+subset_test <-  traps_g %>% 
+  sample_n(10000)
+traps_g_joined_subset <- fuzzy_left_join(
+  subset_test, OR_pot_limit_info_v2,
+  by = c(
+    "Vessel" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+#write_csv(traps_g_joined_subset,here::here('wdfw', 'data','OR', "traps_g_joined_subset.csv"))
 
 
 
