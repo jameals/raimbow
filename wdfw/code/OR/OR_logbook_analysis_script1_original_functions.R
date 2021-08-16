@@ -455,4 +455,7 @@ traps_g <- traps_sf %>%
 #running everything on OR 2013-2018 logs subset took about 8min
 #write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018.rds"))
 
+traps_g_SpatialFlag_filtered <- traps_g %>% 
+  filter(SpatialFlag == FALSE)
+#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds"))
 #--------------------------------------------------------------------------------
