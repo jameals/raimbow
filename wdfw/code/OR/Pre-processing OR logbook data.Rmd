@@ -81,30 +81,22 @@ This is an inner join using standard data.table syntax (i.e. select rows of logs
 ```{r}
 logs_sf_pts <- logs[log_coords, on = "SetID", nomatch = NULL]
 ```
-## we only ran 'Create-and-save-GIS-sf_and_gdb.Rmd'on WA logs data up to this point
+## we only ran 'Create-and-save-GIS-sf_and_gdb.Rmd'on WA logs data up to this point (i.e. did not save GIS files)
 
-#Export as csv
-```{r}
-fwrite(logs_sf_pts, paste0(here::here(), 
-                    "/wdfw/", "/data/", "/OR/", 
-                    "ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018", 
-                    "_", 
-                    Sys.Date(), ".csv"))
-
-#after exporting order data in excel
-```
 # OPTIONAL
-remove any records for whom the spatial information is unreasonable (variable `SpatialFlag==T`)??
-Alternatively, leave in and they should get removed in script 1 when removing points too deep or on land
+consider removing any records for whom the spatial information is unreasonable (variable `SpatialFlag==T`)?
+Alternatively, leave in for now and remove later, also these points should get removed in script 1 when removing points too deep or on land
+
+The WA logbook coding from WDFW added start dates into the df, but these were not used in analysis and mapping, therefore not adding those in for OR
 
 ```{r}
 
 ```
-# COuple additional check from 'Read and prep crab logbook data_2020-08-28.Rmd'
+# Couple additional check from 'Read and prep crab logbook data_2020-08-28.Rmd'
 ## Check for errors
 
 There should only be two years within a season. 
-2015-2016 and 2017-2018 only have data in the latter years - Fits because season opening data was only in January
+2015-2016 and 2017-2018 only have data in the latter years - Fits because season opening date was only in January
 
 First, get the season start and ending years. Test to see if the Set Date year matches one of those years.
 
@@ -122,18 +114,27 @@ The OR logs did not come with landing dates, but they could probably be retrieve
 
 #check_setdate #empty
 ```
-The WA logbook coding from WDFW added start dates into the df
-But these were not used in analysis and mapping
-
+#Export as csv
 ```{r}
-#From data.table to data.frame
+#Originally exported data here, but needed to join with permit data first
+# fwrite(logs_sf_pts, paste0(here::here(), 
+#                     "/wdfw/", "/data/", "/OR/", 
+#                     "ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018", 
+#                     "_", 
+#                     Sys.Date(), ".csv"))
+
+```
+
+#JOINING PERMIT DATA
+```{r}
+# From data.table to data.frame
 setDF(logs_sf_pts)
-#logs_raw <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018_2021-08-11.csv'),col_types = 'cdccddddddddddcccdcddc') #no parsing errors with these col_types
+# for some reason joining didn't work if read in the ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018.csv that was saved, but worked on the logs_sf_pts dataframe (which was saved as ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018.csv)
 
 
 library(fuzzyjoin)
-#OR permits: 
-#in folder from ODFW had OregonCrabPermitData2007-2019.xlsx, saved as csv 
+# OR permits: 
+# in folder from ODFW had OregonCrabPermitData2007-2019.xlsx, saved as csv 
 # Read in and join license & pot limit info
 OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
 
@@ -146,16 +147,16 @@ OR_pot_limit_info %<>%
          Enddate=as.Date(Enddate,"%m/%d/%Y"))
 
 OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
-#OR permits - a permit can change from vessel to vessel sometimes 
-#but does the pot limit for a given permit number stay the same?
+# OR permits - a permit can change from vessel to vessel sometimes 
+# but does the pot limit for a given permit number stay the same?
 test <- OR_pot_limit_info %>%                              
   group_by(PermitNumber) %>%
   summarise(count = n_distinct(Potlimit))
 # Yes, except for 2 instances: Permit Numbers 96125 and 96262 have 2 unique pot limit values
 cases <- OR_pot_limit_info %>% 
   filter(PermitNumber == 96125 | PermitNumber == 96262)
-#96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
-#96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside years of interest anyway
+# 96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
+# 96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside years of interest anyway
 OR_pot_limit_info %<>%
   mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
 
@@ -165,7 +166,6 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 
 # joining permit data
 # doing it 'manually' for now while figuring out how to code it more efficiently
-# for some reason joining didn't work if read in the ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018.csv that was saved earlier, but worked on the logs_sf_pts dataframe (which was saved as ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018.csv)
 
 #2013-2014 season - 12mins to run with permit data filtered to post 2013
 ODFW_Dcrab_logbooks_20132014 <- logs_sf_pts %>% 
@@ -183,7 +183,8 @@ ODFW_Dcrab_logbooks_20132014_joined <- fuzzy_left_join(
 proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20132014_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2014.csv"))
 
-#2014-2015 season - 12mins to run with permit data filtered to post 2013
+
+# 2014-2015 season - 12mins to run with permit data filtered to post 2013
 ODFW_Dcrab_logbooks_20142015 <- logs_sf_pts %>% 
   filter(season=='2014-2015')
 tm <- proc.time()
@@ -200,7 +201,7 @@ proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20142015_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2014-2015.csv"))
 
 
-#2015-2016 season - 15mins to run with permit data filtered to post 2013
+# 2015-2016 season - 15mins to run with permit data filtered to post 2013
 ODFW_Dcrab_logbooks_20152016 <- logs_sf_pts %>% 
   filter(season=='2015-2016')
 tm <- proc.time()
@@ -217,7 +218,7 @@ proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20152016_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2015-2016.csv"))
 
 
-#2016-2017 season - 14mins to run with permit data filtered to post 2013
+# 2016-2017 season - 14mins to run with permit data filtered to post 2013
 ODFW_Dcrab_logbooks_20162017 <- logs_sf_pts %>% 
   filter(season=='2016-2017')
 tm <- proc.time()
@@ -234,7 +235,7 @@ proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20162017_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2016-2017.csv"))
 
 
-#2017-2018 season - 14mins to run with permit data filtered to post 2013
+# 2017-2018 season - 14mins to run with permit data filtered to post 2013
 ODFW_Dcrab_logbooks_20172018 <- logs_sf_pts %>% 
   filter(season=='2017-2018')
 tm <- proc.time()
@@ -250,121 +251,44 @@ ODFW_Dcrab_logbooks_20172018_joined <- fuzzy_left_join(
 proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20172018_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2017-2018.csv"))
 
-
-###################
-#OR permits: 
-#in folder from ODFW had OregonCrabPermitData2007-2019.xlsx, saved as csv 
-# Read in and join license & pot limit info
-OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
-
-OR_pot_limit_info <- OR_pot_limit_info_raw %>% 
-  rename(Vessel = Docnum,
-         PermitNumber = Number)
-
-OR_pot_limit_info %<>%
-  mutate(Begindate=as.Date(Begindate,"%m/%d/%Y"),
-         Enddate=as.Date(Enddate,"%m/%d/%Y"))
-
-
-OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
-#OR permits - a permit can change from vessel to vessel sometimes 
-#but does the pot limit for a given permit number stay the same?
-test <- OR_pot_limit_info %>%                              
-  group_by(PermitNumber) %>%
-  summarise(count = n_distinct(Potlimit))
-# Yes, except for 2 instances: Permit Numbers 96125 and 96262 have 2 unique pot limit values
-cases <- OR_pot_limit_info %>% 
-  filter(PermitNumber == 96125 | PermitNumber == 96262)
-#96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
-#96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside yers of interest anyway
-OR_pot_limit_info %<>%
-  mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
-
-OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
-  filter(Year >= 2013) %>% 
-  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
-
-#vector size too large, might need to try running in subsets
-traps_g_joined <- fuzzy_left_join(
-  traps_g_20132014, OR_pot_limit_info_v2,
-  by = c(
-    "Vessel" = "Vessel",
-    "SetDate" = "Begindate",
-    "SetDate" = "Enddate"
-  ),
-  match_fun = list(`==`, `>=`, `<=`)
-) #%>%
-#select(column_name, category = category.x, column_name, column_name)
-
-dat_list = split(df, df$season)
-dat_list
-
-join_log_permit = function(data) {
-  fuzzy_left_join(
-    data, OR_pot_limit_info_v2,
-    by = c(
-      "Vessel" = "Vessel",
-      "SetDate" = "Begindate",
-      "SetDate" = "Enddate"
-    ),
-    match_fun = list(`==`, `>=`, `<=`)
-  )
-}
-join_log_permit(data = df)
-map_dfr(dat_list, join_log_permit, .season = "season")
-
 ##################
 
+```
+#Read in individual season files with permit info
+```{r}
+# Identify all csv files in folder
+logs_all_raw <- list.files(path = "E:/Leena/Documents/Projects/raimbow/wdfw/data/OR/seasons with permit info",     
+                       pattern = "*.csv", full.names = TRUE) %>% 
+  lapply(read_csv) %>%                                            # Store all files in list
+  bind_rows                                                       # Combine data sets into one data set 
+glimpse(logs_all_raw)
 
-logs_raw <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018_2021-08-11.csv'),col_types = 'cdccddddddddddcccdcddc') #no parsing errors with these col_types
+logs_all <- logs_all_raw %>% 
+  select(-Vessel.y,-Begindate,-Enddate) %>% 
+  rename(Vessel=Vessel.x)
+glimpse(logs_all)
 
-logs  <-  logs_raw %>% 
-  mutate(SetDate=as.Date(SetDate,"%d/%m/%Y"))
+```
+#Investigate and fix NAs with permit data
 
-logs2013_2018 <- logs %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+```{r}
+numNA <- logs_all %>% 
+  summarise(across(everything(),~sum(is.na(.x))))
+# There are 7 instances of NA in Permit Number/Pot Limit
 
-df <- logs2013_2018
+logs_NA <- logs_all %>% 
+  filter(is.na(PermitNumber)|is.na(Potlimit))
+# All instances of NAs are for vessel ID 549931
+# Looked through the Permit Info file, and in all instances the vessel had logbook data few days prior to its Permit being active/valid. The vessel always had the same permit number 96231 and pot limit of 200
 
-df %<>%
-  dplyr::select(season,Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>%  #License, 
-  distinct() 
+logs_all_permits <-  logs_all %>% 
+  mutate(PermitNumber = ifelse(is.na(PermitNumber), 96231, PermitNumber),
+         Potlimit = ifelse(is.na(Potlimit), 200, Potlimit))
+```
+# Export as csv
+```{r}
+write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv"))
 
 
-
-ids <- unique(df$season)
-#df_list = list()
-for (i in 1:length(ids)) {
-  
- df_x  <- df %>% 
-   filter(season == ids[i])
-  
- p <- fuzzy_left_join(
-  df_x, OR_pot_limit_info_v2,
-  by = c(
-    "Vessel" = "Vessel",
-    "SetDate" = "Begindate",
-    "SetDate" = "Enddate"
-  ),
-  match_fun = list(`==`, `>=`, `<=`)
-)
-   #df_list[[i]] = p
-write_csv(p,here::here('wdfw', 'data', 'OR', paste0("loop_",df_list[i],".csv")))
-}
-
-#create pdf where each page is a separate plot.
-pdf("Tohora2020_Number of locations per day over time.pdf")
-for (i in 1:length(ids)) {
-    print(df_list[[i]])
-}
-dev.off()
-
-for(i in 1:length(df_list)) {                              # Head of for-loop
-  write.csv2(get(df_list[i]),                              # Write CSV files to folder
-             paste0("C:/Users/Joach/Desktop/My Folder/",
-                    df_list[i],
-                    ".csv"),
-             row.names = FALSE)
-}
 ```
 
