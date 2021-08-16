@@ -33,14 +33,16 @@ options(dplyr.summarise.inform = FALSE)
 #---------------------------------- 
 #### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-logs_raw <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_2007-2018_2021-08-11.csv'),col_types = 'cdccddddddddddcccdcddc') #no parsing errors with these col_types
+logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
+# fine to let R set col_types automatically
+# Note that OR logs had to be filtered to post-2013 period in pre-processing phase for joining with permit data
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 
 ##FORMAT SETDATE COLUMN
-logs  <-  logs_raw %>% 
-  mutate(SetDate=as.Date(SetDate,"%d/%m/%Y"))
+# logs  <-  logs_raw %>% 
+#   mutate(SetDate=as.Date(SetDate,"%d/%m/%Y"))
 
 
 ## IS THERE AN OR EQUIVALENT FOR THIS:
@@ -375,10 +377,10 @@ logs2013_2018 <- logs %>%
 
 df <- logs2013_2018
 
-#CONSIDER RETAINING SPATIALFLAG COLUMN??
-#Note that OR logs don't have 'License' column - should be able to match permit data to 'Vessel' column?
+# For now retain SpatialFlag column - can filter for that later 
+# Note that OR logs had permit data joined in pre-processing stage
 df %<>%
-  dplyr::select(season,Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type) %>%  #License, 
+  dplyr::select(season,Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type, PermitNumber, Potlimit, SpatialFlag) %>%  
   distinct() 
 
 df %<>% 
@@ -390,7 +392,7 @@ df %<>%
   st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
   st_transform(32610) %>% 
   # create linestrings
-  group_by(Vessel,SetID,PotsFished,SetDate) %>% #Note that OR logs don't have License column
+  group_by(Vessel,SetID,PotsFished,SetDate, PermitNumber, Potlimit, SpatialFlag) %>% #OR permit and potlimit done in pre-processing
   summarise(do_union = FALSE) %>% 
   st_cast("LINESTRING")
 
@@ -402,7 +404,7 @@ traps <- df %>%
   # pull out the x/y coordinates of the traps
   mutate(trapcoords=purrr::map(traplocs,
                                function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
-  select(Vessel, SetID,PotsFished,SetDate,trapcoords) %>% #Note that OR logs don't have License column
+  select(Vessel, SetID,PotsFished,SetDate, PermitNumber, Potlimit, SpatialFlag, trapcoords) %>% #Note that OR logs don't have License column
   # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
   st_set_geometry(NULL) %>% 
   unnest(cols=c(trapcoords))
@@ -434,8 +436,8 @@ traps_sf %<>%
 # Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
 #traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
 
-#running place_traps on 2013-2019 logs subset took about 15min
-#write_rds(traps_sf,here::here('data', "traps_sf_license_all_logs_2013_2019.rds"))
+#running place_traps on 2013-2018 logs subset took about min
+#write_rds(traps_sf,here::here('wdfw', 'data','OR', "OR_traps_sf_license_all_logs_2013_2018.rds"))
 
 
 gkey <- grd_area_key
