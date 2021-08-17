@@ -213,7 +213,7 @@ map_log_monthly <- function(M2_summtrapsOR_month,saveplot=TRUE){
   # labels for plot titles
   season_month_label=unique(M2_summtrapsOR_month$season_month)
   
-  bbox = c(760000,1150000,1013103,1970000) #adjsuted for OR data
+  bbox = c(800000,1170000,1025000,1920000) #adjusted for OR data
   
   log_monthly_map_out <- M2_summtrapsOR_month %>% 
     ggplot()+
@@ -221,11 +221,12 @@ map_log_monthly <- function(M2_summtrapsOR_month,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     #if you do NOT want to show lat/lon lines on the map, use the below line instead:
     #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
-    labs(x='',y='',fill='mean trap density\nper sq. km',title=season_month_label)
+    labs(x='',y='',fill='mean trap density\nper sq. km',title=season_month_label) +
+    theme(legend.position = c(1, 0.3))
   
   # saving
   if(saveplot){
