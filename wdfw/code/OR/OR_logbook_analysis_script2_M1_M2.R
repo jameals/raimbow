@@ -13,14 +13,18 @@ library(viridis)
 library(magrittr)
 library(gridExtra)
 library(nngeo)
-library(fuzzyjoin)
+
 
 
 #-------------------------------------------------------------
 
 # Start with traps_g df (traps are simulated and joined to grid, script 1)  
-# RDS can be found in Kiteworks folder
+# RDS can be found in Kiteworks folder - at some point
 traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
+# OR logs had a column 'SpatialFlag', which is 'TRUE' if ODFW had deemed it to be 'unreasonable location data that should be removed'
+# Need to find out their reasoning behind what is flagged to be incorrect data
+# To use a version of RDS where this has been taken into account, read in the below RDS:
+#traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds'))
 
 
 # create columns for season, month etc
@@ -40,189 +44,32 @@ traps_g <- traps_g_raw %>%
   )
 
 
-###BIT OF A MESS, TRYING TO GET POT LIMIT FOR OR#####
+#For WA logs join permit data here, but for OR that is done in pre-processing stage
 
-#OR permits: 
-#in folder from ODFW had OregonCrabPermitData2007-2019.xlsx, saved as csv 
-# Read in and join license & pot limit info
-OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
+# If OR has had a summer pot limit reduction like WA did in 2019, adjust for that here, grab code from the WA script
 
-OR_pot_limit_info <- OR_pot_limit_info_raw %>% 
-  rename(Vessel = Docnum,
-         PermitNumber = Number)
-
-OR_pot_limit_info %<>%
-  mutate(Begindate=as.Date(Begindate,"%m/%d/%Y"),
-         Enddate=as.Date(Enddate,"%m/%d/%Y"))
-
-
-OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
-#OR permits - a permit can change from vessel to vessel sometimes 
-#but does the pot limit for a given permit number stay the same?
-test <- OR_pot_limit_info %>%                              
-  group_by(PermitNumber) %>%
-  summarise(count = n_distinct(Potlimit))
-# Yes, except for 2 instances: Permit Numbers 96125 and 96262 have 2 unique pot limit values
-cases <- OR_pot_limit_info %>% 
-  filter(PermitNumber == 96125 | PermitNumber == 96262)
-#96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
-#96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside yers of interest anyway
-OR_pot_limit_info %<>%
-  mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
-    
-OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
-  filter(Year >= 2013) %>% 
-  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
-
-#vector size too large, might need to try running in subsets
-traps_g_joined <- fuzzy_left_join(
-  traps_g_20132014, OR_pot_limit_info_v2,
-  by = c(
-    "Vessel" = "Vessel",
-    "SetDate" = "Begindate",
-    "SetDate" = "Enddate"
-  ),
-  match_fun = list(`==`, `>=`, `<=`)
-) #%>%
-  #select(column_name, category = category.x, column_name, column_name)
-
-subset_test <-  traps_g %>% 
-  sample_n(10000)
-traps_g_joined_subset <- fuzzy_left_join(
-  subset_test, OR_pot_limit_info_v2,
-  by = c(
-    "Vessel" = "Vessel",
-    "SetDate" = "Begindate",
-    "SetDate" = "Enddate"
-  ),
-  match_fun = list(`==`, `>=`, `<=`)
-)
-#write_csv(traps_g_joined_subset,here::here('wdfw', 'data','OR', "traps_g_joined_subset.csv"))
-
-
-
-
-
-#Majority of vessels only ever have one pot limit
-#but some cases that a vessels has had different pot limit values, even in the same year - different permits?
-test2 <- OR_pot_limit_info %>%                              
-  group_by(Docnum, Number) %>%
-  summarise(count = n_distinct(Potlimit))
-test3 <- OR_pot_limit_info %>%                              
-  group_by(Docnum, Year) %>%
-  summarise(count = n_distinct(Potlimit))
-#96(??) instances where single vessel ID has more than 1 pot limits in a single year
-#Do these changes happen in the middle of season? or between seasons?
-multi_pot_counts <- test3 %>% 
-  filter(count == 2)
-vessels_multi_pot_counts <- unique(multi_pot_counts$Docnum)
-subset_vessels_multi_pot_counts <- OR_pot_limit_info %>% 
-  dplyr::filter(Docnum %in% vessels_multi_pot_counts)
-subset_vessels_multi_pot_counts_2013onwards <- subset_vessels_multi_pot_counts %>% 
-  dplyr::filter(Year >= 2013)
-test4 <- subset_vessels_multi_pot_counts_2013onwards %>%                              
-  group_by(Docnum, Year) %>%
-  summarise(count = n_distinct(Potlimit))
-#If only focus on 2013 onwards
-OR_pot_limit_info_2013onwards <- OR_pot_limit_info %>% 
-  dplyr::filter(Year >= 2013)
-test5 <- OR_pot_limit_info_2013onwards %>%                              
-  group_by(Docnum, Year) %>%
-  summarise(count = n_distinct(Potlimit))
-multi_pot_counts_2013onwards <- test5 %>% 
-  filter(count == 2)
-#35 vessels left
-vessels_multi_pot_counts_2013onwards <- unique(multi_pot_counts_2013onwards$Docnum)
-subset_vessels_multi_pot_counts_2013onwards <- OR_pot_limit_info_2013onwards %>% 
-  dplyr::filter(Docnum %in% vessels_multi_pot_counts_2013onwards)
-
-
-#what if we tried to link Docnum/VesselID with Number/PermitNumber in an earlier step
-#can they be easily joined?
-#How many 'Docnum' (=VesselID) have different 'Number' (=Permit Number)?
-testxx <- OR_pot_limit_info %>%                              
-  group_by(Vessel) %>%
-  summarise(count = n_distinct(PermitNumber))
-#136
-#if looking at post 2013
-testyy <- OR_pot_limit_info %>%  
-  filter(Year >= 2013) %>% 
-  group_by(Vessel) %>%
-  summarise(count = n_distinct(PermitNumber))
-#56
-
-#So these vessels only ever have one permit number, so the permit number can be joined to vessel ID
-Docnum_with_only_1_permit_number_2013onwards <- testyy %>% 
-  filter(count == 1) 
-List_Docnum_with_only_1_permit_number_2013onwards <- unique(Docnum_with_only_1_permit_number_2013onwards$Vessel)
-
-OR_pot_limit_info_2013onwards <- OR_pot_limit_info %>% 
-  dplyr::filter(Year >= 2013)
-
-traps_g_Docnum_with_only_1_permit_number_2013onwards <- traps_g %>% 
-  filter(Vessel %in% List_Docnum_with_only_1_permit_number_2013onwards)
-traps_g_Docnum_with_only_1_permit_number_2013onwards %<>%
-  left_join(OR_pot_limit_info_2013onwards, by = c("Vessel")) #%>% 
-  #drop_na(Pot_Limit)
-
-
-#these have more than one permit number, so the permit number CANNOT be easily joined to vessel ID
-Docnum_with_more_than_1_permit_number_2013onwards <- testyy %>% 
-  filter(count > 1)
-List_Docnum_with_more_than_1_permit_number_2013onwards <- unique(Docnum_with_more_than_1_permit_number_2013onwards$Vessel)
-
-subset_Docnum_with_more_than_1_permit_number_2013onwards <- OR_pot_limit_info_2013onwards %>% 
-  dplyr::filter(Vessel %in% List_Docnum_with_more_than_1_permit_number_2013onwards)
-
-
-
-
-
-###BACK TO ORIGINAL WA CODE, NOT YET EDITED FOR OR####
-
-WA_pot_limit_info %<>%
-  rename(License = License_ID)
-
-# join Pot_Limit to traps_g 
+# Change few column names to match OR and WA data and code
 traps_g %<>%
-  left_join(WA_pot_limit_info,by=c("License")) %>% 
-  drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
-
-
-# apply 2019 summer pot limit reduction, which took effect July 1, 2019 
-# and was in effect through the end of the season (Sept. 15, 2019)
-## make a new column for summer pot limit reduction
-traps_g %<>% 
-  mutate(Pot_Limit_SummerReduction = Pot_Limit)
-## split df to pre and post reduction periods
-df1 <- traps_g %>%
-  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
-df2 <- traps_g %>%
-  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
-## adjust pot limit post 1 July 2019
-df2 %<>% 
-  mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
-## join dfs back together  
-traps_g <- rbind(df1,df2)
-
+  rename(License=PermitNumber, Pot_Limit=Potlimit)
+  
 
 # apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g <- traps_g %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
   # count up traps for vessel in 2-week period
-  group_by(season_month_interval, Vessel, License, Pot_Limit, Pot_Limit_SummerReduction) %>%  
+  group_by(season_month_interval, Vessel, License, Pot_Limit) %>%  #Pot_Limit_SummerReduction
   summarise(
     M2_n_traps_vessel=n(), na.rm=TRUE 
   ) %>% 
   # create a column with weighting - proportion of max allowed traps
   # divide pot limit by number of simulated traps
   # because you want to up-weight traps < pot_limit, and downweight traps > pot_limit
-  mutate(trap_limit_weight = Pot_Limit_SummerReduction/M2_n_traps_vessel) %>% 
+  mutate(trap_limit_weight = Pot_Limit/M2_n_traps_vessel) %>% #Pot_Limit_SummerReduction
   ungroup()
 
 # join the "weighting key" back to the simulated pots data
 traps_g %<>%
-  left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit','Pot_Limit_SummerReduction'))
+  left_join(adj_traps_g,by=c('season_month_interval','Vessel','License','Pot_Limit')) #Pot_Limit_SummerReduction
 
 # do Method 1/M1 calculations/adjustment, group by season_month_interval 
 M1_summtraps <- traps_g %>% 
@@ -279,7 +126,7 @@ glimpse(adj_summtraps)
 # Therefore, if you want to calculate total area of each grid cell that falls in water, 
 # sum the total area for that grid cell by its Grid5km_ID value.
 
-# joining data for portions of grids with same grid ID
+# joining data for portions of grids with same grid ID AND within the same season_month_interval
 # Somehow this chunk of code 'breaks' trying to scale from 0-1 for making difference maps
 adj_summtraps %<>%
   group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
@@ -304,9 +151,9 @@ adj_summtraps %<>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 glimpse(adj_summtraps)
 
-#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps.rds"))
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
-#the code on lines 129-139, i.e. don't join the grid IDs that are in few pieces
+#the code to join the grid IDs that are in few pieces
 
 
 
@@ -321,6 +168,8 @@ library(GGally)
 
 ggpairs(adj_summtraps[, c(10, 12)])
 ggpairs(adj_summtraps, columns = c(10, 12), ggplot2::aes(colour=season))
+#some large discrepancies between M1 and M2 in 2013-2014 season - All cases seem to be GridIDs 95854 or 95855, 
+#which are some really strange grids that in QGIS seem to be under land - those can be removed later
 
 ggpairs(adj_summtraps[, c(8, 11)])
 ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
