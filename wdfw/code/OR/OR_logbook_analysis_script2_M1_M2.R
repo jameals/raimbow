@@ -170,6 +170,7 @@ ggpairs(adj_summtraps[, c(10, 12)])
 ggpairs(adj_summtraps, columns = c(10, 12), ggplot2::aes(colour=season))
 #some large discrepancies between M1 and M2 in 2013-2014 season - All cases seem to be GridIDs 95854 or 95855, 
 #which are some really strange grids that in QGIS seem to be under land - those can be removed later
+#Not an issue if using data filtered for SpatialFlag
 
 ggpairs(adj_summtraps[, c(8, 11)])
 ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
