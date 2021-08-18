@@ -41,6 +41,8 @@ options(dplyr.summarise.inform = FALSE)
 # Cleaned and summarized, simulated crab trap data
 adj_summtraps <- read_rds(here::here('wdfw','data', 'OR','OR_adj_summtraps.rds'))
 #Note that there were few really high trap dens values for grids that are odd shaped and close to shore
+# Read in data filtered for SpatialFlag
+#adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -221,7 +223,7 @@ map_log_monthly <- function(M2_summtrapsOR_month,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,80),breaks=c(0,20,40,60,80),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0,20,40,60),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     #if you do NOT want to show lat/lon lines on the map, use the below line instead:
     #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
