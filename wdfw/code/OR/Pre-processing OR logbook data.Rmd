@@ -253,6 +253,26 @@ write_csv(ODFW_Dcrab_logbooks_20172018_joined,here::here('wdfw', 'data', 'OR', "
 
 ##################
 
+
+#2010-2011 season -- last season with full 100% logbook entry - 13mins to run with full permit data 
+OR_pot_limit_info_v3 <- OR_pot_limit_info %>% 
+  filter(Year >= 2010 & Year < 2012) %>% 
+  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
+
+ODFW_Dcrab_logbooks_20102011 <- logs_sf_pts %>% 
+  filter(season=='2010-2011')
+tm <- proc.time()
+ODFW_Dcrab_logbooks_20102011_joined <- fuzzy_left_join(
+  ODFW_Dcrab_logbooks_20102011, OR_pot_limit_info_v3,
+  by = c(
+    "Vessel" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+write_csv(ODFW_Dcrab_logbooks_20102011_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2010-2011.csv"))
 ```
 #Read in individual season files with permit info
 ```{r}
