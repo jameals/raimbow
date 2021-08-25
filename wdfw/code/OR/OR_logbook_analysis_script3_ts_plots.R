@@ -1,4 +1,4 @@
-## WA logbook analysis 
+## This script has been modified from the mapping functions for WDFW logbook data to fit OR data:
 # creating ts plots of trap counts and densities
 # bar chart of proportions of trap densities
 
@@ -41,6 +41,8 @@ options(dplyr.summarise.inform = FALSE)
 #Note that there were few really high trap dens values for grids that are odd shaped and close to shore
 # Alternatively, read in version of data filtered for SpatialFlag (fixes the issue of very high values)
 adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
+#df with 2010-2011 season included
+adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2010_2011_2013_2018.rds'))
 
 
 #------------------------------------------------------------------------------
@@ -123,7 +125,33 @@ logs_ts_2week <- ggplot(M2_summtrapsOR_2w, aes(x=month_interval, y=M2_meantrapde
 logs_ts_2week
 #ggsave(here('wdfw','plots', 'OR', paste0('Plot of mean M2 trap densities_2weekly','.png')),logs_ts_2week,w=12,h=10)
 
+#slightly different plot, showing 2010-2011 in black to make it stand out more (tho not showing up in legend)
+data1 <-  M2_summtrapsOR_2w %>% 
+  filter(season == '2010-2011')
+data2 <-  M2_summtrapsOR_2w %>% 
+  filter(season != '2010-2011')
 
+logs_ts_2week_x <- 
+  ggplot(NULL, aes(x=month_interval, y=M2_meantrapdens, size=totarea, group=season))+
+  #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
+  geom_line(data1, col='black', mapping=aes(group=1), lineend = "round") + 
+  geom_line(data2, mapping=aes(colour=season),lineend = "round") +
+  scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
+  #OR 
+  #have a constant line thickness (good when plotting no. of traps/lines in water)
+  #geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("Mean trap density across \ngrid cells for entire WA") +
+  xlab("Month_1st or 2nd half") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+logs_ts_2week_x
 #-----------------------------------------------------------------------------------------
 
 # Plotting time series of trap COUNTS on a MONTHLY time step
@@ -153,7 +181,7 @@ logs_ts_month <- ggplot(M2_summtrapsOR_month, aes(x= month_name, y=M2_mean_tottr
   scale_colour_brewer(palette = "PRGn") +
   ylab("Total traps (1000) in water \nfor entire WA") +
   xlab("Month") + 
-  scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
   guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.title = element_blank(),
         legend.text = element_text(size=12),
@@ -164,6 +192,7 @@ logs_ts_month <- ggplot(M2_summtrapsOR_month, aes(x= month_name, y=M2_mean_tottr
   )
 logs_ts_month
 #ggsave(here('wdfw','plots', 'OR', paste0('Mean M2 trap counts_lines in water_by month','.png')),logs_ts_month,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Mean M2 trap counts_lines in water_by month_2010_2011_2013_2018','.png')),logs_ts_month,w=12,h=10)
 
 
 
@@ -235,6 +264,36 @@ logs_ts_month_dens
 #ggsave(here('wdfw','plots', 'OR', paste0('Mean M2 trap densities by month','.png')),logs_ts_month_dens,w=12,h=10)
 
 
+#slightly different plot, showing 2010-2011 in black to make it stand out more (tho not showing up in legend)
+data1 <-  M2_summtrapsOR_month_dens %>% 
+  filter(season == '2010-2011')
+data2 <-  M2_summtrapsOR_month_dens %>% 
+  filter(season != '2010-2011')
+
+logs_ts_month_dens <- 
+  ggplot(NULL, aes(x=month_name, y=M2_meantrapdens, size=totarea, group=season))+
+  #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
+  geom_line(data1, col='black', mapping=aes(group=1), lineend = "round") + 
+  geom_line(data2, mapping=aes(colour=season),lineend = "round") +
+  scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
+  #OR 
+  #have a constant line thickness (good when plotting no. of traps/lines in water)
+  #geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("Mean trap density across \ngrid cells for entire WA") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+logs_ts_month_dens
+#ggsave(here('wdfw','plots', 'OR', paste0('Mean M2 trap densities by month_2010_2011_2013_2018','.png')),logs_ts_month_dens,w=12,h=10)
+
+
 #----------------------------------------------------------------------------------------------------------------
 
 # You can also incorporate 2.5, 25, 75 and 97.5 percentiles to ts plots
@@ -266,7 +325,8 @@ plot_list
 
 map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
 # saving
-#ggsave(here('wdfw','plots', 'OR', paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('M2 mean trap dens, 25th and 75th percentiles for all OR by season','.png')),map_out,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('M2 mean trap dens, 25th and 75th percentiles for all OR by season_2010_2011_2013_2018','.png')),map_out,w=12,h=10)
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -334,5 +394,6 @@ plot_list
 plot_out <- cowplot::plot_grid(plotlist = plot_list, ncol = 2)
 # saving
 ggsave(here('wdfw','plots', 'OR', paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Plot of trap densities_winter vs summer_by season_M2 only_2010_2011_2013_2018','.png')),plot_out,w=12,h=10)
 
 
