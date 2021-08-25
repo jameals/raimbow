@@ -35,7 +35,9 @@ options(dplyr.summarise.inform = FALSE)
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
 # fine to let R set col_types automatically
-# Note that OR logs had to be filtered to post-2013 period in pre-processing phase for joining with permit data
+#datset with 2010-2011 and 2013-2018 seasons
+logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2010-2011_and_2013-2018_20210825.csv')) 
+
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
@@ -371,11 +373,16 @@ proc.time()-tm
 #(i.e. not actually specifying the functions, or crab-year/month/period choices)
 
 #Note that currently OR data only up to 2017-2018 season
-#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
+#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2018 data due to memory limits
 logs2013_2018 <- logs %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+#using df that also has 2010-2011 season
+logs2010_2011_2013_2018 <- logs %>% 
+  filter(season %in% c('2010-2011', '2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+
 
 df <- logs2013_2018
+df <- logs2010_2011_2013_2018
 
 # For now retain SpatialFlag column - can filter for that later 
 # Note that OR logs had permit data joined in pre-processing stage
@@ -436,7 +443,6 @@ traps_sf %<>%
 # Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
 #traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
 
-#running place_traps on 2013-2018 logs subset took about min
 #write_rds(traps_sf,here::here('wdfw', 'data','OR', "OR_traps_sf_license_all_logs_2013_2018.rds"))
 
 
@@ -451,11 +457,12 @@ traps_g <- traps_sf %>%
   st_join(gkey) %>% 
   left_join(grd_xy,by="GRID5KM_ID")
 
-#running join_grid on WA 2013-2019 logs subset took about 8min
 #running everything on OR 2013-2018 logs subset took about 8min
 #write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018.rds"))
 
 traps_g_SpatialFlag_filtered <- traps_g %>% 
   filter(SpatialFlag == FALSE)
 #write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds"))
+#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2010_2011_2013_2018_SpatialFlag_filtered.rds"))
+
 #--------------------------------------------------------------------------------
