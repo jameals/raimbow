@@ -294,21 +294,41 @@ glimpse(logs_all)
 ```{r}
 numNA <- logs_all %>% 
   summarise(across(everything(),~sum(is.na(.x))))
-# There are 7 instances of NA in Permit Number/Pot Limit
+# There are 7 instances of NA in Permit Number/Pot Limit for 2013-2018
+# There are 81 instances when 2010-2011 season is included
 
 logs_NA <- logs_all %>% 
   filter(is.na(PermitNumber)|is.na(Potlimit))
+#2013-2018:
 # All instances of NAs are for vessel ID 549931
 # Looked through the Permit Info file, and in all instances the vessel had logbook data few days prior to its Permit being active/valid. The vessel always had the same permit number 96231 and pot limit of 200
+#2010-2011: more cases but same story, the Set Date is a few days than the Begin Date of permit in permit data table
 
-logs_all_permits <-  logs_all %>% 
-  mutate(PermitNumber = ifelse(is.na(PermitNumber), 96231, PermitNumber),
-         Potlimit = ifelse(is.na(Potlimit), 200, Potlimit))
+logs_not_NA <- logs_all %>% 
+  filter(!is.na(PermitNumber)|!is.na(Potlimit))
+
+#2013-2018 data on;y
+# logs_all_permits <-  logs_all %>% 
+#   mutate(PermitNumber = ifelse(is.na(PermitNumber), 96231, PermitNumber),
+#          Potlimit = ifelse(is.na(Potlimit), 200, Potlimit))
+
+#2020-2011, 2013-2018
+#for now just input correct PotLimit values
+logs_NA_fixed <-  logs_NA %>% 
+  mutate(
+    Potlimit = case_when(
+      Vessel == 1037811 | Vessel == 554887 |Vessel == 539240 ~ 500,
+      Vessel == 254696 |Vessel == 539216 ~ 300,
+      Vessel == "OR001UA"|Vessel == 549931 ~ 200
+    )
+  )
+
+logs_all_permits <- rbind(logs_not_NA, logs_NA_fixed)
 ```
 # Export as csv
 ```{r}
 write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv"))
 
-
+write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2010-2011_and_2013-2018_20210825.csv"))
 ```
 
