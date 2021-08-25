@@ -39,10 +39,13 @@ options(dplyr.summarise.inform = FALSE)
 ## Read in all data and shapefiles for mapping
 
 # Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data', 'OR','OR_adj_summtraps.rds'))
+#adj_summtraps <- read_rds(here::here('wdfw','data', 'OR','OR_adj_summtraps.rds'))
 #Note that there were few really high trap dens values for grids that are odd shaped and close to shore
 # Alternatively, read in version of data filtered for SpatialFlag (fixes the issue of very high values)
-#adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
+adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
+
+adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2010_2011_2013_2018.rds'))
+
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -355,5 +358,114 @@ proc.time()-tm
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
 
+# Making 1 map for each full season to compare 2020-2011 (full log data entry) with 2013-2018 seasons when only 30% of logs entered
+
+# this will require using the df on a 2-weekly step (adj_summtraps) and
+# taking the average trap density for each grid cell for the desired time period
+M2_summtrapsOR_season <- adj_summtraps %>% 
+  group_by(season,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season that had traps in them 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    #M1_sdtrapdens = sd(M1_trapdens), 
+    #M2_sdtrapdens = sd(M2_trapdens)
+  ) 
+glimpse(M2_summtrapsOR_season)
 
 
+M2_summtrapsOR_season %>% 
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
+
+
+#making a loop of maps on monthly step
+map_log_season <- function(M2_summtrapsOR_season,saveplot=TRUE){
+  
+  # labels for plot titles
+  season_label=unique(M2_summtrapsOR_season$season)
+  
+  bbox = c(800000,1170000,1025000,1920000) #adjusted for OR data
+  
+  log_season_map_out <- M2_summtrapsOR_season %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0,20,40,60),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    labs(x='',y='',fill='mean trap density\nper sq. km',title=season_label) +
+    theme(legend.position = c(1, 0.3))
+  
+  # saving
+  if(saveplot){
+    pt <- unique(M2_summtrapsOR_season$season)
+    ggsave(here('wdfw','maps','OR','OR M2 season maps',paste0(pt,'.png')),log_season_map_out,w=6,h=5)
+  }
+  return(log_season_map_out)
+}
+
+# Loop and save maps
+tm <- proc.time()
+all_maps <- purrr::map(unique(M2_summtrapsOR_season$season),function(x){
+  M2_summtrapsOR_season %>% 
+    filter(season==x) %>% 
+    map_log_season()
+})
+proc.time()-tm
+
+
+#--------------------------------------------------
+#differences between 2010-2011 and other seasons
+
+#if want to look at the whole season, first need to average things in the grids
+M2_summtrapsOR_season <- adj_summtraps %>% 
+  group_by(season,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season that had traps in them 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    #M1_sdtrapdens = sd(M1_trapdens), 
+    #M2_sdtrapdens = sd(M2_trapdens)
+  ) 
+glimpse(M2_summtrapsOR_season)
+
+
+test <-  M2_summtrapsOR_season %>% filter(season=='2010-2011')
+test$scale01_2010_2011 <- (test$mean_M2_trapdens-min(test$mean_M2_trapdens))/(max(test$mean_M2_trapdens)-min(test$mean_M2_trapdens))
+
+test_v2 <-  M2_summtrapsOR_season %>% filter(season=='2017-2018')
+test_v2$scale01_2017_2018 <- (test_v2$mean_M2_trapdens-min(test_v2$mean_M2_trapdens))/(max(test_v2$mean_M2_trapdens)-min(test_v2$mean_M2_trapdens))
+
+#what is the corr3ct type of join?
+test_joined <- 
+  full_join(test, test_v2, by=c('GRID5KM_ID'='GRID5KM_ID', 'grd_x'='grd_x', 'grd_y'='grd_y')) # don't include 'month_interval'='month_interval',  if working on full season
+
+test_joined_diff <- test_joined %>%
+  mutate(scaled_20102011_minus_20172018 = scale01_2010_2011 - scale01_2017_2018)
+
+test_joined_diff_v2 <-  test_joined_diff %>% 
+  mutate(
+    scaled_20102011_minus_20172018 = case_when(
+    !is.na(scaled_20102011_minus_20172018) ~ scaled_20102011_minus_20172018,
+     is.na(scaled_20102011_minus_20172018) & is.na(scale01_2017_2018) ~ 1,
+     is.na(scaled_20102011_minus_20172018) & is.na(scale01_2010_2011) ~ -1,
+    )
+  )
+
+
+bbox = c(800000,1170000,1025000,1920000) #adjusted for OR data
+
+  diff_map_out <- test_joined_diff %>% #test_joined_diff_v2
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=scaled_20102011_minus_20172018),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    scale_fill_viridis(na.value='grey70',option="D",limits=c(-1,1),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+ #,datum=NA
+    labs(x='',y='',fill='variance',title='2010-2011 vs 2017-2018')
+  diff_map_out
+#ggsave(here('wdfw','maps', 'OR', paste0('test difference map 2010-2011 vs 2017-2018','.png')),diff_map_out,w=12,h=10)
+  
