@@ -26,6 +26,9 @@ traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_20
 # To use a version of RDS where this has been taken into account, read in the below RDS:
 #traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds'))
 
+# use df with 2010-2011 season included
+traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2010_2011_2013_2018_SpatialFlag_filtered.rds'))
+
 
 # create columns for season, month etc
 traps_g <- traps_g_raw %>% 
@@ -152,6 +155,9 @@ adj_summtraps %<>%
 glimpse(adj_summtraps)
 
 #write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps_SpatialFlag_filtered.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps_SpatialFlag_filtered_2010_2011_2013_2018.rds"))
+
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
 #the code to join the grid IDs that are in few pieces
 
