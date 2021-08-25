@@ -437,15 +437,15 @@ glimpse(M2_summtrapsOR_season)
 test <-  M2_summtrapsOR_season %>% filter(season=='2010-2011')
 test$scale01_2010_2011 <- (test$mean_M2_trapdens-min(test$mean_M2_trapdens))/(max(test$mean_M2_trapdens)-min(test$mean_M2_trapdens))
 
-test_v2 <-  M2_summtrapsOR_season %>% filter(season=='2017-2018')
-test_v2$scale01_2017_2018 <- (test_v2$mean_M2_trapdens-min(test_v2$mean_M2_trapdens))/(max(test_v2$mean_M2_trapdens)-min(test_v2$mean_M2_trapdens))
+test_v2 <-  M2_summtrapsOR_season %>% filter(season=='2016-2017')
+test_v2$scale01_2016_2017 <- (test_v2$mean_M2_trapdens-min(test_v2$mean_M2_trapdens))/(max(test_v2$mean_M2_trapdens)-min(test_v2$mean_M2_trapdens))
 
 #what is the corr3ct type of join?
 test_joined <- 
   full_join(test, test_v2, by=c('GRID5KM_ID'='GRID5KM_ID', 'grd_x'='grd_x', 'grd_y'='grd_y')) # don't include 'month_interval'='month_interval',  if working on full season
 
 test_joined_diff <- test_joined %>%
-  mutate(scaled_20102011_minus_20172018 = scale01_2010_2011 - scale01_2017_2018)
+  mutate(scaled_20102011_minus_20162017 = scale01_2010_2011 - scale01_2016_2017)
 
 test_joined_diff_v2 <-  test_joined_diff %>% 
   mutate(
@@ -461,11 +461,11 @@ bbox = c(800000,1170000,1025000,1920000) #adjusted for OR data
 
   diff_map_out <- test_joined_diff %>% #test_joined_diff_v2
     ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=scaled_20102011_minus_20172018),na.rm=T,alpha=0.8)+
+    geom_tile(aes(grd_x,grd_y,fill=scaled_20102011_minus_20162017),na.rm=T,alpha=0.8)+
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     scale_fill_viridis(na.value='grey70',option="D",limits=c(-1,1),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+ #,datum=NA
-    labs(x='',y='',fill='variance',title='2010-2011 vs 2017-2018')
+    labs(x='',y='',fill='variance',title='2010-2011 vs 2016-2017')
   diff_map_out
 #ggsave(here('wdfw','maps', 'OR', paste0('test difference map 2010-2011 vs 2017-2018','.png')),diff_map_out,w=12,h=10)
   
