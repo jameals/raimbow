@@ -35,8 +35,8 @@ options(dplyr.summarise.inform = FALSE)
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
 logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
 # fine to let R set col_types automatically
-#datset with 2010-2011 and 2013-2018 seasons
-logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2010-2011_and_2013-2018_20210825.csv')) 
+#dataset with early seasons that were 100% entered
+logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2011_and_2013-2018_20210827.csv')) 
 
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
@@ -383,6 +383,7 @@ logs2010_2011_2013_2018 <- logs %>%
 
 df <- logs2013_2018
 df <- logs2010_2011_2013_2018
+df <- logs #no filtering, has early seasons when 100% logs where entered
 
 # For now retain SpatialFlag column - can filter for that later 
 # Note that OR logs had permit data joined in pre-processing stage
@@ -458,11 +459,12 @@ traps_g <- traps_sf %>%
   left_join(grd_xy,by="GRID5KM_ID")
 
 #running everything on OR 2013-2018 logs subset took about 8min
+#running everything on OR 2007-2010 + 2013-2018 logs subset took about 35min
 #write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018.rds"))
 
 traps_g_SpatialFlag_filtered <- traps_g %>% 
   filter(SpatialFlag == FALSE)
 #write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds"))
-#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2010_2011_2013_2018_SpatialFlag_filtered.rds"))
+#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds"))
 
 #--------------------------------------------------------------------------------
