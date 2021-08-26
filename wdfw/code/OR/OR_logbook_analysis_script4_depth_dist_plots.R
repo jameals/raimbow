@@ -1,4 +1,4 @@
-## WA logbook analysis 
+## This script has been modified from the mapping functions for WDFW logbook data to fit OR data:
 # creating depth distribution plots
 
 library(tidyverse)
@@ -39,7 +39,7 @@ traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_lo
 # Also a version exists for OR where haven't yet filtered for SpatialFlag
 #traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
 
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2010_2011_2013_2018_SpatialFlag_filtered.rds'))
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds'))
 
 
 glimpse(traps_g_all_logs)
@@ -206,7 +206,7 @@ plot_list
 
 plot_out <- cowplot::plot_grid(plotlist = plot_list, nrow = 2)
 #ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum','.png')),plot_out,w=14,h=10)
-#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum_2010_2011_2013_2018','.png')),plot_out,w=14,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum_2007_2011_2013_2018','.png')),plot_out,w=14,h=10)
 
 
 #-------------------------------------------------------------
