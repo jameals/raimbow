@@ -1,4 +1,4 @@
-## Mapping functions for WDFW logbook data 
+## This script has been modified from the mapping functions for WDFW logbook data to fit OR data:
 # Investigate the average pots per vessel per 2wk interval
 
 library(tidyverse)
@@ -38,9 +38,12 @@ traps_g_license_logs_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_
 # or use the df where haven't filtered for spatial flag
 #traps_g_license_logs_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
 
+traps_g_license_logs_2007_2011_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds'))
+
 
 #traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2018
+traps_g <- traps_g_license_logs_2007_2011_2013_2018
 
 traps_g <- traps_g %>% 
   mutate(
@@ -192,7 +195,7 @@ check_lines_in_water <- check_lines_in_water %>%
 check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFished /1000, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
-  ylab("tottraps(1000s) across \ngrid entire WA") +
+  ylab("tottraps(1000s) across \ngrid entire OR") +
   xlab("Month") + #Month_1st or 2nd half
   scale_y_continuous(breaks=seq(0, 90, 10),limits=c(0,90))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
@@ -219,3 +222,25 @@ active_vessels_by_month <- testdf %>%
 
 #write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month.csv"))
 
+active_vessels_by_month <- active_vessels_by_month %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))  
+
+
+vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n_unique_licenses, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("No. active vessels across \ngrid entire OR") +
+  xlab("Month") + #Month_1st or 2nd half
+  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_by_month_plot
+#ggsave(here('wdfw','plots', 'OR', paste0('test number of active vessels by month_2007-2010-2013-2018','.png')),vessels_by_month_plot,w=12,h=10)
