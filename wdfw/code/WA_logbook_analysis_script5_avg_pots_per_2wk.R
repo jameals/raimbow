@@ -239,3 +239,48 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
   )
 vessels_by_month_plot
 #ggsave(here('wdfw','plots', paste0('test number of active vessels by month','.png')),vessels_by_month_plot,w=12,h=10)
+
+
+active_vessels_by_season <- testdf %>% 
+  group_by(season) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+# season      n_unique_licenses
+# 2013-2014   158
+# 2014-2015   159
+# 2015-2016   153
+# 2016-2017   163
+# 2017-2018   153
+# 2018-2019   159
+
+#------------------------------------------
+#above saved active_vessels_by_month.csv
+#into that joined ODFW estimated number of active vessels per month from their CP draft (WDFW would have calculated the estimate from fishtickets)
+#by getting the ratio of our estimated active vessels to WDFW estimate, this will serve as an indicator of compliance rate
+
+#overall WDFW estimates compliance to be 78-82 in a season
+
+active_vessels_by_month_with_compliance <- read_csv(here('wdfw', 'data','active_vessels_by_month_with compliance.csv'))
+
+active_vessels_by_month_with_compliance <- active_vessels_by_month_with_compliance %>%
+  mutate(month = factor(month, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))  
+
+compliance_plot <- ggplot(active_vessels_by_month_with_compliance, aes(x= month, y= ratio_NMFS_to_WDFW_compliance, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("Ratio NMFS estimated no. active vessels to WDFW estimate \ni.e. compliance rate") +
+  xlab("Month") + #Month_1st or 2nd half
+  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+compliance_plot
+#ggsave(here('wdfw','plots', paste0('test ratio estimated no of uniq vessels to WDFW estimate_ie compliance rate','.png')),compliance_plot,w=12,h=10)
