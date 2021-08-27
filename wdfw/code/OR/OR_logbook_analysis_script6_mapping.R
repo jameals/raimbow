@@ -44,7 +44,7 @@ options(dplyr.summarise.inform = FALSE)
 # Alternatively, read in version of data filtered for SpatialFlag (fixes the issue of very high values)
 adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
 
-adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2010_2011_2013_2018.rds'))
+adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2007_2011_2013_2018.rds'))
 
 
 # Read in spatial grid data 
@@ -358,7 +358,7 @@ proc.time()-tm
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
 
-# Making 1 map for each full season to compare 2020-2011 (full log data entry) with 2013-2018 seasons when only 30% of logs entered
+# Making 1 map for each full season to compare seasons with full log data entry with 2013-2018 seasons when only 30% of logs entered
 
 # this will require using the df on a 2-weekly step (adj_summtraps) and
 # taking the average trap density for each grid cell for the desired time period
@@ -379,7 +379,7 @@ M2_summtrapsOR_season %>%
   geom_density(aes(mean_M2_trapdens))
 
 
-#making a loop of maps on monthly step
+#making a loop of maps 
 map_log_season <- function(M2_summtrapsOR_season,saveplot=TRUE){
   
   # labels for plot titles
@@ -393,7 +393,8 @@ map_log_season <- function(M2_summtrapsOR_season,saveplot=TRUE){
     geom_sf(data=coaststates,col=NA,fill='gray50')+
     #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
     #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0,20,40,60),oob=squish)+
+    #scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0,20,40,60),oob=squish)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,40),breaks=c(0,10,20,30,40),oob=squish)+
     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
     #if you do NOT want to show lat/lon lines on the map, use the below line instead:
     #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
@@ -440,7 +441,7 @@ test$scale01_2010_2011 <- (test$mean_M2_trapdens-min(test$mean_M2_trapdens))/(ma
 test_v2 <-  M2_summtrapsOR_season %>% filter(season=='2016-2017')
 test_v2$scale01_2016_2017 <- (test_v2$mean_M2_trapdens-min(test_v2$mean_M2_trapdens))/(max(test_v2$mean_M2_trapdens)-min(test_v2$mean_M2_trapdens))
 
-#what is the corr3ct type of join?
+#what is the correct type of join?
 test_joined <- 
   full_join(test, test_v2, by=c('GRID5KM_ID'='GRID5KM_ID', 'grd_x'='grd_x', 'grd_y'='grd_y')) # don't include 'month_interval'='month_interval',  if working on full season
 
