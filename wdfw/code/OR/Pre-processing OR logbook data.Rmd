@@ -252,8 +252,48 @@ proc.time()-tm
 write_csv(ODFW_Dcrab_logbooks_20172018_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2017-2018.csv"))
 
 
+#2011-2012 season -- 4mins to run with subset permit data - oddly quick
+OR_pot_limit_info_v3 <- OR_pot_limit_info %>% 
+  filter(Year >= 2011 & Year < 2013) %>% 
+  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
+
+ODFW_Dcrab_logbooks_20112012 <- logs_sf_pts %>% 
+  filter(season=='2011-2012')
+tm <- proc.time()
+ODFW_Dcrab_logbooks_20112012_joined <- fuzzy_left_join(
+  ODFW_Dcrab_logbooks_20112012, OR_pot_limit_info_v3,
+  by = c(
+    "Vessel" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+write_csv(ODFW_Dcrab_logbooks_20112012_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2011-2012.csv"))
+
+#2012-2013 season -- 4mins to run with subset permit data - oddly quick
+OR_pot_limit_info_v3 <- OR_pot_limit_info %>% 
+  filter(Year >= 2012 & Year < 2014) %>% 
+  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)
+
+ODFW_Dcrab_logbooks_20122013 <- logs_sf_pts %>% 
+  filter(season=='2012-2013')
+tm <- proc.time()
+ODFW_Dcrab_logbooks_20122013_joined <- fuzzy_left_join(
+  ODFW_Dcrab_logbooks_20122013, OR_pot_limit_info_v3,
+  by = c(
+    "Vessel" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+write_csv(ODFW_Dcrab_logbooks_20122013_joined,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2012-2013.csv"))
+
 ##################
-#logbook yers when 100% logs entered
+#logbook years when 100% logs entered
 
 #2010-2011 season -- last season with full 100% logbook entry - 13mins to run with subset permit data 
 OR_pot_limit_info_v3 <- OR_pot_limit_info %>% 
@@ -341,7 +381,7 @@ write_csv(ODFW_Dcrab_logbooks_20072008_joined,here::here('wdfw', 'data', 'OR', "
 ```{r}
 # Identify all csv files in folder, Store all files in list
 
-#error because 2009-2010 season vessel number column has all numbers (double) while in other seasons it is character
+#error because in 2009-2010 season 'vessel number' column has all numbers (double) while in other seasons it is character
 logs_all_raw <- list.files(path = "E:/Leena/Documents/Projects/raimbow/wdfw/data/OR/seasons with permit info", pattern = "*.csv", full.names = TRUE) %>% 
   lapply(read_csv) %>% 
   # Combine data sets into one
@@ -367,8 +407,9 @@ glimpse(logs_all)
 numNA <- logs_all %>% 
   summarise(across(everything(),~sum(is.na(.x))))
 # There are 7 instances of NA in Permit Number/Pot Limit for 2013-2018
-# There are 81 instances when 2010-2011 season is included
+# There are 81 instances when 2010-2011 and 2013-2018 seasons 
 # There are 173 instances when have seasons 2007-2008 to 2010-2011 AND 2013-2014 to 2017-2018
+# There are 183 instances when have seasons 2007-2018 
 
 logs_NA <- logs_all %>% 
   filter(is.na(PermitNumber)|is.na(Potlimit))
@@ -378,6 +419,7 @@ logs_NA <- logs_all %>%
 #2007-2010: few instance where no vessel number provided in logbook data -- those will have to be deleted
   # cases where Set Date is a few days before the Begin Date of the permit
   # for vessel ID OR438ABD in 2008-09 season: fishing in logs in January 2009, but permit (96386) only start in April 2009, until then the permit 96386 belonged to vessel ID OR377YF - which was owned by the same person as OR438ABD
+#in 2011-2012: no NAs, in 2012-2013: few cases where Set Date is a few days before the Begin Date of the permit 
 
 #-----------------------------------------------------
 #Fix all NAs
@@ -409,7 +451,10 @@ logs_NA_fixed <-  logs_NA %>%
       #2007-2010
       Vessel == 500657 | Vessel == 544609 ~ 500,
       Vessel == 547465 | Vessel == 226744 | Vessel == 520984 ~ 300,
-      Vessel == "OR438ABD" | Vessel == 578558 ~ 200
+      Vessel == "OR438ABD" | Vessel == 578558 ~ 200,
+      #2012-2013
+      Vessel == 976374 ~ 500,
+      Vessel == 539216 ~ 300
     )
   )
 
@@ -420,6 +465,6 @@ logs_all_permits <- rbind(logs_not_NA, logs_NA_fixed)
 ```{r}
 write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv"))
 
-write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2011_and_2013-2018_20210827.csv"))
+write_csv(logs_all_permits,here::here('wdfw', 'data', 'OR', "ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv"))
 ```
 
