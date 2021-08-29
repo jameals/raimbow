@@ -44,7 +44,7 @@ options(dplyr.summarise.inform = FALSE)
 # Alternatively, read in version of data filtered for SpatialFlag (fixes the issue of very high values)
 adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered.rds'))
 
-adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2007_2011_2013_2018.rds'))
+adj_summtraps <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_adj_summtraps_SpatialFlag_filtered_2007_2018.rds'))
 
 
 # Read in spatial grid data 
@@ -255,7 +255,7 @@ proc.time()-tm
 # Making summary maps for May - Sep 15 period --> in OR season ends on 14 Aug each year
 
 ## Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+#adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
 
 # create a column in df to indicate whether data fall between May1 and Aug14
 # the 'periods' included between May1 and Sep15 are:
@@ -420,7 +420,7 @@ proc.time()-tm
 
 
 #--------------------------------------------------
-#differences between 2010-2011 and other seasons
+#differences between 2010-2011 (100% entered) and some other seasons (30% entered)
 
 #if want to look at the whole season, first need to average things in the grids
 M2_summtrapsOR_season <- adj_summtraps %>% 
