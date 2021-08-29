@@ -38,12 +38,11 @@ traps_g_license_logs_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_
 # or use the df where haven't filtered for spatial flag
 #traps_g_license_logs_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
 
-traps_g_license_logs_2007_2011_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds'))
+traps_g_license_logs_2007_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds'))
 
 
-#traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2018
-traps_g <- traps_g_license_logs_2007_2011_2013_2018
+traps_g <- traps_g_license_logs_2007_2018
 
 traps_g <- traps_g %>% 
   mutate(
@@ -91,6 +90,7 @@ glimpse(testdf)
 
 #bring in 'raw' logs 
 logs <- read_csv(here('wdfw', 'data', 'OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv'))
+logs <- read_csv(here('wdfw', 'data', 'OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv'))
 #logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #This is WA spesific, but need to check if OR has something similar
 
 #sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
@@ -197,7 +197,7 @@ check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFishe
   scale_colour_brewer(palette = "PRGn") +
   ylab("tottraps(1000s) across \ngrid entire OR") +
   xlab("Month") + #Month_1st or 2nd half
-  scale_y_continuous(breaks=seq(0, 90, 10),limits=c(0,90))+
+  #scale_y_continuous(breaks=seq(0, 90, 10),limits=c(0,90))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
@@ -210,6 +210,44 @@ check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFishe
   )
 check_plot
 #This will differ from the lines in the water plot done in script 3 due to 30% entry rate of OR log data
+
+
+#slightly different plot, showing early seasons with 100% data entry in different colour scale to make them stand out more 
+years_with_full_log_entry <- c('2007-2008', '2008-2009', '2009-2010', '2010-2011')
+
+data1 <-  check_lines_in_water %>% 
+  filter(season %in% years_with_full_log_entry)
+data2 <-  check_lines_in_water %>% 
+  filter(!(season %in% years_with_full_log_entry))
+
+#https://cran.r-project.org/web/packages/khroma/vignettes/tol.html
+cols <- c(
+  #seasons with 100% logs entered
+  "firebrick1", "orangered", "orange", "gold", 
+  #seasons when 30% logs entered
+  "#762A83", "#9970AB", "#C2A5CF", "#E7D4E8", "#D9F0D3", "#ACD39E", "#5AAE61","#1B7837")
+
+check_plot_x <- 
+  ggplot()+
+  geom_line(data1, mapping=aes(x=month_name, y=check_PotsFished/1000, colour=season,  group=season),size=1.5, lineend = "round") +
+  geom_line(data2, mapping=aes(x=month_name, y=check_PotsFished/1000, colour=season,  group=season),size=1.5, lineend = "round") +
+  scale_colour_manual(values = cols) +
+  ylab("Total traps (1000) in water \nfor entire OR") +
+  xlab("Month") + 
+  #scale_y_continuous(breaks=seq(0, 100, 20),limits=c(0,100))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+check_plot_x
+#ggsave(here('wdfw','plots', 'OR', paste0('test lines in water as the sum of pot limits for active vessels per month_2007-2018','.png')),check_plot_x,w=12,h=10)
+
 #------------------------------
 
 # number of vessels that were active in each month as per logbook data
@@ -244,3 +282,41 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
   )
 vessels_by_month_plot
 #ggsave(here('wdfw','plots', 'OR', paste0('test number of active vessels by month_2007-2010-2013-2018','.png')),vessels_by_month_plot,w=12,h=10)
+
+
+#slightly different plot, showing early seasons with 100% data entry in different colour scale to make them stand out more 
+years_with_full_log_entry <- c('2007-2008', '2008-2009', '2009-2010', '2010-2011')
+
+data1 <-  active_vessels_by_month %>% 
+  filter(season %in% years_with_full_log_entry)
+data2 <-  active_vessels_by_month %>% 
+  filter(!(season %in% years_with_full_log_entry))
+
+#https://cran.r-project.org/web/packages/khroma/vignettes/tol.html
+cols <- c(
+  #seasons with 100% logs entered
+  "firebrick1", "orangered", "orange", "gold", 
+  #seasons when 30% logs entered
+  "#762A83", "#9970AB", "#C2A5CF", "#E7D4E8", "#D9F0D3", "#ACD39E", "#5AAE61","#1B7837")
+
+vessels_by_month_plot_x <- 
+  ggplot()+
+  geom_line(data1, mapping=aes(x= month_name, y= n_unique_licenses, colour=season,  group=season),size=1.5, lineend = "round") +
+  geom_line(data2, mapping=aes(x= month_name, y= n_unique_licenses, colour=season,  group=season),size=1.5, lineend = "round") +
+  scale_colour_manual(values = cols) +
+  ylab("No. active vessels across \ngrid entire OR") +
+  xlab("Month") + #Month_1st or 2nd half
+  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_by_month_plot_x
+#ggsave(here('wdfw','plots', 'OR', paste0('test number of active vessels by month_2007-2018','.png')),vessels_by_month_plot_x,w=12,h=10)
+
