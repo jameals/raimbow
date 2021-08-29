@@ -39,7 +39,7 @@ traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_lo
 # Also a version exists for OR where haven't yet filtered for SpatialFlag
 #traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018.rds'))
 
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds'))
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds'))
 
 
 glimpse(traps_g_all_logs)
@@ -84,6 +84,7 @@ depth_dist_all_data <- pots_by_depth_all_data %>%
 depth_dist_all_data
 
 #ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years and seasons','.png')),depth_dist_all_data,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years and seasons_2007_2018','.png')),depth_dist_all_data,w=12,h=10)
 
 
 # Cumulative distribution of pots by depth - by season
@@ -112,25 +113,37 @@ depth_dist_by_season
 #ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season','.png')),depth_dist_by_season,w=12,h=10)
 
 
-#slightly different plot, showing 2010-2011 in black to make it stand out more (tho not showing up in legend)
-data1 <-  pots_by_depth_by_season %>% 
-  filter(season == '2010-2011')
-data2 <-  pots_by_depth_by_season %>% 
-  filter(season != '2010-2011')
 
-depth_dist_by_season <- 
-  ggplot(NULL, aes(x=depth,y=perc_pots, group=season))+
-  geom_line(data1, col='black', mapping=aes(group=1), size = 1) + 
-  geom_line(data2, mapping=aes(colour=season),size = 1) +
-  scale_colour_brewer(palette = "PRGn") +
+#slightly different plot, showing early seasons with 100% data entry in different colour scale to make them stand out more 
+years_with_full_log_entry <- c('2007-2008', '2008-2009', '2009-2010', '2010-2011')
+
+data1 <-  pots_by_depth_by_season %>% 
+  filter(season %in% years_with_full_log_entry)
+data2 <-  pots_by_depth_by_season %>% 
+  filter(!(season %in% years_with_full_log_entry))
+
+#https://cran.r-project.org/web/packages/khroma/vignettes/tol.html
+cols <- c(
+  #seasons with 100% logs entered
+  "firebrick1", "orangered", "orange", "gold", 
+  #seasons when 30% logs entered
+  "#762A83", "#9970AB", "#C2A5CF", "#E7D4E8", "#D9F0D3", "#ACD39E", "#5AAE61","#1B7837")
+
+depth_dist_by_season_x <- 
+  ggplot()+
+  #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
+  geom_line(data1, mapping=aes(x=depth,y=perc_pots, group=season, colour=season), size = 1) +
+  geom_line(data2, mapping=aes(x=depth,y=perc_pots, group=season, colour=season), size = 1) +
+  scale_colour_manual(values = cols) +
   #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
   scale_x_continuous(breaks=seq(0, 200, 20),limits=c(0,200))+
   labs(x="Depth (m)",y="Cumulative % Traps") +
   ggtitle("Distribution of crab pots by depth,\nall years by season") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
   theme(legend.position = ("top"),legend.title=element_blank())
-depth_dist_by_season
+depth_dist_by_season_x
 
-#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_2010_2011_2013_2018','.png')),depth_dist_by_season,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_2007_2018_diff colours for 100 vs 30 percent data entry','.png')),depth_dist_by_season_x,w=12,h=10)
 
   
 #--------------------------
@@ -167,7 +180,7 @@ depth_dist_spsumvswinter <- pots_by_depth_spsumvswinter %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_spsumvswinter
 
-#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_win v sprsum','.png')),depth_dist_spsumvswinter,w=12,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_win v sprsum_2007_2018','.png')),depth_dist_spsumvswinter,w=12,h=10)
 
 
 
@@ -206,7 +219,7 @@ plot_list
 
 plot_out <- cowplot::plot_grid(plotlist = plot_list, nrow = 2)
 #ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum','.png')),plot_out,w=14,h=10)
-#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum_2007_2011_2013_2018','.png')),plot_out,w=14,h=10)
+#ggsave(here('wdfw','plots', 'OR', paste0('Cumulative distribution of pots by depth_all years_by season_win v sprsum_2007_2018','.png')),plot_out,w=14,h=10)
 
 
 #-------------------------------------------------------------
