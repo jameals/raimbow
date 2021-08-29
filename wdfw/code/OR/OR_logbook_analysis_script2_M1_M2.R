@@ -26,8 +26,8 @@ traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_20
 # To use a version of RDS where this has been taken into account, read in the below RDS:
 #traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds'))
 
-# use df with 2007-2011 seasons included
-traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2011_2013_2018_SpatialFlag_filtered.rds'))
+# use df with all seasons included
+traps_g_raw <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds'))
 
 
 # create columns for season, month etc
@@ -154,9 +154,8 @@ adj_summtraps %<>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 glimpse(adj_summtraps)
 
-#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps.rds"))
 #write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps_SpatialFlag_filtered.rds"))
-#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps_SpatialFlag_filtered_2007_2011_2013_2018.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data','OR',"OR_adj_summtraps_SpatialFlag_filtered_2007_2018.rds"))
 
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
 #the code to join the grid IDs that are in few pieces
