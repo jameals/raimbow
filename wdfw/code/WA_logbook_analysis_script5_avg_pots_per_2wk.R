@@ -337,6 +337,7 @@ bar_chart <- ggplot(active_vessels_by_month_3, aes(x = month_name, y = n_unique_
   facet_wrap(~ season) +
   ylab("Proportion of active vessels (WA)") +
   xlab("Month") + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.20))+
   theme(legend.title = element_blank(),
         legend.text = element_text(size=12),
         axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 90),
