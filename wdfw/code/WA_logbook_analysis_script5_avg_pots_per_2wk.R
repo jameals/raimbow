@@ -224,9 +224,9 @@ active_vessels_by_month <- active_vessels_by_month %>%
 vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n_unique_licenses, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
   scale_colour_brewer(palette = "PRGn") +
-  ylab("No. active vessels across \ngrid entire WA") +
+  ylab("No. active vessels per month in WA \n(unique vessels in logs)") +
   xlab("Month") + #Month_1st or 2nd half
-  #scale_y_continuous(breaks=seq(0, 70, 10),limits=c(0,70))+
+  scale_y_continuous(breaks=seq(0, 160, 20),limits=c(0,160))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
@@ -284,3 +284,67 @@ compliance_plot <- ggplot(active_vessels_by_month_with_compliance, aes(x= month,
   )
 compliance_plot
 #ggsave(here('wdfw','plots', paste0('test ratio estimated no of uniq vessels to WDFW estimate_ie compliance rate','.png')),compliance_plot,w=12,h=10)
+
+
+#------------------------------
+
+# investigate unique vessels that were active in each month as per logbook data, while also retaining PotLimit info
+
+#adjust summer potlimit reduction back to the original permit groupings
+testdf_adjusted <- testdf %>% 
+  mutate(Permit_tier = case_when(
+    Pot_Limit_or_M2==330 | Pot_Limit_or_M2==500 ~ 500,
+    Pot_Limit_or_M2==200 | Pot_Limit_or_M2==300 ~ 300)
+     ) %>%  
+  na.omit()
+
+active_vessels_by_month_2 <- unique(testdf_adjusted[,c('season', 'month_name','season_month','Vessel', 'Permit_tier')])
+
+active_vessels_by_month_3 <- active_vessels_by_month_2 %>% 
+  group_by(season, month_name, Permit_tier) %>% 
+  summarise(
+    n_unique_vessels=n_distinct(Vessel), na.rm=TRUE)
+
+active_vessels_by_month_3 <- active_vessels_by_month_3 %>%
+  mutate(
+    month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')),
+    Permit_tier = factor(Permit_tier, levels = c('300','500'))
+    )  
+
+vessels_by_month_plot_x <- ggplot(active_vessels_by_month_3, aes(x=month_name, y=n_unique_vessels, group=Permit_tier, colour=Permit_tier))+
+  geom_line(size=1.5, lineend = "round") + 
+  facet_wrap(~ season) +
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("No. active vessels (WA)") +
+  xlab("Month") + #Month_1st or 2nd half
+  scale_y_continuous(breaks=seq(0, 160, 20),limits=c(0,160))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_by_month_plot_x
+#ggsave(here('wdfw','plots', paste0('Number of active vessels per month by permit tier groups','.png')),vessels_by_month_plot_x,w=12,h=10)
+
+
+
+bar_chart <- ggplot(active_vessels_by_month_3, aes(x = month_name, y = n_unique_vessels, fill = Permit_tier)) +
+  geom_col(position = "fill") +
+  facet_wrap(~ season) +
+  ylab("Proportion of active vessels (WA)") +
+  xlab("Month") + 
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+bar_chart
+#ggsave(here('wdfw','plots', paste0('Prop of active vessels per month by permit tier groups','.png')),bar_chart,w=12,h=10)
+
