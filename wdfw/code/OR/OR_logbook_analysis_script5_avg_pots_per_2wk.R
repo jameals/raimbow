@@ -41,7 +41,7 @@ traps_g_license_logs_2013_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_
 traps_g_license_logs_2007_2018 <- read_rds(here::here('wdfw', 'data', 'OR', 'OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds'))
 
 
-traps_g <- traps_g_license_logs_2013_2018
+#traps_g <- traps_g_license_logs_2013_2018
 traps_g <- traps_g_license_logs_2007_2018
 
 traps_g <- traps_g %>% 
@@ -89,7 +89,7 @@ glimpse(testdf)
 
 
 #bring in 'raw' logs 
-logs <- read_csv(here('wdfw', 'data', 'OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv'))
+#logs <- read_csv(here('wdfw', 'data', 'OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv'))
 logs <- read_csv(here('wdfw', 'data', 'OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv'))
 #logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #This is WA spesific, but need to check if OR has something similar
 
@@ -108,8 +108,8 @@ logsdf <- logs %>%
   )
 
 #For now look at 2013-2018
-logsdf <- logsdf %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+#logsdf <- logsdf %>% 
+#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
 
 #Sum the raw/unadjusted PotsFished for vessel by 2-week period
 testdf2  <- logsdf %>% 
@@ -319,4 +319,73 @@ vessels_by_month_plot_x <-
   )
 vessels_by_month_plot_x
 #ggsave(here('wdfw','plots', 'OR', paste0('test number of active vessels by month_2007-2018','.png')),vessels_by_month_plot_x,w=12,h=10)
+
+
+
+
+#------------------------------
+# Adjust this WA code for OR
+# investigate unique vessels that were active in each month as per logbook data, while also retaining PotLimit info
+
+#adjust summer potlimit reduction back to the original permit groupings
+#OR hasn't had pot limit summer reduction just yet
+testdf_adjusted <- testdf %>% 
+  mutate(Permit_tier = case_when(
+    Pot_Limit_or_M2==500 ~ 500,
+    Pot_Limit_or_M2==300 ~ 300,
+    Pot_Limit_or_M2==200 ~ 200)
+  ) %>%
+  na.omit()
+
+active_vessels_by_month_2 <- unique(testdf_adjusted[,c('season', 'month_name','season_month','Vessel', 'Permit_tier')])
+
+active_vessels_by_month_3 <- active_vessels_by_month_2 %>% 
+  group_by(season, month_name, Permit_tier) %>% 
+  summarise(
+    n_unique_vessels=n_distinct(Vessel), na.rm=TRUE)
+
+active_vessels_by_month_3 <- active_vessels_by_month_3 %>%
+  mutate(
+    month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')),
+    Permit_tier = factor(Permit_tier, levels = c('200', '300','500'))
+  )  
+
+vessels_by_month_plot_x <- ggplot(active_vessels_by_month_3, aes(x=month_name, y=n_unique_vessels, group=Permit_tier, colour=Permit_tier))+
+  geom_line(size=1.5, lineend = "round") + 
+  facet_wrap(~ season) +
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("No. active vessels (WA)") +
+  xlab("Month") + #Month_1st or 2nd half
+  scale_y_continuous(breaks=seq(0, 110, 20),limits=c(0,110))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_by_month_plot_x
+#ggsave(here('wdfw','plots','OR', paste0('Number of active vessels per month by permit tier groups','.png')),vessels_by_month_plot_x,w=12,h=10)
+
+
+
+bar_chart <- ggplot(active_vessels_by_month_3, aes(x = month_name, y = n_unique_vessels, fill = Permit_tier)) +
+  geom_col(position = "fill") +
+  facet_wrap(~ season) +
+  ylab("Proportion of active vessels (WA)") +
+  xlab("Month") + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.20))+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(), #element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+bar_chart
+#ggsave(here('wdfw','plots','OR', paste0('Prop of active vessels per month by permit tier groups','.png')),bar_chart,w=12,h=10)
+
 
