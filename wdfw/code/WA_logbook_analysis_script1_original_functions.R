@@ -381,7 +381,21 @@ df %<>%
   summarise(do_union = FALSE) %>% 
   st_cast("LINESTRING")
 
-traps <- df %>% 
+#---------
+#additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
+#were the same), or that were very long
+# --> need to decide what is appropriate length, after which a stringline is too long, for now use 5km
+df$length = st_length(df)
+line_length_m <-  as.vector(df$length)
+df_v2 <-  cbind(df,line_length_m) 
+df_v3 <- df_v2 %>%  select(-length)
+df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000)
+
+#---------
+
+
+#traps <- df %>% 
+traps <- df_v4 %>% 
   ungroup() %>% 
   # now use those linestrings to place pots using sf::st_line_sample
   mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
