@@ -389,13 +389,13 @@ df$length = st_length(df)
 line_length_m <-  as.vector(df$length)
 df_v2 <-  cbind(df,line_length_m) 
 df_v3 <- df_v2 %>%  select(-length)
-df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000)
+#df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000) #skip this, leave everything in and filter later
 
 #---------
 
 
 #traps <- df %>% 
-traps <- df_v4 %>% 
+traps <- df_v3 %>% 
   ungroup() %>% 
   # now use those linestrings to place pots using sf::st_line_sample
   mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
@@ -403,7 +403,7 @@ traps <- df_v4 %>%
   # pull out the x/y coordinates of the traps
   mutate(trapcoords=purrr::map(traplocs,
                                function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
-  select(Vessel,License, SetID,PotsFished,SetDate,trapcoords) %>% 
+  select(Vessel,License, SetID,PotsFished,line_length_m, SetDate,trapcoords) %>% #also select lineLength_m to retain it
   # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
   st_set_geometry(NULL) %>% 
   unnest(cols=c(trapcoords))
@@ -451,6 +451,6 @@ traps_g <- traps_sf %>%
   left_join(grd_xy,by="GRID5KM_ID")
 
 #running join_grid on 2013-2019 logs subset took about 8min
-#write_rds(traps_g,here::here('data', "traps_g_license_all_logs_2013_2019.rds"))
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2019.rds"))
 
 #--------------------------------------------------------------------------------
