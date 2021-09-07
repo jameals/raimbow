@@ -1,0 +1,217 @@
+library(tidyverse)
+library(lubridate)
+library(here)
+library(sf)
+library(raster)
+library(fasterize)
+select <- dplyr::select
+library(rnaturalearth)
+library(viridis)
+library(magrittr)
+library(gridExtra)
+library(nngeo)
+library(scales)
+
+
+# ggplot theme
+plot_theme <-   theme_minimal()+
+  theme(text=element_text(family="sans",size=12,color="black"),
+        legend.text = element_text(size=14),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        axis.text.x.bottom = element_text(angle=45),
+        legend.position = c(0.8,0.3),
+        title=element_text(size=12),
+        legend.title = element_text(size=10),
+        panel.grid.major = element_line(color="gray50",linetype=3))
+theme_set(plot_theme)
+options(dplyr.summarise.inform = FALSE)
+
+#########################################
+
+
+#Self reported logbook data not always very accurate
+#There are stringlines that have a length of 0m (strat and end loc are exactly the same)
+#as well as stringlines that are several kilometers long
+
+
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2019_LineLengthIncluded.rds'))
+
+# remove geometry, create columns for season, month etc 
+traps_g %<>%
+  st_set_geometry(NULL) %>% 
+  mutate(
+    season = str_sub(SetID,1,9),
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name),
+    month_interval = paste0(month_name, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+    ),
+    season_month_interval = paste0(season, 
+                                   "_", 
+                                   month_interval)
+  )
+
+# Read in and join license & pot limit info
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+
+# join Pot_Limit to traps_g 
+traps_g %<>%
+  left_join(WA_pot_limit_info,by=c("License")) %>% 
+  drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
+
+
+#---------------------------------------------------
+#Investigate the relationship between stringline length and the reported no. of pots
+
+# In the df each row is an individual simualted pot - remove duplicated rows based on SetID
+traps_g_v2 <-  traps_g %>% distinct(SetID, .keep_all = TRUE)
+
+p1 <- ggplot(traps_g_v2, aes(x=line_length_m, y=PotsFished))+ 
+  geom_point() + 
+  facet_wrap(~ season) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p1 
+
+
+#some of the really high line length values are messing things up, so remove those
+traps_g_v3 <-  traps_g_v2 %>% 
+  filter(line_length_m < 1e+05)
+
+p2 <- ggplot(traps_g_v3, aes(x=line_length_m, y=PotsFished))+ 
+  geom_point() + 
+  facet_wrap(~ season) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p2 
+
+p3 <- ggplot(traps_g_v3, aes(x=line_length_m))+ 
+  geom_histogram(binwidth=10) + 
+  facet_wrap(~ season) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p3 
+
+
+
+
+#-------------------------------------------------
+#proportion of stringlines that are 0m per season?
+traps_g_v4 <-  traps_g_v2 %>% 
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  group_by(season, month_name) %>% 
+  summarise(n_records = n(),
+            n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
+  mutate(prop_0m_length = n_0m_length/n_records)
+#Across all seasons, the proportion of stringlines that are 0m in length (i.e. begin and end locs are exactly the same) is 1% or less
+#2017-2018 season had the smallest proportion of stringlines that were 0m (better logbook reporting)
+#2018-2019 season had the highest proportion of stringlines that were 0m (poorer logbook reporting)
+
+p4 <- traps_g_v4 %>% 
+  ggplot(aes(x=month_name,y=prop_0m_length, colour = season, group=season))+
+  geom_line(size=1)+
+  scale_colour_brewer(palette = "PRGn") +
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  scale_y_continuous(breaks=seq(0, 0.04, 0.01),limits=c(0,0.05))+
+  labs(x="Month",y="Proportion of strignlines that are 0m") +
+  ggtitle("Proportion of 0m stringlines,\nall years by season and month") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+p4
+
+
+#proportion of stringlines that are 0m per season and by pot tier?
+traps_g_v5 <-  traps_g_v2 %>% 
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  group_by(season, Pot_Limit, month_name) %>% 
+  summarise(n_records = n(),
+            n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
+  mutate(prop_0m_length = n_0m_length/n_records)
+#Overall 500 pot tier vessels had a smaller proportion of 0m stringlines than 300 pot tier 
+#vessels, i.e., 500 pot tier vessels had better/more accurate logbook reporting 
+p5 <- traps_g_v5 %>% 
+  ggplot(aes(x=month_name,y=prop_0m_length, colour = Pot_Limit, group=Pot_Limit))+
+  geom_line(size=1)+
+  facet_wrap(~ season) +
+  #scale_colour_brewer(palette = "PRGn") +
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  #scale_y_continuous(breaks=seq(0, 0.04, 0.01),limits=c(0,0.05))+
+  labs(x="Month",y="Proportion of strignlines that are 0m") +
+  ggtitle("Proportion of 0m stringlines,\nall years by season") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+p5
+
+
+
+# Cumulative distribution of stringline length - by season 
+length_by_season <- traps_g_v3 %>%
+  mutate(line_length_m = (round(line_length_m, digits = 1))) %>% 
+  count(season, line_length_m) %>% 
+  ungroup() %>% 
+  # do cumulative counts
+  group_by(season) %>%
+  arrange(line_length_m) %>% 
+  mutate(cumulative_lengths=cumsum(n),perc_lengths=cumulative_lengths/last(cumulative_lengths)*100)
+glimpse(length_by_season)
+
+line_length_dist_by_season <- length_by_season %>% 
+  ggplot(aes(x=line_length_m/1000,y=perc_lengths, colour = season, group=season))+
+  geom_line(size=1)+
+  scale_colour_brewer(palette = "PRGn") +
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  scale_x_continuous(breaks=seq(0, 100, 10),limits=c(0,100))+
+  labs(x="Stringline length (km)",y="Cumulative % Stringlines") +
+  ggtitle("Distribution of DCRB strinlines by length,\nall years by season") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+line_length_dist_by_season
+
+
+
+# Cumulative distribution of stringline length - by seasonand pot tier
+length_by_season_and_pot_tier <- traps_g_v3 %>%
+  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  mutate(line_length_m = (round(line_length_m, digits = 1))) %>% 
+  count(season, Pot_Limit, line_length_m) %>% 
+  ungroup() %>% 
+  # do cumulative counts
+  group_by(season, Pot_Limit) %>%
+  arrange(line_length_m) %>% 
+  mutate(cumulative_lengths=cumsum(n),perc_lengths=cumulative_lengths/last(cumulative_lengths)*100)
+glimpse(length_by_season_and_pot_tier)
+
+line_length_dist_by_season_and_pot_tier <- length_by_season_and_pot_tier %>% 
+  ggplot(aes(x=line_length_m/1000,y=perc_lengths, colour = Pot_Limit, group=Pot_Limit))+
+  geom_line(size=1)+
+  facet_wrap(~ season) +
+  #scale_colour_brewer(palette = "PRGn") +
+  #geom_hline(aes(yintercept = 90), colour="blue", linetype=2)+
+  scale_x_continuous(breaks=seq(0, 100, 10),limits=c(0,100))+
+  labs(x="Stringline length (km)",y="Cumulative % Stringlines") +
+  ggtitle("Distribution of DCRB strinlines by length,\nall years by season and by pot tier") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+line_length_dist_by_season_and_pot_tier
+
+
+
+
+
