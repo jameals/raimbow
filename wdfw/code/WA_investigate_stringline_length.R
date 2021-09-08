@@ -143,7 +143,8 @@ p4
 traps_g_v5 <-  traps_g_v2 %>% 
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
-  group_by(season, Pot_Limit, month_name) %>% 
+  #group_by(season, Pot_Limit, month_name) %>% 
+  group_by(season, Pot_Limit) %>% 
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
   mutate(prop_0m_length = n_0m_length/n_records)
@@ -213,5 +214,24 @@ line_length_dist_by_season_and_pot_tier
 
 
 
+#--------------------------
+#focus on lines that are 0m - there are both 0 and 0.000 cases. After that the next value is 12m
+traps_g_v6 <-  traps_g_v3 %>% 
+  filter(line_length_m < 0.1)
+p6 <- ggplot(traps_g_v6, aes(x=PotsFished))+ 
+  geom_histogram(binwidth=5) + 
+  #facet_wrap(~ season) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p6 
 
-
+traps_g_v6_summary <- traps_g_v6 %>% 
+  group_by(season, Pot_Limit) %>% 
+  summarise(n_records = n(),
+            n_0m_length = length(line_length_m[line_length_m<0.1]),
+            nvessels=n_distinct(Vessel,na.rm=T)) 
