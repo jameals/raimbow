@@ -1,17 +1,23 @@
-library(dplyr)
+library(tidyverse)
 library(here)
 library(lubridate)
 library(rnaturalearth) #devtools::install_github("ropensci/rnaturalearthhires")
 library(sf)
+library(rgeos)
+library(viridis)
+library(ggpubr)
 
 # set some paths
 path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
 path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
 path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
+# should be all outputs through july 2019 overlayed on 5km grid (i.e., not subset to DCRB fishing cells)
 path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
 path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
 
+# where to put outputs
+path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOWT/raimbow/whalepreds_aggregate/figures"
 
 # load the data
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
@@ -46,11 +52,15 @@ x.whale <- full_join(x.hump, x.blue,
 # calculate median whale values for full time period
 
 x.whale.median <- x.whale %>%
-  group_by()
-  summarise
+  group_by(GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    Blue_occurrence_median = median(Blue_occurrence_mean, na.rm=TRUE)
+  ) %>%
+  left_join(grid.5km.lno)
 
 # make maps based on whale outputs
-## i did not convert humpback densities to abundace
+## i did not convert humpback densities to abundance
 ## i did not normalize whale predictions
 
 # grab a base map
@@ -61,17 +71,22 @@ rmap.base <- c(
     st_transform(st_crs(grid.5km.lno))
 )
 
+#bbox
+grid5km_bbox <- st_bbox(grid.5km.lno %>% 
+                     st_as_sf()
+)
+
 map_hump <- ggplot() + 
-  geom_sf(data=x.whale, 
-          aes(fill=Humpback_dens_mean,
-              col=Humpback_dens_mean
+  geom_sf(data=sf::st_as_sf(x.whale.median), 
+          aes(fill=Humpback_dens_median,
+              col=Humpback_dens_median
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="Humpback Density") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median humpback densities\non Dungeness crab fishing grounds\nduring the fishing season") +
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median\nHumpback Whale Densities") +
+  coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
@@ -84,25 +99,25 @@ map_hump <- ggplot() +
   )
 map_hump
 
-png(paste0(path_maps, "/map_hump_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
-map_hump
-invisible(dev.off())
+# png(paste0(path_maps, "/map_median_hump_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+# map_hump
+# invisible(dev.off())
 #ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
 
 # plot median blue occurrence 
 
 map_blue <- ggplot() + 
-  geom_sf(data=sq_maps_grid_noNA, 
-          aes(fill=Blue_occurrence,
-              col=Blue_occurrence
+  geom_sf(data=sf::st_as_sf(x.whale.median), 
+          aes(fill=Blue_occurrence_median,
+              col=Blue_occurrence_median
           )
   ) +
-  facet_wrap(~time_period, nrow=1) +
+  # facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="Blue whale occurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median blue whale occurrence\non Dungeness crab fishing grounds\nduring the fishing season") +
-  coord_sf(xlim=c(sq_bbox[1],sq_bbox[3]),ylim=c(sq_bbox[2],sq_bbox[4])) + 
+  scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("2009-2019 Median\nBlue Whale Occurrence") +
+  coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
@@ -115,9 +130,105 @@ map_blue <- ggplot() +
   )
 map_blue
 
-png(paste0(path_maps, "/map_blue_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
-map_blue
-invisible(dev.off())
+# png(paste0(path_maps, "/map_blue_by_time_period.png"), width = 14, height = 10, units = "in", res = 300)
+# map_blue
+# invisible(dev.off())
 #ggsave(here::here('tradeoffs','map_hump_by_time_period.png'),map_hump,h=8,w=6)
 
+# plot blues and humps together
+png(paste0(path_figures, "/map_median_blue_hump_2009_2019.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump,
+          map_blue,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
 # make time series based on whale outputs
+
+# plot annual mean humpback densities
+ts_hump <- ggplot(
+  data = x.whale %>% 
+    mutate(
+      year = as.numeric(substr(year_month, 1,4))
+    ) %>%
+    group_by(year) %>%
+    summarise(
+      Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE)
+    ), 
+  aes(
+    x = year, 
+    y = Humpback_dens_mean
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(2010, 2019, 1),
+                     limits = c(2009.5,2019.5)) +
+  ylab("Humpback Whale Density\n(mean)") + 
+  xlab("Year") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump
+
+# plot annual mean humpback densities
+ts_blue <- ggplot(
+  data = x.whale %>% 
+    mutate(
+      year = as.numeric(substr(year_month, 1,4))
+    ) %>%
+    group_by(year) %>%
+    summarise(
+      Blue_occurrence_mean = mean(Blue_occurrence_mean, na.rm=TRUE)
+    ), 
+  aes(
+    x = year, 
+    y = Blue_occurrence_mean
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(2010, 2019, 1),
+                     limits = c(2009.5,2019.5)) +
+  ylab("Blue Whale Occurrence\n(mean)") + 
+  xlab("Year") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue
+
+# plot blues and humps together
+png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump,
+          ts_blue,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
