@@ -100,9 +100,11 @@ p2 <- ggplot(traps_g_v3, aes(x=line_length_m, y=PotsFished))+
   )
 p2 
 
-p3 <- ggplot(traps_g_v3, aes(x=line_length_m))+ 
-  geom_histogram(binwidth=10) + 
-  facet_wrap(~ season) +
+p3 <- ggplot(traps_g_v2, aes(x=line_length_m/1000))+ 
+  geom_histogram(binwidth=1) + 
+  #scale_x_continuous(breaks=seq(0, 100, 10),limits=c(0,100))+
+  #facet_wrap(~ season) +
+  labs(x="Stringline length (km)",y="No. of Stringlines") +
   theme(legend.title = element_blank(),
         legend.text = element_text(size=12),
         axis.text.x = element_blank(),
@@ -112,17 +114,47 @@ p3 <- ggplot(traps_g_v3, aes(x=line_length_m))+
   )
 p3 
 
+p3b <- ggplot(traps_g_v3, aes(x=line_length_m/1000))+ 
+  geom_histogram(binwidth=1) + 
+  facet_wrap(~ season) +
+  labs(x="Stringline length (km)",y="No. of Stringlines") +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p3b
 
+p3c <- traps_g_v3 %>% 
+  ggplot() + #aes(color=wintersummer, fill=wintersummer)
+  geom_bar(aes(x=line_length_m/1000, y=stat(prop)), position = "dodge") +
+  scale_x_binned(breaks=seq(0, 100, 5)) + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
+  scale_y_continuous(breaks=seq(0, 0.5, 0.05),limits=c(0,0.5))+
+  labs(x="Stringline length (km)",y="Proportion") +
+  ggtitle('Proportion of string lengths')
+p3c
 
-
+p3d <- traps_g_v3 %>% 
+  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  ggplot() + #aes(color=wintersummer, fill=wintersummer)
+  geom_bar(aes(x=line_length_m/1000, y=stat(prop)), position = "dodge") +
+  facet_wrap(~ Pot_Limit) +
+  scale_x_binned(breaks=seq(0, 100, 5)) + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
+  scale_y_continuous(breaks=seq(0, 0.7, 0.05),limits=c(0,0.7))+
+  labs(x="Stringline length (km)",y="Proportion") +
+  ggtitle('Proportion of string lengths')
+p3d
 #-------------------------------------------------
 #proportion of stringlines that are 0m per season?
 traps_g_v4 <-  traps_g_v2 %>% 
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
-  group_by(season, month_name) %>% 
+  #group_by(season, month_name) %>% 
+  group_by(season) %>% 
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
-  mutate(prop_0m_length = n_0m_length/n_records)
+  mutate(percent_0m_length = (n_0m_length/n_records)*100)
 #Across all seasons, the proportion of stringlines that are 0m in length (i.e. begin and end locs are exactly the same) is 1% or less
 #2017-2018 season had the smallest proportion of stringlines that were 0m (better logbook reporting)
 #2018-2019 season had the highest proportion of stringlines that were 0m (poorer logbook reporting)
@@ -139,7 +171,7 @@ p4 <- traps_g_v4 %>%
 p4
 
 
-#proportion of stringlines that are 0m per season and by pot tier?
+#proportion/percent of stringlines that are 0m per season and by pot tier?
 traps_g_v5 <-  traps_g_v2 %>% 
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
@@ -147,7 +179,7 @@ traps_g_v5 <-  traps_g_v2 %>%
   group_by(season, Pot_Limit) %>% 
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
-  mutate(prop_0m_length = n_0m_length/n_records)
+  mutate(percent_0m_length = (n_0m_length/n_records)*100)
 #Overall 500 pot tier vessels had a smaller proportion of 0m stringlines than 300 pot tier 
 #vessels, i.e., 500 pot tier vessels had better/more accurate logbook reporting 
 p5 <- traps_g_v5 %>% 
@@ -188,7 +220,7 @@ line_length_dist_by_season
 
 
 
-# Cumulative distribution of stringline length - by seasonand pot tier
+# Cumulative distribution of stringline length - by season and pot tier
 length_by_season_and_pot_tier <- traps_g_v3 %>%
   mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
   mutate(line_length_m = (round(line_length_m, digits = 1))) %>% 
