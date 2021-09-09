@@ -89,7 +89,8 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 
 #------------------------------------------------------------------------------
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
-
+### NOTE THAT THIS IS NOT ACTUALLY CORRECT - NEED TO BRING IN POINTS DATA AND COUNT UNIQUE VESSELS THAT WAY
+### SEE SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
 adj_summtraps <- adj_summtraps %>%
   mutate(is_confidential=ifelse(nvessels<3,T,F))
 
@@ -280,7 +281,8 @@ glimpse(MaySep_summtrapsWA)
 
 #--------------------------
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
-
+### NOTE THAT THIS IS NOT ACTUALLY CORRECT - NEED TO BRING IN POINTS DATA AND COUNT UNIQUE VESSELS THAT WAY
+### SEE SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
 conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
   mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
 
