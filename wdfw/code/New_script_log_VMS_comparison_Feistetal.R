@@ -157,52 +157,52 @@ conf_avg_trap_dens_adj_summtraps_intervals5 <-  conf_avg_trap_dens_adj_summtraps
 
 
 #----------------------------------------------------------------------------------------------
-# map 
-# Figure out good trap density scale
-conf_avg_trap_dens_adj_summtraps_intervals5 %>%
-  ggplot()+
-  geom_density(aes(mean_M2_trapdens))
-
-
-# change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
-
-map_log_vms <- function(avg_trap_dens_adj_summtraps_intervals_normalised,saveplot=TRUE){
-  
-  # labels for plot titles
-  season_label=unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval)
-  
-  bbox = c(800000,1650000,1013103,1970000)
-  
-  log_vms_map_out <- avg_trap_dens_adj_summtraps_intervals_normalised %>% 
-    ggplot()+
-    geom_tile(aes(grd_x,grd_y,fill=trapdens_norm_within_interval ),na.rm=T,alpha=0.8)+
-    geom_sf(data=coaststates,col=NA,fill='gray50')+
-    #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
-    #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
-    #scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0, 20, 40, 60),oob=squish)+
-    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,1),breaks=c(0, 0.5, 1),oob=squish)+
-    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
-    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
-    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
-    labs(x='',y='',fill='Avg. trap density\nper sq. km',title=season_label)
-  
-  # saving
-  if(saveplot){
-    pt <- unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval)
-    ggsave(here('wdfw','maps',paste0('log_vms',pt,'.png')),log_vms_map_out,w=6,h=5)
-  }
-  return(log_vms_map_out)
-}
-
-# Loop and save maps
-# change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
-tm <- proc.time()
-all_maps <- purrr::map(unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval),function(x){
-  avg_trap_dens_adj_summtraps_intervals_normalised %>% 
-    filter(month_interval==x) %>% 
-    map_log_vms()
-})
-proc.time()-tm
+# # map 
+# # Figure out good trap density scale
+# conf_avg_trap_dens_adj_summtraps_intervals5 %>%
+#   ggplot()+
+#   geom_density(aes(mean_M2_trapdens))
+# 
+# 
+# # change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+# 
+# map_log_vms <- function(avg_trap_dens_adj_summtraps_intervals_normalised,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   season_label=unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval)
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   log_vms_map_out <- avg_trap_dens_adj_summtraps_intervals_normalised %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=trapdens_norm_within_interval ),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     #geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     #geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     #scale_fill_viridis(na.value='grey70',option="C",limits=c(0,60),breaks=c(0, 20, 40, 60),oob=squish)+
+#     scale_fill_viridis(na.value='grey70',option="C",limits=c(0,1),breaks=c(0, 0.5, 1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+#     #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+#     #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+#     labs(x='',y='',fill='Avg. trap density\nper sq. km',title=season_label)
+#   
+#   # saving
+#   if(saveplot){
+#     pt <- unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval)
+#     ggsave(here('wdfw','maps',paste0('log_vms',pt,'.png')),log_vms_map_out,w=6,h=5)
+#   }
+#   return(log_vms_map_out)
+# }
+# 
+# # Loop and save maps
+# # change input file here if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(avg_trap_dens_adj_summtraps_intervals_normalised$month_interval),function(x){
+#   avg_trap_dens_adj_summtraps_intervals_normalised %>% 
+#     filter(month_interval==x) %>% 
+#     map_log_vms()
+# })
+# proc.time()-tm
 
 
 #----------------------------------------
@@ -213,6 +213,39 @@ avg_trap_dens_adj_summtraps_intervals_normalised <- avg_trap_dens_adj_summtraps_
   group_by(month_interval) %>% 
   mutate(trapdens_norm_within_interval = scales::rescale(mean_M2_trapdens , to=c(0,1)))
 
+#write_rds(avg_trap_dens_adj_summtraps_intervals_normalised,here::here('wdfw', 'data', "avg_trap_dens_intervals_normalised.rds"))
+
+
+#read in Blakes VMS data and normalise
+Dungeness_4mon_5km_attribute_table_CONFIDENTIAL <- read_csv(here::here('wdfw','data','Dungeness 4mon 5km attribute table CONFIDENTIAL.csv'))
+
+Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- Dungeness_4mon_5km_attribute_table_CONFIDENTIAL %>% 
+   mutate(DUN_NF1314_norm = scales::rescale(DUN_NF1314 , to=c(0,1)),
+          DUN_MJ2014_norm = scales::rescale(DUN_MJ2014 , to=c(0,1)),
+          DUN_JO2014_norm = scales::rescale(DUN_JO2014 , to=c(0,1)),
+          DUN_NF1415_norm = scales::rescale(DUN_NF1415 , to=c(0,1)),
+          DUN_MJ2015_norm = scales::rescale(DUN_MJ2015 , to=c(0,1)),
+          DUN_JO2015_norm = scales::rescale(DUN_JO2015 , to=c(0,1)),
+          DUN_NF1516_norm = scales::rescale(DUN_NF1516 , to=c(0,1)),
+          DUN_MJ2016_norm = scales::rescale(DUN_MJ2016 , to=c(0,1))
+          )
+#write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised.csv"))
+
+
+#----------------------------------------
+#get logbook data to wider format for Blake
+#remove some excess columns and rename some to make things tidier
+avg_trap_dens_adj_summtraps_intervals_normalised_tidy <-  avg_trap_dens_adj_summtraps_intervals_normalised %>% 
+  select(c(GRID5KM_ID,mean_M2_trapdens, trapdens_norm_within_interval, month_interval)) %>% 
+  rename(mean_trapdens=mean_M2_trapdens, trapdens_norm = trapdens_norm_within_interval)
+
+avg_trap_dens_adj_summtraps_intervals_normalised_wide <- avg_trap_dens_adj_summtraps_intervals_normalised_tidy %>%
+  pivot_wider(names_from = month_interval,
+              names_sep = "_",
+              values_from = c(mean_trapdens, trapdens_norm)
+              )
+
+#write_csv(avg_trap_dens_adj_summtraps_intervals_normalised_wide,here::here('wdfw', 'data', "avg_trap_dens_adj_summtraps_intervals_normalised_wide.csv"))
 
 
 
