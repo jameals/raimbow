@@ -231,6 +231,9 @@ Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- Dungeness_4mon_5km
           )
 #write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised.csv"))
 
+#If need to make VMS into long format:
+#pivot_longer(df, starts_with("_")) -- so don't have to type all column names
+#longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, c(DUN_NF1314, DUN_MJ2014, DUN_JO2014, DUN_NF1415, DUN_MJ2015, DUN_JO2015, DUN_NF1516, DUN_MJ2016))
 
 #----------------------------------------
 #get logbook data to wider format for Blake
