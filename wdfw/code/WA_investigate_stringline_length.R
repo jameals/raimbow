@@ -31,7 +31,7 @@ options(dplyr.summarise.inform = FALSE)
 
 
 #Self reported logbook data not always very accurate
-#There are stringlines that have a length of 0m (strat and end loc are exactly the same)
+#There are stringlines that have a length of 0m (start and end loc are exactly the same)
 #as well as stringlines that are several kilometers long
 
 
@@ -68,7 +68,7 @@ traps_g %<>%
 #---------------------------------------------------
 #Investigate the relationship between stringline length and the reported no. of pots
 
-# In the df each row is an individual simualted pot - remove duplicated rows based on SetID
+# In the df each row is an individual simulated pot - remove duplicated rows based on SetID
 traps_g_v2 <-  traps_g %>% distinct(SetID, .keep_all = TRUE)
 
 p1 <- ggplot(traps_g_v2, aes(x=line_length_m, y=PotsFished))+ 
@@ -267,3 +267,93 @@ traps_g_v6_summary <- traps_g_v6 %>%
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1]),
             nvessels=n_distinct(Vessel,na.rm=T)) 
+
+
+#------------------------------------------------------
+# the 'too long' stringlines
+# what would be the cutoff if exclude top 5%/2.5% - for each pot tier
+
+#first remove 0m lines
+
+#traps_g_v2 = where didn't drop the very long ones that were messing up plots
+traps_300_tier <- traps_g_v2 %>% 
+  filter(Pot_Limit == 300) %>% 
+  filter(line_length_m > 0)
+  
+
+p7 <- ggplot(traps_300_tier, aes(x=line_length_m/1000))+ 
+  geom_histogram(binwidth=1, aes(fill=season)) + 
+  #facet_wrap(~ season) +
+  labs(x="Stringline length (km)",y="No. of Stringlines") +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p7
+
+traps_500_tier <- traps_g_v2 %>% 
+  filter(Pot_Limit == 500)%>% 
+  filter(line_length_m > 0)
+
+p8 <- ggplot(traps_500_tier, aes(x=line_length_m/1000))+ 
+  geom_histogram(binwidth=1, aes(fill=season)) + 
+  #facet_wrap(~ season) +
+  labs(x="Stringline length (km)",y="No. of Stringlines") +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p8
+
+
+
+
+#Calculate percentiles
+traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.975)) 
+#Subset according to percentiles
+traps_300_tier_exc_5percent <- traps_300_tier %>% 
+  filter(line_length_m < traps_300_tier_quants)
+  
+#Calculate percentiles
+traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.975)) 
+#Subset according to the two percentiles
+traps_500_tier_exc_5percent <- traps_500_tier %>% 
+  filter(line_length_m < traps_500_tier_quants)
+
+
+
+p9 <- rbind(traps_300_tier_exc_5percent,traps_500_tier_exc_5percent) %>% 
+  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  ggplot() + 
+  geom_bar(aes(x=line_length_m/1000, y=stat(prop)), position = "dodge") +
+  facet_wrap(~ Pot_Limit) +
+  scale_x_binned(breaks=seq(0, 25, 1)) + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
+  scale_y_continuous(breaks=seq(0, 0.2, 0.05),limits=c(0,0.2))+
+  labs(x="Stringline length (km)",y="Proportion") +
+  ggtitle('Proportion of string lengths (2.5% cut-off)')
+p9
+
+
+
+
+
+traps_300_tier_quants_season <- traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(quants_5percent = quantile(line_length_m, probs = c(0.95)),
+            quants_2.5percent = quantile(line_length_m, probs = c(0.975))
+            ) 
+
+traps_500_tier_quants_season <- traps_500_tier %>% 
+  group_by(season) %>% 
+  summarise(quants_5percent = quantile(line_length_m, probs = c(0.95)),
+            quants_2.5percent = quantile(line_length_m, probs = c(0.975))
+  ) 
+
+
+
