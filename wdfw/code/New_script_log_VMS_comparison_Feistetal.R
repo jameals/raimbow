@@ -207,48 +207,86 @@ conf_avg_trap_dens_adj_summtraps_intervals5 <-  conf_avg_trap_dens_adj_summtraps
 
 #----------------------------------------
 
+#read in Blakes VMS data and normalise
+Dungeness_4mon_5km_attribute_table_CONFIDENTIAL <- read_csv(here::here('wdfw','data','Dungeness 4mon 5km attribute table CONFIDENTIAL.csv'))
+
+#If need to make VMS into long format:
+#pivot_longer(df, starts_with("_")) -- so don't have to type all column names
+longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, starts_with("DUN"))
+#longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, c(DUN_NF1314, DUN_MJ2014, DUN_JO2014, DUN_NF1415, DUN_MJ2015, DUN_JO2015, DUN_NF1516, DUN_MJ2016))
+
+# Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- Dungeness_4mon_5km_attribute_table_CONFIDENTIAL %>% 
+#    mutate(DUN_NF1314_norm = scales::rescale(DUN_NF1314 , to=c(0,1)),
+#           DUN_MJ2014_norm = scales::rescale(DUN_MJ2014 , to=c(0,1)),
+#           DUN_JO2014_norm = scales::rescale(DUN_JO2014 , to=c(0,1)),
+#           DUN_NF1415_norm = scales::rescale(DUN_NF1415 , to=c(0,1)),
+#           DUN_MJ2015_norm = scales::rescale(DUN_MJ2015 , to=c(0,1)),
+#           DUN_JO2015_norm = scales::rescale(DUN_JO2015 , to=c(0,1)),
+#           DUN_NF1516_norm = scales::rescale(DUN_NF1516 , to=c(0,1)),
+#           DUN_MJ2016_norm = scales::rescale(DUN_MJ2016 , to=c(0,1))
+#           )
+
+Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- longdata %>% 
+  mutate(VMS_norm_between_intervals = scales::rescale(value, to=c(0,1))) %>% 
+  group_by(name) %>% 
+  mutate(VMS_norm_within_interval = scales::rescale(value, to=c(0,1))) %>%
+  pivot_wider(names_from = name,
+              names_sep = "_",
+              values_from = c(value, VMS_norm_within_interval, VMS_norm_between_intervals)
+  ) 
+
+Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_wide <-  Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised %>% 
+  rename(
+    DUN_NF1314_norm_within = VMS_norm_within_interval_DUN_NF1314,
+    DUN_MJ2014_norm_within = VMS_norm_within_interval_DUN_MJ2014,
+    DUN_JO2014_norm_within = VMS_norm_within_interval_DUN_JO2014,
+    DUN_NF1415_norm_within = VMS_norm_within_interval_DUN_NF1415,
+    DUN_MJ2015_norm_within = VMS_norm_within_interval_DUN_MJ2015,
+    DUN_JO2015_norm_within = VMS_norm_within_interval_DUN_JO2015,
+    DUN_NF1516_norm_within = VMS_norm_within_interval_DUN_NF1516,
+    DUN_MJ2016_norm_within = VMS_norm_within_interval_DUN_MJ2016,
+    DUN_NF1314_norm_between = VMS_norm_between_intervals_DUN_NF1314,
+    DUN_MJ2014_norm_between = VMS_norm_between_intervals_DUN_MJ2014,
+    DUN_JO2014_norm_between = VMS_norm_between_intervals_DUN_JO2014,
+    DUN_NF1415_norm_between = VMS_norm_between_intervals_DUN_NF1415,
+    DUN_MJ2015_norm_between = VMS_norm_between_intervals_DUN_MJ2015,
+    DUN_JO2015_norm_between = VMS_norm_between_intervals_DUN_JO2015,
+    DUN_NF1516_norm_between = VMS_norm_between_intervals_DUN_NF1516,
+    DUN_MJ2016_norm_between = VMS_norm_between_intervals_DUN_MJ2016
+  )
+
+
+#write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_wide,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_within_between.csv"))
+
+
+#----------------------------------------
 # Normalise trap density within intervals, but also within 13/14 11-02 and 2016 03-06 period
 #for now use 'confidential' data, no need to remove grids with < 3 vessels
 avg_trap_dens_adj_summtraps_intervals_normalised <- avg_trap_dens_adj_summtraps_intervals %>% 
   group_by(month_interval) %>% 
   mutate(trapdens_norm_within_interval = scales::rescale(mean_M2_trapdens , to=c(0,1)))
 
-#write_rds(avg_trap_dens_adj_summtraps_intervals_normalised,here::here('wdfw', 'data', "avg_trap_dens_intervals_normalised.rds"))
+#need to ungroup for rescale() to work correctly
+avg_trap_dens_adj_summtraps_normalised_within_between <- avg_trap_dens_adj_summtraps_intervals_normalised %>%
+  ungroup() %>% 
+  mutate(trapdens_norm_between_intervals = scales::rescale(mean_M2_trapdens , to=c(0,1)))
+
+#write_rds(avg_trap_dens_adj_summtraps_normalised_within_between,here::here('wdfw', 'data', "avg_trap_dens_normalised_within_between.rds"))
 
 
-#read in Blakes VMS data and normalise
-Dungeness_4mon_5km_attribute_table_CONFIDENTIAL <- read_csv(here::here('wdfw','data','Dungeness 4mon 5km attribute table CONFIDENTIAL.csv'))
-
-Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- Dungeness_4mon_5km_attribute_table_CONFIDENTIAL %>% 
-   mutate(DUN_NF1314_norm = scales::rescale(DUN_NF1314 , to=c(0,1)),
-          DUN_MJ2014_norm = scales::rescale(DUN_MJ2014 , to=c(0,1)),
-          DUN_JO2014_norm = scales::rescale(DUN_JO2014 , to=c(0,1)),
-          DUN_NF1415_norm = scales::rescale(DUN_NF1415 , to=c(0,1)),
-          DUN_MJ2015_norm = scales::rescale(DUN_MJ2015 , to=c(0,1)),
-          DUN_JO2015_norm = scales::rescale(DUN_JO2015 , to=c(0,1)),
-          DUN_NF1516_norm = scales::rescale(DUN_NF1516 , to=c(0,1)),
-          DUN_MJ2016_norm = scales::rescale(DUN_MJ2016 , to=c(0,1))
-          )
-#write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised.csv"))
-
-#If need to make VMS into long format:
-#pivot_longer(df, starts_with("_")) -- so don't have to type all column names
-#longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, c(DUN_NF1314, DUN_MJ2014, DUN_JO2014, DUN_NF1415, DUN_MJ2015, DUN_JO2015, DUN_NF1516, DUN_MJ2016))
-
-#----------------------------------------
 #get logbook data to wider format for Blake
 #remove some excess columns and rename some to make things tidier
-avg_trap_dens_adj_summtraps_intervals_normalised_tidy <-  avg_trap_dens_adj_summtraps_intervals_normalised %>% 
-  select(c(GRID5KM_ID,mean_M2_trapdens, trapdens_norm_within_interval, month_interval)) %>% 
-  rename(mean_trapdens=mean_M2_trapdens, trapdens_norm = trapdens_norm_within_interval)
+avg_trap_dens_adj_summtraps_normalised_within_between_tidy <-  avg_trap_dens_adj_summtraps_normalised_within_between %>% 
+  select(c(GRID5KM_ID,mean_M2_trapdens, trapdens_norm_within_interval, trapdens_norm_between_intervals, month_interval)) %>% 
+  rename(mean_trapdens=mean_M2_trapdens, trapdens_norm_within = trapdens_norm_within_interval, trapdens_norm_between = trapdens_norm_between_intervals)
 
-avg_trap_dens_adj_summtraps_intervals_normalised_wide <- avg_trap_dens_adj_summtraps_intervals_normalised_tidy %>%
+avg_trap_dens_normalised_within_between_wide <- avg_trap_dens_adj_summtraps_normalised_within_between_tidy %>%
   pivot_wider(names_from = month_interval,
               names_sep = "_",
-              values_from = c(mean_trapdens, trapdens_norm)
+              values_from = c(mean_trapdens, trapdens_norm_within, trapdens_norm_between)
               )
 
-#write_csv(avg_trap_dens_adj_summtraps_intervals_normalised_wide,here::here('wdfw', 'data', "avg_trap_dens_adj_summtraps_intervals_normalised_wide.csv"))
+#write_csv(avg_trap_dens_normalised_within_between_wide,here::here('wdfw', 'data', "avg_trap_dens_normalised_within_between_wide.csv"))
 
 
 
