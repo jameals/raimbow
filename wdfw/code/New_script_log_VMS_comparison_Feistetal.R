@@ -102,15 +102,6 @@ glimpse(avg_trap_dens_adj_summtraps_intervals)
 
 #----------------------------------------------------------------------------------------------
 # # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
-# conf_avg_trap_dens_adj_summtraps_intervals <- avg_trap_dens_adj_summtraps_intervals %>%
-#   mutate(is_confidential=ifelse(sum_nvessels<3,T,F)) %>% 
-#   mutate(is_confidential_v2=ifelse(avg_nvessels<3,T,F))
-# 
-# # or use conf_MaySep_summtrapsWA2 as input in mapping loop, if want cells with < 3 vessels to be fully removed
-# conf_avg_trap_dens_adj_summtraps_intervals2 <-  conf_avg_trap_dens_adj_summtraps_intervals %>%
-#   filter(is_confidential == FALSE)
-# conf_avg_trap_dens_adj_summtraps_intervals3 <-  conf_avg_trap_dens_adj_summtraps_intervals %>%
-#   filter(is_confidential_v2 == FALSE)
 
 #I think this is the correct way of figuring if more than 3 unique vessels were in a grid cell in a given period
 #bring in data as points, not summarised by grid cell
@@ -226,6 +217,10 @@ longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, starts
 #           DUN_MJ2016_norm = scales::rescale(DUN_MJ2016 , to=c(0,1))
 #           )
 
+#Blake requires the resulting df in a 'wide' format
+#but I also saved a long verion before running pivot_wider()
+#write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_within_between_long.csv"))
+
 Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- longdata %>% 
   mutate(VMS_norm_between_intervals = scales::rescale(value, to=c(0,1))) %>% 
   group_by(name) %>% 
@@ -255,7 +250,6 @@ Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_wide <-  Dungeness_4m
     DUN_MJ2016_norm_between = VMS_norm_between_intervals_DUN_MJ2016
   )
 
-
 #write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_wide,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_within_between.csv"))
 
 
@@ -271,7 +265,7 @@ avg_trap_dens_adj_summtraps_normalised_within_between <- avg_trap_dens_adj_summt
   ungroup() %>% 
   mutate(trapdens_norm_between_intervals = scales::rescale(mean_M2_trapdens , to=c(0,1)))
 
-#write_rds(avg_trap_dens_adj_summtraps_normalised_within_between,here::here('wdfw', 'data', "avg_trap_dens_normalised_within_between.rds"))
+#write_csv(avg_trap_dens_adj_summtraps_normalised_within_between,here::here('wdfw', 'data', "avg_trap_dens_normalised_within_between_long.csv"))
 
 
 #get logbook data to wider format for Blake
@@ -290,6 +284,87 @@ avg_trap_dens_normalised_within_between_wide <- avg_trap_dens_adj_summtraps_norm
 
 
 
+#------------------------------------------
+#make time series plot
+#read in the long dataframes of VMS pings and logs with normalised data
+
+logs_norm <- read_csv(here::here('wdfw','data','avg_trap_dens_normalised_within_between_long.csv'))
+VMS_norm <- read_csv(here::here('wdfw','data','Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_within_between_long.csv'))
+
+logs_norm <- logs_norm %>% 
+  mutate(month_interval = factor(month_interval, 
+                                 levels = c('13_14 11-02','2014 03-06','2014 07-10','14_15 11-02','2015 03-06','2015 07-10','15_16 11-02','2016 03-06'))) 
+
+#change some column names etc in VMS df to make it similar to log df
+VMS_norm <-  VMS_norm %>% 
+  rename(VMS_pings = value,  month_interval= name) %>% 
+  mutate(
+  month_interval = case_when(
+    month_interval == "DUN_NF1314" ~ "13_14 11-02",
+    month_interval == "DUN_MJ2014" ~ "2014 03-06",
+    month_interval == "DUN_JO2014" ~ "2014 07-10",
+    month_interval == "DUN_NF1415" ~ "14_15 11-02",
+    month_interval == "DUN_MJ2015" ~ "2015 03-06",
+    month_interval == "DUN_JO2015" ~ "2015 07-10",
+    month_interval == "DUN_NF1516" ~ "15_16 11-02",
+    month_interval == "DUN_MJ2016" ~ "2016 03-06"
+    )
+  ) %>% 
+  mutate(month_interval = factor(month_interval, 
+        levels = c('13_14 11-02','2014 03-06','2014 07-10','14_15 11-02','2015 03-06','2015 07-10','15_16 11-02','2016 03-06'))) 
+  
+
+VMS_norm_max <- VMS_norm %>% 
+  group_by(month_interval) %>% 
+  summarise(max = max(VMS_norm_between_intervals)) 
+
+tsplot1 <-  
+  ggplot()+
+  geom_point(data= VMS_norm, aes(x=month_interval,y=VMS_norm_between_intervals, group=1), alpha = 0.2, show.legend = F)+
+  geom_line(data=VMS_norm_max, aes(x=month_interval,y=max, group=1))+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised pings") +
+  ggtitle("VMS pings") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot1
+
+logs_norm_max <- logs_norm %>% 
+  group_by(month_interval) %>% 
+  summarise(max = max(trapdens_norm_between_intervals)) 
+
+tsplot2 <-  
+  ggplot()+
+  geom_point(data= logs_norm, aes(x=month_interval,y=trapdens_norm_between_intervals, group=1, colour='red'), alpha = 0.2, show.legend = F)+
+  geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised trap density") +
+  ggtitle("Trap density") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot2
+
+map_out <- plot_grid(tsplot1,tsplot2,nrow=1)
+
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities','.png')),map_out,w=12,h=10)
 
 
+joined <- inner_join(VMS_norm,logs_norm, by=c("month_interval", "GRID5KM_ID"))
 
+tsplot1 <-  
+  ggplot()+
+  geom_point(data= joined, aes(x=month_interval,y=VMS_norm_between_intervals, group=1))+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised pings") +
+  ggtitle("VMS pings") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot1
+
+tsplot2 <-  
+  ggplot()+
+  geom_point(data= joined, aes(x=month_interval,y=trapdens_norm_between_intervals, group=1, colour='red'), show.legend = F)+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised trap density") +
+  ggtitle("Trap density") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot2
+
+map_out <- plot_grid(tsplot1,tsplot2,nrow=1)
