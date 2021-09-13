@@ -344,7 +344,8 @@ p9
 
 
 traps_300_tier_quants_season <- traps_300_tier %>% 
-  group_by(season) %>% 
+  #mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  group_by(season) %>% #, month_name
   summarise(quants_5percent = quantile(line_length_m, probs = c(0.95)),
             quants_2.5percent = quantile(line_length_m, probs = c(0.975))
             ) 
@@ -354,6 +355,8 @@ traps_500_tier_quants_season <- traps_500_tier %>%
   summarise(quants_5percent = quantile(line_length_m, probs = c(0.95)),
             quants_2.5percent = quantile(line_length_m, probs = c(0.975))
   ) 
+
+
 
 
 
