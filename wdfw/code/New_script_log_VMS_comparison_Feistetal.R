@@ -368,3 +368,22 @@ tsplot2 <-
 tsplot2
 
 map_out <- plot_grid(tsplot1,tsplot2,nrow=1)
+
+
+
+
+
+#line only
+
+tsplot3 <-  
+  ggplot()+
+  geom_line(data=VMS_norm_max, aes(x=month_interval,y=max, group=1))+
+  geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised pings/trap density") +
+  ggtitle("Normalised VMS ping rate (black) and logbook based trap density (red) \nacross grid cells in WA") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot3
+#The line indicates the highest normalised value in a ny grid cell in a given 4-month interval (x-axis)
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line','.png')),tsplot3,w=12,h=10)
+
