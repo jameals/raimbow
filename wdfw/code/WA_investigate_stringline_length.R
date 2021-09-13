@@ -356,7 +356,31 @@ traps_500_tier_quants_season <- traps_500_tier %>%
             quants_2.5percent = quantile(line_length_m, probs = c(0.975))
   ) 
 
+#----------------------------------
+#% lines lost with different cut-off values
+
+percent_lost_300_tier <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > traps_300_tier_quants])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+percent_lost_500_tier <-  traps_500_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > traps_500_tier_quants])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
+#set 20km cut off
+percent_lost_300_tier_set_cutoff <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 20000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
 
-
+percent_lost_500_tier_set_cutoff <-  traps_500_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 25000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
