@@ -195,6 +195,20 @@ p5 <- traps_g_v5 %>%
 p5
 
 
+#the % of traps excluded at 0m
+#so work on pots, not stringlines
+# i.e., traps_g instead of traps_g_v2
+traps_g_pots_0m <-  traps_g %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_pots_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
+  mutate(percent_0m_length = (n_pots_0m_length/n_records)*100)
+
+
+
+
+
+
 
 # Cumulative distribution of stringline length - by season 
 length_by_season <- traps_g_v3 %>%
