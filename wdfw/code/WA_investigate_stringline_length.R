@@ -248,6 +248,7 @@ line_length_dist_by_season_and_pot_tier
 
 #--------------------------
 #focus on lines that are 0m - there are both 0 and 0.000 cases. After that the next value is 12m
+# how many pots fished on those stringlines that were 0m?
 traps_g_v6 <-  traps_g_v3 %>% 
   filter(line_length_m < 0.1)
 p6 <- ggplot(traps_g_v6, aes(x=PotsFished))+ 
@@ -267,6 +268,23 @@ traps_g_v6_summary <- traps_g_v6 %>%
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1]),
             nvessels=n_distinct(Vessel,na.rm=T)) 
+
+
+# as a comparison, how many pots fished on those stringlines that had a length <0m?
+traps_g_v6b <-  traps_g_v3 %>% 
+  filter(line_length_m > 0.1) %>% 
+  filter(PotsFished < 250)
+p6b <- ggplot(traps_g_v6b, aes(x=PotsFished))+ 
+  geom_histogram(binwidth=5) + 
+  #facet_wrap(~ season) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p6b 
 
 
 #------------------------------------------------------
@@ -314,14 +332,14 @@ p8
 
 
 
-#Calculate percentiles
+#Calculate percentiles # 5% cut-off = 11448.16, 2.5% cut-off = 13212.62
 traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.975)) 
 #Subset according to percentiles
 traps_300_tier_exc_5percent <- traps_300_tier %>% 
   filter(line_length_m < traps_300_tier_quants)
   
-#Calculate percentiles
-traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.975)) 
+#Calculate percentiles # 5% cut-off = 18885.67, 2.5% cut-off = 22529.54
+traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.95)) 
 #Subset according to the two percentiles
 traps_500_tier_exc_5percent <- traps_500_tier %>% 
   filter(line_length_m < traps_500_tier_quants)
@@ -384,3 +402,104 @@ percent_lost_500_tier_set_cutoff <-  traps_500_tier %>%
   summarise(n_records = n(),
             n_too_long = length(line_length_m[line_length_m > 25000])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+
+#what happens if you consider the % of traps excluded with the 2.5% and 5% cutoffs 
+#for the % of sets, or the 20km or 25km cutoff?
+
+#so work on pots, not stringlines
+# i.e., traps_g instead of traps_g_v2
+
+traps_300_tier <- traps_g %>% 
+  filter(Pot_Limit == 300) %>% 
+  filter(line_length_m > 0)
+
+#Calculate percentiles for 300 tier # 5% cut-off = 11448.16, 2.5% cut-off = 13212.62
+percent_lost_300_tier <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 13212.62])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+traps_500_tier <- traps_g %>% 
+  filter(Pot_Limit == 500) %>% 
+  filter(line_length_m > 0)
+
+#Calculate percentiles for 500 tier # 5% cut-off = 18885.67, 2.5% cut-off = 22529.54
+percent_lost_500_tier <-  traps_500_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 22529.54])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+#set 20km/25km cut off
+percent_lost_300_tier_set_cutoff <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 20000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+percent_lost_500_tier_set_cutoff <-  traps_500_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 30000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+#quantiles for individual season, but use the df where removed duplicates
+traps_300_tier_quants_season <-  traps_g_v2 %>% 
+  filter(Pot_Limit == 300)%>% 
+  filter(line_length_m > 0) %>% 
+  group_by(season) %>% 
+  summarise(quant_05percent = quantile(line_length_m, probs = c(0.95)), 
+            quant_025percent = quantile(line_length_m, probs = c(0.975))
+              )
+  
+traps_300_tier_quant_joined <- traps_300_tier %>% 
+  left_join(traps_300_tier_quants_season, by=("season"))
+
+percent_lost_300_tier_quant_joined <-  traps_300_tier_quant_joined %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long_05percent = length(line_length_m[line_length_m > quant_05percent]),
+            n_too_long_025percent = length(line_length_m[line_length_m > quant_025percent])
+            ) %>% 
+  mutate(percent_too_long_05percent = (n_too_long_05percent/n_records)*100,
+         percent_too_long_025percent = (n_too_long_025percent/n_records)*100
+         )
+
+
+#quantiles for individual season, but use the df where removed duplicates
+traps_500_tier_quants_season <-  traps_g_v2 %>% 
+  filter(Pot_Limit == 500)%>% 
+  filter(line_length_m > 0) %>% 
+  group_by(season) %>% 
+  summarise(quant_05percent = quantile(line_length_m, probs = c(0.95)), 
+            quant_025percent = quantile(line_length_m, probs = c(0.975))
+  )
+
+traps_500_tier_quant_joined <- traps_500_tier %>% 
+  left_join(traps_500_tier_quants_season, by=("season"))
+
+percent_lost_500_tier_quant_joined <-  traps_500_tier_quant_joined %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long_05percent = length(line_length_m[line_length_m > quant_05percent]),
+            n_too_long_025percent = length(line_length_m[line_length_m > quant_025percent])
+  ) %>% 
+  mutate(percent_too_long_05percent = (n_too_long_05percent/n_records)*100,
+         percent_too_long_025percent = (n_too_long_025percent/n_records)*100
+  )
+
+#-----------------------------------------------
+#list of SetIDs that have string length 0m
+unique_SetIDs_0m <- traps_g_v2 %>% 
+  filter(line_length_m < 0.1) %>% 
+  distinct(SetID)
+
+logs_stackcoords_2009_2019 <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+
+logs_stackcoords_2009_2019_0m <- filter(logs_stackcoords_2009_2019, SetID %in% unique_SetIDs_0m)
