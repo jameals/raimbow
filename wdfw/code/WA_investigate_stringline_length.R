@@ -35,7 +35,7 @@ options(dplyr.summarise.inform = FALSE)
 #as well as stringlines that are several kilometers long
 
 
-traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2019_LineLengthIncluded.rds'))
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
 
 # remove geometry, create columns for season, month etc 
 traps_g %<>%
@@ -346,13 +346,13 @@ p8
 
 
 
-#Calculate percentiles # 5% cut-off = 11448.16, 2.5% cut-off = 13212.62
-traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.975)) 
+#Calculate percentiles # 5% cut-off = 11421.01, 2.5% cut-off = 13062.78
+traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.95)) 
 #Subset according to percentiles
 traps_300_tier_exc_5percent <- traps_300_tier %>% 
   filter(line_length_m < traps_300_tier_quants)
   
-#Calculate percentiles # 5% cut-off = 18885.67, 2.5% cut-off = 22529.54
+#Calculate percentiles # 5% cut-off = 18696.81, 2.5% cut-off = 22250.6
 traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.95)) 
 #Subset according to the two percentiles
 traps_500_tier_exc_5percent <- traps_500_tier %>% 
@@ -429,11 +429,11 @@ traps_300_tier <- traps_g %>%
   filter(Pot_Limit == 300) %>% 
   filter(line_length_m > 0)
 
-#Calculate percentiles for 300 tier # 5% cut-off = 11448.16, 2.5% cut-off = 13212.62
+#Calculate percentiles for 300 tier # 5% cut-off = 11421.01, 2.5% cut-off = 13062.78
 percent_lost_300_tier <-  traps_300_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
-            n_too_long = length(line_length_m[line_length_m > 13212.62])) %>% 
+            n_too_long = length(line_length_m[line_length_m > 13062.78])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
@@ -441,11 +441,11 @@ traps_500_tier <- traps_g %>%
   filter(Pot_Limit == 500) %>% 
   filter(line_length_m > 0)
 
-#Calculate percentiles for 500 tier # 5% cut-off = 18885.67, 2.5% cut-off = 22529.54
+#Calculate percentiles for 500 tier # 5% cut-off = 18696.81, 2.5% cut-off = 22250.6
 percent_lost_500_tier <-  traps_500_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
-            n_too_long = length(line_length_m[line_length_m > 22529.54])) %>% 
+            n_too_long = length(line_length_m[line_length_m > 22250.6])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
