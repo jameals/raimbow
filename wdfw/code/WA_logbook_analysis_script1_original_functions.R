@@ -33,7 +33,7 @@ options(dplyr.summarise.inform = FALSE)
 #---------------------------------- 
 #### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
@@ -359,10 +359,10 @@ proc.time()-tm
 #(i.e. not actually specifying the functions, or crab-year/month/period choices)
 
 #run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
-logs2013_2019 <- logs %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) 
+logs2013_2020 <- logs %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
 
-df <- logs2013_2019
+df <- logs2013_2020
 
 df %<>%
   dplyr::select(season, Vessel,License, SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
@@ -451,6 +451,6 @@ traps_g <- traps_sf %>%
   left_join(grd_xy,by="GRID5KM_ID")
 
 #running join_grid on 2013-2019 logs subset took about 8min
-#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2019.rds"))
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020.rds"))
 
 #--------------------------------------------------------------------------------
