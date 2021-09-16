@@ -36,6 +36,16 @@ x.blue <- readRDS(path.blue) %>%
   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 glimpse(x.blue)
 
+# take a quick peek at 2019 to be sure nothing is weird
+View(x.blue %>% group_by(year_month) %>% summarise(
+  'Mean Occurrence' = mean(Blue_occurrence_mean, na.rm=TRUE),
+  'Median Occurrence' = median(Blue_occurrence_mean,na.rm=TRUE),
+  '75th Percentile' = quantile(Blue_occurrence_mean, probs=0.75, na.rm=TRUE),
+  '25th Percentile' = quantile(Blue_occurrence_mean, probs=0.25, na.rm=TRUE),
+  n=n()
+)
+)
+
 # join 5km grid with depths
 grid.key <- left_join(grid.5km %>% st_drop_geometry(), 
                       grid.depth, by = "GRID5KM_ID") # These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Also from Blake: using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
