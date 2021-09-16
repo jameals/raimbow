@@ -166,10 +166,10 @@ p4
 
 #proportion/percent of stringlines that are 0m per season and by pot tier?
 traps_g_v5 <-  traps_g_v2 %>% 
-  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  #mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
   mutate(Potlimit = factor(Potlimit, levels = c('200', '300','500'))) %>% 
-  group_by(season, Potlimit, month_name) %>% 
-  #group_by(season, Pot_Limit) %>% 
+  #group_by(season, Potlimit, month_name) %>% 
+  group_by(season, Potlimit) %>% 
   summarise(n_records = n(),
             n_0m_length = length(line_length_m[line_length_m<0.1])) %>% 
   mutate(percent_0m_length = (n_0m_length/n_records)*100)
@@ -271,16 +271,16 @@ p6 <- ggplot(traps_g_v6, aes(x=PotsFished))+
 p6 
 
 traps_g_v6_summary <- traps_g_v6 %>% 
+  mutate(Potlimit = factor(Potlimit, levels = c('200', '300','500'))) %>% 
   group_by(season, Potlimit) %>% 
-  summarise(n_records = n(),
-            n_0m_length = length(line_length_m[line_length_m<0.1]),
+  summarise(n_0m_length = length(line_length_m[line_length_m<0.1]),
             nvessels=n_distinct(Vessel,na.rm=T)) 
 
 
 # as a comparison, how many pots fished on those stringlines that had a length <0m?
-traps_g_v6b <-  traps_g_v3 %>% 
-  filter(line_length_m > 0.1) %>% 
-  filter(PotsFished < 250)
+traps_g_v6b <-  traps_g_v2 %>% 
+  filter(line_length_m > 0.1) #%>% 
+ # filter(PotsFished < 250)
 p6b <- ggplot(traps_g_v6b, aes(x=PotsFished))+ 
   geom_histogram(binwidth=5) + 
   #facet_wrap(~ season) +
@@ -302,13 +302,26 @@ p6b
 
 #traps_g_v2 = where didn't drop the very long ones that were messing up plots
 traps_200_tier <- traps_g_v2 %>% 
-  filter(Pot_Limit == 200) %>% 
+  filter(Potlimit == 200) %>% 
   filter(line_length_m > 0)
+
+p7a <- ggplot(traps_200_tier, aes(x=line_length_m/1000))+ 
+  geom_histogram(binwidth=1, aes(fill=season)) + 
+  #facet_wrap(~ season) +
+  labs(x="Stringline length (km)",y="No. of Stringlines") +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+p7a
 
 
 #traps_g_v2 = where didn't drop the very long ones that were messing up plots
 traps_300_tier <- traps_g_v2 %>% 
-  filter(Pot_Limit == 300) %>% 
+  filter(Potlimit == 300) %>% 
   filter(line_length_m > 0)
   
 
@@ -326,7 +339,7 @@ p7 <- ggplot(traps_300_tier, aes(x=line_length_m/1000))+
 p7
 
 traps_500_tier <- traps_g_v2 %>% 
-  filter(Pot_Limit == 500)%>% 
+  filter(Potlimit == 500)%>% 
   filter(line_length_m > 0)
 
 p8 <- ggplot(traps_500_tier, aes(x=line_length_m/1000))+ 
@@ -344,15 +357,21 @@ p8
 
 
 
+#Calculate percentiles # 5% cut-off = 11142.45, 2.5% cut-off = 14878.13
+traps_200_tier_quants <-  quantile(traps_200_tier$line_length_m, probs = c(0.975)) 
+#Subset according to percentiles
+traps_200_tier_exc_5percent <- traps_200_tier %>% 
+  filter(line_length_m < traps_200_tier_quants)
 
-#Calculate percentiles # 5% cut-off = 11421.01, 2.5% cut-off = 13062.78
-traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.95)) 
+
+#Calculate percentiles # 5% cut-off = 16160.55, 2.5% cut-off = 20499.97
+traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.975)) 
 #Subset according to percentiles
 traps_300_tier_exc_5percent <- traps_300_tier %>% 
   filter(line_length_m < traps_300_tier_quants)
   
-#Calculate percentiles # 5% cut-off = 18696.81, 2.5% cut-off = 22250.6
-traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.95)) 
+#Calculate percentiles # 5% cut-off = 17972.35, 2.5% cut-off = 22630.52
+traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.975)) 
 #Subset according to the two percentiles
 traps_500_tier_exc_5percent <- traps_500_tier %>% 
   filter(line_length_m < traps_500_tier_quants)
@@ -373,6 +392,13 @@ p9
 
 
 
+# Should the cut-off value vary between seasons? 
+traps_200_tier_quants_season <- traps_200_tier %>% 
+  #mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  group_by(season) %>% #, month_name
+  summarise(quants_5percent = quantile(line_length_m, probs = c(0.95)),
+            quants_2.5percent = quantile(line_length_m, probs = c(0.975))
+  ) 
 
 traps_300_tier_quants_season <- traps_300_tier %>% 
   #mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
@@ -390,11 +416,25 @@ traps_500_tier_quants_season <- traps_500_tier %>%
 #----------------------------------
 #% lines lost with different cut-off values
 
+traps_200_tier_quants <-  quantile(traps_200_tier$line_length_m, probs = c(0.975)) 
+
+percent_lost_200_tier <-  traps_200_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > traps_200_tier_quants])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+traps_300_tier_quants <-  quantile(traps_300_tier$line_length_m, probs = c(0.975)) 
+
 percent_lost_300_tier <-  traps_300_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
             n_too_long = length(line_length_m[line_length_m > traps_300_tier_quants])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+traps_500_tier_quants <-  quantile(traps_500_tier$line_length_m, probs = c(0.975)) 
 
 percent_lost_500_tier <-  traps_500_tier %>% 
   group_by(season) %>% 
@@ -403,12 +443,22 @@ percent_lost_500_tier <-  traps_500_tier %>%
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
+
 #set 20km cut off
-percent_lost_300_tier_set_cutoff <-  traps_300_tier %>% 
+percent_lost_200_tier_set_cutoff <-  traps_200_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
             n_too_long = length(line_length_m[line_length_m > 20000])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+#20km would be the same as 2.5%
+percent_lost_300_tier_set_cutoff <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 25000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
 
 percent_lost_500_tier_set_cutoff <-  traps_500_tier %>% 
   group_by(season) %>% 
@@ -417,54 +467,81 @@ percent_lost_500_tier_set_cutoff <-  traps_500_tier %>%
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
-
+#---------------------------------------------------------------------------------
 #what happens if you consider the % of traps excluded with the 2.5% and 5% cutoffs 
 #for the % of sets, or the 20km or 25km cutoff?
 
 #so work on pots, not stringlines
 # i.e., traps_g instead of traps_g_v2
 
-traps_300_tier <- traps_g %>% 
-  filter(Pot_Limit == 300) %>% 
+traps_200_tier <- traps_g %>% #make sure this is the version of traps_g that DOESN'T have geometry
+  filter(Potlimit == 200) %>% 
   filter(line_length_m > 0)
 
-#Calculate percentiles for 300 tier # 5% cut-off = 11421.01, 2.5% cut-off = 13062.78
-percent_lost_300_tier <-  traps_300_tier %>% 
-  group_by(season) %>% 
-  summarise(n_records = n(),
-            n_too_long = length(line_length_m[line_length_m > 13062.78])) %>% 
-  mutate(percent_too_long = (n_too_long/n_records)*100)
-
-
-traps_500_tier <- traps_g %>% 
-  filter(Pot_Limit == 500) %>% 
-  filter(line_length_m > 0)
-
-#Calculate percentiles for 500 tier # 5% cut-off = 18696.81, 2.5% cut-off = 22250.6
-percent_lost_500_tier <-  traps_500_tier %>% 
-  group_by(season) %>% 
-  summarise(n_records = n(),
-            n_too_long = length(line_length_m[line_length_m > 22250.6])) %>% 
-  mutate(percent_too_long = (n_too_long/n_records)*100)
-
-
-#set 20km/25km cut off
-percent_lost_300_tier_set_cutoff <-  traps_300_tier %>% 
+#Calculate percentiles for 200 tier # 5% cut-off = 11142.45, 2.5% cut-off = 14878.13
+percent_lost_200_tier <-  traps_200_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
             n_too_long = length(line_length_m[line_length_m > 20000])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
-percent_lost_500_tier_set_cutoff <-  traps_500_tier %>% 
+
+
+traps_300_tier <- traps_g %>% 
+  filter(Potlimit == 300) %>% 
+  filter(line_length_m > 0)
+
+#Calculate percentiles for 300 tier # 5% cut-off = 16160.55, 2.5% cut-off = 20499.97
+percent_lost_300_tier <-  traps_300_tier %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long = length(line_length_m[line_length_m > 25000])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+
+traps_500_tier <- traps_g %>% 
+  filter(Potlimit == 500) %>% 
+  filter(line_length_m > 0)
+
+#Calculate percentiles for 500 tier # 5% cut-off = 17972.35, 2.5% cut-off = 22630.52
+percent_lost_500_tier <-  traps_500_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
             n_too_long = length(line_length_m[line_length_m > 30000])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
+
+
+
+
+#quantiles for individual season, but use the df where removed duplicates
+traps_200_tier_quants_season <-  traps_g_v2 %>% 
+  filter(Potlimit == 200)%>% 
+  filter(line_length_m > 0) %>% 
+  group_by(season) %>% 
+  summarise(quant_05percent = quantile(line_length_m, probs = c(0.95)), 
+            quant_025percent = quantile(line_length_m, probs = c(0.975))
+  )
+
+traps_200_tier_quant_joined <- traps_200_tier %>% 
+  left_join(traps_200_tier_quants_season, by=("season"))
+
+percent_lost_200_tier_quant_joined <-  traps_200_tier_quant_joined %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_too_long_05percent = length(line_length_m[line_length_m > quant_05percent]),
+            n_too_long_025percent = length(line_length_m[line_length_m > quant_025percent])
+  ) %>% 
+  mutate(percent_too_long_05percent = (n_too_long_05percent/n_records)*100,
+         percent_too_long_025percent = (n_too_long_025percent/n_records)*100
+  )
+
+
 #quantiles for individual season, but use the df where removed duplicates
 traps_300_tier_quants_season <-  traps_g_v2 %>% 
-  filter(Pot_Limit == 300)%>% 
+  filter(Potlimit == 300)%>% 
   filter(line_length_m > 0) %>% 
   group_by(season) %>% 
   summarise(quant_05percent = quantile(line_length_m, probs = c(0.95)), 
@@ -487,7 +564,7 @@ percent_lost_300_tier_quant_joined <-  traps_300_tier_quant_joined %>%
 
 #quantiles for individual season, but use the df where removed duplicates
 traps_500_tier_quants_season <-  traps_g_v2 %>% 
-  filter(Pot_Limit == 500)%>% 
+  filter(Potlimit == 500)%>% 
   filter(line_length_m > 0) %>% 
   group_by(season) %>% 
   summarise(quant_05percent = quantile(line_length_m, probs = c(0.95)), 
@@ -531,12 +608,12 @@ logs_stackcoords_2009_2020_0m <- logs_stackcoords_2009_2020 %>%
 
 
 #-----------------------------------------------
-traps_g_plotting <- traps_g %>% 
+traps_g_plotting <- traps_g %>% #traps_g here has to be the one sith geocoord/sf class
   filter(line_length_m < 0.1)
 
 # background map (coastline)
 coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
-  filter(name %in% c('Washington')) %>%  
+  filter(name %in% c('Oregon')) %>%  
   st_transform(st_crs(traps_g_plotting))
 
 
@@ -557,11 +634,11 @@ hist(pot_spacing_v2$spacing_in_m)
 
 
 p10 <- pot_spacing %>% 
-  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  mutate(Potlimit = factor(Potlimit, levels = c('200', '300','500'))) %>% 
   filter(spacing_in_m < 1000) %>% 
   ggplot() + 
   geom_bar(aes(x=spacing_in_m, y=stat(prop)), position = "dodge") +
-  facet_wrap(~ Pot_Limit) +
+  facet_wrap(~ Potlimit) +
   scale_x_binned(breaks=seq(0, 1000, 50)) + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
   scale_y_continuous(breaks=seq(0, 0.5, 0.05),limits=c(0,0.5))+
   labs(x="Spacing between pots (m)",y="Proportion") +
