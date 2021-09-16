@@ -33,7 +33,7 @@ options(dplyr.summarise.inform = FALSE)
 #---------------------------------- 
 #### READ IN LOGBOOK DATA ####
 #Note that PrimaryLogbookPage can be of format e.g. "1009-1", so input as character not double
-logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
+#logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
 # fine to let R set col_types automatically
 #dataset with all seasons - includes early seasons that were 100% entered
 logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv')) 
@@ -374,10 +374,10 @@ proc.time()-tm
 
 #Note that currently OR data only up to 2017-2018 season
 #run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2018 data due to memory limits
-logs2013_2018 <- logs %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+#logs2013_2018 <- logs %>% 
+#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
 
-df <- logs2013_2018
+#df <- logs2013_2018
 df <- logs #no filtering, has early seasons when 100% logs where entered
 
 # For now retain SpatialFlag column - can filter for that later 
@@ -399,7 +399,20 @@ df %<>%
   summarise(do_union = FALSE) %>% 
   st_cast("LINESTRING")
 
-traps <- df %>% 
+#---------
+#additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
+#were the same), or that were very long
+# --> need to decide what is appropriate length, after which a stringline is too long, for now use 5km
+df$length = st_length(df)
+line_length_m <-  as.vector(df$length)
+df_v2 <-  cbind(df,line_length_m) 
+df_v3 <- df_v2 %>%  select(-length)
+#df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000) #skip this, leave everything in and filter later
+
+#---------
+
+#traps <- df %>% 
+traps <- df_v3 %>%
   ungroup() %>% 
   # now use those linestrings to place pots using sf::st_line_sample
   mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
@@ -407,7 +420,7 @@ traps <- df %>%
   # pull out the x/y coordinates of the traps
   mutate(trapcoords=purrr::map(traplocs,
                                function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
-  select(Vessel, SetID,PotsFished,SetDate, PermitNumber, Potlimit, SpatialFlag, trapcoords) %>% #Note that OR logs don't have License column
+  select(Vessel, SetID,PotsFished,SetDate, PermitNumber, Potlimit,line_length_m, SpatialFlag, trapcoords) %>% #Note that OR logs don't have License column
   # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
   st_set_geometry(NULL) %>% 
   unnest(cols=c(trapcoords))
@@ -461,7 +474,6 @@ traps_g <- traps_sf %>%
 
 traps_g_SpatialFlag_filtered <- traps_g %>% 
   filter(SpatialFlag == FALSE)
-#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018_SpatialFlag_filtered.rds"))
 #write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds"))
 
 #--------------------------------------------------------------------------------
