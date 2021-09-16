@@ -414,7 +414,7 @@ percent_lost_300_tier_set_cutoff <-  traps_300_tier %>%
 percent_lost_500_tier_set_cutoff <-  traps_500_tier %>% 
   group_by(season) %>% 
   summarise(n_records = n(),
-            n_too_long = length(line_length_m[line_length_m > 25000])) %>% 
+            n_too_long = length(line_length_m[line_length_m > 30000])) %>% 
   mutate(percent_too_long = (n_too_long/n_records)*100)
 
 
@@ -509,11 +509,62 @@ percent_lost_500_tier_quant_joined <-  traps_500_tier_quant_joined %>%
   )
 
 #-----------------------------------------------
+#trying to see if the geocoords for those stringlines that were 0m has a pattern of certain many decimal points
+#manually looking at things, can find cases where lat/lon minutes had 0,1 or 2 decimal points
+#but also can see stringlines that had a length of >0m that have 0 or 1 dp
+#had to look at this manually as couldn' get the belof filter/subset to work
+
 #list of SetIDs that have string length 0m
 unique_SetIDs_0m <- traps_g_v2 %>% 
   filter(line_length_m < 0.1) %>% 
   distinct(SetID)
 
-logs_stackcoords_2009_2019 <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
-logs_stackcoords_2009_2019_0m <- filter(logs_stackcoords_2009_2019, SetID %in% unique_SetIDs_0m)
+logs_stackcoords_2009_2020 <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+
+#Trying to subset the raw logbook to only look at those that had 0m stringline length, but can't get this to work
+list <- c('2015-2016_207', '2016-2017_30101')
+
+logs_stackcoords_2009_2020_0m <- filter(logs_stackcoords_2009_2020, SetID %in% unique_SetIDs_0m)
+
+logs_stackcoords_2009_2020_0m <- logs_stackcoords_2009_2020 %>% 
+  subset(SetID %in% c('2015-2016_207', '2016-2017_30101'))
+
+
+#-----------------------------------------------
+traps_g_plotting <- traps_g %>% 
+  filter(line_length_m < 0.1)
+
+# background map (coastline)
+coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
+  filter(name %in% c('Washington')) %>%  
+  st_transform(st_crs(traps_g_plotting))
+
+
+ggplot() +
+  geom_sf(data = coaststates) +
+  geom_sf(data = traps_g_plotting, aes(colour = PotsFished), size=2) #+
+ # scale_fill_viridis(na.value='grey70',option="C")
+
+#--------------------------
+#pot spacing
+pot_spacing <-  traps_g_v2 %>% 
+  filter(line_length_m > 0.1) %>% 
+  mutate(spacing_in_m = line_length_m/PotsFished)
+
+pot_spacing_v2 <-  pot_spacing %>% 
+  filter(spacing_in_m < 800) 
+hist(pot_spacing_v2$spacing_in_m)
+
+
+p10 <- pot_spacing %>% 
+  mutate(Pot_Limit = factor(Pot_Limit, levels = c('300','500'))) %>% 
+  filter(spacing_in_m < 1000) %>% 
+  ggplot() + 
+  geom_bar(aes(x=spacing_in_m, y=stat(prop)), position = "dodge") +
+  facet_wrap(~ Pot_Limit) +
+  scale_x_binned(breaks=seq(0, 1000, 50)) + #you can specify x-axis break here, e.g.: breaks=seq(0, 125, 5)
+  scale_y_continuous(breaks=seq(0, 0.5, 0.05),limits=c(0,0.5))+
+  labs(x="Spacing between pots (m)",y="Proportion") +
+  ggtitle('Proportion of string lengths')
+p10
