@@ -11,10 +11,22 @@ library(ggpubr)
 path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
 path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
 path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+#Leena:
+#path.grid.5km <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+#I keep having issues trying to load Grid_5km_landerased.rds. the readRDS() command later just gives error: Error in readRDS(file) : unknown input format
+#I had this issue with some of the other whale coding files
+#The only way around I've found is this:
+#path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
+#load(path.save2)
+#I don't have: weighted_mean_NGDC_depths_for_5km_gridcells.csv
 
 # should be all outputs through july 2019 overlayed on 5km grid (i.e., not subset to DCRB fishing cells)
 path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
 path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+#Leena:
+#path.hump <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
+#path.blue <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+
 
 # where to put outputs
 path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOWT/raimbow/whalepreds_aggregate/figures"
@@ -195,7 +207,7 @@ ts_hump <- ggplot(
   )
 ts_hump
 
-# plot annual mean humpback densities
+# plot annual mean blue whale densities
 ts_blue <- ggplot(
   data = x.whale %>% 
     mutate(
@@ -242,3 +254,66 @@ ggarrange(ts_hump,
           hjust=0
 )
 invisible(dev.off())
+
+
+#--------------------------------------------
+ts_hump2 <- ggplot(
+  data = x.whale %>% 
+    group_by(year_month) %>%
+    summarise(
+      Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE)
+    ), 
+  aes(
+    x = year_month, 
+    y = Humpback_dens_mean
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(group=1)) +
+  
+  ylab("Humpback Whale Density\n(mean)") + 
+  xlab("Year_month") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump2
+
+
+ts_blue2 <- ggplot(
+  data = x.whale %>% 
+    group_by(year_month) %>%
+    summarise(
+      Blue_occurrence_mean = mean(Blue_occurrence_mean, na.rm=TRUE)
+    ), 
+  aes(
+    x = year_month, 
+    y = Blue_occurrence_mean
+  )
+) +
+  geom_point(size=4) +
+  geom_line(aes(group=1)) +
+  
+  ylab("Blue Whale Occurrence\n(mean)") + 
+  xlab("Year_month") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue2
