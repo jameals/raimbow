@@ -19,7 +19,7 @@ library(nngeo)
 
 # Start with traps_g df (traps are simulated and joined to grid, script 1)  
 # RDS can be found in Kiteworks folder
-traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
 
 
 # create columns for season, month etc
@@ -51,17 +51,19 @@ traps_g %<>%
   drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
 
 
-# apply 2019 summer pot limit reduction, which took effect July 1, 2019 
-# and was in effect through the end of the season (Sept. 15, 2019)
+# apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
+# apply 2020 summer pot limit reduction (May-Sep)
 ## make a new column for summer pot limit reduction
 traps_g %<>% 
   mutate(Pot_Limit_SummerReduction = Pot_Limit)
 ## split df to pre and post reduction periods
 df1 <- traps_g %>%
-  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                              '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
 df2 <- traps_g %>%
-  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
-## adjust pot limit post 1 July 2019
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                             '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
+## adjust pot limit post 1 July 2019, and post 1 May 2020
 df2 %<>% 
   mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
 ## join dfs back together  
@@ -166,7 +168,7 @@ adj_summtraps %<>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 glimpse(adj_summtraps)
 
-#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
 #the code on lines 129-139, i.e. don't join the grid IDs that are in few pieces
 
