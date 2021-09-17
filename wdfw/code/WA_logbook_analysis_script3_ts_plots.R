@@ -37,7 +37,7 @@ options(dplyr.summarise.inform = FALSE)
 
 
 # For df with M1 and M2 summaries bring in adj_summtraps (result from script 2)
-adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps_2013_2020.rds'))
 
 
 #------------------------------------------------------------------------------
@@ -301,7 +301,7 @@ p2 <- adj_summtraps_wintersummer %>%
 p2
 
 
-ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only','.png')),p2,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only','.png')),p2,w=12,h=10)
 
 #map_out <- plot_grid(p1,p2,nrow=1)
 #ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
@@ -329,6 +329,6 @@ plot_list
 
 plot_out <- cowplot::plot_grid(plotlist = plot_list, ncol = 2)
 # saving
-ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
 
 
