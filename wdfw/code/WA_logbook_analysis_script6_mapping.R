@@ -39,7 +39,7 @@ options(dplyr.summarise.inform = FALSE)
 ## Read in all data and shapefiles for mapping
 
 # Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -247,7 +247,7 @@ proc.time()-tm
 # Making summary maps for May - Sep 15 period
 
 ## Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
 
 # create a column in df to indicate whether data fall between May1 and Sep15
 # the 'periods' included between May1 and Sep15 are:
