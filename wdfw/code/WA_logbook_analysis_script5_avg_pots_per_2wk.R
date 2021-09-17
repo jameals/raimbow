@@ -36,10 +36,10 @@ options(dplyr.summarise.inform = FALSE)
 # getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 #traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
 # or use the new df traps_g_license_logs_2013_2019.rds
-traps_g_license_logs_2013_2019 <- read_rds(here::here('wdfw', 'data','traps_g_license_logs_2013_2019.rds'))
+traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
 
 #traps_g <- traps_g_for_all_logs_full_seasons
-traps_g <- traps_g_license_logs_2013_2019
+traps_g <- traps_g_license_logs_2013_2020
 
 traps_g <- traps_g %>% 
   mutate(
@@ -82,7 +82,7 @@ glimpse(testdf)
 
 
 #bring in 'raw' logs 
-logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
 
 #sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
@@ -99,9 +99,9 @@ logsdf <- logs %>%
                                    month_interval)
   )
 
-#For now look at 2013-2019
+#For now look at 2013-2020
 logsdf <- logsdf %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019', '2019-2020')) 
 
 #Sum the raw/unadjusted PotsFished for vessel by 2-week period
 testdf2  <- logsdf %>% 
@@ -144,8 +144,8 @@ testdf %<>%
   left_join(WA_pot_limit_info,by=c("License"))
 glimpse(testdf)
 
-# apply 2019 summer pot limit reduction, which took effect July 1, 2019 
-# and was in effect through the end of the season (Sept. 15, 2019)
+# apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
+# apply 2020 summer pot limit reduction (May-Sep)
 ## create season_month column
 testdf %<>%
   mutate(season_month = paste0(season,"_",month_name))
@@ -154,9 +154,11 @@ testdf %<>%
   mutate(Pot_Limit_SummerReduction = Pot_Limit)
 ## split df to pre and post reduction periods
 df1 <- testdf %>%
-  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                              '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
 df2 <- testdf %>%
-  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September'))
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                             '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
 ## adjust pot limit post 1 July 2019
 df2 %<>% 
   mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
@@ -253,6 +255,7 @@ active_vessels_by_season <- testdf %>%
 # 2016-2017   163
 # 2017-2018   153
 # 2018-2019   159
+# 2019-2020   137
 
 #------------------------------------------
 #above saved active_vessels_by_month.csv
