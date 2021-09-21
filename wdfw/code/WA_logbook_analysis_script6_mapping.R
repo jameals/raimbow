@@ -105,6 +105,52 @@ conf_dat <-  adj_summtraps %>%
 # or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
 conf_dat2 <-  conf_dat %>%
   filter(is_confidential == FALSE)
+
+#----------------------------------------------------------------------------------------------
+# This section is copied and edited from SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
+# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
+
+#I think this is the correct way of figuring if more than 3 unique vessels were in a grid cell in a given period
+#bring in data as points, not summarised by grid cell
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+
+#for each point record assign the month_interval as per Feist et al Fig 2
+logs_all_x <- traps_g_all_logs %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
+  mutate(season = str_sub(SetID,1,9)) %>% 
+  mutate(season_month = paste0(season,"_",m))
+
+#count number of unique vessels that used a given grid cell within a given month
+logs_all_nvessels <- logs_all_x %>% 
+  group_by(season_month, GRID5KM_ID,grd_x,grd_y) %>% 
+  summarise(
+    nvessels=n_distinct(Vessel,na.rm=T)) 
+
+#join the new, correct, number of unique vessels in a grid in an interval into gridded df
+adj_summtraps %<>%
+  left_join(logs_all_nvessels,by=c("season_month","GRID5KM_ID", "grd_x", "grd_y"))
+
+#If fewer than 3 unique vessels in a grid, that should be removed
+adj_summtraps <- adj_summtraps %>%
+  mutate(is_confidential=ifelse(nvessels.y<3,T,F))
+
+# use conf_dat as input in mapping loop, if want cells with < 3 vessels to be gray
+conf_dat <-  adj_summtraps %>% 
+  mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+         M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+         M2_tottraps=ifelse(is_confidential,NA,M2_tottraps),
+         M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
+  )
+
+# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+conf_dat2 <-  conf_dat %>%
+  filter(is_confidential == FALSE)
+
+
+
+#----------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
 # Making maps on a 2-weekly time step
