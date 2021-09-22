@@ -81,7 +81,7 @@ adj_summtraps_intervals <- adj_summtraps %>%
 glimpse(adj_summtraps_intervals)
 
 
-# average M2 trap density for each grid cell for May-Sep period
+# average M2 trap density for each grid cell for chosen time period
 avg_trap_dens_adj_summtraps_intervals <- adj_summtraps_intervals %>%
   group_by(month_interval, GRID5KM_ID, grd_x, grd_y) %>%  #do not group by AREA as some grid cells that overlap land appear twice
   summarise(
@@ -222,9 +222,9 @@ longdata <- pivot_longer(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL, starts
 #write_csv(Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised,here::here('wdfw', 'data', "Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised_within_between_long.csv"))
 
 Dungeness_4mon_5km_attribute_table_CONFIDENTIAL_normalised <- longdata %>% 
-  mutate(VMS_norm_between_intervals = scales::rescale(value, to=c(0,1))) %>% 
+  mutate(VMS_norm_between_intervals = scales::rescale(value, to=c(0,1))) %>% #normalise across the entire study period (2013-2016)
   group_by(name) %>% 
-  mutate(VMS_norm_within_interval = scales::rescale(value, to=c(0,1))) %>%
+  mutate(VMS_norm_within_interval = scales::rescale(value, to=c(0,1))) %>% #normalise within each 4-monthly period
   pivot_wider(names_from = name,
               names_sep = "_",
               values_from = c(value, VMS_norm_within_interval, VMS_norm_between_intervals)
@@ -328,6 +328,8 @@ plot1 <- VMS_norm %>%
   ggtitle('Distribution of normalised ping values')
 plot1
 
+#realised that VMS df has lots of 0s. The equivalent in logs are NAs which don't get plotted, so comparison between the two is not quite right. 
+#So need to remove 0s from VMS df, and THEN normalsie within the full 2013-2016 period we're looking at
 VMS_norm_no_zeros <- VMS_norm %>% 
   filter(VMS_pings > 0) %>% 
   mutate(VMS_norm_between_intervals_no_zeros = scales::rescale(VMS_pings, to=c(0,1)))
@@ -353,14 +355,14 @@ plot2
 #------------------------------------------
 #ts-plots
 
-VMS_norm_max <- VMS_norm %>% 
-  group_by(month_interval) %>% 
-  summarise(max = max(VMS_norm_between_intervals),
-            median = median(VMS_norm_between_intervals,na.rm=TRUE),
-            Percentile_95th = quantile(VMS_norm_between_intervals, probs=0.95, na.rm=TRUE),
-            Percentile_75th = quantile(VMS_norm_between_intervals, probs=0.75, na.rm=TRUE),
-            Percentile_25th = quantile(VMS_norm_between_intervals, probs=0.25, na.rm=TRUE)
-            ) 
+# VMS_norm_max <- VMS_norm %>% 
+#   group_by(month_interval) %>% 
+#   summarise(max = max(VMS_norm_between_intervals),
+#             median = median(VMS_norm_between_intervals,na.rm=TRUE),
+#             Percentile_95th = quantile(VMS_norm_between_intervals, probs=0.95, na.rm=TRUE),
+#             Percentile_75th = quantile(VMS_norm_between_intervals, probs=0.75, na.rm=TRUE),
+#             Percentile_25th = quantile(VMS_norm_between_intervals, probs=0.25, na.rm=TRUE)
+#             ) 
 
 VMS_norm_no_zeros_max <-  VMS_norm_no_zeros %>% 
   group_by(month_interval) %>% 
