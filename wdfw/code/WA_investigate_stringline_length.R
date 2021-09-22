@@ -508,27 +508,47 @@ percent_lost_500_tier_quant_joined <-  traps_500_tier_quant_joined %>%
          percent_too_long_025percent = (n_too_long_025percent/n_records)*100
   )
 
-#-----------------------------------------------
-#trying to see if the geocoords for those stringlines that were 0m has a pattern of certain many decimal points
-#manually looking at things, can find cases where lat/lon minutes had 0,1 or 2 decimal points
-#but also can see stringlines that had a length of >0m that have 0 or 1 dp
-#had to look at this manually as couldn' get the belof filter/subset to work
-
-#list of SetIDs that have string length 0m
-unique_SetIDs_0m <- traps_g_v2 %>% 
-  filter(line_length_m < 0.1) %>% 
-  distinct(SetID)
 
 
-logs_stackcoords_2009_2020 <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+# based on Robert's email, he reckons some fishermen fish all their gear in one long string 
+# down the coast from Pt Chehalis to the Columbia River. This would translate into about 61 km. 
+# And a popular section fished is the Klipsan line to the Columbia River which equals 21 km. 
+# Given this, Robert thinks using 20 and 30km cutoffs would be eliminating accurate data.
+# Robert's recommendation was 80km cutoff
 
-#Trying to subset the raw logbook to only look at those that had 0m stringline length, but can't get this to work
-list <- c('2015-2016_207', '2016-2017_30101')
+traps_g_x <-  traps_g_v2 %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_50km_plus = length(line_length_m[line_length_m>50000]),
+            n_60km_plus = length(line_length_m[line_length_m>60000]),
+            n_70km_plus = length(line_length_m[line_length_m>70000]),
+            n_80km_plus = length(line_length_m[line_length_m>80000]),
+            n_90km_plus = length(line_length_m[line_length_m>90000]),
+            n_100km_plus = length(line_length_m[line_length_m>100000]),
+            n_200km_plus = length(line_length_m[line_length_m>200000]),
+            n_300km_plus = length(line_length_m[line_length_m>300000])
+  ) %>% 
+  mutate(percent_50km_plus = (n_50km_plus/n_records)*100,
+         percent_60km_plus = (n_60km_plus/n_records)*100,
+         percent_70km_plus = (n_70km_plus/n_records)*100,
+         percent_80km_plus = (n_80km_plus/n_records)*100,
+         percent_90km_plus = (n_90km_plus/n_records)*100,
+         percent_100km_plus = (n_100km_plus/n_records)*100,
+         percent_200km_plus = (n_200km_plus/n_records)*100,
+         percent_300km_plus = (n_300km_plus/n_records)*100
+  )
 
-logs_stackcoords_2009_2020_0m <- filter(logs_stackcoords_2009_2020, SetID %in% unique_SetIDs_0m)
+#no. of stringlines (across all of 2013-2020) = 131,581
+#no. 50km+ = 234    % 50km+ = 0.18
+#no. 60km+ = 137    % 60km+ = 0.10
+#no. 70km+ = 98    % 70km+ = 0.07
+#no. 80km+ = 65    % 80km+ = 0.05
+#no. 90km+ = 61    % 90km+ = 0.05
+#no. 100km+ = 47    % 100km+ = 0.04
+#no. 200km+ = 4    % 200km+ = 0.003
+#no. 300km+ = 1    % 300km+ = 0.0008
 
-logs_stackcoords_2009_2020_0m <- logs_stackcoords_2009_2020 %>% 
-  subset(SetID %in% c('2015-2016_207', '2016-2017_30101'))
+
 
 
 #-----------------------------------------------
@@ -568,3 +588,31 @@ p10 <- pot_spacing %>%
   labs(x="Spacing between pots (m)",y="Proportion") +
   ggtitle('Proportion of string lengths')
 p10
+
+
+
+
+
+
+
+#-----------------------------------------------
+#trying to see if the geocoords for those stringlines that were 0m has a pattern of certain many decimal points
+#manually looking at things, can find cases where lat/lon minutes had 0,1 or 2 decimal points
+#but also can see stringlines that had a length of >0m that have 0 or 1 dp
+#had to look at this manually as couldn' get the belof filter/subset to work
+
+#list of SetIDs that have string length 0m
+unique_SetIDs_0m <- traps_g_v2 %>% 
+  filter(line_length_m < 0.1) %>% 
+  distinct(SetID)
+
+
+logs_stackcoords_2009_2020 <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+
+#Trying to subset the raw logbook to only look at those that had 0m stringline length, but can't get this to work
+list <- c('2015-2016_207', '2016-2017_30101')
+
+logs_stackcoords_2009_2020_0m <- filter(logs_stackcoords_2009_2020, SetID %in% unique_SetIDs_0m)
+
+logs_stackcoords_2009_2020_0m <- logs_stackcoords_2009_2020 %>% 
+  subset(SetID %in% c('2015-2016_207', '2016-2017_30101'))
