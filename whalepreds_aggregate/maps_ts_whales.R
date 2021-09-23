@@ -19,6 +19,8 @@ path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5
 #path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
 #load(path.save2)
 #I don't have: weighted_mean_NGDC_depths_for_5km_gridcells.csv
+#path.grid.depth <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+
 
 # should be all outputs through july 2019 overlayed on 5km grid (i.e., not subset to DCRB fishing cells)
 path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
@@ -61,8 +63,10 @@ View(x.blue %>% group_by(year_month) %>% summarise(
 # join 5km grid with depths
 grid.key <- left_join(grid.5km %>% st_drop_geometry(), 
                       grid.depth, by = "GRID5KM_ID") # These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Also from Blake: using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
+#this also works without having to drop geometry:
+grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 #glimpse(grid.key)
-
+###see further down for a mapping check on this
 
 # note here is where you could insert some code to filter out whale predictions so that they only include 5km cells where DCRB fishing occurred previously
 
@@ -170,6 +174,41 @@ ggarrange(map_hump,
 )
 invisible(dev.off())
 
+
+#map depth data
+
+path.fish_WA <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/adj_summtraps.rds"
+x.fish_WA <- readRDS(path.fish_WA) #this works
+### Get grid cells with non-NA values for all, and save that of fishing data
+grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID))
+grid.5km.fish_WA <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+
+path.fish_OR <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/OR/OR_adj_summtraps_SpatialFlag_filtered_2007_2018.rds"
+x.fish_OR <- readRDS(path.fish_OR) #this works
+### Get grid cells with non-NA values for all, and save that of fishing data
+grid.studyarea.id_OR <- sort(unique(x.fish_OR$GRID5KM_ID))
+grid.5km.fish_OR <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_OR)
+
+bbox = c(-127,41,-120,49) #c(-127,41,-120,49)
+
+map_depth <-  ggplot() + 
+  geom_sf(data = grid.key, aes(fill = depth, col = depth)) +     
+  geom_sf(data=rmap.base,col=NA,fill='gray50') + 
+  scale_fill_viridis(na.value=NA,option="D",name="depth") +      
+  scale_color_viridis(na.value=NA,option="D",name="depth")  + 
+  geom_sf(data=grid.5km.fish_WA,col='black',fill=NA,alpha=0.8) + 
+  geom_sf(data=grid.5km.fish_OR,col='black',fill=NA,alpha=0.8) + 
+  ggtitle("depth grid check") +  
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
+map_depth
+
+
+
+
+
+
+#--------------------------------------------------------------
 # make time series based on whale outputs
 
 # plot annual mean humpback densities
