@@ -329,27 +329,58 @@ plot1 <- VMS_norm %>%
 plot1
 
 #realised that VMS df has lots of 0s. The equivalent in logs are NAs which don't get plotted, so comparison between the two is not quite right. 
-#So need to remove 0s from VMS df, and THEN normalsie within the full 2013-2016 period we're looking at
+#So need to remove 0s from VMS df, and THEN normalize within the full 2013-2016 period we're looking at
+#also testing out transformations -- log seems the best, the 4th root
 VMS_norm_no_zeros <- VMS_norm %>% 
   filter(VMS_pings > 0) %>% 
-  mutate(VMS_norm_between_intervals_no_zeros = scales::rescale(VMS_pings, to=c(0,1)))
+  mutate(VMS_norm_between_intervals_no_zeros = scales::rescale(VMS_pings, to=c(0,1)),
+         VMS_ping_log = log(VMS_pings),
+         #VMS_ping_log10 = log10(VMS_pings),
+         #VMS_ping_sqrt = sqrt(VMS_pings),
+         VMS_ping_4throot = VMS_pings^(1/4),
+         VMS_ping_log_norm_between_intervals = scales::rescale(VMS_ping_log, to=c(0,1)),
+         #VMS_ping_log10_norm_between_intervals = scales::rescale(VMS_ping_log10, to=c(0,1)),
+         #VMS_ping_sqrt_norm_between_intervals = scales::rescale(VMS_ping_sqrt, to=c(0,1)),
+         VMS_ping_4throot_norm_between_intervals = scales::rescale(VMS_ping_4throot, to=c(0,1))
+         )
 
 plot1b <- VMS_norm_no_zeros %>%
   ggplot() + 
-  geom_bar(aes(x=VMS_norm_between_intervals_no_zeros, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=VMS_norm_between_intervals_no_zeros, y=stat(prop)), position = "dodge") +
+  geom_bar(aes(x=VMS_ping_log_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=VMS_ping_log10_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=VMS_ping_sqrt_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=VMS_ping_4throot_norm_between_intervals, y=stat(prop)), position = "dodge") +
   scale_x_binned(breaks=seq(0, 1, 0.1)) + 
   scale_y_continuous(breaks=seq(0, 1, 0.2),limits=c(0,1))+
   labs(x="normalised VMS ping value",y="Proportion") +
   ggtitle('Distribution of normalised ping values')
 plot1b
 
-plot2 <- logs_norm %>% 
+
+logs_norm_log <-  logs_norm %>% 
+  mutate(mean_M2_trapdens_log = log(mean_M2_trapdens),
+         #mean_M2_trapdens_log10 = log10(mean_M2_trapdens),
+         #mean_M2_trapdens_sqrt = sqrt(mean_M2_trapdens),
+         mean_M2_trapdens_4throot = mean_M2_trapdens^(1/4),
+         mean_M2_trapdens_log_norm_between_intervals = scales::rescale(mean_M2_trapdens_log, to=c(0,1)),
+         #mean_M2_trapdens_log10_norm_between_intervals = scales::rescale(mean_M2_trapdens_log10, to=c(0,1)),
+         #mean_M2_trapdens_sqrt_norm_between_intervals = scales::rescale(mean_M2_trapdens_sqrt, to=c(0,1)),
+         mean_M2_trapdens_4throot_norm_between_intervals = scales::rescale(mean_M2_trapdens_4throot, to=c(0,1))
+  )
+
+#plot2 <- logs_norm %>%
+plot2 <- logs_norm_log %>% 
   ggplot() + 
-  geom_bar(aes(x=trapdens_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=trapdens_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  geom_bar(aes(x=mean_M2_trapdens_log_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=mean_M2_trapdens_log10_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=mean_M2_trapdens_sqrt_norm_between_intervals, y=stat(prop)), position = "dodge") +
+  #geom_bar(aes(x=mean_M2_trapdens_4throot_norm_between_intervals, y=stat(prop)), position = "dodge") +
   scale_x_binned(breaks=seq(0, 1, 0.1)) + 
   scale_y_continuous(breaks=seq(0, 1, 0.2),limits=c(0,1))+
-  labs(x="normalised trap density value",y="Proportion") +
-  ggtitle('Distribution of normalised trap density values')
+  labs(x="normalised trap density value (log)",y="Proportion") +
+  ggtitle('Distribution of normalised trap density values (log)')
 plot2
 
 #------------------------------------------
@@ -368,9 +399,9 @@ VMS_norm_no_zeros_max <-  VMS_norm_no_zeros %>%
   group_by(month_interval) %>% 
   summarise(max = max(VMS_norm_between_intervals_no_zeros),
             median = median(VMS_norm_between_intervals_no_zeros,na.rm=TRUE),
-            Percentile_95th = quantile(VMS_norm_between_intervals, probs=0.95, na.rm=TRUE),
+            Percentile_95th = quantile(VMS_norm_between_intervals_no_zeros, probs=0.95, na.rm=TRUE),
             Percentile_75th = quantile(VMS_norm_between_intervals_no_zeros, probs=0.75, na.rm=TRUE),
-            Percentile_25th = quantile(VMS_norm_between_intervals_no_zeros, probs=0.25, na.rm=TRUE)
+            Percentile_25th = quantile(VMS_norm_between_intervals_no_zeros, probs=0.25, na.rm=TRUE),
   )
 
 tsplot1 <-  
@@ -393,7 +424,7 @@ logs_norm_max <- logs_norm %>%
             median = median(trapdens_norm_between_intervals,na.rm=TRUE),
             Percentile_95th = quantile(trapdens_norm_between_intervals, probs=0.95, na.rm=TRUE),
             Percentile_75th = quantile(trapdens_norm_between_intervals, probs=0.75, na.rm=TRUE),
-            Percentile_25th = quantile(trapdens_norm_between_intervals, probs=0.25, na.rm=TRUE)
+            Percentile_25th = quantile(trapdens_norm_between_intervals, probs=0.25, na.rm=TRUE),
             ) 
 
 tsplot2 <-  
@@ -444,18 +475,23 @@ map_out <- plot_grid(tsplot1,tsplot2,nrow=1)
 
 #line only
 
+
+
+
 tsplot3 <-  
   ggplot()+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=max, group=1))+
-  geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=max, group=1))+
+  #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=max, group=1))+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_75th, group=1), linetype = "twodash")+
-  geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_95th, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_95th, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_25th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=median, group=1), linetype = "dashed")+
 
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
-  geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
-  geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_25th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
 
   scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
@@ -466,3 +502,54 @@ tsplot3
 #The line indicates the highest normalised value in a ny grid cell in a given 4-month interval (x-axis)
 #ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line','.png')),tsplot3,w=12,h=10)
 
+
+
+VMS_norm_log_no_zeros_max <-  VMS_norm_no_zeros %>% 
+  group_by(month_interval) %>% 
+  summarise(max_log = max(VMS_ping_log_norm_between_intervals ),
+            median_log = median(VMS_ping_log_norm_between_intervals ,na.rm=TRUE),
+            Percentile_95th_log = quantile(VMS_ping_log_norm_between_intervals , probs=0.95, na.rm=TRUE),
+            Percentile_75th_log = quantile(VMS_ping_log_norm_between_intervals , probs=0.75, na.rm=TRUE),
+            Percentile_25th_log = quantile(VMS_ping_log_norm_between_intervals , probs=0.25, na.rm=TRUE),
+            
+            max_4throot = max(VMS_ping_4throot_norm_between_intervals),
+            median_4throot  = median(VMS_ping_4throot_norm_between_intervals ,na.rm=TRUE),
+            Percentile_95th_4throot  = quantile(VMS_ping_4throot_norm_between_intervals , probs=0.95, na.rm=TRUE),
+            Percentile_75th_4throot  = quantile(VMS_ping_4throot_norm_between_intervals , probs=0.75, na.rm=TRUE),
+            Percentile_25th_4throot  = quantile(VMS_ping_4throot_norm_between_intervals , probs=0.25, na.rm=TRUE)
+  )
+
+log_norms_log_max <- logs_norm_log  %>% 
+  group_by(month_interval) %>% 
+  summarise(max_log = max(mean_M2_trapdens_log_norm_between_intervals ,na.rm=TRUE),
+            median_log = median(mean_M2_trapdens_log_norm_between_intervals ,na.rm=TRUE),
+            Percentile_95th_log = quantile(mean_M2_trapdens_log_norm_between_intervals , probs=0.95, na.rm=TRUE),
+            Percentile_75th_log = quantile(mean_M2_trapdens_log_norm_between_intervals , probs=0.75, na.rm=TRUE),
+            Percentile_25th_log = quantile(mean_M2_trapdens_log_norm_between_intervals , probs=0.25, na.rm=TRUE),
+            
+            max_4throot = max(mean_M2_trapdens_4throot_norm_between_intervals,na.rm=TRUE),
+            median_4throot = median(mean_M2_trapdens_4throot_norm_between_intervals ,na.rm=TRUE),
+            Percentile_95th_4throot = quantile(mean_M2_trapdens_4throot_norm_between_intervals , probs=0.95, na.rm=TRUE),
+            Percentile_75th_4throot = quantile(mean_M2_trapdens_4throot_norm_between_intervals , probs=0.75, na.rm=TRUE),
+            Percentile_25th_4throot = quantile(mean_M2_trapdens_4throot_norm_between_intervals , probs=0.25, na.rm=TRUE)
+            
+  )
+
+
+tsplot3b <-  
+  ggplot()+
+  #geom_line(data=VMS_norm_log_no_zeros_max, aes(x=month_interval,y=max_4throot, group=1))+
+  #geom_line(data=VMS_norm_log_no_zeros_max, aes(x=month_interval,y=Percentile_75th_log, group=1), linetype = "twodash")+
+  geom_line(data=VMS_norm_log_no_zeros_max, aes(x=month_interval,y=Percentile_25th_4throot, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_log_no_zeros_max, aes(x=month_interval,y=median_4throot, group=1), linetype = "dashed")+
+  
+  #geom_line(data=log_norms_log_max, aes(x=month_interval,y=max_4throot, group=1, colour='red'), show.legend = F)+
+  #geom_line(data=log_norms_log_max, aes(x=month_interval,y=Percentile_75th_log, group=1, colour='red'), linetype = "twodash", show.legend = F)+
+  geom_line(data=log_norms_log_max, aes(x=month_interval,y=Percentile_25th_4throot, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=log_norms_log_max, aes(x=month_interval,y=median_4throot, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  
+  #scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  labs(x="4-Month intervals",y="Normalised pings/trap density") +
+  ggtitle("4th root \nNormalised VMS ping rate (black) and logbook based trap density (red) \nacross grid cells in WA") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot3b
