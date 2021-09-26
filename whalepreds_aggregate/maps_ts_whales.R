@@ -18,7 +18,6 @@ path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5
 #The only way around I've found is this:
 #path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
 #load(path.save2)
-#I don't have: weighted_mean_NGDC_depths_for_5km_gridcells.csv
 #path.grid.depth <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 
@@ -177,7 +176,7 @@ invisible(dev.off())
 
 #map depth data
 
-path.fish_WA <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/adj_summtraps.rds"
+path.fish_WA <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
 x.fish_WA <- readRDS(path.fish_WA) #this works
 ### Get grid cells with non-NA values for all, and save that of fishing data
 grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID))
@@ -202,6 +201,7 @@ map_depth <-  ggplot() +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
 map_depth
+#ggsave(here('wdfw','maps',paste0('depth_grid_check','.png')),map_depth,w=12,h=10)
 
 
 
