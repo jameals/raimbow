@@ -337,11 +337,11 @@ VMS_norm_no_zeros <- VMS_norm %>%
          VMS_ping_log = log(VMS_pings),
          #VMS_ping_log10 = log10(VMS_pings),
          #VMS_ping_sqrt = sqrt(VMS_pings),
-         VMS_ping_4throot = VMS_pings^(1/4),
+         #VMS_ping_4throot = VMS_pings^(1/4),
          VMS_ping_log_norm_between_intervals = scales::rescale(VMS_ping_log, to=c(0,1)),
          #VMS_ping_log10_norm_between_intervals = scales::rescale(VMS_ping_log10, to=c(0,1)),
          #VMS_ping_sqrt_norm_between_intervals = scales::rescale(VMS_ping_sqrt, to=c(0,1)),
-         VMS_ping_4throot_norm_between_intervals = scales::rescale(VMS_ping_4throot, to=c(0,1))
+         #VMS_ping_4throot_norm_between_intervals = scales::rescale(VMS_ping_4throot, to=c(0,1))
          )
 
 plot1b <- VMS_norm_no_zeros %>%
@@ -362,11 +362,11 @@ logs_norm_log <-  logs_norm %>%
   mutate(mean_M2_trapdens_log = log(mean_M2_trapdens),
          #mean_M2_trapdens_log10 = log10(mean_M2_trapdens),
          #mean_M2_trapdens_sqrt = sqrt(mean_M2_trapdens),
-         mean_M2_trapdens_4throot = mean_M2_trapdens^(1/4),
+         #mean_M2_trapdens_4throot = mean_M2_trapdens^(1/4),
          mean_M2_trapdens_log_norm_between_intervals = scales::rescale(mean_M2_trapdens_log, to=c(0,1)),
          #mean_M2_trapdens_log10_norm_between_intervals = scales::rescale(mean_M2_trapdens_log10, to=c(0,1)),
          #mean_M2_trapdens_sqrt_norm_between_intervals = scales::rescale(mean_M2_trapdens_sqrt, to=c(0,1)),
-         mean_M2_trapdens_4throot_norm_between_intervals = scales::rescale(mean_M2_trapdens_4throot, to=c(0,1))
+         #mean_M2_trapdens_4throot_norm_between_intervals = scales::rescale(mean_M2_trapdens_4throot, to=c(0,1))
   )
 
 #plot2 <- logs_norm %>%
@@ -482,19 +482,22 @@ tsplot3 <-
   ggplot()+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=max, group=1))+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=max, group=1))+
-  #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_75th, group=1), linetype = "twodash")+
+  geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_75th, group=1), linetype = "twodash")+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_95th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=Percentile_25th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_no_zeros_max, aes(x=month_interval,y=median, group=1), linetype = "dashed")+
 
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=max, group=1, colour='red'), show.legend = F)+
-  #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
+  geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=Percentile_25th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_interval,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
 
-  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  #scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  #adjust scale if looking at 25th, median or 75th percentile for more useful plots
+  scale_y_continuous(breaks=seq(0, 0.2, 0.05),limits=c(0,0.2))+
+  
   labs(x="4-Month intervals",y="Normalised pings/trap density") +
   ggtitle("Normalised VMS ping rate (black) and logbook based trap density (red) \nacross grid cells in WA") + 
   theme(legend.position = ("top"),legend.title=element_blank())
