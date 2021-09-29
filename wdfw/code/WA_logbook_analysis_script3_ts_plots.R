@@ -229,7 +229,7 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
         legend.position="bottom"
   )
 logs_ts_month_dens
-#ggsave(here('wdfw','plots',paste0('Mean M2 trap densities by month','.png')),logs_ts_month_dens,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Mean M2 trap densities by month_2013-2020','.png')),logs_ts_month_dens,w=12,h=10)
 
 
 #----------------------------------------------------------------------------------------------------------------
