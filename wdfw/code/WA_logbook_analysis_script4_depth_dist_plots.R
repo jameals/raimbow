@@ -34,7 +34,7 @@ options(dplyr.summarise.inform = FALSE)
 # Plotting (simulated) pots by depth bin
 
 # From raw logbook data, need to run place_traps function (script 1) to create the traps along each line and get their depths
-# running code fro script 1 on the full logs (2013-2019) dataframe takes a long time, so ran it once and saved it as RDS 
+# running code fro script 1 on the full logs (2013-2020) dataframe takes a long time, so ran it once and saved it as RDS 
 traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
 
 glimpse(traps_g_all_logs)
