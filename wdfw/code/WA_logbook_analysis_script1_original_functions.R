@@ -1,6 +1,6 @@
 ## This script has the 'original' mapping functions for WDFW logbook data:
 #place_traps, join_grid() and original mapping function, looping through 2-week periods based on crab-year/month/period choices
-#as well as code adjusted from the above mentioned functions to be run on 'full' data set (all logs 2013-2019)
+#as well as code adjusted from the above mentioned functions to be run on 'full' data set (all logs 2013-2020)
 
 library(tidyverse)
 library(lubridate)
@@ -93,6 +93,120 @@ MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>%
 QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
   st_transform(st_crs(grd)) #set same projection as the grid
 #---------------------------------- 
+#---------------------------------------------------------------
+#Running the functions on 'full' logbook data sets 
+#(i.e. not actually specifying the functions, or crab-year/month/period choices)
+
+#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
+logs2013_2020 <- logs %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
+
+df <- logs2013_2020
+
+df %<>%
+  dplyr::select(season, Vessel,License, SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
+  distinct() 
+
+df %<>% 
+  # make sure each set has a beginning and end
+  group_by(SetID) %>% 
+  mutate(n=n()) %>% 
+  filter(n==2,!is.na(PotsFished)) %>%
+  # convert to sf points
+  st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
+  st_transform(32610) %>% 
+  # create linestrings
+  group_by(Vessel,License, SetID,PotsFished,SetDate) %>% 
+  summarise(do_union = FALSE) %>% 
+  st_cast("LINESTRING")
+
+#------------------
+#additional step - remove those stringlines that have a length of 0 (i.e. start and end locs
+#were the same), or that were too long
+# --> based on discussions with WDFW the chosen cut-offs are:
+# exclude stringlines that are 0m long and have more than 50 pots reported on them AND
+# exclude stringlines that are longer than 80km
+df$length = st_length(df)
+line_length_m <-  as.vector(df$length)
+df_v2 <-  cbind(df,line_length_m) 
+df_v3 <- df_v2 %>%  select(-length)
+
+df_v4 <- df_v3 %>% 
+  filter(line_length_m < 80000) %>% 
+  filter(!(line_length_m == 0 & PotsFished > 50)) 
+
+#what percentage was excluded?
+# 0.049% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines longer than 80km
+#nrow(df_v3 %>% filter(line_length_m > 80000))/nrow(df_v3)*100 
+# 0.087% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines 
+# that were 0m and had more than 50 pots reported on them
+# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
+
+#------------------
+
+traps <- df_v4 %>% 
+  ungroup() %>% 
+  # now use those linestrings to place pots using sf::st_line_sample
+  mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
+                              .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
+  # pull out the x/y coordinates of the traps
+  mutate(trapcoords=purrr::map(traplocs,
+                               function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
+  select(Vessel,License, SetID,PotsFished,line_length_m, SetDate,trapcoords) %>% #also select lineLength_m to retain it
+  # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
+  st_set_geometry(NULL) %>% 
+  unnest(cols=c(trapcoords))
+
+# find depth of traps
+traps_sf <- traps %>%
+  st_as_sf(coords=c('x','y'),crs=32610) %>% 
+  st_transform(4326) %>%
+  select(-id)
+
+# do the raster extract with the bathymetry grid
+bathy.points <- raster::extract(bathy,traps_sf)
+
+# add depth as a column variable
+# divide by 10 to go from decimeters to meters
+traps_sf %<>%
+  mutate(depth=bathy.points/10)
+
+# DEPTH FILTER
+# current code:
+# only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
+traps_sf %<>% 
+  filter(depth <= 0) %>% #keep points in water
+  filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
+# ALTERNATIVE DEPTH FILTER OPTION
+# find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
+#traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+#unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+# Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
+#traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+
+#running place_traps on 2013-2020 logs subset took about 12min, but haven't saved the sf as it is not required for further steps
+#write_rds(traps_sf,here::here('data', "traps_sf_license_all_logs_2013_2019.rds"))
+
+
+gkey <- grd_area_key
+
+traps_sf %<>%
+  # convert to planar projection to match the grid
+  st_transform(st_crs(gkey))
+
+# Spatially join traps to 5k grid, with grid/area matching key
+traps_g <- traps_sf %>%
+  st_join(gkey) %>% 
+  left_join(grd_xy,by="GRID5KM_ID")
+
+#running join_grid on 2013-2020 logs subset took about 12min
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020.rds"))
+
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#running the functions on 2-weekly loops
+#this was the original approach, but it is infact better to run the code on the 'full' dataset
 
 #####################
 #Here is where user can decide whether they want 'confidential' maps or not
@@ -100,7 +214,6 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 #When make_confidential_maps is FALSE, all grid cells will be coloured based on trap density, regardless of the number of unique vessels in the cell
 make_confidential_maps <- FALSE
 #####################
-
 
 #######################################
 # Main steps for mapping functions
@@ -354,103 +467,3 @@ plts <- scenarios %>% pmap(.f=make_effort_map,df=logs,bathy=bathy,gkey=grd_area_
 proc.time()-tm
 
 
-#---------------------------------------------------------------
-#Running above functions on 'full' logbook data sets 
-#(i.e. not actually specifying the functions, or crab-year/month/period choices)
-
-#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
-logs2013_2020 <- logs %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
-
-df <- logs2013_2020
-
-df %<>%
-  dplyr::select(season, Vessel,License, SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
-  distinct() 
-
-df %<>% 
-  # make sure each set has a beginning and end
-  group_by(SetID) %>% 
-  mutate(n=n()) %>% 
-  filter(n==2,!is.na(PotsFished)) %>%
-  # convert to sf points
-  st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
-  st_transform(32610) %>% 
-  # create linestrings
-  group_by(Vessel,License, SetID,PotsFished,SetDate) %>% 
-  summarise(do_union = FALSE) %>% 
-  st_cast("LINESTRING")
-
-#---------
-#additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
-#were the same), or that were very long
-# --> need to decide what is appropriate length, after which a stringline is too long, for now use 5km
-df$length = st_length(df)
-line_length_m <-  as.vector(df$length)
-df_v2 <-  cbind(df,line_length_m) 
-df_v3 <- df_v2 %>%  select(-length)
-#df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000) #skip this, leave everything in and filter later
-
-#---------
-
-
-#traps <- df %>% 
-traps <- df_v3 %>% 
-  ungroup() %>% 
-  # now use those linestrings to place pots using sf::st_line_sample
-  mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
-                              .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
-  # pull out the x/y coordinates of the traps
-  mutate(trapcoords=purrr::map(traplocs,
-                               function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
-  select(Vessel,License, SetID,PotsFished,line_length_m, SetDate,trapcoords) %>% #also select lineLength_m to retain it
-  # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
-  st_set_geometry(NULL) %>% 
-  unnest(cols=c(trapcoords))
-
-# find depth of traps
-traps_sf <- traps %>%
-  st_as_sf(coords=c('x','y'),crs=32610) %>% 
-  st_transform(4326) %>%
-  select(-id)
-
-# do the raster extract with the bathymetry grid
-bathy.points <- raster::extract(bathy,traps_sf)
-
-# add depth as a column variable
-# divide by 10 to go from decimeters to meters
-traps_sf %<>%
-  mutate(depth=bathy.points/10)
-
-# DEPTH FILTER
-# current code:
-# only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
-traps_sf %<>% 
-  filter(depth <= 0) %>% #keep points in water
-  filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
-# ALTERNATIVE DEPTH FILTER OPTION
-# find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
-#traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
-#unique_SetIDs_on_land <- unique(traps_on_land$SetID)
-# Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
-#traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
-
-#running place_traps on 2013-2019 logs subset took about 15min
-#write_rds(traps_sf,here::here('data', "traps_sf_license_all_logs_2013_2019.rds"))
-
-
-gkey <- grd_area_key
-
-traps_sf %<>%
-  # convert to planar projection to match the grid
-  st_transform(st_crs(gkey))
-
-# Spatially join traps to 5k grid, with grid/area matching key
-traps_g <- traps_sf %>%
-  st_join(gkey) %>% 
-  left_join(grd_xy,by="GRID5KM_ID")
-
-#running join_grid on 2013-2019 logs subset took about 8min
-#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020.rds"))
-
-#--------------------------------------------------------------------------------
