@@ -319,7 +319,8 @@ plot_list = list()
 for (i in 1:length(ids)) {
   p = ggplot(subset(adj_summtraps_wintersummer, season == ids[i]), aes(color=wintersummer, fill=wintersummer)) +
     geom_bar(aes(x=M2_trapdens, y=stat(prop)), position = "dodge") +
-    scale_x_binned() +
+    scale_x_binned(breaks=seq(0, 120, 10),limits=c(0,120)) +
+    scale_y_continuous(breaks=seq(0, 1, 0.2),limits=c(0,1))+
     theme(legend.position = "none") +
     labs(x='Trap density (M2)') +
     ggtitle((paste(ids[i])))
