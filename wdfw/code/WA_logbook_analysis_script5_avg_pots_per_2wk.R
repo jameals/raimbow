@@ -34,8 +34,6 @@ options(dplyr.summarise.inform = FALSE)
 
 # Start with traps_g df for all seasons (traps are simulated and joined to grid)
 # getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
-#traps_g_for_all_logs_full_seasons <- read_rds(here::here('wdfw', 'data','traps_g_for all logs full seasons.rds'))
-# or use the new df traps_g_license_logs_2013_2019.rds
 traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
 
 #traps_g <- traps_g_for_all_logs_full_seasons
@@ -217,7 +215,7 @@ active_vessels_by_month <- testdf %>%
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
 
-#write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month.csv"))
+#write_csv(active_vessels_by_month,here::here('wdfw','data',"active_vessels_by_month_2013_2020.csv"))
 
 active_vessels_by_month <- active_vessels_by_month %>%
   mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))  
@@ -259,8 +257,10 @@ active_vessels_by_season <- testdf %>%
 
 #------------------------------------------
 #above saved active_vessels_by_month.csv
-#into that joined ODFW estimated number of active vessels per month from their CP draft (WDFW would have calculated the estimate from fishtickets)
+#into that joined WDFW estimated number of active vessels per month from their CP draft (WDFW would have calculated the estimate from fishtickets)
 #by getting the ratio of our estimated active vessels to WDFW estimate, this will serve as an indicator of compliance rate
+#note that the WDFW plot that the numbers came from only went to 2019-2019 season
+# could do our own version of this by looking at number of unique vessels in our joined VMS-fishticket df
 
 #overall WDFW estimates compliance to be 78-82 in a season
 
