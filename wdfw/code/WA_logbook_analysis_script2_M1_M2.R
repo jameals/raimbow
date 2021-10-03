@@ -48,7 +48,7 @@ WA_pot_limit_info %<>%
 # join Pot_Limit to traps_g 
 traps_g %<>%
   left_join(WA_pot_limit_info,by=c("License")) %>% 
-  drop_na(Pot_Limit) #2 NAs for cases with no license info unless correct it with drop_na(Pot_Limit)
+  drop_na(Pot_Limit) #couple instances of NAs for cases with no license info for vessel provided - correct it with drop_na(Pot_Limit)
 
 
 # apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
@@ -170,11 +170,13 @@ glimpse(adj_summtraps)
 
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
-#the code on lines 129-139, i.e. don't join the grid IDs that are in few pieces
+#the code to join the grids that are in few pieces but with same IDs 
 
 
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------
+# the below code are for comparing the M1 and M2 methods. This is no longer relevant as we will just move forward with M2
+#-------------------------------------------------------------------------------------------------------------------------
 
 # Few visuals comparing the M1 and M2 methods
 pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
