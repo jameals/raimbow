@@ -430,6 +430,22 @@ grid_depth_and_hump <-  grid_depth_and_whale %>%
 #   )
 # p1
 
+grid.studyarea.id_hw <- sort(unique(grid_depth_and_hump$GRID5KM_ID))
+grid.5km.hw <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_hw)
+bbox = c(-127,41,-120,49) #c(-127,41,-120,49)
+
+map_hw_study_area <-  ggplot() + 
+  geom_sf(data = grid.key_WA_OR, aes(fill = depth, col = depth)) +  
+  geom_sf(data=rmap.base,col=NA,fill='gray50') + 
+  scale_fill_viridis(na.value=NA,option="D",name="depth") +      
+  scale_color_viridis(na.value=NA,option="D",name="depth")  + 
+  geom_sf(data=grid.5km.hw,col='black',fill=NA,alpha=0.8) + 
+  ggtitle("HW study area for inshore/offshore plots") +  
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
+map_hw_study_area
+
+    
 grid_depth_and_hump_bins <-  grid_depth_and_hump %>% 
   mutate(Bins = cut(depth, breaks = c(-500, -400, -300, -200, -100, 0.1))) %>% 
   group_by(year_month, Bins) %>% #is it correct to do the grouping at year_month level, or should it be at year level??
@@ -441,10 +457,12 @@ plot1 <- grid_depth_and_hump_bins %>%
   ggplot() + 
   geom_col(aes(x=Bins, y=Humpback_dens_median)) +
   facet_wrap(~ year) +
-  labs(x="depth",y="Median humpback density") +
+  labs(x="depth bin (deeper <---> shallower)",y="Median humpback density") +
   ggtitle('Humpback whales') +
   theme_minimal()
 plot1
+#ggsave(here('whalepreds_aggregate','figures',paste0('median_hw_dens_by_depth_bin_and_season','.png')),plot1,w=12,h=10)
+
 
 #this plot suggest that the shallowest depth bin (0-100m) has the highest hw dens
 plot2 <- grid_depth_and_hump_bins %>%
@@ -456,6 +474,7 @@ plot2 <- grid_depth_and_hump_bins %>%
   ggtitle('Humpback whales') +
   theme_minimal()
 plot2
+#ggsave(here('whalepreds_aggregate','figures',paste0('median_hw_dens_by_depth_bin_month_and_season','.png')),plot2,w=12,h=10)
 
 
 
@@ -466,6 +485,24 @@ grid_depth_and_blue <-  grid_depth_and_whale %>%
   filter(!is.na(depth)) %>% 
   filter(!is.na(year_month)) %>% 
   mutate(year = as.numeric(substr(year_month, 1,4)))
+
+
+test <- grid_depth_and_blue %>% filter(!is.na(Blue_occurrence_mean)) #note that bw predictions actually end around 47.3
+grid.studyarea.id_bw <- sort(unique(test$GRID5KM_ID))
+grid.5km.bw <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_bw)
+bbox = c(-127,41,-120,49) #c(-127,41,-120,49)
+
+map_bw_study_area <-  ggplot() + 
+  geom_sf(data = grid.key_WA_OR, aes(fill = depth, col = depth)) +  
+  geom_sf(data=rmap.base,col=NA,fill='gray50') + 
+  scale_fill_viridis(na.value=NA,option="D",name="depth") +      
+  scale_color_viridis(na.value=NA,option="D",name="depth")  + 
+  geom_sf(data=grid.5km.bw,col='black',fill=NA,alpha=0.8) + 
+  ggtitle("BW study area for inshore/offshore plots") +  
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))
+#coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
+map_bw_study_area
+
 
 grid_depth_and_blue_bins <-  grid_depth_and_blue %>% 
   mutate(Bins = cut(depth, breaks = c(-500, -400, -300, -200, -100, 0.1))) %>% 
@@ -482,6 +519,7 @@ plot1b <- grid_depth_and_blue_bins %>%
   ggtitle('Blue whales') +
   theme_minimal()
 plot1b
+#ggsave(here('whalepreds_aggregate','figures',paste0('median_bw_occur_by_depth_bin_and_season','.png')),plot1b,w=12,h=10)
 
 #this plot suggest that the shallowest depth bin (0-100m) has the least bw occurrence
 plot2b <- grid_depth_and_blue_bins %>%
@@ -493,6 +531,7 @@ plot2b <- grid_depth_and_blue_bins %>%
   ggtitle('Blue whales') +
   theme_minimal()
 plot2b
+#ggsave(here('whalepreds_aggregate','figures',paste0('median_bw_occur_by_depth_bin_month_and_season','.png')),plot2b,w=12,h=10)
 
 
 #what if group_by year level instead of year_month level...?
@@ -535,8 +574,10 @@ plot3 <- grid_depth_and_fish_WA_bins %>%
   ggtitle('Fishing effort') +
   theme_minimal()
 plot3
+#ggsave(here('whalepreds_aggregate','figures',paste0('mean_trap_dens_by_depth_bin_and_season_WA','.png')),plot3,w=12,h=10)
 
-#this plot suggest that the shallowest depth bin (0-100m) has the highest hw dens
+
+#this plot suggest that the shallowest depth bin (0-100m) has the highest trap dens
 plot3b <- grid_depth_and_fish_WA_bins %>%
   ggplot() + 
   geom_line(aes(x=month_name, y=mean_M2_trapdens, group=Bins, colour = Bins), size=1) +
@@ -546,6 +587,7 @@ plot3b <- grid_depth_and_fish_WA_bins %>%
   ggtitle('Fishing effort') +
   theme_minimal()
 plot3b
+#ggsave(here('whalepreds_aggregate','figures',paste0('mean_trap_dens_by_depth_bin_month_and_season_WA','.png')),plot3b,w=12,h=10)
 
 
 
@@ -570,8 +612,9 @@ plot4 <- grid_depth_and_fish_OR_bins %>%
   ggtitle('Fishing effort_OR') +
   theme_minimal()
 plot4
+#ggsave(here('whalepreds_aggregate','figures',paste0('mean_trap_dens_by_depth_bin_and_season_OR','.png')),plot4,w=12,h=10)
 
-#this plot suggest that the shallowest depth bin (0-100m) has the highest hw dens
+#this plot suggest that the shallowest depth bin (0-100m) has the highest trap dens
 plot4b <- grid_depth_and_fish_OR_bins %>%
   ggplot() + 
   geom_line(aes(x=month_name, y=mean_M2_trapdens, group=Bins, colour = Bins), size=1) +
@@ -581,5 +624,6 @@ plot4b <- grid_depth_and_fish_OR_bins %>%
   ggtitle('Fishing effort_OR') +
   theme_minimal()
 plot4b
+#ggsave(here('whalepreds_aggregate','figures',paste0('mean_trap_dens_by_depth_bin_month_and_season_OR','.png')),plot4b,w=12,h=10)
 
 
