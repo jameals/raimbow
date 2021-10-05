@@ -564,7 +564,7 @@ tsplot3b
 
 #re-do plots with blake's data file
 
-blake_df <- read_csv(here::here('wdfw','data','UPDATED_Dungeness 4mon 5km WA VMS & Logbook attribute table CONFIDENTIAL.csv'))
+blake_df <- read_csv(here::here('wdfw','data', 'Blake VMS and log comparison','UPDATED_Dungeness 4mon 5km WA VMS & Logbook attribute table CONFIDENTIAL.csv'))
 #blake's df is in wide format, convert to long
 
 log_df <- blake_df %>% 
@@ -693,3 +693,26 @@ tsplot2
 map_out <- plot_grid(tsplot1,tsplot2,nrow=1)
 
 #ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities','.png')),map_out,w=12,h=10)
+
+
+
+
+#TEST SCATTER PLOT
+joined_df <- full_join(VMS_longdata_2, log_longdata_2, 
+                     by = c("GRID5KM_ID", "month_interval")) 
+
+scatter_plot <-  ggplot(joined_df, aes(x=VMS_norm, y=logs_norm)) +
+  geom_point(size=2) +
+  #geom_smooth(method=lm, se=FALSE) +
+  geom_smooth(method=lm) +
+  ggtitle("Relationship between normalise VMS and normalised logbook data \ntrendline = geom_smooth(method=lm)")
+scatter_plot
+
+scatter_plot_2 <-  ggplot(joined_df, aes(x=VMS_norm, y=logs_norm)) +
+  geom_point(size=2) +
+  facet_wrap(~month_interval) +
+  geom_smooth(method=lm) +
+  ggtitle("Relationship between normalise VMS and normalised logbook data \nby 4-monthly steps, trendline = geom_smooth(method=lm)")
+scatter_plot_2
+
+
