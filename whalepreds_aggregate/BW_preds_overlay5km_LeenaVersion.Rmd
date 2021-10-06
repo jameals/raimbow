@@ -35,6 +35,19 @@ if (user == "JS") {
   file.out.csv <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_wide_daily.csv"
   file.out.rds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_wide_daily.rds"
 }
+
+
+#Leena
+path.bw.preds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Blue whale predictions"
+
+path.grid.5km.lno <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
+load(path.save2)
+
+file.out.tmp <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Bm_tmp_over.rds"
+  
+file.out.csv <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_wide_daily.csv"
+file.out.rds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_wide_daily.rds"
 ```
 
 ## Import blue whale predictions
@@ -45,8 +58,11 @@ First we must import the blue whale predictions, expected to be from 2009 to pre
 file.count <- length(list.files(path.bw.preds))
 files.grd1 <- list.files(path.bw.preds, pattern = ".grd")
 files.grd <- files.grd1[!grepl("aux", files.grd1)]
-table(substr(files.grd, 1, 4)) #See the number of files for each year
+table(substr(files.grd, 1, 4)) #See the number of files for each year --> I think file naming convention has changed
 
+#can't get this to work
+## Error in CPL_read_gdal(as.character(x), as.character(options), as.character(driver),  : 
+  ##file not found
 list.stars <- lapply(paste0(path.bw.preds, files.grd), read_stars) #~30s
 names(list.stars) <- paste0("Bm_", files.grd)
 
