@@ -27,12 +27,27 @@ if (user == "JS") {
   file.out.rds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_wide_bidaily_dens.rds"
 }
 
+#Leena
+#this was the original input file, but what Karin shared (https://drive.google.com/drive/folders/1DSnNFRTpGcjPkLEvUkuf1ADBWwDEgQRY)
+#doesn't seem to have bidaily data files, only monthly or biweekly
+#path.mn.preds <- "C:/SMW/RAIMBOW/raimbow-local/Data/Humpback 3km models/WEAR3km_76_2005-01-01to2019-08-14_Bidaily_dens.csv"
+#testing biweekly data file
+path.mn.preds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback 3km models/Mn_3km_2005-01-01to2020-09-29_14day.csv"
+
+#path.grid.5km.lno <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
+load(path.save2)
+
+file.out.all.csv <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens_allyrs.csv"
+file.out.csv <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.csv"
+file.out.rds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.rds"
 
 ###############################################################################
 # Load Mn predictions and create sf object - reading CSV takes a while
 mn.preds.csv <- read_csv(path.mn.preds, col_types = cols(.default = col_double())) 
 mn.preds <- mn.preds.csv %>% 
-  select(mlon, mlat, starts_with("76.dens.")) %>% 
+  #select(mlon, mlat, starts_with("76.dens.")) %>%  #I think column names have changed, can't see anything like "76.dens"
+  select(mlon, mlat, starts_with("Avg_14day")) %>% 
   purrr::set_names(~ paste0("Mn_", .)) %>% 
   eSDM::pts2poly_centroids(0.027 / 2, crs = 4326, agr = "constant")
 
@@ -66,7 +81,8 @@ mn.preds.nona <- mn.preds[-which.allna, ]
 #   processing steps requested by Blake, and write to csv
 
 ### Land-erased polygon
-grid.5km.lno <- readRDS(path.grid.5km.lno)
+#grid.5km.lno <- readRDS(path.grid.5km.lno)
+glimpse(grid.5km.lno)
 
 ### Overlay and sanity checks
 tmp.over <- overlay_sdm( #~13.5min on Sam's computer
@@ -77,7 +93,9 @@ tmp.over <- overlay_sdm( #~13.5min on Sam's computer
 mn.preds.lno.5kmover <- tmp.over %>% 
   mutate(GRID5KM_ID = grid.5km.lno$GRID5KM_ID, 
          area_km_lno = as.numeric(units::set_units(st_area(geometry), "km^2"))) %>% 
-  select(GRID5KM_ID, area_km_lno, starts_with("Mn_76"))
+  #select(GRID5KM_ID, area_km_lno, starts_with("Mn_76")) #I think column names have changed
+  select(GRID5KM_ID, area_km_lno, starts_with("Mn_Avg_14day"))
+
 
 # # Sanity check 0
 # identical(st_geometry(mn.preds.lno.5kmover), st_geometry(grid.5km.lno))
@@ -104,13 +122,17 @@ mn.preds.lno.5kmover <- tmp.over %>%
 # 3) Column names: H_YR_MO_DD (bidaily) or HBW_YR_MO_DD (biweekly)
 #   H = humpback whale, YR = last 2 digits for year (09 - 18), MO = month (01 - 12), and DD = day (01 - 31), 
 #   All ^ with with a leading zero where applicable?
+
+
+#I think column names have changed
+#I get lost here
 mn.names.curr <- mn.preds.lno.5kmover %>% 
   st_drop_geometry() %>% 
   select(starts_with("Mn_")) %>% 
   names()
 mn.out.names <- vapply(strsplit(mn.names.curr, "[.]"), function(i) {
   if (i[1] == "Mn_76") {
-    paste("H", substr(i[3], 3, 4), i[4], i[5], sep = "_")
+    paste("H", substr(i[3], 3, 4), i[4], i[5], sep = "_") ##this section applies only if original input was bidaily?
     
   } else if (grepl("BiWkSt", i[1])) {
     paste("HBW", substr(i[1], 9, 10), i[2], i[3], sep = "_")
@@ -121,6 +143,7 @@ mn.out.names <- vapply(strsplit(mn.names.curr, "[.]"), function(i) {
 }, character(1))
 
 
+#this would need to be adjusted as input was not bidaily...
 mn.preds.lno.5kmover.out <- mn.preds.lno.5kmover %>% 
   select(GRID5KM_ID, area_km_lno, contains("Mn_76.den")) %>%
   filter(!is.na(Mn_76.dens.2009.01.02)) %>% 
