@@ -51,7 +51,8 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 # Read in trap density dataframe - note that currently this has not been fixed for the
 # issue of 'too short and too long' stringlines
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+#adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
 
 # the df has trap density in a grid cell in a 2-week period
 # so step 1 is to summarise data on the same time steps as Feist et al 2021 Fig 2
@@ -716,3 +717,146 @@ scatter_plot_2 <-  ggplot(joined_df, aes(x=VMS_norm, y=logs_norm)) +
 scatter_plot_2
 
 
+
+#--------------------------------------------------------------------------
+#--------------------------------------------------------------------------
+
+#re-do things while excluding OR data
+
+library(readxl)
+
+# read in Excel file
+#vms_logbook_data <- read_excel(("~/Documents/Projects/Ecosystem Science/Whale Entanglement/WDFW Collaboration/VMS & logbook comparison/Dungeness 4mon 5km WA VMS & Logbook attribute table CONFIDENTIAL.xlsx"), sheet = 1)
+vms_logbook_data <- read_excel(here::here('wdfw','data', 'Blake VMS and log comparison','Dungeness 4mon 5km WA VMS & Logbook attribute table CONFIDENTIAL_20211013.xlsx'), sheet = 1)
+
+
+# filter out Oregon grid cells
+vms_log.sub <- filter(vms_logbook_data, STATE == "WA")
+
+# create 2 new dfs with just the attributes I want
+log_df <- vms_log.sub %>% 
+  select(GRID5KM_ID, LOGNNF1314:LOGNMJ2016, MEMBERSHIP)
+
+VMS_df <- vms_log.sub %>% 
+  select(GRID5KM_ID, VMSNNF1314:VMSNMJ2016, MEMBERSHIP)
+
+# convert from wide to long using pivot_longer()
+log_long.pre <- pivot_longer(log_df, 
+                             c(LOGNNF1314, LOGNMJ2014, LOGNJO2014, LOGNNF1415, LOGNMJ2015, LOGNJO2015, LOGNNF1516, LOGNMJ2016))
+
+VMS_long.pre <- pivot_longer(VMS_df, 
+                             c(VMSNNF1314, VMSNMJ2014, VMSNJO2014, VMSNNF1415, VMSNMJ2015, VMSNJO2015, VMSNNF1516, VMSNMJ2016))
+
+## make one df with only 1 attribute for each normalized fishing activity (2 attributes)
+# rename "value" attribute to "log_norm" and "name" to "month_year"
+# replace various logbook month/year values with just the months range and year(s)
+
+log_long <- log_long.pre %>% 
+  rename(log_norm = value, month_year= name) %>% 
+  mutate(
+    month_year = case_when(
+      month_year == "LOGNNF1314" ~ "Nov 2013-Feb 2014",
+      month_year == "LOGNMJ2014" ~ "Mar-Jun 2014",
+      month_year == "LOGNJO2014" ~ "Jul-Oct 2014",
+      month_year == "LOGNNF1415" ~ "Nov 2014-Feb 2015",
+      month_year == "LOGNMJ2015" ~ "Mar-Jun 2015",
+      month_year == "LOGNJO2015" ~ "Jul-Oct 2015",
+      month_year == "LOGNNF1516" ~ "Nov 2015-Feb 2016",
+      month_year == "LOGNMJ2016" ~ "Mar-Jun 2016"
+    )
+  ) %>% 
+  mutate(month_year = factor(month_year, 
+                             levels = c('Nov 2013-Feb 2014','Mar-Jun 2014','Jul-Oct 2014','Nov 2014-Feb 2015','Mar-Jun 2015','Jul-Oct 2015','Nov 2015-Feb 2016','Mar-Jun 2016')))
+
+# rename "value" attribute to "VMS_norm" and "name" to "month_year"
+# replace various VMS month/year values with just the months range and year(s)
+VMS_long <- VMS_long.pre %>% 
+  rename(VMS_norm = value, month_year= name) %>% 
+  mutate(
+    month_year = case_when(
+      month_year == "VMSNNF1314" ~ "Nov 2013-Feb 2014",
+      month_year == "VMSNMJ2014" ~ "Mar-Jun 2014",
+      month_year == "VMSNJO2014" ~ "Jul-Oct 2014",
+      month_year == "VMSNNF1415" ~ "Nov 2014-Feb 2015",
+      month_year == "VMSNMJ2015" ~ "Mar-Jun 2015",
+      month_year == "VMSNJO2015" ~ "Jul-Oct 2015",
+      month_year == "VMSNNF1516" ~ "Nov 2015-Feb 2016",
+      month_year == "VMSNMJ2016" ~ "Mar-Jun 2016"
+    )
+  ) %>% 
+  mutate(month_year = factor(month_year, 
+                             levels = c('Nov 2013-Feb 2014','Mar-Jun 2014','Jul-Oct 2014','Nov 2014-Feb 2015','Mar-Jun 2015','Jul-Oct 2015','Nov 2015-Feb 2016','Mar-Jun 2016')))
+
+# create df that joins VMS_norm values using the Grid5km_ID and month_year attributes
+VMS_log_long <- left_join(log_long, VMS_long, by = c('GRID5KM_ID','month_year'))
+
+
+
+logs_norm_max <- VMS_log_long %>% 
+  select(GRID5KM_ID, month_year, log_norm) %>% 
+  group_by(month_year) %>% 
+  summarise(max = max(log_norm,na.rm=TRUE),
+            median = median(log_norm,na.rm=TRUE),
+            Percentile_95th = quantile(log_norm, probs=0.95, na.rm=TRUE),
+            Percentile_75th = quantile(log_norm, probs=0.75, na.rm=TRUE),
+            Percentile_25th = quantile(log_norm, probs=0.25, na.rm=TRUE),
+  ) 
+
+VMS_norm_max <- VMS_log_long %>% 
+  select(GRID5KM_ID, month_year, VMS_norm) %>% 
+  group_by(month_year) %>% 
+  summarise(max = max(VMS_norm,na.rm=TRUE),
+            median = median(VMS_norm,na.rm=TRUE),
+            Percentile_95th = quantile(VMS_norm, probs=0.95, na.rm=TRUE),
+            Percentile_75th = quantile(VMS_norm, probs=0.75, na.rm=TRUE),
+            Percentile_25th = quantile(VMS_norm, probs=0.25, na.rm=TRUE),
+  ) 
+
+
+tsplot3 <-  
+  ggplot()+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=max, group=1))+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_75th, group=1), linetype = "twodash")+
+  geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_95th, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_25th, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=median, group=1), linetype = "dashed")+
+  
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=max, group=1, colour='red'), show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
+  geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_25th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  
+  #scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  #adjust scale if looking at 25th, median, 75th or 95th percentile for more useful plots
+  #scale_y_continuous(breaks=seq(0, 0.0015, 0.001),limits=c(0,0.0015))+
+  
+  labs(x="4-Month intervals",y="Normalised pings/trap density") +
+  ggtitle("Normalised VMS ping rate (black) and logbook based trap density (red) \nacross grid cells in WA") + 
+  theme(legend.position = ("top"),legend.title=element_blank())
+tsplot3
+#The line indicates the highest normalised value in a ny grid cell in a given 4-month interval (x-axis)
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_max','.png')),tsplot3,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_95th','.png')),tsplot3,w=12,h=10)
+
+
+
+
+
+
+violin_log <- ggplot(data = VMS_log_long, aes(x = month_year, y = log_norm)) + geom_violin()
+violin_log
+
+violin_VMS <- ggplot(data = VMS_log_long, aes(x = month_year, y = VMS_norm)) + geom_violin()
+violin_VMS
+
+map_out_violin <- plot_grid(violin_log,violin_VMS,nrow=1)
+
+
+#OR removed
+scatter_plot <-  ggplot(VMS_log_long, aes(x=log_norm, y=VMS_norm)) +
+  geom_point(size=2) +
+  facet_wrap(~month_year) +
+  geom_smooth(method=lm) +
+  ggtitle("Relationship between normalise VMS and normalised logbook data \ntrendline = geom_smooth(method=lm)")
+scatter_plot
