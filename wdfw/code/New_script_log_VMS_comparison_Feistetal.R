@@ -791,6 +791,8 @@ VMS_long <- VMS_long.pre %>%
 VMS_log_long <- left_join(log_long, VMS_long, by = c('GRID5KM_ID','month_year'))
 
 
+VMS_log_long_v2 <-  VMS_log_long %>% 
+  mutate(VMS_norm_sqrt = sqrt(VMS_norm))
 
 logs_norm_max <- VMS_log_long %>% 
   select(GRID5KM_ID, month_year, log_norm) %>% 
@@ -802,6 +804,7 @@ logs_norm_max <- VMS_log_long %>%
             Percentile_25th = quantile(log_norm, probs=0.25, na.rm=TRUE),
   ) 
 
+
 VMS_norm_max <- VMS_log_long %>% 
   select(GRID5KM_ID, month_year, VMS_norm) %>% 
   group_by(month_year) %>% 
@@ -812,22 +815,31 @@ VMS_norm_max <- VMS_log_long %>%
             Percentile_25th = quantile(VMS_norm, probs=0.25, na.rm=TRUE),
   ) 
 
+VMS_norm_max <- VMS_log_long_v2 %>% 
+  select(GRID5KM_ID, month_year, VMS_norm_sqrt) %>% 
+  group_by(month_year) %>% 
+  summarise(max = max(VMS_norm_sqrt,na.rm=TRUE),
+            median = median(VMS_norm_sqrt,na.rm=TRUE),
+            Percentile_95th = quantile(VMS_norm_sqrt, probs=0.95, na.rm=TRUE),
+            Percentile_75th = quantile(VMS_norm_sqrt, probs=0.75, na.rm=TRUE),
+            Percentile_25th = quantile(VMS_norm_sqrt, probs=0.25, na.rm=TRUE),
+  )
 
 tsplot3 <-  
   ggplot()+
-  #geom_line(data=VMS_norm_max, aes(x=month_year,y=max, group=1))+
+  geom_line(data=VMS_norm_max, aes(x=month_year,y=max, group=1))+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_75th, group=1), linetype = "twodash")+
-  geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_95th, group=1), linetype = "dashed")+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_95th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_25th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=median, group=1), linetype = "dashed")+
   
-  #geom_line(data=logs_norm_max, aes(x=month_year,y=max, group=1, colour='red'), show.legend = F)+
+  geom_line(data=logs_norm_max, aes(x=month_year,y=max, group=1, colour='red'), show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
-  geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_25th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   
-  #scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
   #adjust scale if looking at 25th, median, 75th or 95th percentile for more useful plots
   #scale_y_continuous(breaks=seq(0, 0.0015, 0.001),limits=c(0,0.0015))+
   
@@ -848,6 +860,9 @@ violin_log <- ggplot(data = VMS_log_long, aes(x = month_year, y = log_norm)) + g
 violin_log
 
 violin_VMS <- ggplot(data = VMS_log_long, aes(x = month_year, y = VMS_norm)) + geom_violin()
+violin_VMS
+
+violin_VMS <- ggplot(data = VMS_log_long_v2, aes(x = month_year, y = VMS_norm_sqrt)) + geom_violin()
 violin_VMS
 
 map_out_violin <- plot_grid(violin_log,violin_VMS,nrow=1)
