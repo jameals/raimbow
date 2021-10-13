@@ -591,6 +591,22 @@ p10
 
 
 
+#-----------------------------------------------
+#Decision made to exclude 0m when >50 pots
+#what % of pots and stringlines excluded?
+
+traps_g_pots_excluded <-  traps_g %>% 
+mutate(keep_exclude = 
+         ifelse(line_length_m == 0 & PotsFished > 50, 'exclude','keep')) %>%  #this is not working because it has already been filtered
+group_by(season) %>% 
+  summarise(n_records = n(),
+            n_0m_50orfewer = length(line_length_m[line_length_m > 13062.78])) %>% 
+  mutate(percent_too_long = (n_too_long/n_records)*100)
+
+
+
+
+
 
 
 
