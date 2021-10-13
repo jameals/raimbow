@@ -34,8 +34,8 @@ options(dplyr.summarise.inform = FALSE)
 #There are stringlines that have a length of 0m (start and end loc are exactly the same)
 #as well as stringlines that are several kilometers long
 
-
-traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+#read in version of rds where too short/long are flagged but not filtered out in script 1
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020_too short long flagged not deleted.rds'))
 
 # remove geometry, create columns for season, month etc 
 traps_g %<>%
@@ -596,19 +596,28 @@ p10
 #what % of pots and stringlines excluded?
 
 traps_g_pots_excluded <-  traps_g %>% 
-mutate(keep_exclude = 
-         ifelse(line_length_m == 0 & PotsFished > 50, 'exclude','keep')) %>%  #this is not working because it has already been filtered
 group_by(season) %>% 
   summarise(n_records = n(),
-            n_0m_50orfewer = length(line_length_m[line_length_m > 13062.78])) %>% 
-  mutate(percent_too_long = (n_too_long/n_records)*100)
+            n_0m_50orfewer = length(too_short[too_short == "too_short"]),
+            n_too_long = length(line_length_m[line_length_m > 80000])
+            ) %>% 
+  mutate(percent_too_short = (n_0m_50orfewer/n_records)*100,
+         percent_too_long = (n_too_long/n_records)*100
+         )
 
 
+# In the df each row is an individual simulated pot - remove duplicated rows based on SetID
+traps_g_v2 <-  traps_g %>% distinct(SetID, .keep_all = TRUE)
 
-
-
-
-
+traps_g_strings_excluded <-  traps_g_v2 %>% 
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_0m_50orfewer = length(too_short[too_short == "too_short"]),
+            n_too_long = length(line_length_m[line_length_m > 80000])
+  ) %>% 
+  mutate(percent_too_short = (n_0m_50orfewer/n_records)*100,
+         percent_too_long = (n_too_long/n_records)*100
+  )
 
 
 #-----------------------------------------------
