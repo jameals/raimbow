@@ -836,8 +836,8 @@ tsplot3 <-
   theme(legend.position = ("top"),legend.title=element_blank())
 tsplot3
 #The line indicates the highest normalised value in a ny grid cell in a given 4-month interval (x-axis)
-#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_max','.png')),tsplot3,w=12,h=10)
-#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_95th','.png')),tsplot3,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_max_OR_excluded','.png')),tsplot3,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('ts_normalised VMS pings and trap densities_line_95th_OR_excluded','.png')),tsplot3,w=12,h=10)
 
 
 
