@@ -134,6 +134,9 @@ df_v3 <- df_v2 %>%  select(-length)
 df_v4 <- df_v3 %>% 
   filter(line_length_m < 80000) %>% 
   filter(!(line_length_m == 0 & PotsFished > 50)) 
+#creating a new version of df where too short/long not filtered out but just flagged
+#mutate(too_long = ifelse(line_length_m > 80000, 'too_long','ok')) %>% 
+#mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
 
 #what percentage was excluded?
 # 0.049% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines longer than 80km
@@ -153,6 +156,8 @@ traps <- df_v4 %>%
   mutate(trapcoords=purrr::map(traplocs,
                                function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
   select(Vessel,License, SetID,PotsFished,line_length_m, SetDate,trapcoords) %>% #also select lineLength_m to retain it
+  #creating a new version of df where too short/long not filtered out but just flagged
+  #select(Vessel,License, SetID,PotsFished,line_length_m, SetDate,trapcoords, too_long, too_short) %>% 
   # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
   st_set_geometry(NULL) %>% 
   unnest(cols=c(trapcoords))
@@ -201,6 +206,9 @@ traps_g <- traps_sf %>%
 
 #running join_grid on 2013-2020 logs subset took about 12min
 #write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020.rds"))
+
+#creating a new version of df where too short/long not filtered out but just flagged
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020_too short long flagged not deleted.rds"))
 
 
 #--------------------------------------------------------------------------------
