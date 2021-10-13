@@ -827,19 +827,19 @@ VMS_norm_max <- VMS_log_long_v2 %>%
 
 tsplot3 <-  
   ggplot()+
-  geom_line(data=VMS_norm_max, aes(x=month_year,y=max, group=1))+
+  #geom_line(data=VMS_norm_max, aes(x=month_year,y=max, group=1))+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_75th, group=1), linetype = "twodash")+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_95th, group=1), linetype = "dashed")+
   #geom_line(data=VMS_norm_max, aes(x=month_year,y=Percentile_25th, group=1), linetype = "dashed")+
-  #geom_line(data=VMS_norm_max, aes(x=month_year,y=median, group=1), linetype = "dashed")+
+  geom_line(data=VMS_norm_max, aes(x=month_year,y=median, group=1), linetype = "dashed")+
   
-  geom_line(data=logs_norm_max, aes(x=month_year,y=max, group=1, colour='red'), show.legend = F)+
+  #geom_line(data=logs_norm_max, aes(x=month_year,y=max, group=1, colour='red'), show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_75th, group=1, colour='red'), linetype = "twodash", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_95th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   #geom_line(data=logs_norm_max, aes(x=month_year,y=Percentile_25th, group=1, colour='red'), linetype = "dashed", show.legend = F)+
-  #geom_line(data=logs_norm_max, aes(x=month_year,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
+  geom_line(data=logs_norm_max, aes(x=month_year,y=median, group=1, colour='red'), linetype = "dashed", show.legend = F)+
   
-  scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
+  #scale_y_continuous(breaks=seq(0, 1, 0.1),limits=c(0,1))+
   #adjust scale if looking at 25th, median, 75th or 95th percentile for more useful plots
   #scale_y_continuous(breaks=seq(0, 0.0015, 0.001),limits=c(0,0.0015))+
   
