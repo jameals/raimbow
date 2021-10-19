@@ -644,3 +644,35 @@ p10 <- pot_spacing %>%
   labs(x="Spacing between pots (m)",y="Proportion") +
   ggtitle('Proportion of string lengths')
 p10
+
+
+#-----------------------------------------------
+#Decision made to exclude 0m when >50 pots
+#what % of pots and stringlines excluded?
+
+traps_g_pots_excluded <-  traps_g %>% 
+  mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok')) %>%
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_0m_50orfewer = length(too_short[too_short == "too_short"]),
+            n_too_long = length(line_length_m[line_length_m > 80000])
+  ) %>% 
+  mutate(percent_too_short = (n_0m_50orfewer/n_records)*100,
+         percent_too_long = (n_too_long/n_records)*100
+  )
+
+
+# In the df each row is an individual simulated pot - remove duplicated rows based on SetID
+traps_g_v2 <-  traps_g %>% distinct(SetID, .keep_all = TRUE)
+
+traps_g_strings_excluded <-  traps_g_v2 %>% 
+  mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok')) %>%
+  group_by(season) %>% 
+  summarise(n_records = n(),
+            n_0m_50orfewer = length(too_short[too_short == "too_short"]),
+            n_too_long = length(line_length_m[line_length_m > 80000])
+  ) %>% 
+  mutate(percent_too_short = (n_0m_50orfewer/n_records)*100,
+         percent_too_long = (n_too_long/n_records)*100
+  )
+
