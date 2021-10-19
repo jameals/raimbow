@@ -91,22 +91,22 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
 ### NOTE THAT THIS IS NOT ACTUALLY CORRECT - NEED TO BRING IN POINTS DATA AND COUNT UNIQUE VESSELS THAT WAY
 ### SEE SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
-adj_summtraps <- adj_summtraps %>%
-  mutate(is_confidential=ifelse(nvessels<3,T,F))
+# adj_summtraps <- adj_summtraps %>%
+#   mutate(is_confidential=ifelse(nvessels<3,T,F))
+# 
+# # use conf_dat as input in mapping loop, if want cells with < 3 vessels to be gray
+# conf_dat <-  adj_summtraps %>% 
+#   mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
+#          M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
+#          M2_tottraps=ifelse(is_confidential,NA,M2_tottraps),
+#          M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
+#   )
+# 
+# # or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+# conf_dat2 <-  conf_dat %>%
+#   filter(is_confidential == FALSE)
 
-# use conf_dat as input in mapping loop, if want cells with < 3 vessels to be gray
-conf_dat <-  adj_summtraps %>% 
-  mutate(M1_tottraps=ifelse(is_confidential,NA,M1_tottraps),
-         M1_trapdens=ifelse(is_confidential,NA,M1_trapdens),
-         M2_tottraps=ifelse(is_confidential,NA,M2_tottraps),
-         M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
-  )
-
-# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
-conf_dat2 <-  conf_dat %>%
-  filter(is_confidential == FALSE)
-
-#----------------------------------------------------------------------------------------------
+# THIS IS THE CORRECT WAY
 # This section is copied and edited from SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
 
@@ -119,18 +119,20 @@ logs_all_x <- traps_g_all_logs %>%
   st_set_geometry(NULL) %>% 
   mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
   mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
+  mutate(period2=ifelse(d<=15,1,2)) %>%
   mutate(season = str_sub(SetID,1,9)) %>% 
-  mutate(season_month = paste0(season,"_",m))
+  mutate(season_month = paste0(season,"_",m)) %>% 
+  mutate(month_interval = paste0(m,"_",period2))
 
-#count number of unique vessels that used a given grid cell within a given month
+#count number of unique vessels that used a given grid cell within a given time step
 logs_all_nvessels <- logs_all_x %>% 
-  group_by(season_month, GRID5KM_ID,grd_x,grd_y) %>% 
+  group_by(season, month_interval, GRID5KM_ID,grd_x,grd_y) %>% 
   summarise(
     nvessels=n_distinct(Vessel,na.rm=T)) 
 
 #join the new, correct, number of unique vessels in a grid in an interval into gridded df
 adj_summtraps %<>%
-  left_join(logs_all_nvessels,by=c("season_month","GRID5KM_ID", "grd_x", "grd_y"))
+  left_join(logs_all_nvessels,by=c("season", "month_interval","GRID5KM_ID", "grd_x", "grd_y"))
 
 #If fewer than 3 unique vessels in a grid, that should be removed
 adj_summtraps <- adj_summtraps %>%
@@ -144,7 +146,7 @@ conf_dat <-  adj_summtraps %>%
          M2_trapdens=ifelse(is_confidential,NA,M2_trapdens)
   )
 
-# or use conf_dat2 as input in the above mapping loop, if want cells with < 3 vessels to be fully removed
+# or use conf_dat2 as input in the mapping loop, if want cells with < 3 vessels to be fully removed
 conf_dat2 <-  conf_dat %>%
   filter(is_confidential == FALSE)
 
@@ -162,6 +164,7 @@ conf_dat2 <-  conf_dat %>%
 
 # Figure out good trap density scale
 adj_summtraps %>% 
+#conf_dat2 %>% 
   ggplot()+
   geom_density(aes(M2_trapdens))
 # adj_summtraps %>% 
@@ -244,11 +247,66 @@ M2_summtrapsWA_month <- adj_summtraps %>%
   ) 
 glimpse(M2_summtrapsWA_month)
 
-
 M2_summtrapsWA_month %>% 
   ggplot()+
   geom_density(aes(mean_M2_trapdens))
 
+
+#--------------------------
+#MAKING NON_CONFIDENTIAL MONTHLY MAPS
+# THIS IS THE CORRECT WAY
+# This section is copied and edited from SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
+# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
+
+#I think this is the correct way of figuring if more than 3 unique vessels were in a grid cell in a given period
+#bring in data as points, not summarised by grid cell
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+
+#for each point record assign the month_interval as per Feist et al Fig 2
+logs_all_x <- traps_g_all_logs %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
+  mutate(period2=ifelse(d<=15,1,2)) %>%
+  mutate(season = str_sub(SetID,1,9)) %>% 
+  mutate(season_month = paste0(season,"_",m)) %>% 
+  mutate(month_interval = paste0(m,"_",period2))
+
+#count number of unique vessels that used a given grid cell within a given time step
+logs_all_nvessels <- logs_all_x %>% 
+  group_by(season_month, GRID5KM_ID,grd_x,grd_y) %>% 
+  summarise(
+    nvessels=n_distinct(Vessel,na.rm=T)) 
+
+#join the new, correct, number of unique vessels in a grid in an interval into gridded df
+adj_summtraps %<>%
+  left_join(logs_all_nvessels,by=c("season_month", "GRID5KM_ID", "grd_x", "grd_y"))
+
+#If fewer than 3 unique vessels in a grid, that should be removed
+adj_summtraps <- adj_summtraps %>%
+  mutate(is_confidential=ifelse(nvessels.y<3,T,F))  %>%
+  filter(is_confidential == FALSE)
+
+
+# this will require using the df on a 2-weekly step (adj_summtraps) and
+# taking the average trap density for each grid cell for the desired time period
+conf_M2_summtrapsWA_month <- adj_summtraps %>% 
+  group_by(season_month,GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    mean_M1_trapdens = mean(M1_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens), 
+    #M1_sdtrapdens = sd(M1_trapdens), 
+    #M2_sdtrapdens = sd(M2_trapdens)
+  ) 
+glimpse(conf_M2_summtrapsWA_month)
+
+conf_M2_summtrapsWA_month %>% 
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
+
+
+#--------------------------
 
 #making a loop of maps on monthly step
 map_log_monthly <- function(M2_summtrapsWA_month,saveplot=TRUE){
@@ -278,7 +336,7 @@ map_log_monthly <- function(M2_summtrapsWA_month,saveplot=TRUE){
   return(log_monthly_map_out)
 }
 
-# Loop and save comparison maps
+# Loop and save comparison maps - here replace input with non-confidential verison to make non-confidential maps
 tm <- proc.time()
 all_maps <- purrr::map(unique(M2_summtrapsWA_month$season_month),function(x){
   M2_summtrapsWA_month %>% 
@@ -303,7 +361,8 @@ adj_summtraps_MaySep <- adj_summtraps %>%
   mutate(is_May1_Sep15 = 
            ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
                   ,'Y', 'N')) %>% 
-  filter(is_May1_Sep15 == 'Y')
+  filter(is_May1_Sep15 == 'Y') %>% 
+  select(-nvessels)
 
 # average M1 and M2 trap density for each grid cell for May-Sep period
 MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
@@ -311,7 +370,7 @@ MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
   summarise(
     sum_M1_trapdens = sum(M1_trapdens),
     sum_M2_trapdens = sum(M2_trapdens),
-    sum_nvessels = sum(nvessels), # include this for creating non-confidential maps 
+    #sum_nvessels = sum(nvessels), # include this for creating non-confidential maps - old, this is wrong
     number_obs = n(), #no. of grid cells being used for averaging
     mean_M1_trapdens = sum_M1_trapdens/number_obs,
     mean_M2_trapdens = sum_M2_trapdens/number_obs
@@ -326,21 +385,72 @@ MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
 glimpse(MaySep_summtrapsWA)
 
 #--------------------------
-# If want to create non-confidential maps (do not show data if < 3 vessels in grid)
-### NOTE THAT THIS IS NOT ACTUALLY CORRECT - NEED TO BRING IN POINTS DATA AND COUNT UNIQUE VESSELS THAT WAY
-### SEE SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
-conf_MaySep_summtrapsWA <- MaySep_summtrapsWA %>%
-  mutate(is_confidential=ifelse(sum_nvessels<3,T,F))
 
-# use conf_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be gray
-conf_MaySep_summtrapsWA <- conf_MaySep_summtrapsWA %>% 
-  mutate(mean_M1_trapdens = ifelse(is_confidential,NA,mean_M1_trapdens),
-         mean_M2_trapdens = ifelse(is_confidential,NA,mean_M2_trapdens)
-  )
+#THIS IS THE CORRECT WAY
 
-# or use conf_MaySep_summtrapsWA2 as input in mapping loop, if want cells with < 3 vessels to be fully removed
-conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
+#bring in data as points, not summarised by grid cell
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+
+#for each point record assign the correct month_interval time step required (e.g. May1-Sep15)
+logs_all_x <- traps_g_all_logs %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(
+    season = str_sub(SetID,1,9),
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name),
+    month_interval = paste0(month_name, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+    ),
+    season_month_interval = paste0(season, 
+                                   "_", 
+                                   month_interval)
+  ) %>% 
+  mutate(is_May1_Sep15 = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
+                  ,'Y', 'N')) %>% 
+  filter(is_May1_Sep15 == 'Y')
+
+#count number of unique vessels that used a given grid cell within a given time step
+logs_all_nvessels <- logs_all_x %>% 
+  group_by(season, month_interval, GRID5KM_ID,grd_x,grd_y) %>% 
+  summarise(
+    nvessels=n_distinct(Vessel,na.rm=T)) 
+
+
+#join the new, correct, number of unique vessels in a grid in an interval into gridded df
+adj_summtraps_MaySep %<>%
+  left_join(logs_all_nvessels,by=c("season", "month_interval","GRID5KM_ID", "grd_x", "grd_y"))
+
+
+
+conf_adj_summtraps_MaySep <- adj_summtraps_MaySep %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F)) %>%
   filter(is_confidential == FALSE)
+
+
+# average M1 and M2 trap density for each grid cell for May-Sep period
+cof_MaySep_summtrapsWA <- conf_adj_summtraps_MaySep %>%
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M1_trapdens = sum(M1_trapdens),
+    sum_M2_trapdens = sum(M2_trapdens),
+    #sum_nvessels = sum(nvessels), # include this for creating non-confidential maps - old, this is wrong
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_M1_trapdens = sum_M1_trapdens/number_obs,
+    mean_M2_trapdens = sum_M2_trapdens/number_obs
+    #here can include some measure of variance or CV as well
+    #M2_sdtrapdens = sd(M2_trapdens),
+    #M2_mediantrapdens = median(M2_trapdens),
+    #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    #M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    #M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(cof_MaySep_summtrapsWA)
+
+# use conf_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be fully removed
+
 #----------------------------
 
 # map May 1- Sep 15
@@ -348,6 +458,7 @@ conf_MaySep_summtrapsWA2 <-  conf_MaySep_summtrapsWA %>%
 
 # Figure out good trap density scale
 MaySep_summtrapsWA %>%
+#cof_MaySep_summtrapsWA %>%
   ggplot()+
   geom_density(aes(mean_M2_trapdens))
 
