@@ -251,6 +251,11 @@ M2_summtrapsWA_month %>%
   ggplot()+
   geom_density(aes(mean_M2_trapdens))
 
+# test calculating number of grid cells in use in a given month
+test <- M2_summtrapsWA_month %>% 
+  filter(season_month == '2017-2018_July')
+test_2 <- test %>% distinct(GRID5KM_ID, .keep_all = TRUE)
+nrow(test_2) #234 for 2017-2018_January, 92 for 2017-2018_July
 
 #--------------------------
 #MAKING NON_CONFIDENTIAL MONTHLY MAPS
@@ -305,6 +310,12 @@ conf_M2_summtrapsWA_month %>%
   ggplot()+
   geom_density(aes(mean_M2_trapdens))
 
+
+# test calculating number of grid cells in use in a given month
+test <- conf_M2_summtrapsWA_month %>% 
+  filter(season_month == '2017-2018_July')
+test_2 <- test %>% distinct(GRID5KM_ID, .keep_all = TRUE)
+nrow(test_2) #117 for 2017-2018_January, 26 for 2017-2018_July
 
 #--------------------------
 
