@@ -41,8 +41,8 @@ if (user == "JS") {
 path.bw.preds <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Blue whale predictions/"
 
 path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-path.save2 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
-load(path.save2)
+#path.save2 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
+#load(path.save2)
 
 file.out.tmp <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Bm_tmp_over.rds"
   
