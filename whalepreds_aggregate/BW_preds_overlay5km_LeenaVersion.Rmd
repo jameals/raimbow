@@ -95,7 +95,7 @@ grid.5km.lno <- readRDS(path.grid.5km.lno)
 preds.names <- names(st_drop_geometry(bm.sf))
 tmp.over <- overlay_sdm(st_geometry(grid.5km.lno), bm.sf, preds.names, overlap.perc = 0)
 
-# saveRDS(tmp.over, file = file.out.tmp)
+ saveRDS(tmp.over, file = file.out.tmp)
 # tmp.over <- readRDS(file.out.tmp)
 
 bm.preds.lno.5kmover <- tmp.over %>% 
