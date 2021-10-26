@@ -62,7 +62,7 @@ After importing, we convert the stars objects to sf objects
 ```{r}
 bm.stars <- do.call(c, list.stars) #convert to actual stars object
 bm.sf <- st_as_sf(bm.stars) %>% #~20s
-  purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% 
+  purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% #the naming convention may have changed between the 2009-2019 bw output, and 2019-2021 bw output. This line causes column names to lose the date component, therefore just changed the 13 to be 27 to keep all characters
   st_set_crs(4326)
 ```
 
@@ -109,6 +109,7 @@ bm.preds.lno.5kmover.nona <- bm.preds.lno.5kmover %>%
 Write to output. Also save as an RDS for the sake of reading it back in later (aka faster)
 
 ```{r}
+#message: The `path` argument of `write_csv()` is deprecated as of readr 1.4.0. Please use the `file` argument instead.
 readr::write_csv(bm.preds.lno.5kmover.nona, path = file.out.csv)
 saveRDS(bm.preds.lno.5kmover.nona, file = file.out.rds)
 ```
