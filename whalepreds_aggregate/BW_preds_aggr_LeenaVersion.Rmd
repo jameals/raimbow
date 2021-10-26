@@ -52,7 +52,7 @@ range.dates <- seq(from = as.Date("2019-08-16"), to = date.max, by = "months") #
 
 bm.aggr <- whalepreds_aggregate(
   #bm.raw, 3:ncol(bm.raw), 4:13, aggr.level = NULL, range.dates = range.dates, #need to change the indices of characters in column names that specify the date 
-  bm.raw, 3:ncol(bm.raw), 18:27, aggr.level = NULL, range.dates = range.dates, #there were some gaps in the bw output, which causes a warning message here
+  bm.raw, 3:ncol(bm.raw), 18:27, aggr.level = NULL, range.dates = range.dates, #there were some gaps in the bw output, which causes a warning message here. Also somehow this function clips data at 2021-06-16
   se.calc = TRUE
 ) %>% 
   set_names(c("GRID5KM_ID", "area_km_lno", paste0("Bm_", names(.)[-c(1:2)]))) %>% 
