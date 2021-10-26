@@ -29,6 +29,12 @@ if (user == "JS") {
 
   file.out <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/BlueWhale_5km_long_monthly.rds"
 }
+
+
+#Leena
+path.bwpreds.rds <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_wide_daily.rds"
+
+file.out <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
 ```
 
 ## Aggregate by month and tidy
@@ -39,11 +45,14 @@ User TODO: update `date.max`. This section can take a few minutes to run
 bm.raw <- readRDS(path.bwpreds.rds)
 tail(names(bm.raw))
 
-date.max <- as.Date("2019-08-01")
-range.dates <- seq(from = as.Date("2009-01-01"), to = date.max, by = "months")
+#date.max <- as.Date("2019-08-01")
+date.max <- as.Date("2021-09-30") #max date in new data pull is 2021-09-30
+#range.dates <- seq(from = as.Date("2009-01-01"), to = date.max, by = "months")
+range.dates <- seq(from = as.Date("2019-08-16"), to = date.max, by = "months") #the first date of the new data pull is 2019-08-16
 
 bm.aggr <- whalepreds_aggregate(
-  bm.raw, 3:ncol(bm.raw), 4:13, aggr.level = NULL, range.dates = range.dates, 
+  #bm.raw, 3:ncol(bm.raw), 4:13, aggr.level = NULL, range.dates = range.dates, #need to change the indices of characters in column names that specify the date 
+  bm.raw, 3:ncol(bm.raw), 18:27, aggr.level = NULL, range.dates = range.dates, #there were some gaps in the bw output, which causes a warning message here
   se.calc = TRUE
 ) %>% 
   set_names(c("GRID5KM_ID", "area_km_lno", paste0("Bm_", names(.)[-c(1:2)]))) %>% 
@@ -65,13 +74,16 @@ Now we make the data long, extract means and SEs, ...
 ```{r}
 bm.proc <- bm.aggr %>% 
   gather(key = "key", value = "value", -GRID5KM_ID, -area_km_lno) %>% 
-  mutate(type = ifelse(grepl("SE", key), "se", "pred"),
+  mutate(type = ifelse(grepl("SE", key), "se", "pred"), ##what is grepl??
          date = lubridate::ymd(ifelse(type == "se", substr(key, 7, 16), substr(key, 4, 13))))
+
 
 bm.proc.long <- bm.proc %>% 
   select(-key) %>%
   pivot_wider(names_from = type, values_from = value) %>% 
   rename(Blue_occurrence_mean = pred, Blue_occurrence_se = se)
+
+#in previous data pull the date was always the first of a month. But in new data pull the first file was 2019-08-16
 ```
 
 ...and save
