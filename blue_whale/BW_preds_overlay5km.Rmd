@@ -47,6 +47,8 @@ files.grd1 <- list.files(path.bw.preds, pattern = ".grd")
 files.grd <- files.grd1[!grepl("aux", files.grd1)]
 table(substr(files.grd, 1, 4)) #See the number of files for each year
 
+## IMPORTANT NOTES: for read_star() to work, the source folder MUST contain both .grd AND .gri files 
+## ALSO: when specifying file path to path.bw.preds, you MUST to have "/" at the end for the below paste0 to join folder and file names correctly
 list.stars <- lapply(paste0(path.bw.preds, files.grd), read_stars) #~30s
 names(list.stars) <- paste0("Bm_", files.grd)
 
