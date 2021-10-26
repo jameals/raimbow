@@ -119,7 +119,8 @@ bm.preds.lno.5kmover <- tmp.over %>%
 
 # Remove rows with all NAs
 bm.preds.lno.5kmover.nona <- bm.preds.lno.5kmover %>% 
-  filter(!is.na(Bm_2009_01_01)) %>% 
+  #filter(!is.na(Bm_2009_01_01)) %>% #why is this specific column mentioned? Is it because above checked that all columns have NAs in the same rows, so any column will work?
+  filter(!is.na(Bm_blwh_ensemble_2019_08_16)) %>% #test it with the first column name
   st_drop_geometry()
 ```
 
@@ -127,5 +128,6 @@ Write to output. Also save as an RDS for the sake of reading it back in later (a
 
 ```{r}
 readr::write_csv(bm.preds.lno.5kmover.nona, path = file.out.csv)
+  #message: The `path` argument of `write_csv()` is deprecated as of readr 1.4.0. Please use the `file` argument instead.
 saveRDS(bm.preds.lno.5kmover.nona, file = file.out.rds)
 ```
