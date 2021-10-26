@@ -76,6 +76,7 @@ grid.5km.lno <- readRDS(path.grid.5km.lno)
 
 # Do overlay
 preds.names <- names(st_drop_geometry(bm.sf))
+## Important note: overlay_sdm() doesn't work in R version > 4? (not in 4.1.1)
 tmp.over <- overlay_sdm(st_geometry(grid.5km.lno), bm.sf, preds.names, overlap.perc = 0)
 
 # saveRDS(tmp.over, file = file.out.tmp)
