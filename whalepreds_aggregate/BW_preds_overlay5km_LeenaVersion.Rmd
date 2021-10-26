@@ -79,7 +79,7 @@ After importing, we convert the stars objects to sf objects
 ```{r}
 bm.stars <- do.call(c, list.stars) #convert to actual stars object
 bm.sf <- st_as_sf(bm.stars) %>% #~20s
-  #purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% #column names seem to loose the date component, I think it happens here
+  #purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% #column names seem to lose the date component, I think it happens here
   purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 27))) %>% 
   st_set_crs(4326)
 ```
