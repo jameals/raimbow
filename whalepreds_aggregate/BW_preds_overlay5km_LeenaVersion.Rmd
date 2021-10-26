@@ -82,6 +82,31 @@ bm.sf <- st_as_sf(bm.stars) %>% #~20s
   #purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 13))) %>% #column names seem to lose the date component, I think it happens here
   purrr::set_names(gsub("[.]", "_", substr(names(.), 1, 27))) %>% 
   st_set_crs(4326)
+
+#trying to figure out if/when bw output is being clipped
+
+line_48N <-
+  read_csv("C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/48N_line.csv")
+line_48N_sf <- st_as_sf(line_48N, coords = c("lon", "lat"), crs = 4326)
+
+rmap.base <- c(
+     st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+         filter(admin %in% c("Canada", "Mexico")) %>%
+         st_geometry() %>%
+         st_transform(st_crs(grid.5km.lno))
+)
+
+grid5km_bbox <- st_bbox(grid.5km.lno %>% 
+                     st_as_sf()
+)
+
+map_blue <- ggplot() + 
+    geom_sf(data=sf::st_as_sf(bm.sf)) +
+    geom_sf(data=rmap.base,col=NA,fill='gray50')  +  
+    geom_sf(data=line_48N_sf)+
+coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
+
+map_blue   
 ```
 
 ## Overlay and write output
