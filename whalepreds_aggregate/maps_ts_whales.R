@@ -11,22 +11,27 @@ library(ggpubr)
 path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
 path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
 path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+
 #Leena:
-#path.grid.5km <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+#path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
 #I keep having issues trying to load Grid_5km_landerased.rds. the readRDS() command later just gives error: Error in readRDS(file) : unknown input format
 #I had this issue with some of the other whale coding files
 #The only way around I've found is this:
 #path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
 #load(path.save2)
-#path.grid.depth <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+#after re-downloading it from Google Drive I think it is now working
+#path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+#path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 
 # should be all outputs through july 2019 overlayed on 5km grid (i.e., not subset to DCRB fishing cells)
 path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
 path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
 #Leena:
-#path.hump <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
-#path.blue <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+#path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
+#path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+#New data pull Aug 2019 to Sep 2021
+#path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
 
 
 # where to put outputs
@@ -44,13 +49,25 @@ x.hump <- readRDS(path.hump) %>%
   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
 glimpse(x.hump)
 
+#bw output 2009-July 2019
 x.blue <- readRDS(path.blue) %>%
   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
   select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
 glimpse(x.blue)
 
+#bw output Aug 2019-Sep 2021
+x.blue_2019_2021 <- readRDS(path.blue_2019_2021) %>%
+  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+  select(GRID5KM_ID, year_month, Blue_occurrence_mean, Blue_occurrence_se)
+glimpse(x.blue_2019_2021) #why does data end June 2021??
+
+#join the 2 bw dfs
+x.blue.all <- rbind(x.blue, x.blue_2019_2021)
+
+
 # take a quick peek at 2019 to be sure nothing is weird
-View(x.blue %>% group_by(year_month) %>% summarise(
+#View(x.blue %>% group_by(year_month) %>% summarise(
+View(x.blue.all %>% group_by(year_month) %>% summarise(
   'Mean Occurrence' = mean(Blue_occurrence_mean, na.rm=TRUE),
   'Median Occurrence' = median(Blue_occurrence_mean,na.rm=TRUE),
   '75th Percentile' = quantile(Blue_occurrence_mean, probs=0.75, na.rm=TRUE),
@@ -70,7 +87,8 @@ grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 # note here is where you could insert some code to filter out whale predictions so that they only include 5km cells where DCRB fishing occurred previously
 
 # join blue and hump whale outputs
-x.whale <- full_join(x.hump, x.blue, 
+#x.whale <- full_join(x.hump, x.blue, 
+x.whale <- full_join(x.hump, x.blue.all, 
                      by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
@@ -282,8 +300,10 @@ ts_blue <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line() +
-  scale_x_continuous(breaks = seq(2010, 2019, 1),
-                     limits = c(2009.5,2019.5)) +
+  #scale_x_continuous(breaks = seq(2010, 2019, 1),
+  scale_x_continuous(breaks = seq(2010, 2021, 1),
+                     #limits = c(2009.5,2019.5)) +
+                     limits = c(2009.5,2021.5)) +
   ylab("Blue Whale Occurrence\n(mean)") + 
   xlab("Year") +
   theme_classic() +
@@ -346,6 +366,9 @@ ts_hump2 <- ggplot(
 ts_hump2
 
 
+xlabels <- sort(unique(x.whale$year_month))
+xlabels[seq(2, length(xlabels), 2)] <- ""
+
 ts_blue2 <- ggplot(
   data = x.whale %>% 
     group_by(year_month) %>%
@@ -359,7 +382,7 @@ ts_blue2 <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line(aes(group=1)) +
-  
+  scale_x_discrete(labels = xlabels) +
   ylab("Blue Whale Occurrence\n(mean)") + 
   xlab("Year_month") +
   theme_classic() +
