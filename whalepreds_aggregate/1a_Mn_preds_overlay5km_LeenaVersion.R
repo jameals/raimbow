@@ -88,7 +88,7 @@ mn.preds.nona <- mn.preds[-which.allna, ]
 glimpse(grid.5km.lno)
 
 ### Overlay and sanity checks
-tmp.over <- overlay_sdm( #~13.5min on Sam's computer #this is the part that doesn't work with R v4
+tmp.over <- overlay_sdm( #~13.5min on Sam's computer #this is the part that doesn't work with R v4, but worked in R 3.6, took ~20min
   st_geometry(grid.5km.lno), mn.preds.nona, seq_len(ncol(mn.preds) - 1), 
   overlap.perc = 0
 )
@@ -96,8 +96,10 @@ tmp.over <- overlay_sdm( #~13.5min on Sam's computer #this is the part that does
 mn.preds.lno.5kmover <- tmp.over %>% 
   mutate(GRID5KM_ID = grid.5km.lno$GRID5KM_ID, 
          area_km_lno = as.numeric(units::set_units(st_area(geometry), "km^2"))) %>% 
-  #select(GRID5KM_ID, area_km_lno, starts_with("Mn_76")) #I think column names have changed
-  select(GRID5KM_ID, area_km_lno, starts_with("Mn_Avg_14day"))
+  #for 2005-2019 data
+  select(GRID5KM_ID, area_km_lno, starts_with("Mn_76")) #I think column names have changed
+  #for 2005-2020 data
+  #select(GRID5KM_ID, area_km_lno, starts_with("Mn_Avg_14day"))
 
 
 # # Sanity check 0
@@ -135,10 +137,10 @@ mn.names.curr <- mn.preds.lno.5kmover %>%
   names()
 mn.out.names <- vapply(strsplit(mn.names.curr, "[.]"), function(i) {
   if (i[1] == "Mn_76") {
-    paste("H", substr(i[3], 3, 4), i[4], i[5], sep = "_") ##this section applies only if original input was bidaily?
+    paste("H", substr(i[3], 3, 4), i[4], i[5], sep = "_") ##this section applies only if original input was bidaily? #column names in this file are "Mn_76.dens.2019.08.14"
     
   } else if (grepl("BiWkSt", i[1])) {
-    paste("HBW", substr(i[1], 9, 10), i[2], i[3], sep = "_")
+    paste("HBW", substr(i[1], 9, 10), i[2], i[3], sep = "_") #column names in this file are "BiWkSt2018.01.01" --> so 9 & 10 refer to the year (18), and i[2] and i[3] grab the month and day?
     
   } else {
     stop("Naming oopsie")
