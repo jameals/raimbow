@@ -88,7 +88,7 @@ mn.preds.nona <- mn.preds[-which.allna, ]
 glimpse(grid.5km.lno)
 
 ### Overlay and sanity checks
-tmp.over <- overlay_sdm( #~13.5min on Sam's computer
+tmp.over <- overlay_sdm( #~13.5min on Sam's computer #this is the part that doesn't work with R v4
   st_geometry(grid.5km.lno), mn.preds.nona, seq_len(ncol(mn.preds) - 1), 
   overlap.perc = 0
 )
