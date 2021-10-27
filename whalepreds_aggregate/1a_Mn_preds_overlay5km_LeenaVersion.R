@@ -30,26 +30,29 @@ if (user == "JS") {
 #Leena
 #this was the original input file, but what Karin shared (https://drive.google.com/drive/folders/1DSnNFRTpGcjPkLEvUkuf1ADBWwDEgQRY)
 #doesn't seem to have bidaily data files, only monthly or biweekly
-#path.mn.preds <- "C:/SMW/RAIMBOW/raimbow-local/Data/Humpback 3km models/WEAR3km_76_2005-01-01to2019-08-14_Bidaily_dens.csv"
-#testing biweekly data file
+#This is for original input data:
+#path.mn.preds <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback 3km models/Model1_working model for testing/WEAR3km_76_2005-01-01to2019-08-14_Bidaily_dens.csv"
+#this is for new data (testing biweekly data file):
 path.mn.preds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback 3km models/Mn_3km_2005-01-01to2020-09-29_14day.csv"
 
-#path.grid.5km.lno <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
-load(path.save2)
+path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+#path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
+#load(path.save2)
 
-file.out.all.csv <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens_allyrs.csv"
-file.out.csv <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.csv"
-file.out.rds <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.rds"
+file.out.all.csv <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens_allyrs.csv"
+file.out.csv <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.csv"
+file.out.rds <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens.rds"
 
 ###############################################################################
 # Load Mn predictions and create sf object - reading CSV takes a while
 mn.preds.csv <- read_csv(path.mn.preds, col_types = cols(.default = col_double())) 
 mn.preds <- mn.preds.csv %>% 
-  #select(mlon, mlat, starts_with("76.dens.")) %>%  #I think column names have changed, can't see anything like "76.dens"
-  select(mlon, mlat, starts_with("Avg_14day")) %>% 
+  #for 2005-2019 data
+  select(mlon, mlat, starts_with("76.dens.")) %>%  #I think column names have changed, can't see anything like "76.dens"
+  #for 2005-2020 data
+  #select(mlon, mlat, starts_with("Avg_14day")) %>% 
   purrr::set_names(~ paste0("Mn_", .)) %>% 
-  eSDM::pts2poly_centroids(0.027 / 2, crs = 4326, agr = "constant")
+  eSDM::pts2poly_centroids(0.027 / 2, crs = 4326, agr = "constant") #this works in R v4
 
 
 # Remove rows of mn.preds with all NA
