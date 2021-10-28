@@ -17,6 +17,9 @@ if (user == "JS") {
   file.out <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds"
 }
 
+#Leena
+path.mnpreds.rds <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_wide_bidaily_dens_20211027.rds"
+file.out <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly_20211028.rds"
 
 ###############################################################################
 ### Read in KAF Mn predictions that have been overlaid onto Blake's 5km EA grid
@@ -31,7 +34,7 @@ date.max <- as.Date("2019-08-01")
 range.dates <- seq(from = as.Date("2009-01-01"), to = date.max, by = "months")
 
 mn.aggr <- whalepreds_aggregate(
-  mn.overlaid, 3:ncol(mn.overlaid), 3:10, aggr.level = NULL, 
+  mn.overlaid, 3:ncol(mn.overlaid), 3:10, aggr.level = NULL, #3:ncl selects colimns from 3 to max column. 3:10 specifies date info in the column name
   range.dates = range.dates, se.calc = TRUE
 ) %>% 
   set_names(c("GRID5KM_ID", "area_km_lno", paste0("Mn_", names(.)[-c(1:2)]))) %>% 
@@ -41,7 +44,7 @@ mn.aggr <- whalepreds_aggregate(
 mn.proc <- mn.aggr %>% 
   gather(key = "key", value = "value", -GRID5KM_ID, -area_km_lno) %>% 
   mutate(type = ifelse(grepl("SE", key), "se", "pred"),
-         date = ymd(ifelse(type == "se", substr(key, 7, 16), substr(key, 4, 13))))
+         date = ymd(ifelse(type == "se", substr(key, 7, 16), substr(key, 4, 13)))) #7,16 refers to this column naming: Mn_SE_2019_07_01, 4,13 refers to this column naming: Mn_2009_01_01
 
 mn.proc.long <- mn.proc %>% 
   select(-key) %>%
