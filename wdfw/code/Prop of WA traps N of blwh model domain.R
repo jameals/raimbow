@@ -52,7 +52,7 @@ glimpse(logs_all)
 
 
 
-# Bring in bw model output
+# Bring in bw model output, this may be in Projects\NOAA data\maps_ts_whales\data
 bw_5m_long_monthly <- read_rds(here::here('wdfw', 'data','BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds'))
 # bw output has all grid cells appearing multiple times (each year_month combo)
 # but only need list of grid cells
