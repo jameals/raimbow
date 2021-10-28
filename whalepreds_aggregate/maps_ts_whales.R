@@ -30,8 +30,10 @@ path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri 
 #Leena:
 #path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
 #path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
-#New data pull Aug 2019 to Sep 2021
+#New bw data pull Aug 2019 to Sep 2021
 #path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
+#New hw data pull 2009 to 2020
+#path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 
 
 # where to put outputs
@@ -44,10 +46,18 @@ grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 grid.depth <- read.csv(path.grid.depth) %>% 
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
+#hw output 2009-July 2019
 x.hump <- readRDS(path.hump) %>%
   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
 glimpse(x.hump)
+
+#hw output 2019-2020
+x.hump_2019_2020 <- readRDS(path.hump_2009_2020) %>%
+  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+  select(GRID5KM_ID, year_month, Humpback_dens_mean) #Humpback_dens_se
+glimpse(x.hump_2019_2020)
+
 
 #bw output 2009-July 2019
 x.blue <- readRDS(path.blue) %>%
@@ -84,11 +94,15 @@ grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 #glimpse(grid.key)
 ###see further down for a mapping check on this
 
+
+
 # note here is where you could insert some code to filter out whale predictions so that they only include 5km cells where DCRB fishing occurred previously
+
+
 
 # join blue and hump whale outputs
 #x.whale <- full_join(x.hump, x.blue, 
-x.whale <- full_join(x.hump, x.blue.all, 
+x.whale <- full_join(x.hump_2019_2020, x.blue.all, 
                      by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
@@ -128,7 +142,7 @@ map_hump <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median\nHumpback Whale Densities") +
+  ggtitle("2009-2020 Median\nHumpback Whale Densities") +
   coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -194,13 +208,13 @@ invisible(dev.off())
 
 #map depth data
 
-path.fish_WA <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
 x.fish_WA <- readRDS(path.fish_WA) #this works
 ### Get grid cells with non-NA values for all, and save that of fishing data
 grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID))
 grid.5km.fish_WA <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
 
-path.fish_OR <- "E:/Leena/Documents/Projects/raimbow/wdfw/data/OR/OR_adj_summtraps_SpatialFlag_filtered_2007_2018.rds"
+path.fish_OR <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/OR/OR_adj_summtraps_SpatialFlag_filtered_2007_2018.rds"
 x.fish_OR <- readRDS(path.fish_OR) #this works
 ### Get grid cells with non-NA values for all, and save that of fishing data
 grid.studyarea.id_OR <- sort(unique(x.fish_OR$GRID5KM_ID))
@@ -225,10 +239,10 @@ map_depth
 
 #-----------------------------------------------------------
 #look at the overlap between whale layers and depth data
-grid.studyarea.id_hump <- sort(unique(x.hump$GRID5KM_ID))
+grid.studyarea.id_hump <- sort(unique(x.hump_2019_2020$GRID5KM_ID))
 grid.5km.hump <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_hump)
 
-grid.studyarea.id_blue <- sort(unique(x.blue$GRID5KM_ID))
+grid.studyarea.id_blue <- sort(unique(x.blue_2019_2021$GRID5KM_ID))
 grid.5km.blue <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_blue)
 
 map_depth_wh <-  ggplot() + 
@@ -237,7 +251,7 @@ map_depth_wh <-  ggplot() +
   scale_fill_viridis(na.value=NA,option="D",name="depth") +      
   scale_color_viridis(na.value=NA,option="D",name="depth")  + 
   #geom_sf(data=grid.5km.hump,col='black',fill=NA,alpha=0.8) + 
-  geom_sf(data=grid.5km.blue,col='black',fill=NA,alpha=0.8) + 
+  geom_sf(data=grid.5km.hump,col='black',fill=NA,alpha=0.8) + 
   ggtitle("depth grid check_hw") +  
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))
 #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) 
@@ -265,8 +279,8 @@ ts_hump <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line() +
-  scale_x_continuous(breaks = seq(2010, 2019, 1),
-                     limits = c(2009.5,2019.5)) +
+  scale_x_continuous(breaks = seq(2010, 2021, 1),
+                     limits = c(2009.5,2021.5)) +
   ylab("Humpback Whale Density\n(mean)") + 
   xlab("Year") +
   theme_classic() +
@@ -303,7 +317,7 @@ ts_blue <- ggplot(
   #scale_x_continuous(breaks = seq(2010, 2019, 1),
   scale_x_continuous(breaks = seq(2010, 2021, 1),
                      #limits = c(2009.5,2019.5)) +
-                     limits = c(2009.5,2021.5)) +
+                     limits = c(2009.5,2020.5)) +
   ylab("Blue Whale Occurrence\n(mean)") + 
   xlab("Year") +
   theme_classic() +
@@ -335,6 +349,10 @@ invisible(dev.off())
 
 
 #--------------------------------------------
+
+xlabels <- sort(unique(x.whale$year_month))
+xlabels[seq(2, length(xlabels), 2)] <- ""
+
 ts_hump2 <- ggplot(
   data = x.whale %>% 
     group_by(year_month) %>%
@@ -348,7 +366,7 @@ ts_hump2 <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line(aes(group=1)) +
-  
+  scale_x_discrete(labels = xlabels) +
   ylab("Humpback Whale Density\n(mean)") + 
   xlab("Year_month") +
   theme_classic() +
@@ -366,8 +384,7 @@ ts_hump2 <- ggplot(
 ts_hump2
 
 
-xlabels <- sort(unique(x.whale$year_month))
-xlabels[seq(2, length(xlabels), 2)] <- ""
+
 
 ts_blue2 <- ggplot(
   data = x.whale %>% 
@@ -504,7 +521,8 @@ plot2
 #BLUE WHALE -- least likely in the first 100m of water. OR restriction is 40 ftm = 73m
 grid_depth_and_blue <-  grid_depth_and_whale %>% 
   st_drop_geometry() %>%
-  select(-(Humpback_dens_mean:Humpback_dens_se)) %>% 
+  #select(-(Humpback_dens_mean:Humpback_dens_se)) %>% #hw SE column doesn't exist in new data pyll
+  select(-(Humpback_dens_mean)) %>% 
   filter(!is.na(depth)) %>% 
   filter(!is.na(year_month)) %>% 
   mutate(year = as.numeric(substr(year_month, 1,4)))
