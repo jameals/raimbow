@@ -106,6 +106,7 @@ x.whale <- full_join(x.hump_2019_2020, x.blue.all,
                      by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
+
 # calculate median whale values for full time period
 
 x.whale.median <- x.whale %>%
@@ -115,6 +116,8 @@ x.whale.median <- x.whale %>%
     Blue_occurrence_median = median(Blue_occurrence_mean, na.rm=TRUE)
   ) %>%
   left_join(grid.5km.lno)
+
+
 
 # make maps based on whale outputs
 ## i did not convert humpback densities to abundance
@@ -262,27 +265,45 @@ map_depth_wh
 #--------------------------------------------------------------
 # make time series based on whale outputs
 
+
+#instead of working in calendar years, work in crab seasons
+x.whale_crab_season <- x.whale %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.whale_crab_season_v2 <- x.whale_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end))
+
+
 # plot annual mean humpback densities
 ts_hump <- ggplot(
-  data = x.whale %>% 
-    mutate(
-      year = as.numeric(substr(year_month, 1,4))
-    ) %>%
-    group_by(year) %>%
+  #data = x.whale %>% 
+    #or if want to work in crab_season rather than calendar year, read in the following instead
+  data = x.whale_crab_season_v2 %>% 
+    #mutate(
+    #  year = as.numeric(substr(year_month, 1,4))
+    #) %>%
+    #group_by(year) %>%
+    #or if want to work in crab_season rather than calendar year, skip the previous couple lines, and group by season instead
+    group_by(season) %>%
     summarise(
       Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE)
     ), 
   aes(
-    x = year, 
-    y = Humpback_dens_mean
+    #x = year, 
+    x = season, 
+    y = Humpback_dens_mean,
+    group = 1
   )
 ) +
   geom_point(size=4) +
   geom_line() +
-  scale_x_continuous(breaks = seq(2010, 2021, 1),
-                     limits = c(2009.5,2021.5)) +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
   ylab("Humpback Whale Density\n(mean)") + 
-  xlab("Year") +
+  #xlab("Year") +
+  xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -299,27 +320,34 @@ ts_hump
 
 # plot annual mean blue whale densities
 ts_blue <- ggplot(
-  data = x.whale %>% 
-    mutate(
-      year = as.numeric(substr(year_month, 1,4))
-    ) %>%
-    group_by(year) %>%
+  #data = x.whale %>% 
+  #or if want to work in crab_season rather than calendar year, read in the following instead
+  data = x.whale_crab_season_v2 %>% 
+    #mutate(
+    #  year = as.numeric(substr(year_month, 1,4))
+    #) %>%
+    #group_by(year) %>%
+    #or if want to work in crab_season rather than calendar year, skip the previous couple lines, and group by season instead
+    group_by(season) %>%
     summarise(
       Blue_occurrence_mean = mean(Blue_occurrence_mean, na.rm=TRUE)
     ), 
   aes(
-    x = year, 
-    y = Blue_occurrence_mean
+    #x = year, 
+    x = season,
+    y = Blue_occurrence_mean,
+    group = 1
   )
 ) +
   geom_point(size=4) +
   geom_line() +
   #scale_x_continuous(breaks = seq(2010, 2019, 1),
-  scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
                      #limits = c(2009.5,2019.5)) +
-                     limits = c(2009.5,2020.5)) +
+                     #limits = c(2009.5,2020.5)) +
   ylab("Blue Whale Occurrence\n(mean)") + 
-  xlab("Year") +
+  #xlab("Year") +
+  xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -335,7 +363,7 @@ ts_blue <- ggplot(
 ts_blue
 
 # plot blues and humps together
-png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019_BY CRAB SEASON.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_hump,
           ts_blue,
           ncol=1,
