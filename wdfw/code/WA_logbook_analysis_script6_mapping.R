@@ -106,7 +106,8 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 # conf_dat2 <-  conf_dat %>%
 #   filter(is_confidential == FALSE)
 
-# THIS IS THE CORRECT WAY
+
+##### THIS IS THE CORRECT WAY ##### 
 # This section is copied and edited from SCRIPT FOR LOG_VMS_COMPARISONS_FEIST_ET_AL
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
 
@@ -375,6 +376,18 @@ adj_summtraps_MaySep <- adj_summtraps %>%
   filter(is_May1_Sep15 == 'Y') %>% 
   select(-nvessels)
 
+#here filter with N to make dec-apr (winter) maps
+adj_summtraps_DecApr <- adj_summtraps %>% 
+  mutate(is_May1_Sep15 = 
+           ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
+                  ,'Y', 'N')) %>% 
+  #here filter with Y to make May-Sep (summer) maps, or with N to make dec-apr (winter) maps
+  filter(is_May1_Sep15 == 'N') %>% 
+  select(-nvessels)
+
+
+
+
 # average M1 and M2 trap density for each grid cell for May-Sep period
 MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
@@ -394,6 +407,29 @@ MaySep_summtrapsWA <- adj_summtraps_MaySep %>%
     #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
   )
 glimpse(MaySep_summtrapsWA)
+
+# average M1 and M2 trap density for each grid cell for Dec-Apr period
+DecApr_summtrapsWA <- adj_summtraps_DecApr %>%
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M1_trapdens = sum(M1_trapdens),
+    sum_M2_trapdens = sum(M2_trapdens),
+    #sum_nvessels = sum(nvessels), # include this for creating non-confidential maps - old, this is wrong
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_M1_trapdens = sum_M1_trapdens/number_obs,
+    mean_M2_trapdens = sum_M2_trapdens/number_obs
+    #here can include some measure of variance or CV as well
+    #M2_sdtrapdens = sd(M2_trapdens),
+    #M2_mediantrapdens = median(M2_trapdens),
+    #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    #M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    #M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(DecApr_summtrapsWA)
+
+
+
 
 #--------------------------
 
@@ -420,7 +456,9 @@ logs_all_x <- traps_g_all_logs %>%
   mutate(is_May1_Sep15 = 
            ifelse(month_interval %in% c('May_1', 'May_2', 'June_1', 'June_2', 'July_1', 'July_2', 'August_1', 'August_2', 'September_1')
                   ,'Y', 'N')) %>% 
-  filter(is_May1_Sep15 == 'Y')
+  #here filter with Y to make May-Sep (summer) maps, or with N to make dec-apr (winter) maps
+  #filter(is_May1_Sep15 == 'Y')
+  filter(is_May1_Sep15 == 'N')
 
 #count number of unique vessels that used a given grid cell within a given time step
 logs_all_nvessels <- logs_all_x %>% 
@@ -433,11 +471,19 @@ logs_all_nvessels <- logs_all_x %>%
 adj_summtraps_MaySep %<>%
   left_join(logs_all_nvessels,by=c("season", "month_interval","GRID5KM_ID", "grd_x", "grd_y"))
 
+adj_summtraps_DecApr %<>%
+  left_join(logs_all_nvessels,by=c("season", "month_interval","GRID5KM_ID", "grd_x", "grd_y"))
+
 
 
 conf_adj_summtraps_MaySep <- adj_summtraps_MaySep %>%
   mutate(is_confidential=ifelse(nvessels<3,T,F)) %>%
   filter(is_confidential == FALSE)
+
+conf_adj_summtraps_DecApr <- adj_summtraps_DecApr %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F)) %>%
+  filter(is_confidential == FALSE)
+
 
 
 # average M1 and M2 trap density for each grid cell for May-Sep period
@@ -460,7 +506,28 @@ cof_MaySep_summtrapsWA <- conf_adj_summtraps_MaySep %>%
   )
 glimpse(cof_MaySep_summtrapsWA)
 
-# use conf_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be fully removed
+# average M1 and M2 trap density for each grid cell for Dec-Apr period
+cof_DecApr_summtrapsWA <- conf_adj_summtraps_DecApr %>%
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M1_trapdens = sum(M1_trapdens),
+    sum_M2_trapdens = sum(M2_trapdens),
+    #sum_nvessels = sum(nvessels), # include this for creating non-confidential maps - old, this is wrong
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_M1_trapdens = sum_M1_trapdens/number_obs,
+    mean_M2_trapdens = sum_M2_trapdens/number_obs
+    #here can include some measure of variance or CV as well
+    #M2_sdtrapdens = sd(M2_trapdens),
+    #M2_mediantrapdens = median(M2_trapdens),
+    #M2_percentile_975th = quantile(M2_trapdens, probs=0.975, na.rm=TRUE),
+    #M2_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    #M2_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+    #M2_percentile_025th = quantile(M2_trapdens, probs=0.025, na.rm=TRUE),
+  )
+glimpse(cof_DecApr_summtrapsWA)
+
+# use cof_MaySep_summtrapsWA as input in mapping loop, if want cells with < 3 vessels to be fully removed
+# use cof_DecApr_summtrapsWA for winter version
 
 #----------------------------
 
@@ -514,6 +581,117 @@ all_maps <- purrr::map(unique(MaySep_summtrapsWA$season),function(x){
 proc.time()-tm
 
 
+
+# map Dec - Apr
+# currently for M2 only, but can be edited to map M1 as well
+
+# Figure out good trap density scale
+DecApr_summtrapsWA %>%
+  #cof_DecApr_summtrapsWA %>%
+  ggplot()+
+  geom_density(aes(mean_M2_trapdens))
+
+
+# change input file if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+
+map_decapr <- function(DecApr_summtrapsWA,saveplot=TRUE){
+  
+  # labels for plot titles
+  season_label=unique(DecApr_summtrapsWA$season)
+  
+  bbox = c(800000,1650000,1013103,1970000)
+  
+  DecApr_map_out <- DecApr_summtrapsWA %>% 
+    ggplot()+
+    geom_tile(aes(grd_x,grd_y,fill=mean_M2_trapdens),na.rm=T,alpha=0.8)+
+    geom_sf(data=coaststates,col=NA,fill='gray50')+
+    geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+    geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+    scale_fill_viridis(na.value='grey70',option="C",limits=c(0,50),breaks=c(0, 25,50),oob=squish)+
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+    #if you do NOT want to show lat/lon lines on the map, use the below line instead:
+    #coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+    labs(x='',y='',fill='Avg. trap density\nper sq. km',title=paste0('Dec - Apr\n',season_label))
+  
+  # saving
+  if(saveplot){
+    pt <- unique(DecApr_summtrapsWA$season)
+    ggsave(here('wdfw','maps',paste0('Dec - Apr ',pt,'.png')),DecApr_map_out,w=6,h=5)
+  }
+  return(DecApr_map_out)
+}
+
+# Loop and save maps
+# change input file here (cof_DecApr_summtrapsWA) if want to make non-confidential maps (currently showing confidential data for grids with < 3 vessels)
+tm <- proc.time()
+#all_maps <- purrr::map(unique(DecApr_summtrapsWA$season),function(x){
+all_maps <- purrr::map(unique(cof_DecApr_summtrapsWA$season),function(x){
+    #DecApr_summtrapsWA %>% 
+    cof_DecApr_summtrapsWA %>% 
+    filter(season==x) %>% 
+    map_decapr()
+})
+proc.time()-tm
+
+
+
+
+# test calculating number of grid cells in use in a given dec-Apr and May-Sep season
+test <- DecApr_summtrapsWA %>% 
+  group_by(season) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(confidental_number_grids = n())
+
+test <- MaySep_summtrapsWA %>% 
+  group_by(season) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(confidental_number_grids = n())
+
+# test calculating number of grid cells in use in a given month
+test <- cof_DecApr_summtrapsWA %>% 
+  group_by(season) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(non_confidental_number_grids = n())
+
+test <- cof_MaySep_summtrapsWA %>% 
+  group_by(season) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(non_confidental_number_grids = n())
+
+
+
+#monthly time step
+test <- conf_M2_summtrapsWA_month %>% 
+     group_by(season_month) %>% distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+     summarise(non_confidental_number_grids = n())
+
+test_conf <- M2_summtrapsWA_month %>% 
+     group_by(season_month) %>% distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+     summarise(confidental_number_grids = n())
+
+joined <- left_join(test_conf, test, by="season_month")
+
+joined <- joined %>% mutate(ratio = non_confidental_number_grids/confidental_number_grids)
+
+joined_v2 <-  joined %>% 
+  separate(season_month, into = c("season", "month"), sep = "_") %>%  
+  mutate(month = factor(month, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))
+
+
+plot_ratio_nonconf_vs_conf <- ggplot(joined_v2, aes(x=month, y=ratio, colour=season, group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("grid cells visible\nratio non-conf. vs conf. data") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+plot_ratio_nonconf_vs_conf
 
 
 #-----------------------------------------------------------------------------------------
