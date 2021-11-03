@@ -96,6 +96,10 @@ avg_trap_dens_intervals <- adj_summtraps_intervals %>%
   )
 glimpse(avg_trap_dens_intervals)
 
+#number of grid cells in use/visible if using confidential data
+test <- avg_trap_dens_intervals %>% 
+  group_by(month_interval) %>% distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(confidental_number_grids = n())
 #----------------------------------------------------------------------------------------------
 
 # If want to create non-confidential maps (do not show data if < 3 vessels in grid)
@@ -147,6 +151,11 @@ non_conf_avg_trap_dens_intervals_3 <-  non_conf_avg_trap_dens_intervals_3 %>%
   select(-c(sum_M2_trapdens, number_obs, nvessels, is_confidential))
   
 #write_csv(non_conf_avg_trap_dens_intervals_3,here::here('wdfw', 'data','Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_long.csv"))
+
+#number of grid cells in use/visible if using non-confidential data
+test <- non_conf_avg_trap_dens_intervals_3 %>% 
+  group_by(month_interval) %>% distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(non_confidental_number_grids = n())
 
 
 #get logbook data to wider format for Blake
