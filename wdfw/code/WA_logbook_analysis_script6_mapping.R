@@ -318,6 +318,33 @@ test <- conf_M2_summtrapsWA_month %>%
 test_2 <- test %>% distinct(GRID5KM_ID, .keep_all = TRUE)
 nrow(test_2) #117 for 2017-2018_January, 26 for 2017-2018_July
 
+
+#if try to look at % of pots lost, instead of grid cells ---- unsure if this is correct, might be double counting things...
+logs_all_x %<>%
+  left_join(logs_all_nvessels,by=c("season_month", "GRID5KM_ID", "grd_x", "grd_y"))
+
+logs_all_x2 <- logs_all_x %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F))
+
+test_no_of_pots <- logs_all_x2 %>% 
+  group_by(season_month) %>% 
+  summarise(n_pots = n())
+
+test_no_pots_confidential <- logs_all_x2 %>% 
+  filter(is_confidential==T) %>% 
+  group_by(season_month) %>% 
+  summarise(n_pots_confidential = n())
+
+test_no_pots_non_confidential <- logs_all_x2 %>% 
+  filter(is_confidential==F) %>% 
+  group_by(season_month) %>% 
+  summarise(n_pots_non_confidential = n())
+
+joined <- left_join(test_no_of_pots,test_no_pots_confidential, by="season_month")
+joined2 <- left_join(joined,test_no_pots_non_confidential, by="season_month")
+
+joined3 <- joined2 %>% mutate(ratio = n_pots_non_confidential/n_pots)
+
 #--------------------------
 
 #making a loop of maps on monthly step
