@@ -168,6 +168,34 @@ non_conf_avg_trap_dens_intervals_3_wide <- non_conf_avg_trap_dens_intervals_3 %>
 #write_csv(non_conf_avg_trap_dens_intervals_3_wide,here::here('wdfw', 'data', 'Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_wide.csv"))
 
 
+#if try to look at % of pots lost, instead of grid cells ---- unsure if this is correct, might be double counting things...
+logs_all_x %<>%
+  left_join(logs_all_nvessels,by=c("month_interval", "GRID5KM_ID", "grd_x", "grd_y"))
+
+logs_all_x2 <- logs_all_x %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F))
+
+test_no_of_pots <- logs_all_x2 %>% 
+  group_by(month_interval) %>% 
+  summarise(n_pots = n())
+
+test_no_pots_confidential <- logs_all_x2 %>% 
+  filter(is_confidential==T) %>% 
+  group_by(month_interval) %>% 
+  summarise(n_pots_confidential = n())
+
+test_no_pots_non_confidential <- logs_all_x2 %>% 
+  filter(is_confidential==F) %>% 
+  group_by(month_interval) %>% 
+  summarise(n_pots_non_confidential = n())
+
+joined <- left_join(test_no_of_pots,test_no_pots_confidential, by="month_interval")
+joined2 <- left_join(joined,test_no_pots_non_confidential, by="month_interval")
+
+joined3 <- joined2 %>% mutate(
+  ratio = n_pots_non_confidential/n_pots,
+  prop_confidential_pots = n_pots_confidential/n_pots
+  )
 #----------------------------------------------------------------------------------------------
 # # map 
 # # Figure out good trap density scale
