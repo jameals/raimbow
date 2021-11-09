@@ -38,6 +38,8 @@ path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri 
 
 # where to put outputs
 path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOWT/raimbow/whalepreds_aggregate/figures"
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+
 
 # load the data
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
@@ -47,16 +49,16 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 #hw output 2009-July 2019
-x.hump <- readRDS(path.hump) %>%
-  mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
-  select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
-glimpse(x.hump)
+# x.hump <- readRDS(path.hump) %>%
+#   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
+#   select(GRID5KM_ID, year_month, Humpback_dens_mean, Humpback_dens_se)
+# glimpse(x.hump)
 
-#hw output 2019-2020
-x.hump_2019_2020 <- readRDS(path.hump_2009_2020) %>%
+#hw output 2009-2020
+x.hump_2009_2020 <- readRDS(path.hump_2009_2020) %>%
   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
   select(GRID5KM_ID, year_month, Humpback_dens_mean) #Humpback_dens_se
-glimpse(x.hump_2019_2020)
+glimpse(x.hump_2009_2020)
 
 
 #bw output 2009-July 2019
@@ -94,15 +96,26 @@ grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 #glimpse(grid.key)
 ###see further down for a mapping check on this
 
-
+#----------------------------------------------------------------------------------------------------------------------
 
 # note here is where you could insert some code to filter out whale predictions so that they only include 5km cells where DCRB fishing occurred previously
 
 
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+x.fish_WA <- readRDS(path.fish_WA) #this works
+### Get grid cells with non-NA values for all, and save that of fishing data
+grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
+grid.5km.fish_WA <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+#filter whale data
+x.hump_WA <-  x.hump_2009_2020 %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+x.blue_WA <-  x.blue.all %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+
+#----------------------------------------------------------------------------------------------------------------------
+
 
 # join blue and hump whale outputs
 #x.whale <- full_join(x.hump, x.blue, 
-x.whale <- full_join(x.hump_2019_2020, x.blue.all, 
+x.whale <- full_join(x.hump_2009_2020, x.blue.all, 
                      by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
@@ -275,6 +288,9 @@ x.whale_crab_season_v2 <- x.whale_crab_season %>%
   mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
   mutate(season = paste0(season_start,"-",season_end))
 
+#also, filter whale grid cells to be WA study area only
+x.whale_crab_season_v2 <-  x.whale_crab_season_v2 %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+x.whale_crab_season_v2 <- x.whale_crab_season_v2 %>% filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
 
 # plot annual mean humpback densities
 ts_hump <- ggplot(
@@ -363,7 +379,7 @@ ts_blue <- ggplot(
 ts_blue
 
 # plot blues and humps together
-png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019_BY CRAB SEASON.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019_BY CRAB SEASON_only WA grids with fishing.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_hump,
           ts_blue,
           ncol=1,
@@ -694,5 +710,187 @@ plot4b <- grid_depth_and_fish_OR_bins %>%
   theme_minimal()
 plot4b
 #ggsave(here('whalepreds_aggregate','figures',paste0('mean_trap_dens_by_depth_bin_month_and_season_OR','.png')),plot4b,w=12,h=10)
+
+#--------------------------------------------------------------------------
+#test simple risk calc
+#logbook data: x.fish_WA 
+#grids that had fishing in 2013-2020: grid.studyarea.id_WA 
+#whale data filtered, only in those grids that had fishing 2013-2020
+#x.hump_WA 
+#x.blue_WA 
+
+
+# make avg value for traps for each yr month
+x.fish_WA2 <- x.fish_WA %>%
+  group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    mean_M2_trapdens = mean(M2_trapdens), 
+  )
+
+# make column for year month for fishing data
+## step 1, make some columns that we can use
+x.fish_WA3 <- x.fish_WA2 %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  separate(season, into = c("yr_start", "yr_end"), sep = "-") %>%
+  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) #change month to two digit number
+## step 2, grab yr_start for December effort and make a year_month column in a new df
+df1 <- x.fish_WA3 %>%
+  filter(month_name=='December')
+df1 <- df1 %>%
+  mutate(year_month = paste0(yr_start,"_",month))
+## step 3, grab yr_end for non-December effort and make a year_month column in a new df
+df2 <- x.fish_WA3 %>%
+  filter(month_name !='December')
+df2 <- df2 %>%
+  mutate(year_month = paste0(yr_end,"_",month))
+# squish the December and non-December df's together  
+x.fish_WA4 <- rbind(df1,df2)
+
+
+# join the whale and fishing data
+joined_df_hump <- x.fish_WA4 %>%
+  left_join(x.hump_WA,by=c("year_month","GRID5KM_ID"))
+
+risk_hump <- joined_df_hump %>%
+  mutate(
+    hump_risk_M2 = Humpback_dens_mean * mean_M2_trapdens
+  )
+
+joined_df_blue <- x.fish_WA4 %>%
+  left_join(x.blue_WA,by=c("year_month","GRID5KM_ID"))
+
+risk_blue <- joined_df_blue %>%
+  mutate(
+    blue_risk_M2 = Blue_occurrence_mean * mean_M2_trapdens
+  )
+
+
+
+#instead of working in calendar years, work in crab seasons
+risk_hump_crab_season <- risk_hump %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+risk_hump_crab_season_v2 <- risk_hump_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end))
+
+risk_blue_crab_season <- risk_blue %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+risk_blue_crab_season_v2 <- risk_blue_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end))
+
+
+
+# plot annual mean humpback risk
+ts_hump_risk <- ggplot(
+  #data = x.whale %>% 
+  #or if want to work in crab_season rather than calendar year, read in the following instead
+  data = risk_hump_crab_season_v2 %>% 
+    #mutate(
+    #  year = as.numeric(substr(year_month, 1,4))
+    #) %>%
+    #group_by(year) %>%
+    #or if want to work in crab_season rather than calendar year, skip the previous couple lines, and group by season instead
+    group_by(season) %>%
+    summarise(
+      Humpback_risk_mean = mean(hump_risk_M2, na.rm=TRUE)
+    ), 
+  aes(
+    #x = year, 
+    x = season, 
+    y = Humpback_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Humpback Whale Risk\n(mean)") + 
+  #xlab("Year") +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_risk
+
+
+# plot annual mean blue whale risk
+ts_blue_risk <- ggplot(
+  #data = x.whale %>% 
+  #or if want to work in crab_season rather than calendar year, read in the following instead
+  data = risk_blue_crab_season_v2 %>% 
+    #mutate(
+    #  year = as.numeric(substr(year_month, 1,4))
+    #) %>%
+    #group_by(year) %>%
+    #or if want to work in crab_season rather than calendar year, skip the previous couple lines, and group by season instead
+    group_by(season) %>%
+    summarise(
+      Blue_risk_mean = mean(blue_risk_M2, na.rm=TRUE)
+    ), 
+  aes(
+    #x = year, 
+    x = season,
+    y = Blue_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  #scale_x_continuous(breaks = seq(2010, 2019, 1),
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #limits = c(2009.5,2019.5)) +
+  #limits = c(2009.5,2020.5)) +
+  ylab("Blue Whale Risk\n(mean)") + 
+  #xlab("Year") +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_risk
+
+# plot blues and humps together
+png(paste0(path_figures, "/ts_mean_blue_hump_RISK_2013_2020_BY CRAB SEASON.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_risk,
+          ts_blue_risk,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+#these plots are filtered to be only in grid cells that had some fishing between 2013-2020
+
+
+
+
+
 
 

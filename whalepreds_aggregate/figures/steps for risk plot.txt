@@ -1,0 +1,11 @@
+find unique cells in which fishing occurred at some point in 2013-2020
+filter whale data to be only those grid cells
+get average trap density for all grid cells per month
+calculate risk in any given cell in any given year_month as whale * fishing
+for each grid and yr-month combo, assign the correct crab season
+get the mean risk across all grid in a diven crab season, and plot that
+
+
+
+QUESTION: should whale data in each season be filtered to grid cells with fishing in THAT season,
+instead of grid cells that had fishing at some point in 2013-2020??
