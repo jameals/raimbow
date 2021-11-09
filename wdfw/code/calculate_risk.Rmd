@@ -12,6 +12,7 @@ library(lubridate)
 library(here)
 library(sf)
 knitr::opts_chunk$set(echo = TRUE)
+library(rnaturalearth)
 ```
 
 # Purpose
@@ -25,21 +26,25 @@ Risk calculations follow those in Samhouri et al. (in review)
 # Read in data
 ```{r, read_data}
 
-# read in status quo fishing data
+# read in status quo fishing data -- note new version adj_summtraps_2013_2020.rds
 # JS 
 x.orig.noinfo <- read_rds("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/adj_summtraps.rds")
-#x.orig.noinfo <- read_rds(here::here('wdfw','data','adj_summtraps.rds'))
-glimpse(x.orig.noinfo) # there is no column M2_tottraps, but it is the same as weighted_traps
+#x.orig.noinfo <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
+glimpse(x.orig.noinfo) 
 
 
-# grab whale data
+# grab whale data -- how has Grid5km_whale_WA.rds been filtered? grinds in WA with fishing?
 # JS 
 x.whale <-readRDS("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid5km_whale_WA.rds")
 #x.whale <- read_rds(here::here('wdfw','data','Grid5km_whale.rds'))
+#x.whale_WA <- read_rds(here::here('wdfw','data','Grid5km_whale_WA.rds'))
+x.whale.bw <- read_rds(here::here('wdfw','data','BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds')) #--> this has not been filtered for WA or OR
 
 # Load and prep grid cell - area key
 load("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/5x5 Grid/Grid_5km_landerased.RDATA")
 #load("E:\\Leena\\Documents\\Projects\\raimbow\\wdfw\\data\\Grid_5km_landerased.RDATA")
+#path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+#grid.5km.lno <- readRDS(path.grid.5km.lno)
 area.key <- grid.5km.lno %>% 
   st_drop_geometry() %>% 
   select(GRID5KM_ID, area_km_lno) %>% 
@@ -127,9 +132,17 @@ df2 <- df2 %>%
 # squish the December and non-December df's together  
 x.orig.noinfo4 <- rbind(df1,df2)
 
+
+x.whale.bw2 <- x.whale.bw %>%
+  separate(date, into = c("year", "month", "day"), sep = "-") %>%
+  mutate(year_month = paste0(year,"_",month))
+
+
 # join the whale and fishing data
 joined_df <- x.orig.noinfo4 %>%
-  left_join(x.whale,by=c("year_month","GRID5KM_ID"))
+  #left_join(x.whale,by=c("year_month","GRID5KM_ID"))
+  left_join(x.whale.bw2,by=c("year_month","GRID5KM_ID"))
+
 
 # check how many NAs are there
 length(which(is.na(joined_df))) # 6887, that is a lot. let's find them
