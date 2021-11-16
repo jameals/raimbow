@@ -196,6 +196,11 @@ joined3 <- joined2 %>% mutate(
   ratio = n_pots_non_confidential/n_pots,
   prop_confidential_pots = n_pots_confidential/n_pots
   )
+
+mean(joined3$prop_confidential_pots) #0.0715702, i.e. 7% pots lost on average
+#average 13% pots lost on monthly step but within Nov 2013-June 2016
+#average 21% pots lost on monthly step 2013-2020
+
 #----------------------------------------------------------------------------------------------
 # # map 
 # # Figure out good trap density scale

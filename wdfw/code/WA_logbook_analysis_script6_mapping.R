@@ -662,6 +662,8 @@ proc.time()-tm
 
 
 
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
 
 # test calculating number of grid cells in use in a given dec-Apr and May-Sep season
 test <- DecApr_summtrapsWA %>% 
@@ -699,6 +701,7 @@ test_conf <- M2_summtrapsWA_month %>%
 joined <- left_join(test_conf, test, by="season_month")
 
 joined <- joined %>% mutate(ratio = non_confidental_number_grids/confidental_number_grids)
+joined <- joined %>% mutate(prop_grids_lost = 1 - ratio)
 
 joined_v2 <-  joined %>% 
   separate(season_month, into = c("season", "month"), sep = "_") %>%  
@@ -720,6 +723,45 @@ plot_ratio_nonconf_vs_conf <- ggplot(joined_v2, aes(x=month, y=ratio, colour=sea
   )
 plot_ratio_nonconf_vs_conf
 
+
+#what is average % or proportion grids lost per month during the entire period of the 4-monthly steps?
+# full study period is November 2013 to June 2016
+xx <- joined %>% 
+  mutate(
+    month_interval = case_when(
+      season_month == "2013-2014_December" | season_month == "2013-2014_January" | season_month == "2013-2014_February" ~ "13_14 11-02",
+      season_month == "2013-2014_March" | season_month == "2013-2014_April" | season_month == "2013-2014_May" | season_month == "2013-2014_June" ~ "2014 03-06",
+      season_month == "2013-2014_July" | season_month == "2013-2014_August" | season_month == "2013-2014_September" ~ "2014 07-10",
+      season_month == "2014-2015_December" | season_month == "2014-2015_January" | season_month == "2014-2015_February" ~ "14_15 11-02",
+      season_month == "2014-2015_March" | season_month == "2014-2015_April" | season_month == "2014-2015_May" | season_month == "2014-2015_June" ~ "2015 03-06",
+      season_month == "2014-2015_July" | season_month == "2014-2015_August" | season_month == "2014-2015_September" ~ "2015 07-10",
+      #note that 2015-16 season does not include December, fishery opened in Jan
+      season_month == "2015-2016_December" | season_month == "2015-2016_January" | season_month == "2015-2016_February" ~ "15_16 11-02",
+      season_month == "2015-2016_March" | season_month == "2015-2016_April" | season_month == "2015-2016_May" | season_month == "2015-2016_June" ~ "2016 03-06"
+    )
+  ) %>% 
+  filter(!is.na(month_interval))
+
+mean(xx$prop_grids_lost) #0.566697, i.e. 57% grids lost on average on a monthly step 
+
+xx_v2 <-  xx %>% 
+  separate(season_month, into = c("season", "month"), sep = "_") %>%  
+  mutate(month = factor(month, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))
+
+plot_prop_grids_lost <- ggplot(xx_v2, aes(x=month, y=prop_grids_lost, colour=season, group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("prop grid cells lost\nnon-conf. vs conf. data") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) + #this will make legend for the years look better
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+plot_prop_grids_lost
 
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
