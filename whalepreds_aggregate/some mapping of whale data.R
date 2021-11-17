@@ -260,7 +260,7 @@ grid.5km.fish_WA_MaySep <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id
 subset_MaySep_fish_grids_only <- x.whale.median %>% 
   filter(is_May_Sep == "Y") %>% 
   #select season to map 
-  filter(season == "2019-2020") %>%
+  filter(season == "2018-2019") %>%
   filter(GRID5KM_ID %in% grid.studyarea.id_WA_MaySep)
 
 
@@ -273,7 +273,7 @@ map_hump_MaySep_fish_grids_only <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("May-Sep 2019-2020 Median\nHumpback Whale Densities") +
+  ggtitle("May-Sep 2018-2019 Median\nHumpback Whale Densities") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -307,7 +307,7 @@ map_blue_MaySep_fish_grids_only <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("May-Sep 2019-2020 Median\nBlue Whale Occurrence") +
+  ggtitle("May-Sep 2018-2019 Median\nBlue Whale Occurrence") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -328,7 +328,7 @@ map_blue_MaySep_fish_grids_only
 #ggsave(here::here('tradeoffs','map_median_blue_MaySep_fish_grids_only.png'),map_hump,h=8,w=6)
 
 # plot blues and humps together
-png(paste0(path_figures, "/map_median_blue_hump_MaySep_2019-2020_fish_grids_only.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/map_median_blue_hump_MaySep_2018-2019_fish_grids_only.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump_MaySep_fish_grids_only,
           map_blue_MaySep_fish_grids_only,
           ncol=2,
