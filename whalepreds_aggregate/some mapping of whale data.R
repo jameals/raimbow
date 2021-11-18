@@ -700,6 +700,16 @@ map_outlines <- ggplot() +
   )
 map_outlines
 
+# png(paste0(path_figures, "/fishery_outlines_2013_2020_WA.png"), width = 7, height = 7, units = "in", res = 300)
+# ggarrange(map_outlines,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 
 map_2013_2014 <- ggplot() + 
