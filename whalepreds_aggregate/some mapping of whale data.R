@@ -348,7 +348,7 @@ invisible(dev.off())
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
 x.fish_WA <- readRDS(path.fish_WA) 
 
-#How many unique grids were ever usedn between 2013-2020?
+#How many unique grids were ever used between 2013-2020?
 grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
 # 635
 #other way to do the same
@@ -475,6 +475,145 @@ ggarrange(map_grids_used,
           hjust=0
 )
 invisible(dev.off())
+
+
+#-------------------------
+#How often was each grid cell used between 2013-2020 seasons, but only within May-Sep period?
+
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+x.fish_WA <- readRDS(path.fish_WA) 
+
+#filter to be only May-Sep data
+
+x.fish_WA_MaySep <-  x.fish_WA %>% 
+  mutate(is_May_Sep = 
+         ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
+                ,'Y', 'N'))  %>% 
+  filter(is_May_Sep == "Y")
+
+#How many unique grids were ever used between 2013-2020 in May-Sep?
+#find those unique grid cells that had data at some point in 2013-2020 in May-Sep
+grid.studyarea.id_WA_MaySep <- sort(unique(x.fish_WA_MaySep$GRID5KM_ID)) 
+#424
+
+grid.5km.fish_WA_MaySep <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA_MaySep)
+
+
+#unique grid IDs used in 2013-2014 May_Sep
+x.fish_WA_MaySep_2013_2014 <- x.fish_WA_MaySep %>% filter(season =="2013-2014")
+n_grids_2013_2014 <- sort(unique(x.fish_WA_MaySep_2013_2014$GRID5KM_ID))
+length(n_grids_2013_2014) #174
+
+#unique grid IDs used in 2014-2015 May_Sep
+x.fish_WA_MaySep_2014_2015 <- x.fish_WA_MaySep %>% filter(season =="2014-2015")
+n_grids_2014_2015 <- sort(unique(x.fish_WA_MaySep_2014_2015$GRID5KM_ID))
+length(n_grids_2014_2015) #130
+
+#unique grid IDs used in 2015-2016 May_Sep
+x.fish_WA_MaySep_2015_2016 <- x.fish_WA_MaySep %>% filter(season =="2015-2016")
+n_grids_2015_2016 <- sort(unique(x.fish_WA_MaySep_2015_2016$GRID5KM_ID))
+length(n_grids_2015_2016) #128
+
+#unique grid IDs used in 2016-2017 May_Sep
+x.fish_WA_MaySep_2016_2017 <- x.fish_WA_MaySep %>% filter(season =="2016-2017")
+n_grids_2016_2017 <- sort(unique(x.fish_WA_MaySep_2016_2017$GRID5KM_ID))
+length(n_grids_2016_2017) #232
+
+#unique grid IDs used in 2017-2018 May_Sep
+x.fish_WA_MaySep_2017_2018 <- x.fish_WA_MaySep %>% filter(season =="2017-2018")
+n_grids_2017_2018 <- sort(unique(x.fish_WA_MaySep_2017_2018$GRID5KM_ID))
+length(n_grids_2017_2018) #267
+
+#unique grid IDs used in 2018-2019 May_Sep
+x.fish_WA_MaySep_2018_2019 <- x.fish_WA_MaySep %>% filter(season =="2018-2019")
+n_grids_2018_2019 <- sort(unique(x.fish_WA_MaySep_2018_2019$GRID5KM_ID))
+length(n_grids_2018_2019) #203
+
+#unique grid IDs used in 2019-2020 May_Sep
+x.fish_WA_MaySep_2019_2020 <- x.fish_WA_MaySep %>% filter(season =="2019-2020")
+n_grids_2019_2020 <- sort(unique(x.fish_WA_MaySep_2019_2020$GRID5KM_ID))
+length(n_grids_2019_2020) #140
+
+
+#How often was each grid cell used between 2013-2020 seasons in May-Sep?
+grid.5km.fish_WA_MaySep_grids <- grid.5km.fish_WA_MaySep %>% 
+  mutate(season_2013_2014 = ifelse(GRID5KM_ID %in% n_grids_2013_2014, '1', '0')) %>% 
+  mutate(season_2014_2015 = ifelse(GRID5KM_ID %in% n_grids_2014_2015, '1', '0')) %>% 
+  mutate(season_2015_2016 = ifelse(GRID5KM_ID %in% n_grids_2015_2016, '1', '0')) %>% 
+  mutate(season_2016_2017 = ifelse(GRID5KM_ID %in% n_grids_2016_2017, '1', '0')) %>% 
+  mutate(season_2017_2018 = ifelse(GRID5KM_ID %in% n_grids_2017_2018, '1', '0')) %>% 
+  mutate(season_2018_2019 = ifelse(GRID5KM_ID %in% n_grids_2018_2019, '1', '0')) %>% 
+  mutate(season_2019_2020 = ifelse(GRID5KM_ID %in% n_grids_2019_2020, '1', '0')) %>% 
+  mutate_if(is.character,as.numeric)
+
+
+grid.5km.fish_WA_MaySep_grids_sum <- grid.5km.fish_WA_MaySep_grids %>% 
+  rowwise() %>%
+  mutate(sum = sum(season_2013_2014,
+                   season_2014_2015,
+                   season_2015_2016,
+                   season_2016_2017,
+                   season_2017_2018,
+                   season_2018_2019,
+                   season_2019_2020,
+                   na.rm = T))
+
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 7)) #59
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 6)) #13
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 5)) #24
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 4)) #48
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 3)) #56
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 2)) #79
+nrow(grid.5km.fish_WA_MaySep_grids_sum %>% filter(sum == 1)) #145
+
+
+#map it
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+
+bbox = c(-127,45,-120,49) 
+
+
+map_grids_used <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(grid.5km.fish_WA_MaySep_grids_sum), 
+          aes(fill=sum,
+              col=sum
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="plasma",name="No. seasons\ngrid used") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="plasma",name="No. seasons\ngrid used") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("Grids used by fishery \n(2013-2020) May-Sep") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_grids_used
+
+png(paste0(path_figures, "/map_Number of seasons when grid cell used by fishery_2013-2020_May-Sep.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_grids_used,
+          ncol=1,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
 
 
 
