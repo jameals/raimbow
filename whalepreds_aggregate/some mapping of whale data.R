@@ -615,7 +615,241 @@ ggarrange(map_grids_used,
 invisible(dev.off())
 
 
+#------------------------
+library(raster)
+select <- dplyr::select
+#grid cells used 2013-2020
+grid.5km.fish_WA_grids
+#grid cells used 2013-2020 May-Sep
+grid.5km.fish_WA_MaySep_grids
+grid.5km.fish_WA_MaySep_grids_sum
+
+
+#outline of fishery footprint all of 2013-2020
+dissolved_2013_2020 <- st_union(grid.5km.fish_WA_grids)
+plot(dissolved_2013_2020)
+
+
+dissolved_2013_2014 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2013_2014) %>% 
+  filter(season_2013_2014 == 1) %>% 
+  st_union
+plot(dissolved_2013_2014)
+
+dissolved_2014_2015 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2014_2015) %>% 
+  filter(season_2014_2015 == 1) %>% 
+  st_union
+plot(dissolved_2014_2015)
+
+dissolved_2015_2016 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2015_2016) %>% 
+  filter(season_2015_2016 == 1) %>% 
+  st_union
+plot(dissolved_2015_2016)
+
+dissolved_2016_2017 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2016_2017) %>% 
+  filter(season_2016_2017 == 1) %>% 
+  st_union
+plot(dissolved_2016_2017)
+
+dissolved_2017_2018 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2017_2018) %>% 
+  filter(season_2017_2018 == 1) %>% 
+  st_union
+plot(dissolved_2017_2018)
+
+dissolved_2018_2019 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2018_2019) %>% 
+  filter(season_2018_2019 == 1) %>% 
+  st_union
+plot(dissolved_2018_2019)
+
+dissolved_2019_2020 <- grid.5km.fish_WA_grids %>% 
+  select(GRID5KM_ID, geometry, season_2019_2020) %>% 
+  filter(season_2019_2020 == 1) %>% 
+  st_union
+plot(dissolved_2019_2020)
+
+#outline_2013_2014_and_2014_2015 <- c(dissolved_2013_2014, dissolved_2014_2015)
+#plot(outline_2013_2014_and_2014_2015)
+
+
+map_outlines <- ggplot() + 
+  geom_sf(data = dissolved_2013_2014, color = '#F9D1D1', fill = NA) +
+  geom_sf(data = dissolved_2014_2015, color = '#FFA4B6', fill = NA) +
+  geom_sf(data = dissolved_2015_2016, color = '#F765A3', fill = NA) +
+  geom_sf(data = dissolved_2016_2017, color = '#A155B9', fill = NA) +
+  geom_sf(data = dissolved_2017_2018, color = '#165BAA', fill = NA) +
+  geom_sf(data = dissolved_2018_2019, color = '#0B1354', fill = NA) +
+  geom_sf(data = dissolved_2019_2020, color = 'black', fill = NA) +
+  
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2013-2020)") +
+    coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_outlines
 
 
 
+map_2013_2014 <- ggplot() + 
+  geom_sf(data = dissolved_2013_2014, color = '#F9D1D1', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2013-2014)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2013_2014
+
+map_2014_2015 <- ggplot() + 
+  geom_sf(data = dissolved_2014_2015, color = '#FFA4B6', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2014-2015)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2014_2015
+
+map_2015_2016 <- ggplot() + 
+  geom_sf(data = dissolved_2015_2016, color = '#F765A3', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2015-2016)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2015_2016
+
+
+map_2016_2017 <- ggplot() + 
+  geom_sf(data = dissolved_2016_2017, color = '#A155B9', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2016-2017)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2016_2017
+
+
+map_2017_2018 <- ggplot() + 
+  geom_sf(data = dissolved_2017_2018, color = '#165BAA', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2017-2018)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2017_2018
+
+map_2018_2019 <- ggplot() + 
+  geom_sf(data = dissolved_2018_2019, color = '#0B1354', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2018-2019)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2018_2019
+
+map_2019_2020 <- ggplot() + 
+  geom_sf(data = dissolved_2019_2020, color = 'black', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2019-2020)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_2019_2020
+
+png(paste0(path_figures, "/fishery_outlines_2013_2020_all season_WA.png"), width = 14, height = 7, units = "in", res = 300)
+ggarrange(map_2013_2014,
+          map_2014_2015,
+          map_2015_2016,
+          map_2016_2017,
+          map_2017_2018,
+          map_2018_2019,
+          map_2019_2020,
+          ncol=4,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+dissolved_2013_2020_MaySep <- st_union(grid.5km.fish_WA_MaySep_grids)
+plot(dissolved_2013_2020_MaySep)
 
