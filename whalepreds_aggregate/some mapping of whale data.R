@@ -1086,3 +1086,62 @@ map_2019_2020_MaySep
 #           hjust=0
 # )
 # invisible(dev.off())
+
+
+
+#----------------
+# proportion of grids N or S of WA-OR border, in full seasons
+
+grid.5km.fish_WA_grids_North_of_OR_border <- grid.5km.fish_WA_grids %>% 
+  mutate(N_S_of_border = 
+           ifelse(LATITUDE > 46.26, 'North', 'South'))
+
+
+grid.5km.fish_WA_grids_North_of_OR_border_summary <- grid.5km.fish_WA_grids_North_of_OR_border %>%
+  select(season_2013_2014:N_S_of_border) %>% 
+  group_by(N_S_of_border) %>% 
+  summarise(n_grids_2013_2014 = sum(season_2013_2014),
+            n_grids_2014_2015 = sum(season_2014_2015),
+            n_grids_2015_2016 = sum(season_2015_2016),
+            n_grids_2016_2017 = sum(season_2016_2017),
+            n_grids_2017_2018 = sum(season_2017_2018),
+            n_grids_2018_2019 = sum(season_2018_2019),
+            n_grids_2019_2020 = sum(season_2019_2020)
+            ) %>% 
+  mutate(prop_N_S_of_border_2013_2014 = n_grids_2013_2014/sum(n_grids_2013_2014),
+         prop_N_S_of_border_2014_2015 = n_grids_2014_2015/sum(n_grids_2014_2015),
+         prop_N_S_of_border_2015_2016 = n_grids_2015_2016/sum(n_grids_2015_2016),
+         prop_N_S_of_border_2016_2017 = n_grids_2016_2017/sum(n_grids_2016_2017),
+         prop_N_S_of_border_2017_2018 = n_grids_2017_2018/sum(n_grids_2017_2018),
+         prop_N_S_of_border_2018_2019 = n_grids_2018_2019/sum(n_grids_2018_2019),
+         prop_N_S_of_border_2019_2020 = n_grids_2019_2020/sum(n_grids_2019_2020)
+         )
+
+  
+# proportion of grids N or S of WA-OR border, in May-Sep
+
+grid.5km.fish_WA_grids_North_of_OR_border <- grid.5km.fish_WA_MaySep_grids %>% 
+  mutate(N_S_of_border = 
+           ifelse(LATITUDE > 46.26, 'North', 'South'))
+
+
+grid.5km.fish_WA_grids_North_of_OR_border_summary <- grid.5km.fish_WA_grids_North_of_OR_border %>%
+  select(season_2013_2014:N_S_of_border) %>% 
+  group_by(N_S_of_border) %>% 
+  summarise(n_grids_2013_2014 = sum(season_2013_2014),
+            n_grids_2014_2015 = sum(season_2014_2015),
+            n_grids_2015_2016 = sum(season_2015_2016),
+            n_grids_2016_2017 = sum(season_2016_2017),
+            n_grids_2017_2018 = sum(season_2017_2018),
+            n_grids_2018_2019 = sum(season_2018_2019),
+            n_grids_2019_2020 = sum(season_2019_2020)
+  ) %>% 
+  mutate(prop_N_S_of_border_2013_2014 = n_grids_2013_2014/sum(n_grids_2013_2014),
+         prop_N_S_of_border_2014_2015 = n_grids_2014_2015/sum(n_grids_2014_2015),
+         prop_N_S_of_border_2015_2016 = n_grids_2015_2016/sum(n_grids_2015_2016),
+         prop_N_S_of_border_2016_2017 = n_grids_2016_2017/sum(n_grids_2016_2017),
+         prop_N_S_of_border_2017_2018 = n_grids_2017_2018/sum(n_grids_2017_2018),
+         prop_N_S_of_border_2018_2019 = n_grids_2018_2019/sum(n_grids_2018_2019),
+         prop_N_S_of_border_2019_2020 = n_grids_2019_2020/sum(n_grids_2019_2020)
+  )
+
