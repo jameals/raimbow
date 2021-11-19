@@ -1145,3 +1145,5 @@ grid.5km.fish_WA_grids_North_of_OR_border_summary <- grid.5km.fish_WA_grids_Nort
          prop_N_S_of_border_2019_2020 = n_grids_2019_2020/sum(n_grids_2019_2020)
   )
 
+
+
