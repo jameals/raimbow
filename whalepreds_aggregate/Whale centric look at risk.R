@@ -155,6 +155,9 @@ x.whale.median.2013_2020_MaySep <- x.whale.median.2013_2020 %>%
 
 #map median density May-Sep for all of 2013-2020
 
+#plus overlay WA May-Sep fishery footprint
+dissolved_2013_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2013_2020_MaySep_WA_fishery_footprint.rds'))
+
 # grab a base map
 rmap.base <- c(
   st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
@@ -175,6 +178,8 @@ map_hump <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0.001,0.033,by=0.032),limits=c(0.001,0.033),oob=squish) + 
   scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0.001,0.033,by=0.032),limits=c(0.001,0.033),oob=squish) + # 
+  #if want to add fishery outline May-Sep 2013-2020
+  geom_sf(data = dissolved_2013_2020_MaySep, color = 'black',size=1, fill = NA) +
   ggtitle("2013-2020 May-Sep \nMedian Humpback Whale Density") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
@@ -200,7 +205,8 @@ map_blue <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.08,0.88,by=0.4),limits=c(0.08,0.88),oob=squish) + 
   scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.08,0.88,by=0.4),limits=c(0.08,0.88),oob=squish) + 
-  ggtitle("2013-2020 May-Sep \nMedianBlue Whale Occurrence") +
+  #if want to add fishery outline May-Sep 2013-2020
+  geom_sf(data = dissolved_2013_2020_MaySep, color = 'black',size=1, fill = NA) +ggtitle("2013-2020 May-Sep \nMedianBlue Whale Occurrence") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -215,7 +221,7 @@ map_blue <- ggplot() +
 map_blue
 
 # plot blues and humps together
-png(paste0(path_figures, "/map_median_blue_hump_2013_2020_clip at 44N.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/map_median_blue_hump_2013_2020_clip at 44N_with fishery footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump,
           map_blue,
           ncol=2,
