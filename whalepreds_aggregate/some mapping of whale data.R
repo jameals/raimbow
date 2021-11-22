@@ -983,6 +983,7 @@ grid.5km.fish_WA_MaySep_grids
 #outline of fishery footprint 2013-2020 May-Sep
 dissolved_2013_2020_MaySep <- st_union(grid.5km.fish_WA_MaySep_grids)
 plot(dissolved_2013_2020_MaySep)
+#write_rds(dissolved_2013_2020_MaySep,here::here('wdfw','data',"dissolved_2013_2020_MaySep_WA_fishery_footprint.rds"))
 
 
 
