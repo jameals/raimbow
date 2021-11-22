@@ -322,13 +322,121 @@ ggarrange(map_hump_MaySep,
 invisible(dev.off())
 
 
+#---------------------------------------------------------------
+#looking for quantiles
+#combined 2013-2020
+
+##calculate quantiles across 2013-2020 by season
+# the quantile function returns the cutpoints (i.e. 0%, 25%, 50%, 75%, and 100%) as well as the corresponding quantiles
+x.whale.2013_2020_quant <- x.whale_crab_season_v2 %>%
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  filter(is_May_Sep == 'Y') %>% 
+  select(season, Humpback_dens_mean, Blue_occurrence_mean) %>%
+  group_by(season) %>% 
+  summarise(
+    Humpback_dens_5th = quantile(Humpback_dens_mean, probs=0.05, na.rm=TRUE),
+    Humpback_dens_25th = quantile(Humpback_dens_mean, probs=0.25, na.rm=TRUE),
+    Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    Humpback_dens_75th = quantile(Humpback_dens_mean, probs=0.75, na.rm=TRUE),
+    Humpback_dens_90th = quantile(Humpback_dens_mean, probs=0.90, na.rm=TRUE),
+    Humpback_dens_95th = quantile(Humpback_dens_mean, probs=0.95, na.rm=TRUE),
+    
+    Blue_occur_5th = quantile(Blue_occurrence_mean, probs=0.05, na.rm=TRUE),
+    Blue_occur_25th = quantile(Blue_occurrence_mean, probs=0.25, na.rm=TRUE),
+    Blue_occur_median = median(Blue_occurrence_mean, na.rm=TRUE),
+    Blue_occur_75th = quantile(Blue_occurrence_mean, probs=0.75, na.rm=TRUE),
+    Blue_occur_90th = quantile(Blue_occurrence_mean, probs=0.90, na.rm=TRUE),
+    Blue_occur_95th = quantile(Blue_occurrence_mean, probs=0.95, na.rm=TRUE)
+  ) 
+glimpse(x.whale.2013_2020_quant)
 
 
+#----------------------------------------------------------------------------
+#testing couple diff ways for calcualting quantiles for HW across all of 2013-2020
+test_quantiles_hw_all_of_2013_2020 <-  x.whale_crab_season_v2 %>%
+  filter(is_May_Sep == 'Y') %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  select(Humpback_dens_mean) %>% 
+  quantile(probs = c(0.9, 0.95), na.rm=TRUE)
+# 90%        95% 
+#  0.03304709 0.03717593 
+
+x.whale.2013_2020_quant <- x.whale_crab_season_v2 %>%
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  filter(is_May_Sep == 'Y') %>% 
+  select(Humpback_dens_mean, Blue_occurrence_mean) %>%
+  summarise(
+    Humpback_dens_90th = quantile(Humpback_dens_mean, probs=0.90, na.rm=TRUE),
+    Humpback_dens_95th = quantile(Humpback_dens_mean, probs=0.95, na.rm=TRUE)
+  ) 
+glimpse(x.whale.2013_2020_quant)
+## Humpback_dens_90th <dbl> 0.03304709
+## Humpback_dens_95th <dbl> 0.03717593
+
+#or #note that this below doesn't filter for May-Sep or 2013-2020...
+x.whale_crab_season_v2_filtered <- x.whale_crab_season_v2 %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  filter(is_May_Sep == 'Y') 
+x.whale_crab_season_v2_filtered$hw_quantile_all_2013_2020 <- ecdf(x.whale_crab_season_v2_filtered$Humpback_dens_mean)(x.whale_crab_season_v2_filtered$Humpback_dens_mean)
+#and then could prob go:
+hw_quantiles_95th_plus <- x.whale_crab_season_v2_filtered %>% 
+  mutate(is_95th_percentile = ifelse(hw_quantile_all_2013_2020 > 0.95, 'Y', 'N')) %>%
+  inner_join(grid.key_N44)
+#----------------------------------------------------------------------------
+
+x.whale.2014_2015_quantiles <- x.whale_crab_season_v2 %>%
+  filter(season =='2014-2015') %>% 
+  mutate(HW_95th_percentile = ifelse(Humpback_dens_mean > 0.04042436, 'Y', 'N'),
+         BW_95th_percentile = ifelse(Blue_occurrence_mean > 0.6816083, 'Y', 'N')) %>%
+  inner_join(grid.key_N44)
+glimpse(x.whale.2014_2015_quantiles)
 
 
+test_map_quantile_20142015 <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(x.whale.2014_2015_quantiles), 
+          aes(fill=HW_95th_percentile,
+              col=HW_95th_percentile
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + 
+  #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + 
+  ggtitle("May-Sep 2014-2015 \nHumpback Whale \n95th percentile") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+test_map_quantile_20142015
 
 
-
-
-
-
+test_map_hw_all_of_2013_2020 <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(hw_quantiles_95th_plus), 
+          aes(fill=is_95th_percentile,
+              col=is_95th_percentile
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + 
+  #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + 
+  ggtitle("HW 2013-2020 \nHumpback Whale \n95th percentile") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+test_map_hw_all_of_2013_2020
