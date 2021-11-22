@@ -635,6 +635,47 @@ dissolved_2013_2020 <- st_union(grid.5km.fish_WA_grids)
 plot(dissolved_2013_2020)
 
 
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+
+bbox = c(-127,44,-120,49) 
+
+map_outline_2013_2020 <- ggplot() + 
+  geom_sf(data = dissolved_2013_2020, color = 'black', fill = NA) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  ggtitle("Fishery outline \n(2013-14 to 2019-20 seasons)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_outline_2013_2020
+
+# png(paste0(path_figures, "/fishery_outline_2013_2020 seasons_WA.png"), width = 7, height = 7, units = "in", res = 300)
+# ggarrange(map_outline_2013_2020,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
+
+
+
+
 dissolved_2013_2014 <- grid.5km.fish_WA_grids %>% 
   select(GRID5KM_ID, geometry, season_2013_2014) %>% 
   filter(season_2013_2014 == 1) %>% 
