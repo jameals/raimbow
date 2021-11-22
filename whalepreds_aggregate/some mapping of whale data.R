@@ -10,6 +10,7 @@ library(sf)
 library(rgeos)
 library(viridis)
 library(ggpubr)
+library(scales)
 
 #-----------------------------------------------------------------------------------
 
@@ -131,6 +132,15 @@ x.whale.median <- x.whale_crab_season_v2 %>%
   left_join(grid.5km.lno)
 glimpse(x.whale.median)
 
+# calculate median whale values across all of 2013-2020
+# x.whale.median.2013_2020 <- x.whale_crab_season_v2 %>%
+#   group_by(is_May_Sep, GRID5KM_ID, area_km_lno) %>%
+#   summarise(
+#     Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+#     Blue_occurrence_median = median(Blue_occurrence_mean, na.rm=TRUE)
+#   ) %>%
+#   left_join(grid.5km.lno)
+# glimpse(x.whale.median.2013_2020)
 #-----------------------------------------------------------------------------------
 
 
@@ -166,9 +176,9 @@ map_hump_MaySep <- ggplot() +
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("May-Sep 2019-2020 Median\nHumpback Whale Densities") +
+  scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.05,by=0.01),limits=c(0.0,0.05),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.05,by=0.01),limits=c(0.0,0.05),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("May-Sep 2019-2020 Median\nHumpback Whale Densities \nNot spatially restricted") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -191,7 +201,6 @@ map_hump_MaySep
 
 # plot median blue occurrence 
 
-
 map_blue_MaySep <- ggplot() + 
   geom_sf(data=sf::st_as_sf(subset_MaySep), 
           aes(fill=Blue_occurrence_median,
@@ -200,9 +209,9 @@ map_blue_MaySep <- ggplot() +
   ) +
   # facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("May-Sep 2019-2020 Median\nBlue Whale Occurrence") +
+  scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.04,0.95,by=0.25),limits=c(0.04,0.95),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.04,0.95,by=0.25),limits=c(0.04,0.95),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("May-Sep 2019-2020 Median\nBlue Whale Occurrence \nNot spatially restricted") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -236,7 +245,74 @@ ggarrange(map_hump_MaySep,
 invisible(dev.off())
 
 
+###########
+#map median whale across all of 2013-2020 May Sep
 
+x.whale.median.2013_2020_MaySep <- x.whale.median.2013_2020 %>% 
+   filter(is_May_Sep == "Y")
+
+map_hump_MaySep <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(x.whale.median.2013_2020_MaySep), 
+          aes(fill=Humpback_dens_median,
+              col=Humpback_dens_median
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
+  ggtitle("May-Sep 2013-2020 Median\nHumpback Whale Densities \nNot spatially restricted") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_hump_MaySep
+
+# plot median blue occurrence 
+map_blue_MaySep <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(x.whale.median.2013_2020_MaySep), 
+          aes(fill=Blue_occurrence_median,
+              col=Blue_occurrence_median
+          )
+  ) +
+  # facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.93,by=0.25),limits=c(0.06,0.93),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.93,by=0.25),limits=c(0.06,0.93),oob=squish) + 
+  ggtitle("May-Sep 2013-2020 Median\nBlue Whale Occurrence \nNot spatially restricted") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue_MaySep
+
+# plot blues and humps together
+png(paste0(path_figures, "/map_median_blue_hump_MaySep_2013-2020_not_clipped_spatially.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump_MaySep,
+          map_blue_MaySep,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 #------------------------------------------------------------------
 
 #grab grid cells that had fishing in May-Sep in that season
