@@ -1028,6 +1028,7 @@ dissolved_2019_2020_MaySep <- grid.5km.fish_WA_MaySep_grids %>%
   filter(season_2019_2020 == 1) %>% 
   st_union
 plot(dissolved_2019_2020_MaySep)
+#write_rds(dissolved_2019_2020_MaySep,here::here('wdfw','data',"dissolved_2019_2020_MaySep_WA_fishery_footprint.rds"))
 
 
 
