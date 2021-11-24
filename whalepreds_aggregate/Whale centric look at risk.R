@@ -649,24 +649,24 @@ x.whale.2013_2020_MaySep_good_habitats_fishing <- x.whale.2013_2020_MaySep_good_
 glimpse(x.whale.2013_2020_MaySep_good_habitats_fishing)
 
 
-summary_95th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
-  filter(HW_is_95th_or_higher == 'Y') %>% 
+summary_90th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
+  filter(HW_is_90th_or_higher == 'Y') %>% 
   group_by(season) %>% 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
             trapdens_median = median(mean_trapdens, na.rm=TRUE),
             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             tottraps_median = median(mean_tottraps, na.rm=TRUE)
             )
-glimpse(summary_95th_HW_habitat_fishing)  
+glimpse(summary_90th_HW_habitat_fishing)  
 
 
 #PLOT -- good whale habitat defined each season at a time
-ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_hw_habitat_a <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
   ylab("Trap density") + 
   xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined one season at a time)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -679,14 +679,14 @@ ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_hw_habitat_a
+ts_fishing_in_90th_hw_habitat_a
 
-ts_fishing_in_95th_hw_habitat_b <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_hw_habitat_b <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
   geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
   ylab("Total traps") + 
   xlab("Season") +
-  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined one season at a time)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -699,9 +699,9 @@ ts_fishing_in_95th_hw_habitat_b <- ggplot(summary_95th_HW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_hw_habitat_b
+ts_fishing_in_90th_hw_habitat_b
 
-png(paste0(path_figures, "/test_ts_fishing_in_95th_hw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/test_ts_fishing_in_90th_hw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_fishing_in_95th_hw_habitat_a,
           ts_fishing_in_95th_hw_habitat_b,
           ncol=2,
@@ -780,8 +780,381 @@ ggarrange(ts_fishing_in_90th_bw_habitat_a,
 invisible(dev.off())
 
 
+
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+# maps of good whale habitats May_Sep with fishery footprints
+# whale data is restricted to north of 44N
+# good whale habitat is defined as 90th or 95th percentile of whale dens/occur ACROSS ALL OF 2013-2020
+# --> I think for this each grid should be averaged across all of 2013-2020 so that each grid would only have 1 value
+# THEN can look at what grids are the 90/95th percentiles of values
+# fishery footprint is May-Sep of given season
+
+# calculate MEAN whale values for for grids across all of 2013-2020 - for May-Sep period only
+# and then look at percentiles
+x.whale.mean_all2013_2020 <- x.whale_crab_season_v2 %>% #this is already filtered for 2013-2020
+  filter(is_May_Sep == "Y") %>% 
+  group_by(is_May_Sep, GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Mean_Humpback_dens = mean(Humpback_dens_mean, na.rm=TRUE),
+    Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
+  ) %>%
+  inner_join(grid.key_N44)
+glimpse(x.whale.mean_all2013_2020)
+
+
+x.whale.all2013_2020_quant <- x.whale.mean_all2013_2020 %>%
+  #select(Mean_Humpback_dens, Mean_Blue_occurrence) %>%
+  ungroup() %>% 
+  summarise(
+    Humpback_dens_90th = quantile(Mean_Humpback_dens, probs=0.90, na.rm=TRUE),
+    Humpback_dens_95th = quantile(Mean_Humpback_dens, probs=0.95, na.rm=TRUE),
+    
+    Blue_occur_90th = quantile(Mean_Blue_occurrence, probs=0.90, na.rm=TRUE),
+    Blue_occur_95th = quantile(Mean_Blue_occurrence, probs=0.95, na.rm=TRUE)
+  ) 
+glimpse(x.whale.all2013_2020_quant)
+
+x.whale.all2013_2020_MaySep_quant_joined <- x.whale.mean_all2013_2020 %>% 
+  cbind(x.whale.all2013_2020_quant)
+glimpse(x.whale.all2013_2020_MaySep_quant_joined)
+
+#'good whale habitats' (90th or 95th percentiles) across all of 2013-2020
+x.whale.all2013_2020_MaySep_good_habitats <- x.whale.all2013_2020_MaySep_quant_joined %>% 
+  ungroup() %>% 
+  mutate(HW_is_90th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_90th, 'Y', 'N'),
+         HW_is_95th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_95th, 'Y', 'N'),
+         BW_is_90th_or_higher = ifelse(Mean_Blue_occurrence > Blue_occur_90th, 'Y', 'N'),
+         BW_is_95th_or_higher = ifelse(Mean_Blue_occurrence > Blue_occur_95th, 'Y', 'N'),
+  ) %>%
+  inner_join(grid.key_N44)
+glimpse(x.whale.all2013_2020_MaySep_good_habitats)
+
+
+#------------------
+
+# select the below section, tick 'in selection' and change the below values
+# change 2013_2014 #5
+# change 2013-2014 #2
+# change 90 #17
+
+#map May_Sep good whale habitats across all of 2013-2020 with fishery footprint for each season's May-Sep
+dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint.rds'))
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-127,43.5,-120,49) 
+
+
+hw_subset_MaySep <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  filter(!is.na(HW_is_95th_or_higher)) %>% 
+  filter(HW_is_95th_or_higher == 'Y')
+
+
+map_hump_MaySep_95th <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(hw_subset_MaySep), 
+          aes(fill=HW_is_95th_or_higher,
+              col=HW_is_95th_or_higher
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
+  #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2013-2020 \ngood HW habitat (95th+) \nspatially clip at 44N \nwith 2019-2020 May-Sep fishery footprint") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_hump_MaySep_95th
+
+
+# plot blue whale
+bw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats %>% 
+  filter(!is.na(BW_is_95th_or_higher)) %>% 
+  filter(BW_is_95th_or_higher == 'Y')
+
+map_blue_MaySep_95th <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(bw_subset_MaySep), 
+          aes(fill=BW_is_95th_or_higher,
+              col=BW_is_95th_or_higher
+          )
+  ) +
+  # facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+  #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2013-2020 \ngood BW habitat (95th+) \nspatially clip at 44N\nwith 2019-2020 May-Sep fishery footprint") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue_MaySep_95th
+
+# plot blues and humps together
+png(paste0(path_figures, "/test_good_wh_habitat_MaySep_across_all_2013_2020_95th_only_spatially_clipped_2019_2020 fishery footprint.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump_MaySep_95th,
+          map_blue_MaySep_95th,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 #----------------------------------------------------------------------------
-#testing couple diff ways for calcualting quantiles for HW across all of 2013-2020
+#SOMETHING IS NOT RIGHT WITH THIS SECTION
+#bring in fishing data 
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+x.fish_WA <- readRDS(path.fish_WA) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
+                  ,'Y', 'N'))
+
+# average trap density (and count?) for each grid cell for May-Sep period
+x.fish_WA_MaySep <- x.fish_WA %>% 
+  filter(is_May_Sep == "Y") %>% 
+  group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  summarise(
+    sum_M2_trapdens = sum(M2_trapdens, na.rm=TRUE),
+    number_obs = n(), #no. of grid cells being used for averaging
+    mean_trapdens = sum_M2_trapdens/number_obs,
+    sum_M2_tottraps  = sum(M2_tottraps, na.rm=TRUE),
+    mean_tottraps = sum_M2_tottraps/number_obs
+  ) %>% 
+  #and drop some columns so that after join things are little tidier
+  select(season, GRID5KM_ID, mean_trapdens, mean_tottraps)
+glimpse(x.fish_WA_MaySep)
+
+
+#how do we join fishing data if the whale data no longer has season info??
+# x.whale.all2013_2020_MaySep_good_habitats_repeated <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+#   slice(rep(1:n(), each = 7))
+# x.whale.all2013_2020_MaySep_good_habitats_repeated$season <- rep(c("2013-2014",
+#                                                                    "2014-2015",
+#                                                                    "2015-2016",
+#                                                                    "2016-2017",
+#                                                                    "2017-2018",
+#                                                                    "2018-2019",
+#                                                                    "2019-2020"),
+#                                                                     length.out=nrow(x.whale.all2013_2020_MaySep_good_habitats_repeated))
+
+#Maybe instead need to find unique grid cells in
+x.whale.all2013_2020_MaySep_good_habitats #where HW_is_90th_or_higher etc == 'Y'
+#and then filter the fishery data to those grid cells??
+HW_habitat_95th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  filter(HW_is_95th_or_higher == 'Y') 
+grid_HW_habitat_95th <- sort(unique(HW_habitat_95th$GRID5KM_ID))
+summary_95th_HW_habitat_fishing <- x.fish_WA_MaySep %>% 
+  filter(GRID5KM_ID %in% grid_HW_habitat_95th) %>% 
+group_by(season) %>% 
+  summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+            trapdens_median = median(mean_trapdens, na.rm=TRUE),
+            tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
+            tottraps_median = median(mean_tottraps, na.rm=TRUE)
+  )
+glimpse(summary_95th_HW_habitat_fishing)
+
+
+# x.whale.all2013_2020_MaySep_good_habitats_fishing <- x.whale.all2013_2020_MaySep_good_habitats_repeated %>% 
+#   left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID'))
+# glimpse(x.whale.all2013_2020_MaySep_good_habitats_fishing)
+# 
+# 
+# summary_95th_HW_habitat_fishing <- x.whale.all2013_2020_MaySep_good_habitats_fishing %>% 
+#   filter(HW_is_95th_or_higher == 'Y') %>% 
+#   group_by(season) %>% 
+#   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+#             trapdens_median = median(mean_trapdens, na.rm=TRUE),
+#             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
+#             tottraps_median = median(mean_tottraps, na.rm=TRUE)
+#   )
+# glimpse(summary_95th_HW_habitat_fishing)  
+
+
+#PLOT -- good whale habitat defined across 2013-2020
+ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+  geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+  geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  ylab("Trap density") + 
+  xlab("Season") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_95th_hw_habitat_a
+
+ts_fishing_in_95th_hw_habitat_b <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+  geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  ylab("Total traps") + 
+  xlab("Season") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_95th_hw_habitat_b
+
+png(paste0(path_figures, "/test_ts_fishing_in_95th_hw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_95th_hw_habitat_a,
+          ts_fishing_in_95th_hw_habitat_b,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+#For BW -- did bw 95th habitat completely miss fishing effort in 2015-16?? --> yes it did!
+# summary_95th_BW_habitat_fishing <- x.whale.all2013_2020_MaySep_good_habitats_fishing %>% 
+#   filter(BW_is_95th_or_higher == 'Y') %>% 
+#   group_by(season) %>% 
+#   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+#             trapdens_median = median(mean_trapdens, na.rm=TRUE),
+#             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
+#             tottraps_median = median(mean_tottraps, na.rm=TRUE)
+#   )
+# glimpse(summary_95th_BW_habitat_fishing)  
+
+BW_habitat_95th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  filter(BW_is_95th_or_higher == 'Y') 
+grid_BW_habitat_95th <- sort(unique(BW_habitat_95th$GRID5KM_ID))
+summary_95th_BW_habitat_fishing <- x.fish_WA_MaySep %>% 
+  filter(GRID5KM_ID %in% grid_BW_habitat_95th) %>% 
+  group_by(season) %>% 
+  summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+            trapdens_median = median(mean_trapdens, na.rm=TRUE),
+            tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
+            tottraps_median = median(mean_tottraps, na.rm=TRUE)
+  )
+glimpse(summary_95th_BW_habitat_fishing)
+
+#PLOT
+ts_fishing_in_95th_bw_habitat_a <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
+  geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+  geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  ylab("Trap density") + 
+  xlab("Season") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_95th_bw_habitat_a
+
+ts_fishing_in_95th_bw_habitat_b <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
+  geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  ylab("Total traps") + 
+  xlab("Season") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_95th_bw_habitat_b
+
+png(paste0(path_figures, "/test_ts_fishing_in_95th_bw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_95th_bw_habitat_a,
+          ts_fishing_in_95th_bw_habitat_b,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------
+#testing couple diff ways for calculating quantiles for HW across all of 2013-2020
+##DON'T THINK THESE BITS ARE CORRECT
 test_quantiles_hw_all_of_2013_2020 <-  x.whale_crab_season_v2 %>%
   filter(is_May_Sep == 'Y') %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
@@ -802,7 +1175,7 @@ glimpse(x.whale.2013_2020_quant)
 ## Humpback_dens_90th <dbl> 0.03304709
 ## Humpback_dens_95th <dbl> 0.03717593
 
-#or #note that this below doesn't filter for May-Sep or 2013-2020...
+#or #note that this below doesn't (or didn't?) filter for May-Sep or 2013-2020...
 x.whale_crab_season_v2_filtered <- x.whale_crab_season_v2 %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
   filter(is_May_Sep == 'Y') 
