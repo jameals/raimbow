@@ -462,7 +462,13 @@ ggarrange(map_hump_MaySep_95th,
 invisible(dev.off())
 
 
-#-------------------
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+# maps of good whale habitats May_Sep with fishery footprints
+# whale data is restricted to north of 44N
+# good whale habitat is defined as 90th or 95th percentile of whale dens/occur values FOR EACH SEASON SEPARATELY
+# which are averages for each grid across May_Sep of given season
+# fishery footprint is May-Sep of given season
 
 # calculate MEAN whale values for different seasons - for May-Sep period (2013-2020)
 #and then look at percentiles
@@ -507,6 +513,14 @@ x.whale.2013_2020_MaySep_good_habitats <- x.whale.2013_2020_MaySep_quant_joined 
 glimpse(x.whale.2013_2020_MaySep_good_habitats)
 
 
+#------------------
+# select the below section, tick 'in selection' and change the below values
+# change 2013_2014 #4
+# change 2013-2014 #7
+# change 90 #17
+
+#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
+dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint.rds'))
 
 # grab a base map
 rmap.base <- c(
@@ -522,20 +536,24 @@ bbox = c(-127,43.5,-120,49)
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats %>% 
   #select season to map 
-  filter(season == "2013-2014") %>% 
-  filter(!is.na(HW_is_90th_or_higher))
+  filter(season == "2019-2020") %>% 
+  filter(!is.na(HW_is_95th_or_higher)) %>% 
+  filter(HW_is_95th_or_higher == 'Y')
 
 
-map_hump_MaySep_90th <- ggplot() + 
+map_hump_MaySep_95th <- ggplot() + 
   geom_sf(data=sf::st_as_sf(hw_subset_MaySep), 
-          aes(fill=HW_is_90th_or_higher,
-              col=HW_is_90th_or_higher
+          aes(fill=HW_is_95th_or_higher,
+              col=HW_is_95th_or_higher
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
   #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
-  ggtitle("May-Sep 2013-2014 \ngood HW habitat (90th+) \nspatially clip at 44N") +
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2019-2020 \ngood HW habitat (95th+) \nspatially clip at 44N \nwith 2019-2020 May-Sep fishery footprint") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -548,26 +566,30 @@ map_hump_MaySep_90th <- ggplot() +
         strip.text = element_text(size=14),
         title=element_text(size=16)
   )
-map_hump_MaySep_90th
+map_hump_MaySep_95th
 
 
 # plot blue whale
 bw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats %>% 
   #select season to map 
-  filter(season == "2013-2014") %>% 
-  filter(!is.na(BW_is_90th_or_higher))
+  filter(season == "2019-2020") %>% 
+  filter(!is.na(BW_is_95th_or_higher)) %>% 
+  filter(BW_is_95th_or_higher == 'Y')
 
-map_blue_MaySep_90th <- ggplot() + 
+map_blue_MaySep_95th <- ggplot() + 
   geom_sf(data=sf::st_as_sf(bw_subset_MaySep), 
-          aes(fill=BW_is_90th_or_higher,
-              col=BW_is_90th_or_higher
+          aes(fill=BW_is_95th_or_higher,
+              col=BW_is_95th_or_higher
           )
   ) +
   # facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   #scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
   #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
-  ggtitle("May-Sep 2013-2014 \ngood BW habitat (90th+) \nspatially clip at 44N") +
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2019-2020 \ngood BW habitat (95th+) \nspatially clip at 44N\nwith 2019-2020 May-Sep fishery footprint") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -580,12 +602,12 @@ map_blue_MaySep_90th <- ggplot() +
         strip.text = element_text(size=14),
         title=element_text(size=16)
   )
-map_blue_MaySep_90th
+map_blue_MaySep_95th
 
 # plot blues and humps together
-png(paste0(path_figures, "/test_good_wh_habitat_MaySep_averaged_bf_estimating_90th__2013-2014_only_spatially_clipped.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(map_hump_MaySep_90th,
-          map_blue_MaySep_90th,
+png(paste0(path_figures, "/test_good_wh_habitat_MaySep_averaged_bf_estimating_95th__2019-2020_only_spatially_clipped_fishery footprint.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump_MaySep_95th,
+          map_blue_MaySep_95th,
           ncol=2,
           nrow=1,
           legend="top",
@@ -595,7 +617,10 @@ ggarrange(map_hump_MaySep_90th,
 )
 invisible(dev.off())
 
-#-------------------
+
+
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
 #bring in fishing data 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
 x.fish_WA <- readRDS(path.fish_WA) %>% 
@@ -635,7 +660,7 @@ summary_95th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishin
 glimpse(summary_95th_HW_habitat_fishing)  
 
 
-#PLOT
+#PLOT -- good whale habitat defined each season at a time
 ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
@@ -689,7 +714,7 @@ ggarrange(ts_fishing_in_95th_hw_habitat_a,
 invisible(dev.off())
 
 
-#For BW -- did bw 95th habitat completely miss fishing effort in 2015-16??
+#For BW -- did bw 95th habitat completely miss fishing effort in 2015-16?? --> yes it did!
 summary_90th_BW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
   filter(BW_is_90th_or_higher == 'Y') %>% 
   group_by(season) %>% 
