@@ -1266,3 +1266,157 @@ grid.5km.fish_WA_grids_North_of_OR_border_summary <- grid.5km.fish_WA_grids_Nort
 
 
 
+#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+#If want to do maps of whale dens in 2013-2020 fish grids only
+
+#First filter whale data to those grids
+
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+x.fish_WA <- readRDS(path.fish_WA) #this works
+### Get grid cells with non-NA values for all, and save that of fishing data
+grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
+grid.5km.fish_WA <- grid.5km %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+#filter whale data
+x.hump_WA <-  x.hump_2009_2020 %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+x.blue_WA <-  x.blue.all %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
+
+#then filter to May-Sep and get means/medians - basically get to same dataset that was plotted as ts
+#except retain grid level
+
+x.hump_WA_crab_season <- x.hump_WA %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.hump_WA_crab_season_v2 <- x.hump_WA_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+x.blue_WA_crab_season <- x.blue_WA %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.blue_WA_crab_season_v2 <- x.blue_WA_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+#for some reason median() command wasn't working properly at one point...
+x.hump.median <- x.hump_WA_crab_season_v2 %>% 
+  filter(is_May_Sep == 'Y') %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season, GRID5KM_ID) %>%
+  summarise(
+    Hump_dens_mean = mean(Humpback_dens_mean),
+    Hump_dens_median = median(Humpback_dens_mean, na.rm=TRUE)) %>%
+  left_join(grid.5km.lno)
+
+x.blue.median <- x.blue_WA_crab_season_v2 %>%
+  filter(is_May_Sep == 'Y') %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season, GRID5KM_ID) %>%
+  summarise(
+    Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE)) %>% 
+  left_join(grid.5km.lno)
+
+#what is a good colour ramp range for each?
+#Hump_dens_mean: min = 0.01013909, max = 0.04271928
+#Hump_dens_median: min = 0.005135355, max = 0.04218542
+#Blue_dens_mean: min = 0.2755897, max = 0.7012392
+#Blue_dens_median: min = 0.2824236, max = 0.8540271
+
+
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+
+bbox = c(-127,43.5,-120,49) 
+
+subset_hw_MaySep_fish_grids_only <- x.hump.median %>% 
+  #select season to map 
+  filter(season == "2013-2014") 
+
+map_hump_MaySep_fish_grids_only <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_hw_MaySep_fish_grids_only), 
+          aes(fill=Hump_dens_median,
+              col=Hump_dens_median
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0.005,0.04,by=0.0175),limits=c(0.005,0.04),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0.005,0.04,by=0.0175),limits=c(0.005,0.04),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("May-Sep 2013-2014 Median\nHumpback Whale Densities") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_hump_MaySep_fish_grids_only
+
+
+# plot median blue occurrence 
+
+subset_bw_MaySep_fish_grids_only <- x.blue.median %>% 
+  #select season to map 
+  filter(season == "2013-2014") 
+
+map_blue_MaySep_fish_grids_only <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_bw_MaySep_fish_grids_only), 
+          aes(fill=Blue_dens_median,
+              col=Blue_dens_median
+          )
+  ) +
+  # facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.028,0.85,by=0.411),limits=c(0.028,0.85),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.028,0.85,by=0.411),limits=c(0.028,0.85),oob=squish) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  ggtitle("May-Sep 2013-2014 Median\nBlue Whale Occurrence") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue_MaySep_fish_grids_only 
+
+
+# plot blues and humps together
+png(paste0(path_figures, "/map_median_blue_hump_MaySep_2013-2014_fish_grids_only_consistent_legend.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump_MaySep_fish_grids_only,
+          map_blue_MaySep_fish_grids_only,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
