@@ -911,7 +911,7 @@ invisible(dev.off())
 #-------------------------------------------------------------------------------------------
 
 # doing plots to show means for May-Sep period for each season
-
+## I THINK THIS IS WRONG, SEE LATER FOR A DIFFERENT ATTEMPT THAT IS PROBABLY CORRECT
 dens_hump_crab_season_MaySep <- risk_hump_crab_season_v2 %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
@@ -1150,6 +1150,120 @@ ggarrange(ts_hump_risk_MaySep,
 )
 invisible(dev.off())
 #these plots are filtered to be only in grid cells that had some fishing between 2013-2020
+
+
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+# I think the correct way of doing plots to show means for May-Sep period for each season
+# is to not use the risk df, but the more original whale df filtered to fishing grids
+# x.hump_WA and x.blue_WA --  otherwise there has already been various averaging etc...
+
+x.hump_WA_crab_season <- x.hump_WA %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.hump_WA_crab_season_v2 <- x.hump_WA_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+x.blue_WA_crab_season <- x.blue_WA %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.blue_WA_crab_season_v2 <- x.blue_WA_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+#for some reason median() command wasn't working properly at one point...
+x.hump.median <- x.hump_WA_crab_season_v2 %>% 
+  filter(is_May_Sep == 'Y') %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season) %>% 
+  summarise(
+    Hump_dens_mean = mean(Humpback_dens_mean),
+    Hump_dens_median = median(Humpback_dens_mean, na.rm=TRUE)) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+
+x.blue.median <- x.blue_WA_crab_season_v2 %>%
+  filter(is_May_Sep == 'Y') %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season) %>%
+  summarise(
+    Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE)) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+
+
+ts_hump_dens_MaySep <- ggplot() +
+  geom_point(data = x.hump.median, aes(x = season, y = Hump_dens_mean, group = 1), size=4) +
+  geom_line(data = x.hump.median, aes(x = season, y = Hump_dens_mean, group = 1)) +
+  geom_point(data = x.hump.median, aes(x = season, y = Hump_dens_median, group = 1), color = "darkred", size=4) +
+  geom_line(data = x.hump.median, aes(x = season, y = Hump_dens_median, group = 1), color = "darkred", linetype="twodash") +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Humpback Whale Density\n(mean and median) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_dens_MaySep
+
+ts_blue_occur_MaySep <- ggplot() +
+  geom_point(data = x.blue.median, aes(x = season, y = Blue_dens_mean, group = 1), size=4) +
+  geom_line(data = x.blue.median, aes(x = season, y = Blue_dens_mean, group = 1)) +
+  geom_point(data = x.blue.median, aes(x = season, y = Blue_dens_median, group = 1), color = "darkred", size=4) +
+  geom_line(data = x.blue.median, aes(x = season, y = Blue_dens_median, group = 1), color = "darkred", linetype="twodash") +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Blue Whale Density\n(mean) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_occur_MaySep
+
+# plot blues and humps together
+png(paste0(path_figures, "/ts_mean_and_median_blue_occur_hump_dens_2013_2020_by crab season_MaySep only_WA fishing grids only.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_dens_MaySep,
+          ts_blue_occur_MaySep,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+#these plots are filtered to be only in grid cells that had some fishing between 2013-2020
+
 
 
 
