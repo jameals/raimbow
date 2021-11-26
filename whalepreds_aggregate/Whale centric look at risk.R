@@ -663,7 +663,9 @@ glimpse(summary_90th_HW_habitat_fishing)
 #PLOT -- good whale habitat defined each season at a time
 ts_fishing_in_90th_hw_habitat_a <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+  geom_point(aes(y = trapdens_mean, group = 1), color = "darkred", size=2) + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
   ylab("Trap density") + 
   xlab("Season") +
   ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined one season at a time)") +
@@ -683,7 +685,9 @@ ts_fishing_in_90th_hw_habitat_a
 
 ts_fishing_in_90th_hw_habitat_b <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_point(aes(y = tottraps_mean, group = 1), color = "steelblue", size=2) + 
   geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  geom_point(aes(y = tottraps_median, group = 1), color = "steelblue", size=2) + 
   ylab("Total traps") + 
   xlab("Season") +
   ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined one season at a time)") +
@@ -702,8 +706,8 @@ ts_fishing_in_90th_hw_habitat_b <- ggplot(summary_90th_HW_habitat_fishing, aes(x
 ts_fishing_in_90th_hw_habitat_b
 
 png(paste0(path_figures, "/test_ts_fishing_in_90th_hw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_95th_hw_habitat_a,
-          ts_fishing_in_95th_hw_habitat_b,
+ggarrange(ts_fishing_in_90th_hw_habitat_a,
+          ts_fishing_in_90th_hw_habitat_b,
           ncol=2,
           nrow=1,
           legend="top",
