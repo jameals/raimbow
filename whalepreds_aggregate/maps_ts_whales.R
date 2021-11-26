@@ -1,3 +1,7 @@
+
+
+#-----------------------------------------------------------------------------------
+
 library(tidyverse)
 library(here)
 library(lubridate)
@@ -7,38 +11,45 @@ library(rgeos)
 library(viridis)
 library(ggpubr)
 
+#-----------------------------------------------------------------------------------
+
 # set some paths
+# Jameal
 path.grid.5km <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/5x5 km grid shapefile/five_km_grid_polys_geo.shp"
 path.grid.5km.lno <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/Grid_5km_landerased.rds"
 path.grid.depth <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/5x5 Grid/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 #Leena:
 path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
-#I keep having issues trying to load Grid_5km_landerased.rds. the readRDS() command later just gives error: Error in readRDS(file) : unknown input format
-#I had this issue with some of the other whale coding files
-#The only way around I've found is this:
-#path.save2 <- "E:/Leena/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.RDATA"
-#load(path.save2)
-#after re-downloading it from Google Drive I think it is now working
 path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
 path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 
 # should be all outputs through july 2019 overlayed on 5km grid (i.e., not subset to DCRB fishing cells)
+# Jameal
 path.hump <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Humpback whale data/Forney et al./Humpback_5km_long_monthly.rds"
 path.blue <- "/Users/jameal.samhouri/Documents/RAIMBOWT/Processed Data/Samhouri et al. whales risk/Input_Data/Blue whale data/Overlay on 5km Grid/BlueWhale_5km_long_monthly.rds"
+
 #Leena:
+#HW data 2009-July 2019
 #path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
+#New hw data pull 2009 to 2020
+path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
+#bw 2009-Jul 2019
 path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
 #New bw data pull Aug 2019 to Sep 2021
 path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
-#New hw data pull 2009 to 2020
-path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 
 
 # where to put outputs
+# Jameal
 path_figures <- "/Users/jameal.samhouri/Dropbox/Projects/In progress/RAIMBOWT/raimbow/whalepreds_aggregate/figures"
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+
+# Leena:
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+
+#-----------------------------------------------------------------------------------
 
 
 # load the data
@@ -121,7 +132,7 @@ x.whale <- full_join(x.hump_2009_2020, x.blue.all,
 
 
 # calculate median whale values for full time period
-
+# note the hw data goes to Sep 2020 while bw data goes up to June 2021
 x.whale.median <- x.whale %>%
   group_by(GRID5KM_ID, area_km_lno) %>%
   summarise(
@@ -189,7 +200,7 @@ map_blue <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("2009-2019 Median\nBlue Whale Occurrence") +
+  ggtitle("2009-2021 Median\nBlue Whale Occurrence") +
   coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -242,7 +253,7 @@ x.whale_crab_season_v2 <- x.whale_crab_season %>%
 x.whale_crab_season_v2 <-  x.whale_crab_season_v2 %>% filter(GRID5KM_ID %in% grid.studyarea.id_WA)
 x.whale_crab_season_v2 <- x.whale_crab_season_v2 %>% filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
 
-# plot annual mean humpback densities
+# plot annual mean humpback densities across all grid cells
 ts_hump <- ggplot(
   #data = x.whale %>% 
     #or if want to work in crab_season rather than calendar year, read in the following instead
@@ -329,7 +340,7 @@ ts_blue <- ggplot(
 ts_blue
 
 # plot blues and humps together
-png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019_BY CRAB SEASON_only WA grids with fishing.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_mean_blue_hump_2009_2019_BY CRAB SEASON_only WA grids with fishing_across_all_season.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_hump,
           ts_blue,
           ncol=1,
@@ -343,7 +354,8 @@ invisible(dev.off())
 
 
 #--------------------------------------------
-#x.hump_WA
+
+#x.hump_WA -- mean hump dens by year_month
 
 xlabels <- sort(unique(x.whale$year_month))
 xlabels[seq(2, length(xlabels), 2)] <- ""
@@ -424,7 +436,7 @@ ts_blue2
 #x.blue_WA 
 
 
-# make avg value for traps for each yr month
+# get avg traps dens per grid cell for each yr month
 x.fish_WA2 <- x.fish_WA %>%
   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
   summarise( 
@@ -453,7 +465,7 @@ df2 <- df2 %>%
 x.fish_WA4 <- rbind(df1,df2)
 
 
-# join the whale and fishing data
+# join the whale and fishing data by year_month
 joined_df_hump <- x.fish_WA4 %>%
   left_join(x.hump_WA,by=c("year_month","GRID5KM_ID"))
 
@@ -579,7 +591,7 @@ ts_blue_risk <- ggplot(
 ts_blue_risk
 
 # plot blues and humps together
-png(paste0(path_figures, "/ts_mean_blue_hump_RISK_2013_2020_BY CRAB SEASON.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_mean_blue_hump_RISK_2013_2020_BY CRAB SEASON_across_all_season.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_hump_risk,
           ts_blue_risk,
           ncol=1,
@@ -594,8 +606,8 @@ invisible(dev.off())
 
 
 #-------------------------------------------------------------------------------------
-#if want to look at RISK at season_month level
 
+#if want to look at RISK at season_month level
 
 risk_hump_crab_season_month <- risk_hump_crab_season_v2 %>% 
 mutate(season_month = factor(paste0(season,"_",month_name))) %>%  
@@ -830,6 +842,7 @@ invisible(dev.off())
 
 
 #-------------------------------------------------------------------------------------------
+
 #plot mean trap density on a similar plot
 # x.fish_WA
 
@@ -949,7 +962,7 @@ ts_hump_dens_MaySep
 
 
 
-# plot May-Sep mean blue whale risk
+# plot May-Sep mean blue whale occurrence
 occur_blue_crab_season_MaySep <- risk_blue_crab_season_v2 %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
