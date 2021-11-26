@@ -130,8 +130,19 @@ percent_pots_outisde_bw_domain <-  bw_log_joined_v2 %>%
   ) %>% 
   mutate(percent_pots_outisde = (n_outise_domain/n_records)*100)
 
+#% outside by season and May-Sep
+percent_pots_outisde_bw_domain <-  bw_log_joined_v2 %>% 
+  mutate(is_May_Sep = 
+           ifelse(m %in% c('May', 'June', 'July', 'August', 'September')
+                  ,'Y', 'N')) %>% 
+  group_by(season, is_May_Sep) %>% 
+  summarise(n_records = n(),
+            n_outise_domain = length(bw_domain[bw_domain == "outside_bw_domain"])
+  ) %>% 
+  mutate(percent_pots_outisde = (n_outise_domain/n_records)*100)
 
-#if want to work on 'stringline'/logbook entry level
+
+#if want to work on 'stringline'/logbook entry level --- UNSURE IF THIS IS CORRECT
 bw_log_joined_strings <-  bw_log_joined_v2 %>% distinct(SetID, .keep_all = TRUE)
 
 percent_strings_outisde_bw_domain <-  bw_log_joined_strings %>% 
