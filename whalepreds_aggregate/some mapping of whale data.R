@@ -132,7 +132,7 @@ x.whale.median <- x.whale_crab_season_v2 %>%
   left_join(grid.5km.lno)
 glimpse(x.whale.median)
 
-# calculate median whale values across all of 2013-2020
+# calculate median whale values across all of 2013-2020 ##NOTE THAT RIGHT NOW THE CODE ISN'T ACTUALLY FILTERING FOR 2013-2020
 # x.whale.median.2013_2020 <- x.whale_crab_season_v2 %>%
 #   group_by(is_May_Sep, GRID5KM_ID, area_km_lno) %>%
 #   summarise(
