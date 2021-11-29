@@ -719,24 +719,26 @@ invisible(dev.off())
 
 
 #For BW -- did bw 95th habitat completely miss fishing effort in 2015-16?? --> yes it did!
-summary_90th_BW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
-  filter(BW_is_90th_or_higher == 'Y') %>% 
+summary_95th_BW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
+  filter(BW_is_95th_or_higher == 'Y') %>% 
   group_by(season) %>% 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
             trapdens_median = median(mean_trapdens, na.rm=TRUE),
             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             tottraps_median = median(mean_tottraps, na.rm=TRUE)
   )
-glimpse(summary_90th_BW_habitat_fishing)  
+glimpse(summary_95th_BW_habitat_fishing)  
 
 
 #PLOT
-ts_fishing_in_90th_bw_habitat_a <- ggplot(summary_90th_BW_habitat_fishing, aes(x=season)) + 
-  geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+ts_fishing_in_95th_bw_habitat_a <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
+  geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") +
+  geom_point(aes(y = trapdens_mean, group = 1), color = "darkred", size=2) + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
   ylab("Trap density") + 
   xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (90th) BW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -749,14 +751,16 @@ ts_fishing_in_90th_bw_habitat_a <- ggplot(summary_90th_BW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_90th_bw_habitat_a
+ts_fishing_in_95th_bw_habitat_a
 
-ts_fishing_in_90th_bw_habitat_b <- ggplot(summary_90th_BW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_95th_bw_habitat_b <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_point(aes(y = tottraps_mean, group = 1), color = "steelblue", size=2) + 
   geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  geom_point(aes(y = tottraps_median, group = 1), color = "steelblue", size=2) + 
   ylab("Total traps") + 
   xlab("Season") +
-  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (90th) BW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -769,11 +773,11 @@ ts_fishing_in_90th_bw_habitat_b <- ggplot(summary_90th_BW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_90th_bw_habitat_b
+ts_fishing_in_95th_bw_habitat_b
 
-png(paste0(path_figures, "/test_ts_fishing_in_90th_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_90th_bw_habitat_a,
-          ts_fishing_in_90th_bw_habitat_b,
+png(paste0(path_figures, "/test_ts_fishing_in_95th_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_95th_bw_habitat_a,
+          ts_fishing_in_95th_bw_habitat_b,
           ncol=2,
           nrow=1,
           legend="top",
@@ -977,18 +981,18 @@ glimpse(x.fish_WA_MaySep)
 #Maybe instead need to find unique grid cells in
 x.whale.all2013_2020_MaySep_good_habitats #where HW_is_90th_or_higher etc == 'Y'
 #and then filter the fishery data to those grid cells??
-HW_habitat_95th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
-  filter(HW_is_95th_or_higher == 'Y') 
-grid_HW_habitat_95th <- sort(unique(HW_habitat_95th$GRID5KM_ID))
-summary_95th_HW_habitat_fishing <- x.fish_WA_MaySep %>% 
-  filter(GRID5KM_ID %in% grid_HW_habitat_95th) %>% 
+HW_habitat_90th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  filter(HW_is_90th_or_higher == 'Y') 
+grid_HW_habitat_90th <- sort(unique(HW_habitat_90th$GRID5KM_ID))
+summary_90th_HW_habitat_fishing <- x.fish_WA_MaySep %>% 
+  filter(GRID5KM_ID %in% grid_HW_habitat_90th) %>% 
 group_by(season) %>% 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
             trapdens_median = median(mean_trapdens, na.rm=TRUE),
             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             tottraps_median = median(mean_tottraps, na.rm=TRUE)
   )
-glimpse(summary_95th_HW_habitat_fishing)
+glimpse(summary_90th_HW_habitat_fishing)
 
 
 # x.whale.all2013_2020_MaySep_good_habitats_fishing <- x.whale.all2013_2020_MaySep_good_habitats_repeated %>% 
@@ -1008,12 +1012,14 @@ glimpse(summary_95th_HW_habitat_fishing)
 
 
 #PLOT -- good whale habitat defined across 2013-2020
-ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_hw_habitat_a <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+  geom_point(aes(y = trapdens_mean, group = 1), color = "darkred", size=2) + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
   ylab("Trap density") + 
   xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined across 2013-2020)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -1026,14 +1032,16 @@ ts_fishing_in_95th_hw_habitat_a <- ggplot(summary_95th_HW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_hw_habitat_a
+ts_fishing_in_90th_hw_habitat_a
 
-ts_fishing_in_95th_hw_habitat_b <- ggplot(summary_95th_HW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_hw_habitat_b <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_point(aes(y = tottraps_mean, group = 1), color = "steelblue", size=2) + 
   geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  geom_point(aes(y = tottraps_median, group = 1), color = "steelblue", size=2) + 
   ylab("Total traps") + 
   xlab("Season") +
-  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) HW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (90th) HW habitat \n(defined across 2013-2020)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -1046,11 +1054,11 @@ ts_fishing_in_95th_hw_habitat_b <- ggplot(summary_95th_HW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_hw_habitat_b
+ts_fishing_in_90th_hw_habitat_b
 
-png(paste0(path_figures, "/test_ts_fishing_in_95th_hw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_95th_hw_habitat_a,
-          ts_fishing_in_95th_hw_habitat_b,
+png(paste0(path_figures, "/test_ts_fishing_in_90th_hw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_90th_hw_habitat_a,
+          ts_fishing_in_90th_hw_habitat_b,
           ncol=2,
           nrow=1,
           legend="top",
@@ -1072,26 +1080,28 @@ invisible(dev.off())
 #   )
 # glimpse(summary_95th_BW_habitat_fishing)  
 
-BW_habitat_95th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
-  filter(BW_is_95th_or_higher == 'Y') 
-grid_BW_habitat_95th <- sort(unique(BW_habitat_95th$GRID5KM_ID))
-summary_95th_BW_habitat_fishing <- x.fish_WA_MaySep %>% 
-  filter(GRID5KM_ID %in% grid_BW_habitat_95th) %>% 
+BW_habitat_90th <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  filter(BW_is_90th_or_higher == 'Y') 
+grid_BW_habitat_90th <- sort(unique(BW_habitat_90th$GRID5KM_ID))
+summary_90th_BW_habitat_fishing <- x.fish_WA_MaySep %>% 
+  filter(GRID5KM_ID %in% grid_BW_habitat_90th) %>% 
   group_by(season) %>% 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
             trapdens_median = median(mean_trapdens, na.rm=TRUE),
             tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             tottraps_median = median(mean_tottraps, na.rm=TRUE)
   )
-glimpse(summary_95th_BW_habitat_fishing)
+glimpse(summary_90th_BW_habitat_fishing)
 
 #PLOT
-ts_fishing_in_95th_bw_habitat_a <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_bw_habitat_a <- ggplot(summary_90th_BW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = trapdens_mean, group = 1), color = "darkred") + 
+  geom_point(aes(y = trapdens_mean, group = 1), color = "darkred", size=2) + 
   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
   ylab("Trap density") + 
   xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (90th) BW habitat \n(defined across 2013-2020)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -1104,14 +1114,16 @@ ts_fishing_in_95th_bw_habitat_a <- ggplot(summary_95th_BW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_bw_habitat_a
+ts_fishing_in_90th_bw_habitat_a
 
-ts_fishing_in_95th_bw_habitat_b <- ggplot(summary_95th_BW_habitat_fishing, aes(x=season)) + 
+ts_fishing_in_90th_bw_habitat_b <- ggplot(summary_90th_BW_habitat_fishing, aes(x=season)) + 
   geom_line(aes(y = tottraps_mean, group = 1), color="steelblue") +
+  geom_point(aes(y = tottraps_mean, group = 1), color = "steelblue", size=2) + 
   geom_line(aes(y = tottraps_median, group = 1), color="steelblue", linetype="twodash") +
+  geom_point(aes(y = tottraps_median, group = 1), color = "steelblue", size=2) + 
   ylab("Total traps") + 
   xlab("Season") +
-  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (95th) BW habitat \n(defined one season at a time)") +
+  ggtitle("May-Sep total traps \nmean = solid line, median = dashed line \nin good (90th) BW habitat \n(defined across 2013-2020)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -1124,11 +1136,11 @@ ts_fishing_in_95th_bw_habitat_b <- ggplot(summary_95th_BW_habitat_fishing, aes(x
         strip.background = element_blank(),
         strip.placement = "left"
   )
-ts_fishing_in_95th_bw_habitat_b
+ts_fishing_in_90th_bw_habitat_b
 
-png(paste0(path_figures, "/test_ts_fishing_in_95th_bw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_95th_bw_habitat_a,
-          ts_fishing_in_95th_bw_habitat_b,
+png(paste0(path_figures, "/test_ts_fishing_in_90th_bw_habitat_MaySep_all_of_2013_2020_best_habitat.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_90th_bw_habitat_a,
+          ts_fishing_in_90th_bw_habitat_b,
           ncol=2,
           nrow=1,
           legend="top",
