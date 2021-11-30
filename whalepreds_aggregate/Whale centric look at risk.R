@@ -1331,8 +1331,118 @@ summary_percent_footprint_is_good_bw_hab_all_seasons <-
 
 
 
+#-------------
+# get summary % of fishery footprint that overlaps with good whale habitat (defined across all of 2013-2020)
+
+#For HW
+#select a season
+grid.5km.fish_WA_MaySep_grids_hw_2019_2020 <- grid.5km.fish_WA_MaySep_grids %>% 
+  select(GRID5KM_ID, geometry, season_2019_2020) %>% 
+  filter(season_2019_2020 == 1)
+
+#'good whale habitats' (90th or 95th percentiles) across all of 2013-2020
+#glimpse(x.whale.all2013_2020_MaySep_good_habitats)
+#good whale habitat is always the same, no need to select a seasons
+good_hw_hab_2019_2020 <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  #and get rid of excess columns
+  select(GRID5KM_ID, HW_is_90th_or_higher, HW_is_95th_or_higher)
+glimpse(good_hw_hab_2019_2020)
 
 
+#join good whale habitat info to fishery footprint
+footprint_and_good_hw_hab_2019_2020 <- grid.5km.fish_WA_MaySep_grids_hw_2019_2020 %>% 
+  left_join(good_hw_hab_2019_2020, by = "GRID5KM_ID")
+glimpse(footprint_and_good_hw_hab_2019_2020)
+
+
+#summary % of how much season's footprint is good whale habitat
+#HW only because BW domain cuts short....
+summary_percent_footprint_is_good_hw_hab_2019_2020 <- footprint_and_good_hw_hab_2019_2020 %>% 
+  st_drop_geometry() %>% 
+  summarise(n_grids_footprint = n(),
+            n_grids_HW_90th = length(na.omit(HW_is_90th_or_higher[HW_is_90th_or_higher=='Y'])),
+            n_grids_HW_95th = length(na.omit(HW_is_95th_or_higher[HW_is_95th_or_higher=='Y']))
+  ) %>% 
+  mutate(percent_HW_90th = (n_grids_HW_90th/n_grids_footprint)*100,
+         percent_HW_95th = (n_grids_HW_95th/n_grids_footprint)*100
+  ) %>% 
+  mutate(season = '2019-2020') %>% 
+  select(season, percent_HW_90th, percent_HW_95th)
+
+
+summary_percent_footprint_is_good_hw_hab_all_seasons <- 
+  rbind(summary_percent_footprint_is_good_hw_hab_2013_2014,
+        summary_percent_footprint_is_good_hw_hab_2014_2015,
+        summary_percent_footprint_is_good_hw_hab_2015_2016,
+        summary_percent_footprint_is_good_hw_hab_2016_2017,
+        summary_percent_footprint_is_good_hw_hab_2017_2018,
+        summary_percent_footprint_is_good_hw_hab_2018_2019,
+        summary_percent_footprint_is_good_hw_hab_2019_2020
+  )
+
+#-------------
+#for BW - the 'total footprint' need to be adjusted as bW domain doesn't cover it all
+# Bring in bw model output, this may be in Projects\NOAA data\maps_ts_whales\data
+bw_5m_long_monthly <- read_rds(here::here('wdfw', 'data','BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds'))
+# bw output has all grid cells appearing multiple times (each year_month combo)
+# but only need list of grid cells
+distinct_bw_grids <- bw_5m_long_monthly %>% distinct(GRID5KM_ID) 
+#and add an extra column denoting that this is bw domain
+distinct_bw_grids$bw_domain <- "bw_domain"
+
+# join the dfs based on GRID5KM_ID -- the bw extent is large, and the only time logbook data would not be 
+# inside the bw domain, is at the N end
+bw_log_joined <- left_join(grid.5km.fish_WA_MaySep_grids, distinct_bw_grids, by = c("GRID5KM_ID"))
+
+#If 'bw_domain' is NA, it means the simulated pot/logbook records is outside bw domain
+bw_log_joined_v2 <- bw_log_joined %>% 
+  mutate(bw_domain=ifelse(is.na(bw_domain), "outside_bw_domain", "bw_domain")) %>% 
+  #instances where labelled as outside_bw_domain: grids along klipsan beach (not full grid cells), 
+  #inside ports/bays, AND outside of N boundary of bw domain <-- this is the only one we want to keep as 'outside'
+  mutate(bw_domain=ifelse(LATITUDE<47.2, "bw_domain", bw_domain)) %>% 
+  filter(bw_domain == 'bw_domain')
+
+
+grid.5km.fish_WA_MaySep_grids_bw_2019_2020 <- bw_log_joined_v2 %>% 
+  select(GRID5KM_ID, geometry, season_2019_2020) %>% 
+  filter(season_2019_2020 == 1)
+
+#'good whale habitats' (90th or 95th percentiles) across all of 2013-2020
+#glimpse(x.whale.all2013_2020_MaySep_good_habitats)
+#good whale habitat is always the same, no need to select a seasons
+good_bw_hab_2019_2020 <- x.whale.all2013_2020_MaySep_good_habitats %>% 
+  #and get rid of excess columns
+  select(GRID5KM_ID, BW_is_90th_or_higher, BW_is_95th_or_higher)
+glimpse(good_bw_hab_2019_2020)
+
+#join good whale habitat info to fishery footprint
+footprint_and_good_bw_hab_2019_2020 <- grid.5km.fish_WA_MaySep_grids_bw_2019_2020 %>% 
+  left_join(good_bw_hab_2019_2020, by = "GRID5KM_ID")
+glimpse(footprint_and_good_bw_hab_2019_2020)
+
+#summary % of how much season's footprint is good whale habitat
+summary_percent_footprint_is_good_bw_hab_2019_2020 <- footprint_and_good_bw_hab_2019_2020 %>% 
+  st_drop_geometry() %>% 
+  summarise(n_grids_footprint = n(),
+            n_grids_BW_90th = length(na.omit(BW_is_90th_or_higher[BW_is_90th_or_higher=='Y'])), 
+            n_grids_BW_95th = length(na.omit(BW_is_95th_or_higher[BW_is_95th_or_higher=='Y']))
+  ) %>% 
+  mutate(percent_BW_90th = (n_grids_BW_90th/n_grids_footprint)*100,
+         percent_BW_95th = (n_grids_BW_95th/n_grids_footprint)*100
+  ) %>% 
+  mutate(season = '2019-2020') %>% 
+  select(season, percent_BW_90th, percent_BW_95th)
+
+
+summary_percent_footprint_is_good_bw_hab_all_seasons <- 
+  rbind(summary_percent_footprint_is_good_bw_hab_2013_2014,
+        summary_percent_footprint_is_good_bw_hab_2014_2015,
+        summary_percent_footprint_is_good_bw_hab_2015_2016,
+        summary_percent_footprint_is_good_bw_hab_2016_2017,
+        summary_percent_footprint_is_good_bw_hab_2017_2018,
+        summary_percent_footprint_is_good_bw_hab_2018_2019,
+        summary_percent_footprint_is_good_bw_hab_2019_2020
+  )
 
 
 
