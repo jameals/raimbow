@@ -766,5 +766,39 @@ plot_prop_grids_lost
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
 
+plotting_adj_summtraps_MaySep <- adj_summtraps_MaySep %>% 
+  group_by(season) %>%
+  #summarise across all grid cells in given season
+  summarise(
+    mean_M2_trapdens = mean(M2_trapdens, na.rm=TRUE),
+    median_M2_trapdens = median(M2_trapdens, na.rm=TRUE)
+  ) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+glimpse(plotting_adj_summtraps_MaySep)
 
+ts_trapdens_MaySep <- ggplot() +
+  geom_point(data = plotting_adj_summtraps_MaySep, aes(x = season, y = mean_M2_trapdens , group = 1), size=4) +
+  geom_line(data = plotting_adj_summtraps_MaySep, aes(x = season, y = mean_M2_trapdens , group = 1)) +
+  geom_point(data = plotting_adj_summtraps_MaySep, aes(x = season, y = median_M2_trapdens, group = 1), color = "darkred", size=4) +
+  geom_line(data = plotting_adj_summtraps_MaySep, aes(x = season, y = median_M2_trapdens, group = 1), color = "darkred", linetype="twodash") +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Trap density May-Sep") + 
+  xlab("Season") +
+  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_trapdens_MaySep
+#ggsave(here('wdfw','plots',paste0('ts_meanANDmedian_trapdens_MaySep','.png')),ts_trapdens_MaySep,w=12,h=10)
 
