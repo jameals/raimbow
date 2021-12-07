@@ -1034,6 +1034,7 @@ invisible(dev.off())
 #-------------------------------------------------------------------------------------------
 
 # doing plots to show mean RISK for May-Sep period for each season
+# and another for Jul-Sep period for each season
 
 risk_hump_crab_season_MaySep <- risk_hump_crab_season_v2 %>% 
   mutate(is_May_Sep = 
@@ -1050,21 +1051,29 @@ risk_hump_crab_season_MaySep <- risk_hump_crab_season_v2 %>%
   arrange(season)
 glimpse(risk_hump_crab_season_MaySep)
 
+risk_hump_crab_season_JulSep <- risk_hump_crab_season_v2 %>% 
+  mutate(is_Jul_Sep = 
+           ifelse(month_name %in% c('July', 'August', 'September')
+                  ,'Y', 'N')) %>% 
+  filter(is_Jul_Sep == "Y") %>%
+  group_by(season) %>%
+  #summarise across all grid cells in given season_month
+  summarise(
+    hump_risk_M2_mean = mean(hump_risk_M2, na.rm=TRUE),
+    hump_risk_M2_median = median(hump_risk_M2, na.rm=TRUE)
+  ) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+glimpse(risk_hump_crab_season_JulSep)
+
 #ordered.ids <- factor(dens_hump_crab_season_MaySep$season, levels=dens_hump_crab_season_MaySep$season)
 
 
-ts_hump_risk_MaySep <- ggplot(
-  data = risk_hump_crab_season_MaySep, 
-  aes(
-    #x = factor(season_month, levels=ordered.ids), 
-    x = season, 
-    y = hump_risk_M2_mean,
-    #y = hump_risk_M2_median,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
+ts_hump_risk_MaySep <- ggplot() +
+  geom_point(data = risk_hump_crab_season_MaySep, aes(x = season, y = hump_risk_M2_mean, group = 1), size=4) +
+  geom_line(data = risk_hump_crab_season_MaySep, aes(x = season, y = hump_risk_M2_mean, group = 1)) +
+  geom_point(data = risk_hump_crab_season_MaySep, aes(x = season, y = hump_risk_M2_median, group = 1), color = "darkred", size=4) +
+  geom_line(data = risk_hump_crab_season_MaySep, aes(x = season, y = hump_risk_M2_median, group = 1), color = "darkred", linetype="twodash") +
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
   ylab("Humpback Whale Risk\n(mean) May-Sep") + 
@@ -1083,6 +1092,28 @@ ts_hump_risk_MaySep <- ggplot(
   )
 ts_hump_risk_MaySep
 
+# ts_hump_risk_JulSep <- ggplot() +
+#  geom_point(data = risk_hump_crab_season_JulSep, aes(x = season, y = hump_risk_M2_mean, group = 1), size=4) +
+#  geom_line(data = risk_hump_crab_season_JulSep, aes(x = season, y = hump_risk_M2_mean, group = 1)) +
+#  geom_point(data = risk_hump_crab_season_JulSep, aes(x = season, y = hump_risk_M2_median, group = 1), color = "darkred", size=4) +
+#  geom_line(data = risk_hump_crab_season_JulSep, aes(x = season, y = hump_risk_M2_median, group = 1), color = "darkred", linetype="twodash") +
+#   #scale_x_continuous(breaks = seq(2010, 2021, 1),
+#   #                   limits = c(2009.5,2021.5)) +
+#   ylab("Humpback Whale Risk\n(mean) Jul-Sep") +
+#   xlab("Season") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_hump_risk_JulSep
 
 
 # plot May-Sep mean blue whale risk
@@ -1101,20 +1132,29 @@ risk_blue_crab_season_MaySep <- risk_blue_crab_season_v2 %>%
   arrange(season)
 glimpse(risk_blue_crab_season_MaySep)
 
+risk_blue_crab_season_JulSep <- risk_blue_crab_season_v2 %>% 
+  mutate(is_Jul_Sep = 
+           ifelse(month_name %in% c('July', 'August', 'September')
+                  ,'Y', 'N')) %>% 
+  filter(is_Jul_Sep == "Y") %>%
+  group_by(season) %>%
+  #summarise across all grid cells in given season_MaySep period
+  summarise(
+    blue_risk_M2_mean = mean(blue_risk_M2 , na.rm=TRUE),
+    blue_risk_M2_median = median(blue_risk_M2 , na.rm=TRUE)
+  ) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+glimpse(risk_blue_crab_season_JulSep)
+
 #ordered.ids <- factor(occur_blue_crab_season_MaySep$season, levels=occur_blue_crab_season_MaySep)
 
 
-ts_blue_risk_MaySep <- ggplot(
-  data = risk_blue_crab_season_MaySep, 
-  aes(
-    x = season,
-    y = blue_risk_M2_mean,
-    #y = blue_risk_M2_median,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
+ts_blue_risk_MaySep <- ggplot() +
+  geom_point(data = risk_blue_crab_season_MaySep, aes(x = season, y = blue_risk_M2_mean, group = 1), size=4) +
+  geom_line(data = risk_blue_crab_season_MaySep, aes(x = season, y = blue_risk_M2_mean, group = 1)) +
+  geom_point(data = risk_blue_crab_season_MaySep, aes(x = season, y = blue_risk_M2_median, group = 1), color = "darkred", size=4) +
+  geom_line(data = risk_blue_crab_season_MaySep, aes(x = season, y = blue_risk_M2_median, group = 1), color = "darkred", linetype="twodash") +
   #scale_x_continuous(breaks = seq(2010, 2019, 1),
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #limits = c(2009.5,2019.5)) +
@@ -1135,6 +1175,30 @@ ts_blue_risk_MaySep <- ggplot(
   )
 ts_blue_risk_MaySep
 
+# ts_blue_risk_JulSep <- ggplot() +
+#  geom_point(data = risk_blue_crab_season_JulSep, aes(x = season, y = blue_risk_M2_mean, group = 1), size=4) +
+#  geom_line(data = risk_blue_crab_season_JulSep, aes(x = season, y = blue_risk_M2_mean, group = 1)) +
+#  geom_point(data = risk_blue_crab_season_JulSep, aes(x = season, y = blue_risk_M2_median, group = 1), color = "darkred", size=4) +
+#  geom_line(data = risk_blue_crab_season_JulSep, aes(x = season, y = blue_risk_M2_median, group = 1), color = "darkred", linetype="twodash") +
+#  #scale_x_continuous(breaks = seq(2010, 2019, 1),
+#   #scale_x_continuous(breaks = seq(2010, 2021, 1),
+#   #limits = c(2009.5,2019.5)) +
+#   #limits = c(2009.5,2020.5)) +
+#   ylab("Blue Whale Risk\n(mean) Jul-Sep") +
+#   xlab("Season") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_blue_risk_JulSep
 
 
 # plot blues and humps together
@@ -1151,6 +1215,17 @@ ggarrange(ts_hump_risk_MaySep,
 invisible(dev.off())
 #these plots are filtered to be only in grid cells that had some fishing between 2013-2020
 
+png(paste0(path_figures, "/ts_mean_blue_hump_risk_2013_2020_by crab season_JulSep only_WA fishing grids only.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_risk_JulSep,
+          ts_blue_risk_JulSep,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 #-----------------------------------------------------------------------------------------
