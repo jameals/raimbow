@@ -126,7 +126,10 @@ glimpse(x.whale_crab_season_v2)
 x.whale.median <- x.whale_crab_season_v2 %>%
   group_by(season, is_May_Sep, GRID5KM_ID, area_km_lno) %>%
   summarise(
+    #mean and median looks to eb the same...?
+    Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
     Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    Blue_occurrence_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
     Blue_occurrence_median = median(Blue_occurrence_mean, na.rm=TRUE)
   ) %>%
   left_join(grid.5km.lno)
@@ -160,7 +163,8 @@ rmap.base <- c(
 #grid5km_bbox <- st_bbox(grid.5km.lno %>% 
 #                          st_as_sf()
 #)
-bbox = c(-127,41,-120,49) 
+#bbox = c(-127,41,-120,49) 
+bbox = c(-130,30,-115,49) 
 
 
 subset_MaySep <- x.whale.median %>% 
@@ -203,8 +207,10 @@ map_hump_MaySep
 
 map_blue_MaySep <- ggplot() + 
   geom_sf(data=sf::st_as_sf(subset_MaySep), 
-          aes(fill=Blue_occurrence_median,
-              col=Blue_occurrence_median
+          #aes(fill=Blue_occurrence_median,
+              #col=Blue_occurrence_median
+          aes(fill=Blue_occurrence_mean,
+              col=Blue_occurrence_mean
           )
   ) +
   # facet_wrap(~time_period, nrow=1) +
