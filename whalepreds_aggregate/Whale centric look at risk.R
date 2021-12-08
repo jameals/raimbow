@@ -134,10 +134,14 @@ glimpse(x.whale_crab_season_v2)
 x.whale.median <- x.whale_crab_season_v2 %>%
   group_by(season, is_May_Sep, GRID5KM_ID, area_km_lno) %>%
   summarise(
+    #mean and median end up being the same...?
+    Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
     Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    Blue_occurrence_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
     Blue_occurrence_median = median(Blue_occurrence_mean, na.rm=TRUE)
   ) %>%
-  inner_join(grid.key_N44)
+ #inner_join(grid.key_N44)
+  inner_join(grid.5km.lno)
 glimpse(x.whale.median)
 
 ##calculate median whale values across all of 2013-2020
@@ -481,6 +485,7 @@ x.whale.mean <- x.whale_crab_season_v2 %>%
     Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
   ) %>%
   inner_join(grid.key_N44)
+  #inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
 glimpse(x.whale.mean)
 
 x.whale.2013_2020_quant <- x.whale.mean %>%
@@ -1551,3 +1556,84 @@ test_map_hw_all_of_2013_2020 <- ggplot() +
         title=element_text(size=16)
   )
 test_map_hw_all_of_2013_2020
+
+
+
+
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+#if good bw habitat is defined as grids where avreage probability of occurrence is >0.75
+# start with df 'x.whale.mean' which is mean value in a grid across May-Sep per seasons
+
+MaySep_good_bw_hab_075_occur <- x.whale.mean %>% 
+  #drop hw as this is bw specific
+  select(-Mean_Humpback_dens) %>% 
+  group_by(season) %>% 
+  mutate(BW_is_075_occur_or_higher = ifelse(Mean_Blue_occurrence > 0.75, 'Y', 'N')
+  ) %>%
+  #inner_join(grid.key_N44)
+  inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
+glimpse(MaySep_good_bw_hab_075_occur)
+
+
+#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
+dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint.rds'))
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-127,30,-115,49) 
+
+
+# plot blue whale
+bw_subset_MaySep <- MaySep_good_bw_hab_075_occur %>% 
+  #select season to map 
+  filter(season == "2019-2020") %>% 
+  filter(!is.na(BW_is_075_occur_or_higher)) %>% 
+  filter(BW_is_075_occur_or_higher == 'Y')
+
+map_blue_MaySep_075_occur <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(bw_subset_MaySep), 
+          aes(fill=BW_is_075_occur_or_higher,
+              col=BW_is_075_occur_or_higher
+          )
+  ) +
+  # facet_wrap(~time_period, nrow=1) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+  #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2019-2020 \ngood BW habitat (>0.75 occurrence) \nwith 2019-2020 May-Sep fishery footprint") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue_MaySep_075_occur
+
+png(paste0(path_figures, "/good_bh_habitat_075_occur_MaySep_2019_2020_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_blue_MaySep_075_occur,
+          ncol=1,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
