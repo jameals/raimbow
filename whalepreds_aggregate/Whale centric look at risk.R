@@ -1664,7 +1664,9 @@ x.whale.all2013_2020_75th_quant <- x.whale.mean_all2013_2020 %>%
   ) 
 glimpse(x.whale.all2013_2020_75th_quant)
 # 0.02466905
-
+# if in the first clump of code above DON't get a mean for each grid across 
+# May-Sep 2013-2020, then 75th percentile value is 0.02408221
+# also the ts plot is slightly different, but overall same story
 
 #apply percentile value to each season
 x.whale.mean_by_season <- x.whale_crab_season_v2 %>%
