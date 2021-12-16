@@ -57,20 +57,27 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 # Read in trap density dataframe 
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
+# there is a second RDS option that goes back a bit further. currently don't have pot tier data to go further back than 2013
+#adj_summtraps <- read_rds(here::here('wdfw','data','Blake VMS and log comparison','adj_summtraps_2012_2020.rds'))
 
 # the df has trap density in a grid cell in a 2-week period
 # so step 1 is to summarise data on the same time steps as Feist et al 2021 Fig 2
-# note that logbook df currently covers 2013-2019 period, so not a perfect overlap with Feist et al 2021 Fig 2
+# note that logbook data doesn't go all the way back to 2010-2011 as Feist et al 2021 Fig 2 (due to pot limit info)
 
 # summarising trap densities on same time step as Feist et al 2021 Fig 2: 
 # average trap density in each grid cell across the chose time period
 # code is modified from script 6 - Making summary maps for May - Sep 15 period
 
 # create a column in df to indicate when data fall in the time steps used in Feist et al 2021 Fig 2
-# Note that October and November data may exist in VMS but not in logbooks
+# Note that October and November data could exist in VMS but not in logbooks
 adj_summtraps_intervals <- adj_summtraps %>% 
   mutate(
   month_interval = case_when(
+    #the first 3 can be created if using input data 2012-2020
+    season_month == "2012-2013_December" | season_month == "2012-2013_January" | season_month == "2012-2013_February" ~ "12_13 11-02",
+    season_month == "2012-2013_March" | season_month == "2012-2013_April" | season_month == "2012-2013_May" | season_month == "2012-2013_June" ~ "2013 03-06",
+    season_month == "2012-2013_July" | season_month == "2012-2013_August" | season_month == "2012-2013_September" ~ "2013 07-10",    
+    #
     season_month == "2013-2014_December" | season_month == "2013-2014_January" | season_month == "2013-2014_February" ~ "13_14 11-02",
     season_month == "2013-2014_March" | season_month == "2013-2014_April" | season_month == "2013-2014_May" | season_month == "2013-2014_June" ~ "2014 03-06",
     season_month == "2013-2014_July" | season_month == "2013-2014_August" | season_month == "2013-2014_September" ~ "2014 07-10",
@@ -107,6 +114,8 @@ test <- avg_trap_dens_intervals %>%
 # this is the correct way of figuring if more than 3 unique vessels were in a grid cell in a given time period
 # bring in logbook data as points, not summarised by grid cell
 traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+#traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2009_2020.rds'))
+
 
 # for each point record assign the month_interval as per Feist et al Fig 2
 logs_all_x <- traps_g_all_logs %>% 
@@ -117,6 +126,11 @@ logs_all_x <- traps_g_all_logs %>%
   mutate(season_month = paste0(season,"_",m)) %>% 
   mutate(
     month_interval = case_when(
+      #the first 3 can be created if using input data 2012-2020, no permit tier info past 2013
+      season_month == "2012-2013_December" | season_month == "2012-2013_January" | season_month == "2012-2013_February" ~ "12_13 11-02",
+      season_month == "2012-2013_March" | season_month == "2012-2013_April" | season_month == "2012-2013_May" | season_month == "2012-2013_June" ~ "2013 03-06",
+      season_month == "2012-2013_July" | season_month == "2012-2013_August" | season_month == "2012-2013_September" ~ "2013 07-10",    
+      #
       season_month == "2013-2014_December" | season_month == "2013-2014_January" | season_month == "2013-2014_February" ~ "13_14 11-02",
       season_month == "2013-2014_March" | season_month == "2013-2014_April" | season_month == "2013-2014_May" | season_month == "2013-2014_June" ~ "2014 03-06",
       season_month == "2013-2014_July" | season_month == "2013-2014_August" | season_month == "2013-2014_September" ~ "2014 07-10",
@@ -140,7 +154,7 @@ logs_all_nvessels <- logs_all_x %>%
 avg_trap_dens_intervals %<>%
   left_join(logs_all_nvessels,by=c("month_interval","GRID5KM_ID", "grd_x", "grd_y"))
 
-# If fewer than 3 unique vessels in a grid, that should be removed
+# If fewer than 3 unique vessels in a grid, that should be labelled, and removed 
 non_conf_avg_trap_dens_intervals_2 <- avg_trap_dens_intervals %>%
   mutate(is_confidential=ifelse(nvessels<3,T,F)) 
 non_conf_avg_trap_dens_intervals_3 <-  non_conf_avg_trap_dens_intervals_2 %>%
@@ -150,7 +164,7 @@ non_conf_avg_trap_dens_intervals_3 <-  non_conf_avg_trap_dens_intervals_2 %>%
 non_conf_avg_trap_dens_intervals_3 <-  non_conf_avg_trap_dens_intervals_3 %>%
   select(-c(sum_M2_trapdens, number_obs, nvessels, is_confidential))
   
-#write_csv(non_conf_avg_trap_dens_intervals_3,here::here('wdfw', 'data','Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_long.csv"))
+#write_csv(non_conf_avg_trap_dens_intervals_3,here::here('wdfw', 'data','Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_long_20211216.csv"))
 
 #number of grid cells in use/visible if using non-confidential data
 test <- non_conf_avg_trap_dens_intervals_3 %>% 
@@ -165,7 +179,7 @@ non_conf_avg_trap_dens_intervals_3_wide <- non_conf_avg_trap_dens_intervals_3 %>
               values_from = c(mean_M2_trapdens)
   ) 
 
-#write_csv(non_conf_avg_trap_dens_intervals_3_wide,here::here('wdfw', 'data', 'Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_wide.csv"))
+#write_csv(non_conf_avg_trap_dens_intervals_3_wide,here::here('wdfw', 'data', 'Blake VMS and log comparison', "Dungeness 4mon 5km WA Logbook_avg trap dens_NON_CONFIDENTIAL_wide_20211216.csv"))
 
 
 #if try to look at % of pots lost, instead of grid cells ---- unsure if this is correct, might be double counting things...
@@ -202,7 +216,7 @@ mean(joined3$prop_confidential_pots) #0.0715702, i.e. 7% pots lost on average
 #average 21% pots lost on monthly step 2013-2020
 
 #----------------------------------------------------------------------------------------------
-# # map 
+# # map
 # # Figure out good trap density scale
 # non_conf_avg_trap_dens_intervals_3 %>%
 #   ggplot()+
@@ -211,7 +225,7 @@ mean(joined3$prop_confidential_pots) #0.0715702, i.e. 7% pots lost on average
 # 
 # # change input file if want to make non-confidential maps (currently NOT showing confidential data)
 # # note that in an earlier iteration normalised data, hence below can see naming convention _normalised
-#
+# 
 # map_log_vms <- function(avg_trap_dens_adj_summtraps_intervals_normalised,saveplot=TRUE){
 # 
 #   # labels for plot titles
@@ -241,7 +255,7 @@ mean(joined3$prop_confidential_pots) #0.0715702, i.e. 7% pots lost on average
 # }
 # 
 # # Loop and save maps
-# # change input file here if want to make non-confidential maps 
+# # change input file here if want to make non-confidential maps
 # # currently using "non_conf_avg_trap_dens_intervals_3" here to make non-confidential maps (grids with < 3 vessels not shown)
 # tm <- proc.time()
 # all_maps <- purrr::map(unique(non_conf_avg_trap_dens_intervals_3$month_interval),function(x){
