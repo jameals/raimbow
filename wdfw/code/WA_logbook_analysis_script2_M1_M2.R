@@ -18,8 +18,8 @@ library(nngeo)
 #-------------------------------------------------------------
 
 # Start with traps_g df (traps are simulated and joined to grid, script 1)  
-# RDS can be found in Kiteworks folder
 traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+#traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2009_2020.rds'))
 
 
 # create columns for season, month etc
@@ -48,8 +48,9 @@ WA_pot_limit_info %<>%
 # join Pot_Limit to traps_g 
 traps_g %<>%
   left_join(WA_pot_limit_info,by=c("License")) %>% 
-  drop_na(Pot_Limit) #couple instances of NAs for cases with no license info for vessel provided - correct it with drop_na(Pot_Limit)
-
+  drop_na(Pot_Limit) 
+#couple instances of NAs (2013-2020) for cases with no license info for vessel provided - correct it with drop_na(Pot_Limit)
+#more instances of NAs if using 2009-2020 data, the current pot limit info does not cover some of the early years
 
 # apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
 # apply 2020 summer pot limit reduction (May-Sep)
