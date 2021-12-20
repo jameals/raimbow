@@ -59,9 +59,27 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season,
   #scale_fill_viridis_c(name = "Trap density [pots/km2]", option = "C") +
   #scale_fill_gradientn(colours = colorspace::diverge_hcl(7)) +
   scale_fill_gradient2(midpoint = mid, low = "blue", mid = "white", high = "red" )+
+  scale_x_continuous(limits = c(0, 65),expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
   labs(title = 'Trap density in WA logbooks, 2013-2020 May-Sep') + 
   theme_ridges()
 ridgeplot_WA_MaySep
+
+
+mid <- mean(log(x.fish_WA_MaySep$M2_trapdens))
+
+ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = log(M2_trapdens), y = season, fill = ..x..)) + #fill = stat(x)
+  geom_density_ridges_gradient(scale = 1.25, rel_min_height = 0.005) + # changing rel_min_height will change the outlook of the plot
+  #scale_fill_viridis_c(name = "Trap density [pots/km2]", option = "C") +
+  #scale_fill_gradientn(colours = colorspace::diverge_hcl(7)) +
+  scale_fill_gradient2(midpoint = mid, low = "blue", mid = "white", high = "red" )+
+  scale_x_continuous(limits = c(0, 5),expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  labs(title = 'Trap density in WA logbooks, 2013-2020 May-Sep') + 
+  theme_ridges()
+ridgeplot_WA_MaySep
+
+
 
 ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season)) + #fill = stat(x)
   geom_density_ridges(
@@ -109,5 +127,13 @@ ggplot(x.fish_WA_MaySep_month, aes(x = mean_M2_trapdens, y = season, height = st
   scale_y_discrete(expand = c(0, 0)) +
   #coord_cartesian(clip = "off") +
   xlab("Trap density [pots/km2]") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+
+ggplot(x.fish_WA_MaySep_month, aes(x = log2(mean_M2_trapdens), y = season, height = stat(density))) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250") +
+  #scale_x_continuous(expand = c(0, 0)) +
+  #scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Log of trap density [pots/km2]") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
