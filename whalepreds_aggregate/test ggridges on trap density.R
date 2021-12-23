@@ -48,7 +48,8 @@ x.fish_WA_MaySep <-  x.fish_WA_filtered %>%
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N')) %>% 
-  filter(is_May_Sep == "Y") 
+  filter(is_May_Sep == "Y") %>% 
+  mutate(month_name = factor(month_name, levels = c('September', 'August', 'July', 'June', 'May')))
   
 x.fish_WA_MaySep$season <- factor(x.fish_WA_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 
@@ -60,9 +61,10 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season,
   #scale_fill_gradientn(colours = colorspace::diverge_hcl(7)) +
   scale_fill_gradient2(midpoint = mid, low = "blue", mid = "white", high = "red" )+
   scale_x_continuous(limits = c(0, 65),expand = c(0, 0)) +
+  #scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
-  labs(title = 'Trap density in WA logbooks, 2013-2020 May-Sep') + 
-  theme_ridges()
+  #labs(title = 'Trap density in WA logbooks, 2013-2020 May-Sep') + 
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 ridgeplot_WA_MaySep
 
 
@@ -90,13 +92,46 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season)
   theme_ridges()
 ridgeplot_WA_MaySep
 
+## THIS IS PERHAPS THE BEST LOOKING ONE
 ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density))) + 
   geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
   #coord_cartesian(clip = "off") +
+  xlab("Trap density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+#Trailing tails can be cut off using the rel_min_height aesthetic. 
+#This aesthetic sets a percent cutoff relative to the highest point of any of the density curves. 
+#A value of 0.01 usually works well, but you may have to modify this parameter for different datasets
+
+#breaking things down by month doesn't really help visually
+ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density))) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  facet_grid(~ month_name) +
+  #coord_cartesian(clip = "off") +
   xlab("Trap density [pots/km2]") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
