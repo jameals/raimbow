@@ -40,14 +40,20 @@ x.fish_WA_filtered <-  x.fish_WA %>%
 #-----------------------------------------------------------------------------------
 
 # If make ggridgeplots on full seasons, no clear difference in the last two
+x.fish_WA_filtered$season <- factor(x.fish_WA_filtered$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
+ggplot(x.fish_WA_filtered, aes(x = M2_trapdens, y = season, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.001, fill = "#0072B250", scale = 1.5) + #, scale = 1.5
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Trap density [pots/km2] ") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+
 
 # May-Sep only
 # data left on 2-week time step
 
 x.fish_WA_MaySep <-  x.fish_WA_filtered %>% 
-  mutate(is_May_Sep = 
-           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
-                  ,'Y', 'N')) %>% 
   filter(is_May_Sep == "Y") %>% 
   mutate(month_name = factor(month_name, levels = c('September', 'August', 'July', 'June', 'May')))
   
@@ -59,13 +65,15 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season,
   geom_density_ridges_gradient(scale = 1.25, rel_min_height = 0.005) + # changing rel_min_height will change the outlook of the plot
   #scale_fill_viridis_c(name = "Trap density [pots/km2]", option = "C") +
   #scale_fill_gradientn(colours = colorspace::diverge_hcl(7)) +
-  scale_fill_gradient2(midpoint = mid, low = "blue", mid = "white", high = "red" )+
+  #scale_fill_gradient2(midpoint = mid, low = "blue", mid = "white", high = "red" )+
+  scale_fill_gradient(low = "white", high = "red" )+
   scale_x_continuous(limits = c(0, 65),expand = c(0, 0)) +
   #scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
   #labs(title = 'Trap density in WA logbooks, 2013-2020 May-Sep') + 
   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 ridgeplot_WA_MaySep
+
 
 
 mid <- mean(log(x.fish_WA_MaySep$M2_trapdens))
@@ -93,8 +101,8 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season)
 ridgeplot_WA_MaySep
 
 ## THIS IS PERHAPS THE BEST LOOKING ONE
-ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density))) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250") +
+ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.5) + #, scale = 1.5
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
   #coord_cartesian(clip = "off") +
@@ -103,6 +111,16 @@ ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density)
 #Trailing tails can be cut off using the rel_min_height aesthetic. 
 #This aesthetic sets a percent cutoff relative to the highest point of any of the density curves. 
 #A value of 0.01 usually works well, but you may have to modify this parameter for different datasets
+# cuts out anything that is below 1% of the top height of the distribution
+
+ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, fill = season, color = season)) +
+  geom_density_ridges(rel_min_height = 0.005) +
+  scale_fill_cyclical(name = "Cycle", values = c("#99E6FF", "#4CA6FF")) +
+  scale_color_cyclical(name = "Cycle", values = c(1, 4)) +
+  scale_x_continuous(limits = c(0, 65), expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Trap density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
 #breaking things down by month doesn't really help visually
 ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density))) + 
@@ -117,19 +135,86 @@ ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = stat(density)
 
 
 
+# ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, fill = paste(season, month_name))) +
+#   geom_density_ridges(
+#     alpha = 0.8, color = 'white', from = 0, to = 65
+#   ) +
+#   labs(
+#     x = "trap density",
+#     y = "season"
+#   )+
+#   scale_y_discrete(expand = c(0,0)) +
+#   scale_x_continuous(expand = c(0,0))+
+#   scale_fill_cyclical(
+#     breaks = c('2013-2014 May', '2013-2014 June', '2013-2014 July', '2013-2014 August', '2013-2014 September'),
+#     labels = c(`2013-2014 May` = 'May', 
+#                `2013-2014 June` = 'June', 
+#                `2013-2014 July` = 'July', 
+#                `2013-2014 August` = 'August', 
+#                `2013-2014 September` = 'September'),
+#     values = c("#ff0000", "#0000ff", "#ff8080","#8080ff", "#faa7a7", "#9d9dfa", "#fae3e3", "#d9d9fc"),
+#     name = "month", guide = "legend"
+#                ) +
+#   theme_ridges(grid = FALSE)
+  
+
+#the australian athletes example code
+# still don't think breaking down by month is helpful
+ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, 
+                             color = month_name, point_color = month_name, fill = month_name)) + #fill = stat(x)
+  geom_density_ridges(
+    jittered_points = TRUE, scale = 0.95,
+    rel_min_height = 0.005,
+    position = position_points_jitter(width = 0.05, height = 0),
+    point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7
+  ) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_manual(values = c("#442288", "#6CA2EA", "#B5D33D","#FED23F", "#EB7D5B"),
+                    labels = c('may', 'june', 'july', 'august', 'september') 
+  ) +
+  scale_color_manual(values = c("#442288", "#6CA2EA", "#B5D33D","#FED23F", "#EB7D5B"), guide = "none") +
+  coord_cartesian(clip = "off")+
+  guides(fill = guide_legend(
+    override.aes = list(fill = c("#442288", "#6CA2EA", "#B5D33D","#FED23F", "#EB7D5B"),
+                        color = NA, point_color = NA)
+  ))+
+  theme_ridges()
 
 
+#-----------------------------------------------------------------------
+path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
+grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
+grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
+#glimpse(grid.5km.lno)
+grid.depth <- read.csv(path.grid.depth) %>% 
+  rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
+# join 5km grid with depths
+grid.key <- left_join(grid.5km %>% st_drop_geometry(), 
+                      grid.depth, by = "GRID5KM_ID") # These values come from Blake, and are the average weighted mean (AWM) depth values in meter. Also from Blake: using the weighted mean values is critical for handling grid cells that partially overlap with land, as well as for cells that straddle any isobaths used as depth boundaries.
+#this also works without having to drop geometry:
+grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
+#glimpse(grid.key)
 
+grid_depth_and_fish <- left_join(x.fish_WA_MaySep, grid.key,  by = "GRID5KM_ID")
 
+grid_depth_and_fish_bins <-  grid_depth_and_fish %>% 
+  mutate(Bins = cut(depth, breaks = c(-500, -400, -300, -200, -100, 0.1))) 
 
+ggplot(grid_depth_and_fish_bins, aes(x = M2_trapdens, y = season, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.2) + #, scale = 1.5
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  facet_grid(~ Bins) +
+  xlab("Trap density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
-
-
-
-
-
+#-----------------------------------------------------------------------
 
 
 
