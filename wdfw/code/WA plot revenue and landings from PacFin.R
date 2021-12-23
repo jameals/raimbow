@@ -48,6 +48,7 @@ pacfin_data_MaySep <-  pacfin_data %>%
 
 MaySep_rev_ts <- ggplot(pacfin_data_MaySep, aes(x=month, y=REVENUE, colour=season, group=season))+
   geom_line(size=1.5, lineend = "round") + 
+  geom_point(size=2.5) + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("Revenue") +
   xlab("Month") + 
@@ -64,6 +65,7 @@ MaySep_rev_ts
 
 MaySep_landings_ts <- ggplot(pacfin_data_MaySep, aes(x=month, y=WEIGHT_MTONS, colour=season, group=season))+
   geom_line(size=1.5, lineend = "round") + 
+  geom_point(size=2.5) + 
   scale_colour_brewer(palette = "PRGn") +
   ylab("Ladings weight (MTONS)") +
   xlab("Month") + 
@@ -117,3 +119,12 @@ sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum
         legend.position="bottom"
   )
 sum_MaySep_landings_ts
+
+
+
+
+
+
+
+
+
