@@ -187,11 +187,13 @@ risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered <-  risk_whale
   filter(state == 'WA' | state == 'OR') %>% 
   #also remove 2020_10 and 2020_11 which occur in bw data
   mutate(remove = case_when(
-    year == 2020 & month == 10  ~ 'remove',
-    year == 2020 & month == 11  ~ 'remove'
+    #year == 2020 & month == 10  ~ 'remove',
+    month == 10  ~ 'remove',
+    #year == 2020 & month == 11  ~ 'remove'
+    month == 11  ~ 'remove'
   )) %>% 
-  filter(is.na(remove)) %>% 
-  filter(study_area == TRUE)
+  filter(is.na(remove)) #%>% 
+  #filter(study_area == TRUE)
   
 #write_csv(risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered,here::here('wdfw','data',"whale_risk_df_filt_2013_2020_WA_OR.csv"))
 
@@ -199,12 +201,18 @@ risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered <-  risk_whale
 rows <- risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered %>% group_by(GRID5KM_ID) %>% summarise(n_rows = n())
 
 
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
 
 bbox = c(-130,42,-120,49) 
  
    
    subset_MaySep <- risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered %>% 
-     filter(season == "2019-2020") %>% 
+     filter(season == "2018-2019") %>% 
      left_join(grid.5km, by = "GRID5KM_ID")
 
    
@@ -233,7 +241,47 @@ bbox = c(-130,42,-120,49)
 
 
 
+ 
+ 
+ 
+ test <-  risk_whales_crab_season_latlon_state_studyarea_2013_2020_filtered %>% 
+   mutate(grid_x_is_na = ifelse(is.na(grd_x), 'Y', 'N') )
 
-
+ rmap.base <- c(
+   st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+     filter(admin %in% c("Canada", "Mexico")) %>%
+     st_geometry() %>%
+     st_transform(st_crs(grid.5km.lno))
+ )
+ 
+ bbox = c(-130,42,-120,49) 
+ 
+ 
+ subset_MaySep <- test %>% 
+   filter(season == "2018-2019") %>% 
+   left_join(grid.5km, by = "GRID5KM_ID")
+ 
+ 
+ map_hump_MaySep <- ggplot() + 
+   geom_sf(data=sf::st_as_sf(subset_MaySep), 
+           aes(fill=grid_x_is_na,
+               col=grid_x_is_na
+           )
+   ) +
+   geom_sf(data=rmap.base,col=NA,fill='gray50') +
+   ggtitle("") +
+   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+   theme_minimal() + #theme_classic() +
+   theme(text=element_text(family="sans",size=10,color="black"),
+         legend.text = element_text(size=10),
+         axis.title=element_text(family="sans",size=14,color="black"),
+         axis.text=element_text(family="sans",size=8,color="black"),
+         panel.grid.major = element_line(color="gray50",linetype=3),
+         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+         strip.text = element_text(size=14),
+         title=element_text(size=16)
+   )
+ map_hump_MaySep
 
 
