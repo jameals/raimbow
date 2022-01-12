@@ -402,17 +402,39 @@ df %<>%
 #---------
 #additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
 #were the same), or that were very long
-# --> need to decide what is appropriate length, after which a stringline is too long, for now use 5km
+
+# exclude stringlines that are 0m long and have more than 50 pots reported on them
+#See email from Kelly Corbett ODFW about this: "We have included an additional filter for 
+#realistic max pot spacing (distance between pots) to exclude most of the outliers (99th percentile cutoff)
+#and contained normal distribution. We will likely do the same outlier removal process now for string 
+#length and looking at the data by season will likely end up excluding strings over around 15000 m 
+#in length (but again haven’t completed the final outlier cutoff analysis to-date)."
+#--> looking at string line length dist in OR logs, 15km seems bit too conservative. 
+#--> 99th percentile of all data was 25km, or 16.1km for 200 pot tier, 24.5 for 300 pot tier and 26km for 500 pot tier
+#--> for now use 25
+
 df$length = st_length(df)
 line_length_m <-  as.vector(df$length)
 df_v2 <-  cbind(df,line_length_m) 
 df_v3 <- df_v2 %>%  select(-length)
-#df_v4 <- df_v3 %>% filter(line_length_m > 0 & line_length_m < 5000) #skip this, leave everything in and filter later
 
+df_v4 <- df_v3 %>% 
+  filter(line_length_m < 25000) %>% 
+  filter(!(line_length_m == 0 & PotsFished > 50)) 
+#creating a new version of df where too short/long not filtered out but just flagged
+#mutate(too_long = ifelse(line_length_m > 25000, 'too_long','ok')) %>% 
+#mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
+
+#what percentage was excluded?
+# 0.084% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
+#nrow(df_v3 %>% filter(line_length_m > 80000))/nrow(df_v3)*100 
+# 0.018% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines 
+# that were 0m and had more than 50 pots reported on them
+# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
 #---------
 
 #traps <- df %>% 
-traps <- df_v3 %>%
+traps <- df_v4 %>%
   ungroup() %>% 
   # now use those linestrings to place pots using sf::st_line_sample
   mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
