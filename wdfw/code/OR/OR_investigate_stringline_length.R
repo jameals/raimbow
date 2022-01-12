@@ -676,3 +676,52 @@ traps_g_strings_excluded <-  traps_g_v2 %>%
          percent_too_long = (n_too_long/n_records)*100
   )
 
+
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+#See email from Kelly Corbett ODFW about this: "We have included an additional filter for 
+#realistic max pot spacing (distance between pots) to exclude most of the outliers (99th percentile cutoff)
+#and contained normal distribution. We will likely do the same outlier removal process now for string 
+#length and looking at the data by season will likely end up excluding strings over around 15000 m 
+#in length (but again haven’t completed the final outlier cutoff analysis to-date)."
+#--> looking at string line length dist in OR logs, 15km seems bit too conservative...unless it was a typo...
+
+#bring in most recent OR point file (September 2021)
+traps_g <- read_rds(here::here('wdfw', 'data', 'OR','OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds'))
+
+# remove geometry, create columns for season, month etc 
+traps_g %<>%
+  st_set_geometry(NULL) %>% 
+  mutate(
+    season = str_sub(SetID,1,9),
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name),
+    month_interval = paste0(month_name, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+    ),
+    season_month_interval = paste0(season, 
+                                   "_", 
+                                   month_interval)
+  )
+
+
+#What is the 99th percentile line length for all data - as per ODFW approach
+traps_g_line_length_percentile <- traps_g %>% 
+  summarise(
+    line_length_99th = quantile(line_length_m, probs=0.95, na.rm=TRUE))
+#25251.7m = 25km
+
+#What is the 99th percentile line length based on pot tier groupings
+traps_g_line_length_percentile_pot_tier_groups <- traps_g %>% 
+  group_by(Potlimit) %>% 
+  summarise(
+    line_length_99th = quantile(line_length_m, probs=0.95, na.rm=TRUE))
+#Potlimit  line_length_99th
+#200         16092.79
+#300         24524.97
+#500         26240.01
+
+#based on this I think 25 or 26km cutoff would be better than 15 km metnioned by Kelly
