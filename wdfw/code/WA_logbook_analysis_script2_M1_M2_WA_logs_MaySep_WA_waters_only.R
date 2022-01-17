@@ -1,0 +1,367 @@
+## Mapping functions for WDFW logbook data 
+# creating df with both adjustment methods (M1 and M2) for double counting of traps
+## USING WA DATA THAT IS CLIPPED TO WA WATERS
+
+library(tidyverse)
+library(lubridate)
+library(here)
+library(sf)
+library(raster)
+library(fasterize)
+select <- dplyr::select
+library(rnaturalearth)
+library(viridis)
+library(magrittr)
+library(gridExtra)
+library(nngeo)
+
+
+#-------------------------------------------------------------
+# Read in spatial grid data 
+# example spatial grid - 5x5 grid shapefile
+grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
+names(grd)
+
+# read in version of traps_g, point data, that is clipped to WA waters
+traps_g_x_raw <- read_sf(here::here('wdfw','data','traps_g_WA_MaySep_2013_2020_clipped_WA_waters.shp')) %>% 
+  st_transform(st_crs(grd)) #make it have same projection as the grid
+
+#data is limited to WA waters
+#because the data was used in QGIS, ESRI shortens column names. chnage names back to original form
+#remove old column denoting state waters as this is not correct, and make a new one
+#new_name = old_name
+traps_g_x <- traps_g_x_raw %>% 
+  rename(
+    PotsFished = PtsFshd,
+    line_length_m = ln_lng_,
+    GRID5KM_ID = GRID5KM,
+    NGDC_GRID = NGDC_GR,
+    is_port_or_bay = is_pr__,
+    Landing_logbook_state = Lndng__,
+    month_name = mnth_nm,
+    season_month = ssn_mnt,
+    month_interval = mnth_nt, 
+    season_month_interval = ssn_mn_, 
+    is_May_Sep = is_My_S
+  ) %>% 
+  select(-pt_lc_s)
+
+
+
+# # Start with traps_g df (traps are simulated and joined to grid, script 1)  
+# traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+# #traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2009_2020.rds'))
+# 
+# 
+# # create columns for season, month etc
+# traps_g %<>%
+#   st_set_geometry(NULL) %>% 
+#   mutate(
+#     season = str_sub(SetID,1,9),
+#     month_name = month(SetDate, label=TRUE, abbr = FALSE),
+#     season_month = paste0(season,"_",month_name),
+#     month_interval = paste0(month_name, 
+#                             "_", 
+#                             ifelse(day(SetDate)<=15,1,2)
+#     ),
+#     season_month_interval = paste0(season, 
+#                                    "_", 
+#                                    month_interval)
+#   )
+
+
+# Read in and join license & pot limit info
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+
+# join Pot_Limit to traps_g_x 
+traps_g_x %<>%
+  left_join(WA_pot_limit_info,by=c("License")) %>% 
+  drop_na(Pot_Limit) 
+#couple instances of NAs (2013-2020) for cases with no license info for vessel provided - correct it with drop_na(Pot_Limit)
+#more instances of NAs if using 2009-2020 data, the current pot limit info does not cover some of the early years
+
+# apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
+# apply 2020 summer pot limit reduction (May-Sep)
+## make a new column for summer pot limit reduction
+traps_g_x %<>% 
+  mutate(Pot_Limit_SummerReduction = Pot_Limit)
+## split df to pre and post reduction periods
+df1 <- traps_g_x %>%
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                              '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
+df2 <- traps_g_x %>%
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                             '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
+## adjust pot limit post 1 July 2019, and post 1 May 2020
+df2 %<>% 
+  mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
+## join dfs back together  
+traps_g_x <- rbind(df1,df2)
+
+
+# apply weighting based on permitted max pot number (this is Method 2 or M2)
+adj_traps_g_x <- traps_g_x %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count up traps for vessel in 2-week period
+  group_by(season_month_interval, Vessel, License, Pot_Limit, Pot_Limit_SummerReduction) %>%  
+  summarise(
+    M2_n_traps_vessel=n(), na.rm=TRUE 
+  ) %>% 
+  # create a column with weighting - proportion of max allowed traps
+  # divide pot limit by number of simulated traps
+  # because you want to up-weight traps < pot_limit, and downweight traps > pot_limit
+  mutate(trap_limit_weight = Pot_Limit_SummerReduction/M2_n_traps_vessel) %>% 
+  ungroup()
+
+# join the "weighting key" back to the simulated pots data
+traps_g_x %<>%
+  left_join(adj_traps_g_x,by=c('season_month_interval','Vessel','License','Pot_Limit','Pot_Limit_SummerReduction'))
+
+# do Method 1/M1 calculations/adjustment, group by season_month_interval 
+M1_summtraps <- traps_g_x %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  summarise(
+    M1_ntraps_vessel_set_cell=n()
+  ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_ntraps_vessel_cell=mean(M1_ntraps_vessel_set_cell)#,
+    #sd_traps_vessel_cell=sd(ntraps_vessel_set_cell) # want to come back and think about how to aggregate uncertainty
+  ) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(season_month_interval, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_tottraps=sum(M1_ntraps_vessel_cell),
+    # add count of unique vessels for confidentiality check, this could be done here or in mapping phase
+    nvessels=n_distinct(Vessel,na.rm=T) 
+  ) %>% 
+  # trap density (in sq. km) is total traps divided by area (which is in sq. m) of each cell
+  mutate(
+    M1_trapdens=M1_tottraps/(AREA/1e6)
+  ) %>% 
+  ungroup() %>% 
+  filter(!is.na(M1_tottraps))
+glimpse(M1_summtraps)
+
+
+# Now sum pots for M2 (just like for M1), use 'trap_limit_weight' to sum, instead of n().
+traps_summ <- traps_g_x %>% 
+  group_by(season_month_interval,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  
+  # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
+  summarise(M2_tottraps=sum(trap_limit_weight)) %>%  
+  mutate(
+    M2_trapdens=M2_tottraps/(AREA/1e6)
+  ) %>% ungroup() %>% 
+  filter(!is.na(M2_tottraps))
+glimpse(traps_summ) 
+
+
+# join results from M1 and M2 
+adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month_interval", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
+glimpse(adj_summtraps) 
+
+
+# fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
+# will have a separate polygon within said bay or estuary that will have the same Grid5km_ID value as the adjacent 
+# portion of the 5km grid cell that does not fall within the bay or estuary. 
+# Therefore, if you want to calculate total area of each grid cell that falls in water, 
+# sum the total area for that grid cell by its Grid5km_ID value.
+
+# joining data for portions of grids with same grid ID
+# Somehow this chunk of code 'breaks' trying to scale from 0-1 for making difference maps
+adj_summtraps %<>%
+  group_by(season_month_interval,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
+  summarise(
+    AREA = sum(AREA),
+    M1_tottraps = sum(M1_tottraps),
+    nvessels = sum(nvessels),
+    M1_trapdens = M1_tottraps/(AREA/1e6),
+    M2_tottraps = sum(M2_tottraps),
+    M2_trapdens = M2_tottraps/(AREA/1e6)
+  )
+glimpse(adj_summtraps)
+
+
+adj_summtraps %<>%
+  separate(season_month_interval, into = c("season", "month_name", "period"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) %>% 
+  mutate(season_month_interval = paste0(season_month,"_",period)) %>% 
+  mutate(month_interval = paste0(month_name,"_",period)) %>%
+  mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
+glimpse(adj_summtraps)
+
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
+#the code to join the grids that are in few pieces but with same IDs 
+
+#write a version that is done using WA logs, May-Sep, 2013-2020, WA waters only
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020_WA_logs_MaySep_WA_waters.rds"))
+
+#-------------------------------------------------------------------------------------------------------------------------
+# the below code are for comparing the M1 and M2 methods. This is no longer relevant as we will just move forward with M2
+#-------------------------------------------------------------------------------------------------------------------------
+
+# Few visuals comparing the M1 and M2 methods
+pairs(~ M1_trapdens + M2_trapdens, data = adj_summtraps)
+pairs(~ M1_tottraps + M2_tottraps, data = adj_summtraps)
+
+library(ggplot2)                    
+library(GGally)
+
+ggpairs(adj_summtraps[, c(10, 12)])
+ggpairs(adj_summtraps, columns = c(10, 12), ggplot2::aes(colour=season))
+
+ggpairs(adj_summtraps[, c(8, 11)])
+ggpairs(adj_summtraps, columns = c(8, 11), ggplot2::aes(colour=season))
+
+
+#-----------------------------------------------------------------------------------------
+
+# difference maps
+# the following mapping code can be used to make maps to see whether the relative spatial 
+# distribution of effort varies between M1 and M2 -- no major difference observed
+
+
+# Note that fixing the repeating grid IDs on lines 146-156 seems to break the scaling function below
+# Leave this for now, and come back to try to fix it later
+
+
+dat <- read_rds(here::here('wdfw','data','adj_summtraps.rds')) #this file saved in this script line 152
+dat_v2 <- read_rds(here::here('wdfw','data','adj_summtraps_v2.rds')) #this file saved in this script line 153
+
+# scaling M1 and M2 densities to range between 0-1
+#This one is not fine
+dat_scale01 <- dat %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+#This one seems fine
+dat_scale01_v2 <- dat_v2 %>%
+  mutate(M1_trapdens_scaled = scales::rescale(M1_trapdens, to=c(0,1)),
+         M2_trapdens_scaled = scales::rescale(M2_trapdens, to=c(0,1)),
+         #calculate the difference as M2 minus M1
+         scaled_M2_minus_M1 = M2_trapdens_scaled - M1_trapdens_scaled
+  )
+
+#both centered around 0 but very different spread
+dat_scale01 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+dat_scale01_v2 %>%
+  ggplot()+
+  geom_density(aes(scaled_M2_minus_M1))
+
+
+#to make the maps will also need to load the various grid and shapefiles, see scipt 6
+# 
+# map_traps <- function(gridded_traps,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   month_label=unique(gridded_traps$month_name)
+#   period_label=unique(gridded_traps$period)
+#   season_label=paste("Season:",unique(gridded_traps$season))
+#   t1 <- paste0(season_label,"\n",month_label,", ",period_label, " M2 - M1")
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   diff_map_out <- gridded_traps %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]),datum=NA)+
+#     labs(x='',y='',fill='M2-M1 variance',title=t1)
+# 
+#   # saving
+#   if(saveplot){
+#     pt <- unique(gridded_traps$season_month_interval)
+#     ggsave(here('wdfw','maps',paste0(pt,'.png')),diff_map_out,w=6,h=5)
+#   }
+#   return(diff_map_out)
+# }
+# 
+# # Loop and save comparison maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(dat_scale01$season_month_interval),function(x){
+#   dat_scale01 %>% 
+#     filter(season_month_interval==x) %>% 
+#     map_traps()
+# })
+# proc.time()-tm
+
+
+
+#----------------------------
+
+
+# difference maps of M2-M1 methods for May-Sep period
+# This code is only relevant if want to map the difference between M1 and M2 methods -- no major difference observed
+
+# # First average M1 and M2 trap densities for each grid cell, then scale M1 and M2 densities 0-1
+# MaySep_summtrapsWA_scale01 <- MaySep_summtrapsWA %>% 
+#   mutate(M1_mean_trapdens_scaled = scales::rescale(mean_M1_trapdens, to=c(0,1)),
+#          M2_mean_trapdens_scaled = scales::rescale(mean_M2_trapdens, to=c(0,1)),
+#          #calculate the difference as M2 minus M1
+#          scaled_M2_minus_M1 = M2_mean_trapdens_scaled - M1_mean_trapdens_scaled
+#   )
+# glimpse(MaySep_summtrapsWA_scale01)
+# 
+# 
+# MaySep_summtrapsWA_scale01 %>% 
+#   ggplot()+
+#   geom_density(aes(scaled_M2_minus_M1))
+# 
+# 
+# # then make difference maps of scaled May 1- Sep 15
+# map_maysep <- function(MaySep_summtrapsWA_scale01 ,saveplot=TRUE){
+#   
+#   # labels for plot titles
+#   season_label=unique(MaySep_summtrapsWA_scale01 $season)
+#   
+#   bbox = c(800000,1650000,1013103,1970000)
+#   
+#   MaySep_scaled_map_out <- MaySep_summtrapsWA_scale01  %>% 
+#     ggplot()+
+#     geom_tile(aes(grd_x,grd_y,fill=scaled_M2_minus_M1),na.rm=T,alpha=0.8)+
+#     geom_sf(data=coaststates,col=NA,fill='gray50')+
+#     geom_sf(data=MA_shp,col="black", size=0.5, fill=NA)+
+#     geom_sf(data=QSMA_shp,col="black", linetype = "11", size=0.5, fill=NA)+
+#     scale_fill_viridis(na.value='grey70',option="A",limits=c(-1,1),oob=squish)+
+#     coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
+#     labs(x='',y='',fill='M2 - M1',title=paste0('May 1 - Sep 15\n',season_label))
+#   
+#   # saving
+#   if(saveplot){
+#     pt <- unique(MaySep_summtrapsWA_scale01 $season)
+#     ggsave(here('wdfw','maps', 'difference_maps',paste0('May 1 - Sep 15 ',pt,'.png')),MaySep_scaled_map_out,w=6,h=5)
+#   }
+#   return(MaySep_scaled_map_out)
+# }
+# 
+# # Loop and save maps
+# tm <- proc.time()
+# all_maps <- purrr::map(unique(MaySep_summtrapsWA_scale01_v2 $season),function(x){
+#   MaySep_summtrapsWA_scale01_v2  %>% 
+#     filter(season==x) %>% 
+#     map_maysep()
+# })
+# proc.time()-tm
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
