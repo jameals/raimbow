@@ -39,7 +39,8 @@ logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2
 
 # QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
 # These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
-logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
+logs_WA <- logs %>%  filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this if want to retain NAs until the next step
+logs_Q999999 <- logs %>%  filter(FishTicket1 == "Q999999") #these are data landed in OR, separate the two here
 
 # QC: for each variable/column in the logs, count how many NA values there are
 # numNA <- logs %>% summarise(across(everything(),~sum(is.na(.x))))
@@ -94,14 +95,26 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
   st_transform(st_crs(grd)) #set same projection as the grid
 #---------------------------------- 
 #---------------------------------------------------------------
-#Running the functions on 'full' logbook data sets 
+#Running the functions on 'full' logbook data sets - this can take ~15-20 mins for 2014-2020 subset
 #(i.e. not actually specifying the functions, or crab-year/month/period choices)
 
-#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
-logs2013_2020 <- logs %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
+#choose whether to run on all data or selected seasons
+# there can be memory issues if running all 2009-2020 data
 
+#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
+logs2013_2020 <- logs_WA %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
 df <- logs2013_2020
+
+logs2013_2020 <- logs_Q999999 %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
+df <- logs2013_2020
+
+#these might have memory issues
+# df <- logs_WA # run functions on all WA logs from 2009-10 onwards
+# df <- logs_Q999999 # run functions on all OR landed logs from 2009-10 onwards
+
+
 
 df %<>%
   dplyr::select(season, Vessel,License, SetID,lat,lon,PotsFished,SetDate,coord_type) %>% 
@@ -134,7 +147,7 @@ df_v3 <- df_v2 %>%  select(-length)
 df_v4 <- df_v3 %>% 
   filter(line_length_m < 80000) %>% 
   filter(!(line_length_m == 0 & PotsFished > 50)) 
-#creating a new version of df where too short/long not filtered out but just flagged
+#creating a new version of df where too short/long just flagged but not filtered out 
 #mutate(too_long = ifelse(line_length_m > 80000, 'too_long','ok')) %>% 
 #mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
 
@@ -189,8 +202,7 @@ traps_sf %<>%
 # Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
 #traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
 
-#running place_traps on 2013-2020 logs subset took about 12min, but haven't saved the sf as it is not required for further steps
-#write_rds(traps_sf,here::here('data', "traps_sf_license_all_logs_2013_2019.rds"))
+
 
 
 gkey <- grd_area_key
@@ -204,10 +216,18 @@ traps_g <- traps_sf %>%
   st_join(gkey) %>% 
   left_join(grd_xy,by="GRID5KM_ID")
 
-#running join_grid on 2013-2020 logs subset took about 12min
+
+#save points log data for WA landed logbooks for all or a subset of logs. This includes column with license number
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_WA_logs_2014_2020_20220119.rds"))
+#save points log data for OR landed logbooks (Q999999) for all or a subset of logs. This includes column with license number
+#write_rds(traps_g,here::here('wdfw', 'data', "traps_g_WA_Q999999_logs_2014_2020_20220119.rds"))
+
+
+
 #write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020.rds"))
 
-#creating a new version of df where too short/long not filtered out but just flagged
+#you can also create and save a version of df where too short/long are just flagged but not filtered out
+#either for full logs 2009-10 - 2019-20 or for 2013-14 - 2019-20
 #write_rds(traps_g,here::here('wdfw', 'data', "traps_g_license_all_logs_2013_2020_too short long flagged not deleted.rds"))
 
 
