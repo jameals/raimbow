@@ -87,8 +87,12 @@ traps_g_OR_landed_WA_logs_Q999999 <- traps_g_OR_landed_WA_logs_Q999999 %>%
 #------------------------------------------------------------------------------
 
 #export as shapefile
-st_write(traps_g_WA_landed_WA_logs, "traps_g_WA_landed_WA_logs_2014_2020_20220119.shp") 
-
 st_write(traps_g_OR_landed_WA_logs_Q999999, "traps_g_OR_landed_WA_logs_Q999999_2014_2020_20220119.shp") 
+
+#the WA landed logs are too big to export as one shapefile. 
+#split and export one season at a time
+traps_g_WA_landed_WA_logs_2019_2020 <- traps_g_WA_landed_WA_logs %>% 
+  filter(season == '2019-2020') 
+st_write(traps_g_WA_landed_WA_logs_2019_2020, "traps_g_WA_landed_WA_logs_2019_2020_20220119.shp") #MaySep labelled but not filtered out
 
 
