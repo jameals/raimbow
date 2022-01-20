@@ -39,7 +39,14 @@ options(dplyr.summarise.inform = FALSE)
 ## Read in all data and shapefiles for mapping
 
 # Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
+#adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
+
+#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
+#this is because the grid is split across land, and few points happen to fall in a very tiny area
+#remove it
+adj_summtraps <- adj_summtraps %>% filter(M2_trapdens < 244)
+
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -800,5 +807,5 @@ ts_trapdens_MaySep <- ggplot() +
         strip.placement = "left"
   )
 ts_trapdens_MaySep
-#ggsave(here('wdfw','plots',paste0('ts_meanANDmedian_trapdens_MaySep','.png')),ts_trapdens_MaySep,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('ts_meanANDmedian_trapdens_MaySep_WA_waters_only_2wk_input_file_20220120','.png')),ts_trapdens_MaySep,w=12,h=10)
 
