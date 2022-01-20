@@ -16,32 +16,32 @@ library(ggridges)
 #-----------------------------------------------------------------------------------
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week period
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
-                  ,'Y', 'N'))
+                  ,'Y', 'N')) %>%
+#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
+#this is because the grid is split across land, and few points happen to fall in a very tiny area
+#remove it
+    filter(M2_trapdens < 244)
 
+
+#the above data is filtered to be only effort that is in WA waters
+#but may have been landed in either WA or OR
 
 # In 2018-19 season there was one vessel in WA logbooks that reportedly fished really far south in OR waters, 
 # but only few string lines
 # this seems like such an outlier that we will remove it here
-x.fish_WA_filtered <-  x.fish_WA %>% 
-  filter(!GRID5KM_ID %in% c(102128, 102458, 102787, 102788, 103117, 103118))
-
-
-
-
-## HERE WOULD ALSO REMOVE GRIDS THAT ARE IN OR WATERS (BUT WA LOGBOOKS)
-## AND ADD IN OR LOGS THAT WHERE IN WA GRIDS
-
+# x.fish_WA_filtered <-  x.fish_WA %>% 
+#   filter(!GRID5KM_ID %in% c(102128, 102458, 102787, 102788, 103117, 103118))
 
 
 #-----------------------------------------------------------------------------------
 
 # If make ggridgeplots on full seasons, no clear difference in the last two
-x.fish_WA_filtered$season <- factor(x.fish_WA_filtered$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
-ggplot(x.fish_WA_filtered, aes(x = M2_trapdens, y = season, height = ..density..)) + 
+x.fish_WA$season <- factor(x.fish_WA$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
+ggplot(x.fish_WA, aes(x = M2_trapdens, y = season, height = ..density..)) + 
   geom_density_ridges(stat = "density", rel_min_height = 0.001, fill = "#0072B250", scale = 1.5) + #, scale = 1.5
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
@@ -53,7 +53,7 @@ ggplot(x.fish_WA_filtered, aes(x = M2_trapdens, y = season, height = ..density..
 # May-Sep only
 # data left on 2-week time step
 
-x.fish_WA_MaySep <-  x.fish_WA_filtered %>% 
+x.fish_WA_MaySep <-  x.fish_WA %>% 
   filter(is_May_Sep == "Y") %>% 
   mutate(month_name = factor(month_name, levels = c('September', 'August', 'July', 'June', 'May')))
   
