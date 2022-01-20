@@ -34,24 +34,26 @@ options(dplyr.summarise.inform = FALSE)
 
 # Start with traps_g df for all seasons (traps are simulated and joined to grid)
 # getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
-traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+#traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
 
 #traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2020
 
-traps_g <- traps_g %>% 
-  mutate(
-    season = str_sub(SetID,1,9),
-    month_name = month(SetDate, label=TRUE, abbr = FALSE),
-    season_month = paste0(season,"_",month_name),
-    month_interval = paste0(month_name, 
-                            "_", 
-                            ifelse(day(SetDate)<=15,1,2)
-    ),
-    season_month_interval = paste0(season, 
-                                   "_", 
-                                   month_interval)
-  )
+#new iteration of df already has these
+# traps_g <- traps_g %>% 
+#   mutate(
+#     season = str_sub(SetID,1,9),
+#     month_name = month(SetDate, label=TRUE, abbr = FALSE),
+#     season_month = paste0(season,"_",month_name),
+#     month_interval = paste0(month_name, 
+#                             "_", 
+#                             ifelse(day(SetDate)<=15,1,2)
+#     ),
+#     season_month_interval = paste0(season, 
+#                                    "_", 
+#                                    month_interval)
+#   )
 
 # For now look at 2013-2019, traps_g_license_logs_2013_2019.rds is already filtered for these years
 #traps_g <- traps_g %>% 
@@ -59,10 +61,10 @@ traps_g <- traps_g %>%
 
 # modifying the summtraps code from script 2 that adjusts for double counting
 testdf <- traps_g %>% 
-  st_set_geometry(NULL) %>%
+  #st_set_geometry(NULL) %>%
   filter(!is.na(GRID5KM_ID)) %>% 
   # count the total number of traps in each grid cell in each set
-  group_by(season_month_interval, Vessel, License,GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  group_by(season_month_interval, Vessel, License,GRID5KM_ID,grd_x,grd_y,SetID2,AREA) %>%  
   summarise(
     ntraps_vessel_set_cell=n()
   ) %>% 
@@ -204,6 +206,7 @@ check_plot <- ggplot(check_lines_in_water, aes(x= month_name, y= check_PotsFishe
         legend.position="bottom"
   )
 check_plot
+#ggsave(here('wdfw','plots', paste0('number of lines in water as sum of pot limits of all unique active vessels per month__WA_waters_only_2wk_input_file_20220120','.png')),check_plot,w=12,h=10)
 
 #------------------------------
 
@@ -238,7 +241,7 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
         legend.position="bottom"
   )
 vessels_by_month_plot
-#ggsave(here('wdfw','plots', paste0('test number of active vessels by month','.png')),vessels_by_month_plot,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('test number of active vessels by month_WA_waters_only_2wk_input_file_20220120','.png')),vessels_by_month_plot,w=12,h=10)
 
 
 active_vessels_by_season <- testdf %>% 
@@ -246,6 +249,17 @@ active_vessels_by_season <- testdf %>%
   na.omit() %>% 
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
+#UPDATED, does include effort in WA waters landed in OR:
+# season      n_unique_licenses
+# 2013-2014   161
+# 2014-2015   165
+# 2015-2016   158
+# 2016-2017   168
+# 2017-2018   158
+# 2018-2019   162
+# 2019-2020   148
+
+#OLD, doesn't include effort in WA waters landed in OR:
 # season      n_unique_licenses
 # 2013-2014   158
 # 2014-2015   159
@@ -286,7 +300,7 @@ compliance_plot <- ggplot(active_vessels_by_month_with_compliance, aes(x= month,
         legend.position="bottom"
   )
 compliance_plot
-#ggsave(here('wdfw','plots', paste0('test ratio estimated no of uniq vessels to WDFW estimate_ie compliance rate','.png')),compliance_plot,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('test ratio estimated no of uniq vessels to WDFW estimate_ie compliance rate_WA_waters_only_2wk_input_file_20220120','.png')),compliance_plot,w=12,h=10)
 
 
 #------------------------------
@@ -331,7 +345,7 @@ vessels_by_month_plot_x <- ggplot(active_vessels_by_month_3, aes(x=month_name, y
         legend.position="bottom"
   )
 vessels_by_month_plot_x
-#ggsave(here('wdfw','plots', paste0('Number of active vessels per month by permit tier groups','.png')),vessels_by_month_plot_x,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('Number of active vessels per month by permit tier groups_WA_waters_only_2wk_input_file_20220120','.png')),vessels_by_month_plot_x,w=12,h=10)
 
 
 
@@ -350,5 +364,5 @@ bar_chart <- ggplot(active_vessels_by_month_3, aes(x = month_name, y = n_unique_
         legend.position="bottom"
   )
 bar_chart
-#ggsave(here('wdfw','plots', paste0('Prop of active vessels per month by permit tier groups','.png')),bar_chart,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('Prop of active vessels per month by permit tier groups_WA_waters_only_2wk_input_file_20220120','.png')),bar_chart,w=12,h=10)
 
