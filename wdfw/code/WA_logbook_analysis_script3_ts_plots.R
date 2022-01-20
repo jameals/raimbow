@@ -37,8 +37,15 @@ options(dplyr.summarise.inform = FALSE)
 
 
 # For df with M1 and M2 summaries bring in adj_summtraps (result from script 2)
-adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps_2013_2020.rds'))
+##adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps_2013_2020.rds'))
+#data clipped to WA waters only, trap density calc at 2wk step
+adj_summtraps <- read_rds(here::here('wdfw', 'data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
 
+#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
+#this is because the grid is split across land, and few points happen to fall in a very tiny area
+#remove it
+adj_summtraps <- adj_summtraps %>% filter(M2_trapdens < 244)
+  
 
 #------------------------------------------------------------------------------
 
@@ -102,7 +109,7 @@ M2_summtrapsWA_2w <- M2_summtrapsWA_2w %>%
 logs_ts_2week <- ggplot(M2_summtrapsWA_2w, aes(x=month_interval, y=M2_meantrapdens, colour=season, group=season, size=totarea))+
     #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
     geom_line(lineend = "round") + 
-    scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
+    scale_size(range = c(1, 6), guide = "none") + #specify min and max size, guide=FALSE here will remove line thickness from legend
     #OR 
     #have a constant line thickness (good when plotting no. of traps/lines in water)
     #geom_line(size=1.5, lineend = "round") + 
@@ -160,7 +167,7 @@ logs_ts_month <- ggplot(M2_summtrapsWA_month, aes(x= month_name, y=M2_mean_tottr
         legend.position="bottom"
   )
 logs_ts_month
-#ggsave(here('wdfw','plots',paste0('Mean M2 trap counts_lines in water_by month','.png')),logs_ts_month,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Mean M2 trap counts_lines in water_by month_WA_waters_only_20220120','.png')),logs_ts_month,w=12,h=10)
 
 
 
@@ -213,7 +220,7 @@ M2_summtrapsWA_month_dens <- M2_summtrapsWA_month_dens %>%
 logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2_meantrapdens, colour=season,  group=season, size=totarea))+
   #make line thickness reflect the area in use in above line 'size=totarea' (good for trap density plotting)
   geom_line(lineend = "round") + 
-  scale_size(range = c(1, 6), guide = FALSE) + #specify min and max size, guide=FALSE here will remove line thickness from legend
+  scale_size(range = c(1, 6), guide = "none") + #specify min and max size, guide=FALSE here will remove line thickness from legend
   #OR 
   #have a constant line thickness (good when plotting no. of traps/lines in water)
   #geom_line(size=1.5, lineend = "round") + 
@@ -229,7 +236,7 @@ logs_ts_month_dens <- ggplot(M2_summtrapsWA_month_dens, aes(x= month_name, y= M2
         legend.position="bottom"
   )
 logs_ts_month_dens
-#ggsave(here('wdfw','plots',paste0('Mean M2 trap densities by month_2013-2020','.png')),logs_ts_month_dens,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Mean M2 trap densities by month_2013-2020_WA_waters_only_2wk_input_file_20220120','.png')),logs_ts_month_dens,w=12,h=10)
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -263,7 +270,7 @@ plot_list
 
 map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
 # saving
-#ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season','.png')),map_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('M2 mean trap dens, 25th and 75th percentiles for all WA by season_WA_waters_only_2wk_input_file_20220120','.png')),map_out,w=12,h=10)
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -301,7 +308,7 @@ p2 <- adj_summtraps_wintersummer %>%
 p2
 
 
-#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only','.png')),p2,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M2 only_WA_waters_only_2wk_input_file_20220120','.png')),p2,w=12,h=10)
 
 #map_out <- plot_grid(p1,p2,nrow=1)
 #ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_M1vsM2','.png')),map_out,w=12,h=10)
@@ -330,6 +337,6 @@ plot_list
 
 plot_out <- cowplot::plot_grid(plotlist = plot_list, ncol = 2)
 # saving
-#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only','.png')),plot_out,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Plot of trap densities_winter vs summer_by season_M2 only_WA_waters_only_2wk_input_file_20220120','.png')),plot_out,w=12,h=10)
 
 
