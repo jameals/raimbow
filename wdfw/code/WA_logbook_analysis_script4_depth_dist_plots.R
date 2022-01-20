@@ -35,12 +35,13 @@ options(dplyr.summarise.inform = FALSE)
 
 # From raw logbook data, need to run place_traps function (script 1) to create the traps along each line and get their depths
 # running code fro script 1 on the full logs (2013-2020) dataframe takes a long time, so ran it once and saved it as RDS 
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+#traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
 
 glimpse(traps_g_all_logs)
 
 logs_all <- traps_g_all_logs %>% 
-  st_set_geometry(NULL) %>% 
+  #st_set_geometry(NULL) %>% 
   mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
   mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
   mutate(season = str_sub(SetID,1,9)) %>% 
@@ -104,7 +105,7 @@ depth_dist_by_season <- pots_by_depth_by_season %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_by_season
 
-#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_by season','.png')),depth_dist_by_season,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_by season_WA_waters_only_2wk_input_file_20220120','.png')),depth_dist_by_season,w=12,h=10)
 
 #--------------------------
 
@@ -140,7 +141,7 @@ depth_dist_spsumvswinter <- pots_by_depth_spsumvswinter %>%
   theme(legend.position = ("top"),legend.title=element_blank())
 depth_dist_spsumvswinter
 
-#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_win v sprsum','.png')),depth_dist_spsumvswinter,w=12,h=10)
+#ggsave(here('wdfw','plots',paste0('Cumulative distribution of pots by depth_all years_win v sprsum_WA_waters_only_2wk_input_file_20220120','.png')),depth_dist_spsumvswinter,w=12,h=10)
 
 
 
