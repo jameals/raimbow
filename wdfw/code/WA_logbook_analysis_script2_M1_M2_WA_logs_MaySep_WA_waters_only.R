@@ -19,18 +19,37 @@ library(nngeo)
 #-------------------------------------------------------------
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
-grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
+grd <- read_sf(here::here('wdfw','data', 'fivekm_grid_polys_shore_lamb.shp'))
 names(grd)
 
-# read in version of traps_g, point data, that is clipped to WA waters
-traps_g_x_raw <- read_sf(here::here('wdfw','data','traps_g_WA_MaySep_2013_2020_clipped_WA_waters.shp')) %>% 
-  st_transform(st_crs(grd)) #make it have same projection as the grid
 
-#data is limited to WA waters
-#because the data was used in QGIS, ESRI shortens column names. chnage names back to original form
-#remove old column denoting state waters as this is not correct, and make a new one
+# read in version of traps_g, point data, that is clipped to WA waters - WA logs landed in WA
+# reading this shapefile in takes a long time
+# traps_g_x_raw <- read_sf(here::here('wdfw','data', 'shapefiles WA landed WA logs','traps_g_WA_landed_WA_logs_2013_2020_clipped_to_WA_waters_20220119.shp')) %>% 
+#   st_transform(st_crs(grd)) #make it have same projection as the grid
+# #save a rds version and read that in in the future:
+# write_rds(traps_g_x_raw,here::here('wdfw','data',"traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220119.rds"))
+traps_g_WA_logs_2014_2020_20220119_clipped_raw <- read_rds(here::here('wdfw', 'data','traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220119.rds')) %>% 
+  select(-path, -layer) #columns that have been added in QGIS step, when joining files
+
+# WA logs landed in OR (Q999999) clipped to WA waters
+# traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw <- read_sf(here::here('wdfw','data', 'shapefiles OR landed WA logs Q999999','traps_g_OR_landed_WA_logs_Q999999_2014_2020_clipped_to_WA_waters_20220119.shp')) %>% 
+#   st_transform(st_crs(grd)) #make it have same projection as the grid
+# #save a rds version and read that in in the future:
+# write_rds(traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw,here::here('wdfw','data',"traps_g_OR_landed_WA_logs_Q999999_2014_2020_clipped_to_WA_waters_20220119.rds"))
+traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw <- read_rds(here::here('wdfw', 'data','traps_g_OR_landed_WA_logs_Q999999_2014_2020_clipped_to_WA_waters_20220119.rds'))
+
+
+#join the files - full data set of logbook data in WA waters, landed in WA and OR
+traps_g_WA_logs_2014_2020_clipped <- rbind(traps_g_WA_logs_2014_2020_20220119_clipped_raw,traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw)
+
+
+
+#all data are limited/clipped to WA waters
+#because the data was used in QGIS, ESRI abbreviates column names. change names back to original form
 #new_name = old_name
-traps_g_x <- traps_g_x_raw %>% 
+traps_g <- traps_g_WA_logs_2014_2020_clipped %>% 
+  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
   rename(
     PotsFished = PtsFshd,
     line_length_m = ln_lng_,
@@ -43,32 +62,14 @@ traps_g_x <- traps_g_x_raw %>%
     month_interval = mnth_nt, 
     season_month_interval = ssn_mn_, 
     is_May_Sep = is_My_S
-  ) %>% 
-  select(-pt_lc_s)
+  ) 
+
+## could save here, and dew a new read call - then could ignore the above in future runs
+#write_rds(traps_g,here::here('wdfw','data',"traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds"))
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
 
 
-
-# # Start with traps_g df (traps are simulated and joined to grid, script 1)  
-# traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
-# #traps_g <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2009_2020.rds'))
-# 
-# 
-# # create columns for season, month etc
-# traps_g %<>%
-#   st_set_geometry(NULL) %>% 
-#   mutate(
-#     season = str_sub(SetID,1,9),
-#     month_name = month(SetDate, label=TRUE, abbr = FALSE),
-#     season_month = paste0(season,"_",month_name),
-#     month_interval = paste0(month_name, 
-#                             "_", 
-#                             ifelse(day(SetDate)<=15,1,2)
-#     ),
-#     season_month_interval = paste0(season, 
-#                                    "_", 
-#                                    month_interval)
-#   )
-
+#----------------------------------------------------------------------------------
 
 # Read in and join license & pot limit info
 WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
@@ -77,22 +78,23 @@ WA_pot_limit_info %<>%
   rename(License = License_ID)
 
 # join Pot_Limit to traps_g_x 
-traps_g_x %<>%
+traps_g_pot_limit <- traps_g %>% 
   left_join(WA_pot_limit_info,by=c("License")) %>% 
   drop_na(Pot_Limit) 
-#couple instances of NAs (2013-2020) for cases with no license info for vessel provided - correct it with drop_na(Pot_Limit)
+#couple instances of NAs (2013-2020) for cases with no license info for vessel provided - WA landed data only
+#correct it with drop_na(Pot_Limit)
 #more instances of NAs if using 2009-2020 data, the current pot limit info does not cover some of the early years
 
 # apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
 # apply 2020 summer pot limit reduction (May-Sep)
 ## make a new column for summer pot limit reduction
-traps_g_x %<>% 
+traps_g_pot_limit %<>% 
   mutate(Pot_Limit_SummerReduction = Pot_Limit)
 ## split df to pre and post reduction periods
-df1 <- traps_g_x %>%
+df1 <- traps_g_pot_limit %>%
   filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
                               '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
-df2 <- traps_g_x %>%
+df2 <- traps_g_pot_limit %>%
   filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
                              '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
 ## adjust pot limit post 1 July 2019, and post 1 May 2020
@@ -124,7 +126,7 @@ traps_g_x %<>%
 M1_summtraps <- traps_g_x %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
   # count the total number of traps in each grid cell in each set
-  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID,AREA) %>%  
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID2,AREA) %>%  #use SetID2 just in case
   summarise(
     M1_ntraps_vessel_set_cell=n()
   ) %>% 
@@ -204,8 +206,137 @@ glimpse(adj_summtraps)
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
 #the code to join the grids that are in few pieces but with same IDs 
 
-#write a version that is done using WA logs, May-Sep, 2013-2020, WA waters only
-#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020_WA_logs_MaySep_WA_waters.rds"))
+#write a version that is done using logs 2014-2020 in WA waters only
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"))
+
+
+
+#----------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#Do another version where trap densitites are calculated on 1 month step instead of 2week step
+
+# code is same as above through joining pot limit info, adjsuting for May-Sep pot limit period
+# difference starts when apply weighting to pots
+
+# apply weighting based on permitted max pot number (this is Method 2 or M2)
+adj_traps_g_x <- traps_g_x %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count up traps for vessel in 2-week period
+  group_by(season_month, Vessel, License, Pot_Limit, Pot_Limit_SummerReduction) %>%  #HERE GROUP BY SEASON_MONTH instead of season_month_interval
+  summarise(
+    M2_n_traps_vessel=n(), na.rm=TRUE 
+  ) %>% 
+  # create a column with weighting - proportion of max allowed traps
+  # divide pot limit by number of simulated traps
+  # because you want to up-weight traps < pot_limit, and downweight traps > pot_limit
+  mutate(trap_limit_weight = Pot_Limit_SummerReduction/M2_n_traps_vessel) %>% 
+  ungroup()
+
+# join the "weighting key" back to the simulated pots data
+traps_g_x %<>%
+  left_join(adj_traps_g_x,by=c('season_month','Vessel','License','Pot_Limit','Pot_Limit_SummerReduction'))
+
+# do Method 1/M1 calculations/adjustment, group by season_month_interval 
+M1_summtraps <- traps_g_x %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month, Vessel, License, GRID5KM_ID,grd_x,grd_y,SetID2,AREA) %>%  #use SetID2 just in case
+  summarise(
+    M1_ntraps_vessel_set_cell=n()
+  ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_ntraps_vessel_cell=mean(M1_ntraps_vessel_set_cell)#,
+    #sd_traps_vessel_cell=sd(ntraps_vessel_set_cell) # want to come back and think about how to aggregate uncertainty
+  ) %>% 
+  # finally, sum the total traps per grid cell, across vessels
+  ungroup() %>% 
+  group_by(season_month, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    M1_tottraps=sum(M1_ntraps_vessel_cell),
+    # add count of unique vessels for confidentiality check, this could be done here or in mapping phase
+    nvessels=n_distinct(Vessel,na.rm=T) 
+  ) %>% 
+  # trap density (in sq. km) is total traps divided by area (which is in sq. m) of each cell
+  mutate(
+    M1_trapdens=M1_tottraps/(AREA/1e6)
+  ) %>% 
+  ungroup() %>% 
+  filter(!is.na(M1_tottraps))
+glimpse(M1_summtraps)
+
+
+# Now sum pots for M2 (just like for M1), use 'trap_limit_weight' to sum, instead of n().
+traps_summ <- traps_g_x %>% 
+  group_by(season_month,GRID5KM_ID,NGDC_GRID,grd_x,grd_y, AREA) %>%  
+  # this is the new/key step -- weighted_traps is the M2 version of 'tottraps' column of M1 method
+  summarise(M2_tottraps=sum(trap_limit_weight)) %>%  
+  mutate(
+    M2_trapdens=M2_tottraps/(AREA/1e6)
+  ) %>% ungroup() %>% 
+  filter(!is.na(M2_tottraps))
+glimpse(traps_summ) 
+
+
+# join results from M1 and M2 
+adj_summtraps <- left_join(M1_summtraps,traps_summ, by=c("season_month", "GRID5KM_ID", "grd_x", "grd_y", "AREA"))
+glimpse(adj_summtraps) 
+
+
+# fivekm_grid_polys_shore_lamb.shp shapefile: 5km grid cells that fall partially within any of the bays or estuaries 
+# will have a separate polygon within said bay or estuary that will have the same Grid5km_ID value as the adjacent 
+# portion of the 5km grid cell that does not fall within the bay or estuary. 
+# Therefore, if you want to calculate total area of each grid cell that falls in water, 
+# sum the total area for that grid cell by its Grid5km_ID value.
+
+# joining data for portions of grids with same grid ID
+# Somehow this chunk of code 'breaks' trying to scale from 0-1 for making difference maps
+adj_summtraps %<>%
+  group_by(season_month,GRID5KM_ID, grd_x,grd_y) %>% #remove NGDC_GRID as a grouping factor
+  summarise(
+    AREA = sum(AREA),
+    M1_tottraps = sum(M1_tottraps),
+    nvessels = sum(nvessels),
+    M1_trapdens = M1_tottraps/(AREA/1e6),
+    M2_tottraps = sum(M2_tottraps),
+    M2_trapdens = M2_tottraps/(AREA/1e6)
+  )
+glimpse(adj_summtraps)
+
+
+adj_summtraps %<>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) 
+glimpse(adj_summtraps)
+
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"))
+
+#----------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 # the below code are for comparing the M1 and M2 methods. This is no longer relevant as we will just move forward with M2
