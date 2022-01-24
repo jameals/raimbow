@@ -518,18 +518,133 @@ risk_whales_crab_season <- risk_whales %>%
 
 risk_whales_crab_season_2014_2020 <- risk_whales_crab_season %>%  
   filter(season %in% c('2013-2014', '2014-2015', '2015-2016', '2016-2017', '2017-2018', '2018-2019', '2019-2020'))
+#here all grids still exist
 
+
+risk_whales_crab_season_2014_2020_v2 <- risk_whales_crab_season_2014_2020 %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, blue_risk)
+  )
+#here all grids still exist
+
+
+#so loss of all study area grids happens somewhere here
 #then clip to study area
-study_area_grids_id <- sort(unique(study_area$GRID5KM_ID))
-risk_whales_crab_season_2014_2020_WA <-  risk_whales_crab_season_2014_2020 %>% filter(GRID5KM_ID %in% study_area_grids_id)
+study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) #this maps correctly
 
-risk_whales_crab_season_2014_2020_WA <-  risk_whales_crab_season_2014_2020 %>% 
-  mutate(study_area = ifelse(GRID5KM_ID %in% study_area_grids_id, 'Y', 'N'))
+#these lines don't do the job correctly
+# risk_whales_crab_season_2014_2020_WA <-  risk_whales_crab_season_2014_2020 %>% filter(GRID5KM_ID %in% study_area_grids_id) #with this lose some of the edge grids that don't have whale data
+# 
+# risk_whales_crab_season_2014_2020_WA <-  risk_whales_crab_season_2014_2020 %>% 
+#   mutate(study_area = ifelse(GRID5KM_ID %in% study_area_grids_id, 'Y', 'N'))
+# 
+# 
+# test <- risk_whales_crab_season_2014_2020_WA %>% filter(study_area=='Y') %>%  group_by(GRID5KM_ID) %>% summarise(n_rows=n())
 
 
-test <- risk_whales_crab_season_2014_2020_WA %>% filter(study_area=='Y') %>%  group_by(GRID5KM_ID) %>% summarise(n_rows=n())
+#these lines do the job correctly
+study_area_df <- as.data.frame(study_area_grids_id) %>% 
+  rename(GRID5KM_ID = study_area_grids_id) #%>% 
+  #mutate(study_area = 'Y')
 
-#NOT ALL GRIDS ARE LABELLED AS STUDY AREA
+############################################
+#this should be the correct stuff for 'study area'
+risk_whales_crab_season_2014_2020_WA <- full_join(study_area_df, risk_whales_crab_season_2014_2020_v2, by=c("GRID5KM_ID"))
+#only works on month level, not in May-Sep, -- the study area gridding needs to have all season-month combos
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("05", "06", "07", "08", "09"))
+season_month_combos <- crossing(season, month)
+study_area_df_with_all_season_month_combos <- crossing(study_area_df, season_month_combos)
+#and add to that the column to denote study area
+study_area_df_with_all_season_month_combos <-  study_area_df_with_all_season_month_combos %>% 
+  mutate(study_area = 'Y')
+
+x.whale_crab_season <- x.whale %>% 
+  separate(year_month, into = c("year", "month"), sep = "_")  
+x.whale_crab_season_v2 <- x.whale_crab_season %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end))
+x.whale_crab_season_v2_May_Sep <-  x.whale_crab_season_v2 %>% 
+  filter(month %in% c('05', '06', '07', '08', '09'))
+
+test_xx <- full_join(study_area_df_with_all_season_month_combos, x.whale_crab_season_v2_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+
+x.fish_WA4_v2 <- x.fish_WA4%>% 
+  select(-month, -yr_start, -yr_end) %>% 
+  separate(year_month, into = c("year", "month"), sep = "_") %>%   
+  mutate(year = as.numeric(year)) %>% 
+  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  select(-season_start, -season_end) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
+                  ,'MaySep', 'DecApr')) %>% 
+  filter(is_May_Sep=='MaySep')
+
+test_xx_v2 <- left_join(test_xx, x.fish_WA4_v2, by=c("GRID5KM_ID", "season", "month")) 
+
+test_xx_risk_whales <- test_xx_v2 %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, blue_risk)
+  ) %>% 
+  select(-is_May_Sep) %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+
+# risk_whales_crab_season_2014_2020_WA_xx <- full_join(study_area_df_with_all_season_month_combos, risk_whales_crab_season_2014_2020_v2, by=c("GRID5KM_ID", "season", "month"))
+# risk_whales_crab_season_2014_2020_WA_xx_May_Sep <-  risk_whales_crab_season_2014_2020_WA_xx %>% 
+#   filter(is_May_Sep=='MaySep') #the May-Sep filter causes loss of study area grids.
+# 
+# 
+# risk_whales_crab_season_2014_2020_v2_May_Sep <-  risk_whales_crab_season_2014_2020_v2 %>% 
+#   filter(is_May_Sep=='MaySep')
+# 
+# #the study area df doesn't have is_May_Sep info
+# risk_whales_crab_season_2014_2020_WA_May_Sep <- full_join(study_area_df_with_all_season_month_combos, risk_whales_crab_season_2014_2020_v2_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+# 
+# risk_whales_crab_season_2014_2020_WA_May_Sep_v2 <- risk_whales_crab_season_2014_2020_WA_May_Sep %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, blue_risk)
+#   ) 
+
+
 # grab a base map
 rmap.base <- c(
   st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
@@ -539,28 +654,35 @@ rmap.base <- c(
 )
 
 #bbox
-grid5km_bbox <- st_bbox(grid.5km.lno %>% 
-                          st_as_sf()
-)
+# grid5km_bbox <- st_bbox(grid.5km.lno %>% 
+#                           st_as_sf()
+# )
+bbox = c(-127,45,-120,49) 
 
-subset_data <- risk_whales_crab_season %>% 
+
+subset_data <- plot_subset %>% 
+  #filter(study_area=='Y') %>% 
+  #filter(is_May_Sep=='MaySep') %>% #the May-Sep filter causes loss of some study area grids
+  
   #select season to map 
-  filter(year_month=='2020_01') %>% 
-  #filter(season == "2019-2020") %>% 
+  #filter(year_month=='2020_01') %>% 
+  filter(season == "2017-2018") %>% 
+  filter(month == "06") %>% 
   #filter(is_May_Sep == 'MaySep') %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
-map_hump <- ggplot() + 
+map_test <- ggplot() + 
   geom_sf(data=sf::st_as_sf(subset_data), 
-          aes(fill=year,
-              col=year
+          aes(fill=study_area,
+              col=study_area
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
   #ggtitle("2009-2020 Median\nHumpback Whale Densities") +
-  coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
@@ -571,18 +693,95 @@ map_hump <- ggplot() +
         strip.text = element_text(size=14),
         title=element_text(size=16)
   )
-map_hump
+map_test
 
 
 
+#this causes a loss of som eof the study area grids
+plot_subset <- test_xx_risk_whales %>% 
+  filter(study_area=='Y') %>% 
+  filter(is_May_Sep=='Y') #it is the May-Sep filter that causes loss of some study area grids
 
 
 
+ts_hump_risk_May_Sep_study_area <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Humpback_risk_mean = mean(hump_risk, na.rm=TRUE)
+    ), 
+  aes(
+    x = season, 
+    y = Humpback_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Humpback Whale Risk\n(mean) May-Sep") + 
+  #xlab("Year") +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_risk_May_Sep_study_area
 
 
+ts_blue_risk_May_Sep_study_area <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Blue_risk_mean = mean(blue_risk, na.rm=TRUE)
+    ), 
+  aes(
+    x = season, 
+    y = Blue_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Blue Whale Risk\n(mean) May-Sep") + 
+  #xlab("Year") +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_risk_May_Sep_study_area
+
+# plot blues and humps together
+png(paste0(path_figures, "/ts_mean_blue_hump_risk_2014_2020_in_study_area_by crab season_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_risk_May_Sep_study_area,
+          ts_blue_risk_May_Sep_study_area,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
-
+#######################################################################################
 
 
 
