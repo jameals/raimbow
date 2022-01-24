@@ -28,12 +28,13 @@ grid.depth <- read.csv(path.grid.depth) %>%
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 #-----------------------------------------------------------------------------------
 
-
+#################################################
 #'study area' created in QGIS, to encompass all fished grids plus 'buffer' (grids that could be fished)
 #read in 'study area' (grid)
 study_area <- read_sf(here::here('wdfw','data', 'study_area.shp'))
 glimpse(study_area)
 plot(study_area)
+################################################
 
 
 #find out grids that were ever fished
@@ -59,7 +60,7 @@ glimpse(grids_ever_fished_WA_MaySep)
 plot(grids_ever_fished_WA_MaySep)
 
 #-----------------------------------------------------------------------------------
-
+###############################################################################
 #whale data
 
 #HW data 2009-July 2019
@@ -105,7 +106,7 @@ x.blue.all <- rbind(x.blue, x.blue_2019_2021)
 x.whale <- full_join(x.hump_2009_2020, x.blue.all, 
                      by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
-
+#####################################################################################
 
 #whale data in study area
 
@@ -114,8 +115,10 @@ study_area_grids_id <- sort(unique(study_area$GRID5KM_ID))
 x.whale_in_study_area <- x.whale %>% filter(GRID5KM_ID %in% study_area_grids_id)
 
 
-
+###########################################################
 #fishing effort
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+x.fish_WA <- readRDS(path.fish_WA)
 # get avg traps dens per grid cell for each yr month to allow matching with whale data
 x.fish_WA2 <- x.fish_WA %>%
   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
@@ -143,7 +146,7 @@ df2 <- df2 %>%
   mutate(year_month = paste0(yr_end,"_",month))
 # squish the December and non-December df's together  
 x.fish_WA4 <- rbind(df1,df2)
-
+#######################################################
 
 
 # join the whale and fishing data by year_month (join into hw data, that way restricted to study area)
@@ -551,14 +554,18 @@ study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) #this maps correctly
 # test <- risk_whales_crab_season_2014_2020_WA %>% filter(study_area=='Y') %>%  group_by(GRID5KM_ID) %>% summarise(n_rows=n())
 
 
+
+
+############################################
+study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) #this maps correctly
+
 #these lines do the job correctly
 study_area_df <- as.data.frame(study_area_grids_id) %>% 
   rename(GRID5KM_ID = study_area_grids_id) #%>% 
-  #mutate(study_area = 'Y')
+#mutate(study_area = 'Y')
 
-############################################
 #this should be the correct stuff for 'study area'
-risk_whales_crab_season_2014_2020_WA <- full_join(study_area_df, risk_whales_crab_season_2014_2020_v2, by=c("GRID5KM_ID"))
+#risk_whales_crab_season_2014_2020_WA <- full_join(study_area_df, risk_whales_crab_season_2014_2020_v2, by=c("GRID5KM_ID"))
 #only works on month level, not in May-Sep, -- the study area gridding needs to have all season-month combos
 season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
 month <- as.factor(c("05", "06", "07", "08", "09"))
