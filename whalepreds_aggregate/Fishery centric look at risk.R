@@ -320,6 +320,7 @@ ts_blue_risk_May_Sep_study_area
 
 
 risk_whales_WA_MaySep_by_seaon_month <- risk_whales_WA_MaySep %>% 
+  filter(study_area=='Y') %>% 
   group_by(season, month) %>%
   summarise(
     Humpback_risk_mean = mean(hump_risk, na.rm=TRUE),
@@ -361,7 +362,413 @@ test_ts <- ggplot(risk_whales_WA_MaySep_by_seaon_month, aes(x=as.factor(month), 
         legend.position="bottom"
   )
 test_ts 
+
+
+
 #######################################################################################
+#######################################################################################
+
+
+# risk to whales in 'grids ever fished'
+
+
+
+#find out grids that were ever fished
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+#x.fish_WA <- readRDS(path.fish_WA)
+### Get grid cells with non-NA values for all, and save that of fishing data (grids ever fished)
+grids_ever_fished_WA_waters <- sort(unique(x.fish_WA$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
+# grids_ever_fished_WA <- grid.5km %>% filter(GRID5KM_ID %in% grids_ever_fished_WA_waters)
+# glimpse(grids_ever_fished_WA)
+# plot(grids_ever_fished_WA)
+
+
+grids_ever_fished_df <- as.data.frame(grids_ever_fished_WA_waters) %>% 
+  rename(GRID5KM_ID = grids_ever_fished_WA_waters)
+
+
+#'grisd ever fished' needs to have all season-month combos for May-Sep
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("05", "06", "07", "08", "09"))
+season_month_combos <- crossing(season, month)
+grids_ever_fished_df_with_all_season_month_combos <- crossing(grids_ever_fished_df, season_month_combos) %>%
+  #and add to that the column to denote study area
+  mutate(grids_ever_fished = 'Y')
+
+
+
+
+#join whale data (same as above) to grids ever fished
+grids_ever_fished_whale <- full_join(grids_ever_fished_df_with_all_season_month_combos, x.whale_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+
+#join fishing data (same as above) to grids ever fished with whale data
+grids_ever_fished_whale_fishing <- left_join(grids_ever_fished_whale, x.fish_WA_MaySep, by=c("GRID5KM_ID", "season", "month")) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+
+
+#calculate risk  metric
+risk_whales_WA_MaySep <- grids_ever_fished_whale_fishing %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+#-----------------------------------------------------------------------------------
+# quick visual check with a map
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+# grid5km_bbox <- st_bbox(grid.5km.lno %>% 
+#                           st_as_sf()
+# )
+bbox = c(-127,45,-120,49) 
+
+
+subset_data <- risk_whales_WA_MaySep %>% 
+  filter(grids_ever_fished=='Y') %>% #restrict map to grids_ever_fished/check that all grids in grids_ever_fished show up
+  filter(season == "2018-2019") %>% 
+  filter(month == "05") %>% 
+  left_join(grid.5km, by = "GRID5KM_ID")
+
+map_test <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_data), 
+          aes(fill=grids_ever_fished,
+              col=grids_ever_fished
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  #scale_color_viridis(na.value=NA,option="D",name="") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  #ggtitle("2009-2020 Median\nHumpback Whale Densities") +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_test
+
+
+#-----------------------------------------------------------------------------------
+
+# ts plot: May-Sep risk to whales in study area
+
+plot_subset <- risk_whales_WA_MaySep %>% 
+  filter(grids_ever_fished=='Y')  #restrict calculations to grids ever fished
+
+ts_hump_risk_May_Sep_grids_ever_fished <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Humpback_risk_mean = mean(hump_risk, na.rm=TRUE)
+    ),
+  aes(
+    x = season, 
+    y = Humpback_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Humpback Whale Risk\n(mean) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_risk_May_Sep_grids_ever_fished
+
+
+ts_blue_risk_May_Sep_grids_ever_fished <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Blue_risk_mean = mean(blue_risk, na.rm=TRUE)
+    ), 
+  aes(
+    x = season, 
+    y = Blue_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Blue Whale Risk\n(mean) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_risk_May_Sep_grids_ever_fished
+
+
+# # plot blues and humps together and save
+# png(paste0(path_figures, "/ts_mean_blue_hump_risk_2014_2020_in_grids_ever_fished_by crab season_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+# ggarrange(ts_hump_risk_May_Sep_grids_ever_fished,
+#           ts_blue_risk_May_Sep_grids_ever_fished,
+#           ncol=1,
+#           nrow=2,
+#           legend="top",
+#           labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
+
+
+#######################################################################################
+#######################################################################################
+
+
+
+# risk to whales in 'grids ever fished in May-Sep'
+
+#find out grids that were ever fished during May-Sep months
+#subset data for May-Sep
+subset_x.fish_WA_MaySep <- x.fish_WA %>% 
+  mutate(is_May_Sep = 
+           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
+                  ,'Y', 'N')) %>% 
+  filter(is_May_Sep == "Y")
+grids_ever_fished_WA_waters_MaySep <- sort(unique(subset_x.fish_WA_MaySep$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
+# grids_ever_fished_WA_MaySep <- grid.5km %>% filter(GRID5KM_ID %in% grids_ever_fished_WA_waters_MaySep)
+# glimpse(grids_ever_fished_WA_MaySep)
+# plot(grids_ever_fished_WA_MaySep)
+
+
+grids_ever_fished_MaySep_df <- as.data.frame(grids_ever_fished_WA_waters_MaySep) %>% 
+  rename(GRID5KM_ID = grids_ever_fished_WA_waters_MaySep)
+
+
+#'grids ever fished in May-Sep' needs to have all season-month combos for May-Sep
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("05", "06", "07", "08", "09"))
+season_month_combos <- crossing(season, month)
+grids_ever_fished_MaySep_df_with_all_season_month_combos <- crossing(grids_ever_fished_MaySep_df, season_month_combos) %>%
+  #and add to that the column to denote study area
+  mutate(grids_ever_fished_MaySep = 'Y')
+
+
+
+
+#join whale data (same as above) to grids ever fished
+grids_ever_fished_MaySep_whale <- full_join(grids_ever_fished_MaySep_df_with_all_season_month_combos, x.whale_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+
+#join fishing data (same as above) to grids ever fished with whale data
+grids_ever_fished_MaySep_whale_fishing <- left_join(grids_ever_fished_MaySep_whale, x.fish_WA_MaySep, by=c("GRID5KM_ID", "season", "month")) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+
+
+#calculate risk  metric
+risk_whales_WA_MaySep <- grids_ever_fished_MaySep_whale_fishing %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+#-----------------------------------------------------------------------------------
+# quick visual check with a map
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+# grid5km_bbox <- st_bbox(grid.5km.lno %>% 
+#                           st_as_sf()
+# )
+bbox = c(-127,45,-120,49) 
+
+
+subset_data <- risk_whales_WA_MaySep %>% 
+  filter(grids_ever_fished_MaySep=='Y') %>% #restrict map to grids_ever_fished_MaySep/check that all grids in grids_ever_fished_MaySep show up
+  filter(season == "2018-2019") %>% 
+  filter(month == "05") %>% 
+  left_join(grid.5km, by = "GRID5KM_ID")
+
+map_test <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_data), 
+          aes(fill=blue_risk,
+              col=blue_risk
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  #scale_fill_viridis(na.value=NA,option="D",name="") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  #scale_color_viridis(na.value=NA,option="D",name="") + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
+  #ggtitle("2009-2020 Median\nHumpback Whale Densities") +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_test
+
+
+#-----------------------------------------------------------------------------------
+
+# ts plot: May-Sep risk to whales in study area
+
+plot_subset <- risk_whales_WA_MaySep %>% 
+  filter(grids_ever_fished_MaySep=='Y')  #restrict calculations to grids ever fished in May-Sep
+
+ts_hump_risk_May_Sep_grids_ever_fished_MaySep <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Humpback_risk_mean = mean(hump_risk, na.rm=TRUE)
+    ),
+  aes(
+    x = season, 
+    y = Humpback_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Humpback Whale Risk\n(mean) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_risk_May_Sep_grids_ever_fished_MaySep
+
+
+ts_blue_risk_May_Sep_grids_ever_fished_MaySep <- ggplot(
+  data = plot_subset %>% 
+    group_by(season) %>%
+    summarise(
+      Blue_risk_mean = mean(blue_risk, na.rm=TRUE)
+    ), 
+  aes(
+    x = season, 
+    y = Blue_risk_mean,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  ylab("Blue Whale Risk\n(mean) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_risk_May_Sep_grids_ever_fished_MaySep
+
+
+# # plot blues and humps together and save
+# png(paste0(path_figures, "/ts_mean_blue_hump_risk_2014_2020_in_grids_ever_fished_MaySep_by crab season_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+# ggarrange(ts_hump_risk_May_Sep_grids_ever_fished_MaySep,
+#           ts_blue_risk_May_Sep_grids_ever_fished_MaySep,
+#           ncol=1,
+#           nrow=2,
+#           legend="top",
+#           labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
