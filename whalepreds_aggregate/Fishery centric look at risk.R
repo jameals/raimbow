@@ -759,16 +759,24 @@ ts_blue_risk_May_Sep_grids_ever_fished_MaySep
 # invisible(dev.off())
 
 
+# #risk in grids ever fished in May-Sep
+#  season    Humpback_risk_mean    % change from 2017-18     Blue_risk_mean  % change from 2017-18
+#  2013-2014             0.0878                                1.20
+#  2014-2015             0.0426                                0.632
+#  2015-2016             0.0629                                0.990
+#  2016-2017             0.0702                                0.952
+#  2017-2018             0.0835                                1.34 
+#  2018-2019             0.0429         -48.6                  0.931           -30.5
+#  2019-2020             0.0334         -60                    0.785           -41.4
 
-
-
-
-
-
-
-
-
-
-
+#note that this is taking 'average of averages'
+#hump risk: average across non-reg seasons
+(0.0878+0.0426+0.0629+0.0702+0.0835)/5
+#0.0694
+#% change from the average
+(0.0429-0.0694)/0.0694*100
+#-38.18444
+(0.0334-0.0694)/0.0694*100
+#-51.8732
 
 
