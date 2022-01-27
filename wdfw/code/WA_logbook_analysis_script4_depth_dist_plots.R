@@ -36,7 +36,7 @@ options(dplyr.summarise.inform = FALSE)
 # From raw logbook data, need to run place_traps function (script 1) to create the traps along each line and get their depths
 # running code fro script 1 on the full logs (2013-2020) dataframe takes a long time, so ran it once and saved it as RDS 
 #traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
 
 glimpse(traps_g_all_logs)
 
