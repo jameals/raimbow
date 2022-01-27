@@ -25,11 +25,11 @@ names(grd)
 
 # read in version of traps_g, point data, that is clipped to WA waters - WA logs landed in WA
 # reading this shapefile in takes a long time
-# traps_g_x_raw <- read_sf(here::here('wdfw','data', 'shapefiles WA landed WA logs','traps_g_WA_landed_WA_logs_2013_2020_clipped_to_WA_waters_20220119.shp')) %>% 
+# traps_g_x_raw <- read_sf(here::here('wdfw','data', 'shapefiles WA landed WA logs','traps_g_WA_landed_WA_logs_2013_2020_clipped_to_WA_waters_20220126.shp')) %>% 
 #   st_transform(st_crs(grd)) #make it have same projection as the grid
 # #save a rds version and read that in in the future:
-# write_rds(traps_g_x_raw,here::here('wdfw','data',"traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220119.rds"))
-traps_g_WA_logs_2014_2020_20220119_clipped_raw <- read_rds(here::here('wdfw', 'data','traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220119.rds')) %>% 
+# write_rds(traps_g_x_raw,here::here('wdfw','data',"traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220126.rds"))
+traps_g_WA_logs_2014_2020_20220126_clipped_raw <- read_rds(here::here('wdfw', 'data','traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220126.rds')) %>% 
   select(-path, -layer) #columns that have been added in QGIS step, when joining files
 
 # WA logs landed in OR (Q999999) clipped to WA waters
@@ -41,7 +41,7 @@ traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw <- read_rds(here::here('w
 
 
 #join the files - full data set of logbook data in WA waters, landed in WA and OR
-traps_g_WA_logs_2014_2020_clipped <- rbind(traps_g_WA_logs_2014_2020_20220119_clipped_raw,traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw)
+traps_g_WA_logs_2014_2020_clipped <- rbind(traps_g_WA_logs_2014_2020_20220126_clipped_raw,traps_g_WA_Q999999_logs_2014_2020_20220119_clipped_raw)
 
 
 
@@ -65,8 +65,8 @@ traps_g <- traps_g_WA_logs_2014_2020_clipped %>%
   ) 
 
 ## could save here, and dew a new read call - then could ignore the above in future runs
-#write_rds(traps_g,here::here('wdfw','data',"traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds"))
-traps_g <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
+#write_rds(traps_g,here::here('wdfw','data',"traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds"))
+traps_g <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
 
 
 #----------------------------------------------------------------------------------
@@ -202,20 +202,20 @@ adj_summtraps %<>%
   mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2')))
 glimpse(adj_summtraps)
 
-#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
-#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
-#the code to join the grids that are in few pieces but with same IDs 
+
 
 #write a version that is done using logs 2014-2020 in WA waters only
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"))
 
-
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
+#the code to join the grids that are in few pieces but with same IDs 
 
 #----------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------
-#Do another version where trap densitites are calculated on 1 month step instead of 2week step
+#Do another version where trap densities are calculated on 1 month step instead of 2week step
 
-# code is same as above through joining pot limit info, adjsuting for May-Sep pot limit period
+# code is same as above through joining pot limit info, adjusting for May-Sep pot limit period
 # difference starts when apply weighting to pots
 
 # apply weighting based on permitted max pot number (this is Method 2 or M2)
