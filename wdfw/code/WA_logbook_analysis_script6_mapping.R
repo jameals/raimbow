@@ -261,9 +261,9 @@ M2_summtrapsWA_month %>%
 
 # test calculating number of grid cells in use in a given month
 test <- M2_summtrapsWA_month %>% 
-  filter(season_month == '2017-2018_July')
+  filter(season_month == '2017-2018_January')
 test_2 <- test %>% distinct(GRID5KM_ID, .keep_all = TRUE)
-nrow(test_2) #234 for 2017-2018_January, 92 for 2017-2018_July
+nrow(test_2) #172 for 2017-2018_January, 80 for 2017-2018_July
 
 #--------------------------
 #MAKING NON_CONFIDENTIAL MONTHLY MAPS
@@ -397,7 +397,7 @@ proc.time()-tm
 # Making summary maps for May - Sep 15 period
 
 ## Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
+adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
 
 # create a column in df to indicate whether data fall between May1 and Sep15
 # the 'periods' included between May1 and Sep15 are:
