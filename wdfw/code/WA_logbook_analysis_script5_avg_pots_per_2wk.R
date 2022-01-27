@@ -35,7 +35,7 @@ options(dplyr.summarise.inform = FALSE)
 # Start with traps_g df for all seasons (traps are simulated and joined to grid)
 # getting traps_g for full logs takes a long time to run, so saved it as RDS, which can be found in Kiteworks folder
 #traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
-traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220119.rds'))
+traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
 
 #traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2020
@@ -241,7 +241,7 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
         legend.position="bottom"
   )
 vessels_by_month_plot
-#ggsave(here('wdfw','plots', paste0('test number of active vessels by month_WA_waters_only_2wk_input_file_20220120','.png')),vessels_by_month_plot,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('test number of active vessels by month_WA_waters_only_2wk_input_file_20220127','.png')),vessels_by_month_plot,w=12,h=10)
 
 
 active_vessels_by_season <- testdf %>% 
@@ -251,13 +251,13 @@ active_vessels_by_season <- testdf %>%
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
 #UPDATED, does include effort in WA waters landed in OR:
 # season      n_unique_licenses
-# 2013-2014   161
-# 2014-2015   165
-# 2015-2016   158
-# 2016-2017   168
-# 2017-2018   158
-# 2018-2019   162
-# 2019-2020   148
+# 2013-2014   157
+# 2014-2015   159
+# 2015-2016   153
+# 2016-2017   161
+# 2017-2018   152
+# 2018-2019   157
+# 2019-2020   136
 
 #OLD, doesn't include effort in WA waters landed in OR:
 # season      n_unique_licenses
