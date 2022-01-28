@@ -476,7 +476,7 @@ map_post_regs_2019_2020_bw <- ggplot() +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
   scale_fill_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
   scale_color_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
-  #ggtitle("Post-regulations (2019-20)") +
+  ggtitle("Post-regulations (2019-20)") +
   #geom_sf(data = study_area, color = 'black', fill = NA) +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
