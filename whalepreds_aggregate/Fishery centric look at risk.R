@@ -377,7 +377,8 @@ study_area_hw <- study_area_whale %>%
   group_by(season) %>% 
   summarise(
     Hump_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
-    Hump_dens_median = median(Humpback_dens_mean, na.rm=TRUE)) %>% 
+    #Hump_dens_median = median(Humpback_dens_mean, na.rm=TRUE)
+    ) %>% 
   mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
   arrange(season)
 
@@ -399,7 +400,7 @@ ts_hump_dens_MaySep_study_area <- ggplot() +
   #geom_line(data = study_area_hw, aes(x = season, y = Hump_dens_median, group = 1), color = "darkred", linetype="twodash") +
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
-  ylab("Humpback Whale Density\n(mean and median) May-Sep") + 
+  ylab("Humpback Whale Density\n(mean) May-Sep") + 
   xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -415,6 +416,9 @@ ts_hump_dens_MaySep_study_area <- ggplot() +
   )
 ts_hump_dens_MaySep_study_area
 
+
+
+
 ts_blue_occur_MaySep_study_area <- ggplot() +
   geom_point(data = study_area_bw, aes(x = season, y = Blue_dens_mean, group = 1), size=4) +
   geom_line(data = study_area_bw, aes(x = season, y = Blue_dens_mean, group = 1)) +
@@ -422,7 +426,7 @@ ts_blue_occur_MaySep_study_area <- ggplot() +
   #geom_line(data = study_area_bw, aes(x = season, y = Blue_dens_median, group = 1), color = "darkred", linetype="twodash") +
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
-  ylab("Blue Whale Density\n(mean and median) May-Sep") + 
+  ylab("Blue Whale Density\n(mean) May-Sep") + 
   xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
