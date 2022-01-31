@@ -365,6 +365,93 @@ test_ts
 
 
 
+
+
+#COMPANION PLOT - ts plot of whale density/occurrence in study area
+
+#start with study_area_whale df - data already filtered to May-Sep, but filter seasons, and separate species
+
+study_area_hw <- study_area_whale %>% 
+  select(GRID5KM_ID:Humpback_dens_mean) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season) %>% 
+  summarise(
+    Hump_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
+    Hump_dens_median = median(Humpback_dens_mean, na.rm=TRUE)) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+
+study_area_bw <- study_area_whale %>%
+  select(-Humpback_dens_mean) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  group_by(season) %>%
+  summarise(
+    Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE)) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  arrange(season)
+
+
+ts_hump_dens_MaySep_study_area <- ggplot() +
+  geom_point(data = study_area_hw, aes(x = season, y = Hump_dens_mean, group = 1), size=4) +
+  geom_line(data = study_area_hw, aes(x = season, y = Hump_dens_mean, group = 1)) +
+  #geom_point(data = study_area_hw, aes(x = season, y = Hump_dens_median, group = 1), color = "darkred", size=4) +
+  #geom_line(data = study_area_hw, aes(x = season, y = Hump_dens_median, group = 1), color = "darkred", linetype="twodash") +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Humpback Whale Density\n(mean and median) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_dens_MaySep_study_area
+
+ts_blue_occur_MaySep_study_area <- ggplot() +
+  geom_point(data = study_area_bw, aes(x = season, y = Blue_dens_mean, group = 1), size=4) +
+  geom_line(data = study_area_bw, aes(x = season, y = Blue_dens_mean, group = 1)) +
+  #geom_point(data = study_area_bw, aes(x = season, y = Blue_dens_median, group = 1), color = "darkred", size=4) +
+  #geom_line(data = study_area_bw, aes(x = season, y = Blue_dens_median, group = 1), color = "darkred", linetype="twodash") +
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  ylab("Blue Whale Density\n(mean and median) May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_occur_MaySep_study_area
+
+# plot blues and humps together
+png(paste0(path_figures, "/ts_mean_blue_occur_hump_dens_2014_2020_by crab season_MaySep only_in_study_area.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_dens_MaySep_study_area,
+          ts_blue_occur_MaySep_study_area,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 #######################################################################################
 #######################################################################################
 
