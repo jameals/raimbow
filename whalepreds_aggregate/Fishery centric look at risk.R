@@ -132,6 +132,25 @@ x.fish_WA_MaySep <- x.fish_WA2 %>%
 # x.fish_WA4 <- rbind(df1,df2)
 
 
+#if no regs in place
+path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_NO_REGS.rds"
+x.fish_WA_no_regs <- readRDS(path.fish_WA_no_regs)
+# get avg traps dens per grid cell for each yr month to allow matching with whale data
+x.fish_WA2_no_regs <- x.fish_WA_no_regs %>%
+  group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+  summarise( 
+    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+    mean_M2_trapdens = mean(M2_trapdens), 
+  )
+
+# make column for year month for fishing data to allow matching with whale data
+x.fish_WA_MaySep_no_regs <- x.fish_WA2_no_regs %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) %>% #change month to two digit number
+  #restrict fishing data to May-Sep as was done to whale data
+  filter(month %in% c('05', '06', '07', '08', '09'))
+
 #-----------------------------------------------------------------------------------
 
 #'study area' created in QGIS, to encompass all fished grids plus 'buffer' (grids that could be fished)
@@ -186,6 +205,62 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
                   ,'Y', 'N'))
 
  
+
+#if no regs
+#join fishing data to study area grid with whale data
+study_area_whale_fishing_no_regs <- left_join(study_area_whale, x.fish_WA_MaySep_no_regs, by=c("GRID5KM_ID", "season", "month")) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+
+
+#calculate risk  metric
+risk_whales_WA_MaySep_no_regs <- study_area_whale_fishing_no_regs %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+
+mean_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>%
+  filter(season == '2018-2019') %>% 
+  filter(study_area=='Y')%>% 
+  group_by(season) %>% 
+  summarise(
+    Humpback_risk_mean_2018_2019 = mean(hump_risk, na.rm=TRUE),
+    sd_2018_2019 = sd(hump_risk, na.rm = TRUE),
+    n_2018_2019 = n()
+  )%>% 
+  mutate(se_2018_2019 = sd_2018_2019 / sqrt(n_2018_2019),
+         lower.ci_2018_2019 = Humpback_risk_mean_2018_2019 - qt(1 - (0.05 / 2), n_2018_2019 - 1) * se_2018_2019,
+         upper.ci_2018_2019 = Humpback_risk_mean_2018_2019 + qt(1 - (0.05 / 2), n_2018_2019 - 1) * se_2018_2019) 
+
+mean_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
+  filter(season == '2019-2020') %>% 
+  filter(study_area=='Y')%>% 
+  group_by(season) %>% 
+  summarise(
+    Humpback_risk_mean_2019_2020 = mean(hump_risk, na.rm=TRUE),
+    sd_2019_2020 = sd(hump_risk, na.rm = TRUE),
+    n_2019_2020 = n()
+  )%>% 
+  mutate(se_2019_2020 = sd_2019_2020 / sqrt(n_2019_2020),
+         lower.ci_2019_2020 = Humpback_risk_mean_2019_2020 - qt(1 - (0.05 / 2), n_2019_2020 - 1) * se_2019_2020,
+         upper.ci_2019_2020 = Humpback_risk_mean_2019_2020 + qt(1 - (0.05 / 2), n_2019_2020 - 1) * se_2019_2020)
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -297,6 +372,12 @@ ts_hump_risk_May_Sep_study_area <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line() +
+
+  geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_mean_2018_2019, group = 1), size=4, colour = 'red') +
+  #geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019,aes(x = season, ymin = lower.ci_2018_2019, ymax = upper.ci_2018_2019), colour="red", width=.2)+
+  geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_mean_2019_2020, group = 1), size=4, colour = 'red') +
+  #geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020,aes(x = season, ymin = lower.ci_2019_2020, ymax = upper.ci_2019_2020), colour="red", width=.2)+
+  
   geom_errorbar(aes(ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
   ylab("Humpback Whale Risk\nMay-Sep (mean +/- 95% CI)") + 
   xlab("Season") +
