@@ -242,12 +242,18 @@ mean_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>
   group_by(season) %>% 
   summarise(
     Humpback_risk_mean_2018_2019 = mean(hump_risk, na.rm=TRUE),
-    sd_2018_2019 = sd(hump_risk, na.rm = TRUE),
-    n_2018_2019 = n()
+    sd_2018_2019_hw = sd(hump_risk, na.rm = TRUE),
+    n_2018_2019_hw = n(),
+    Blue_risk_mean_2018_2019 = mean(blue_risk, na.rm=TRUE),
+    sd_2018_2019_bw = sd(blue_risk, na.rm = TRUE),
+    n_2018_2019_bw = n()
   )%>% 
-  mutate(se_2018_2019 = sd_2018_2019 / sqrt(n_2018_2019),
-         lower.ci_2018_2019 = Humpback_risk_mean_2018_2019 - qt(1 - (0.05 / 2), n_2018_2019 - 1) * se_2018_2019,
-         upper.ci_2018_2019 = Humpback_risk_mean_2018_2019 + qt(1 - (0.05 / 2), n_2018_2019 - 1) * se_2018_2019) 
+  mutate(se_2018_2019_hw = sd_2018_2019_hw / sqrt(n_2018_2019_hw),
+         lower.ci_2018_2019_hw = Humpback_risk_mean_2018_2019 - qt(1 - (0.05 / 2), n_2018_2019_hw - 1) * se_2018_2019_hw,
+         upper.ci_2018_2019_hw = Humpback_risk_mean_2018_2019 + qt(1 - (0.05 / 2), n_2018_2019_hw - 1) * se_2018_2019_hw) %>% 
+  mutate(se_2018_2019_bw = sd_2018_2019_bw / sqrt(n_2018_2019_bw),
+         lower.ci_2018_2019_bw = Blue_risk_mean_2018_2019 - qt(1 - (0.05 / 2), n_2018_2019_bw - 1) * se_2018_2019_bw,
+         upper.ci_2018_2019_bw = Blue_risk_mean_2018_2019 + qt(1 - (0.05 / 2), n_2018_2019_bw - 1) * se_2018_2019_bw)
 
 mean_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
   filter(season == '2019-2020') %>% 
@@ -255,12 +261,18 @@ mean_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>
   group_by(season) %>% 
   summarise(
     Humpback_risk_mean_2019_2020 = mean(hump_risk, na.rm=TRUE),
-    sd_2019_2020 = sd(hump_risk, na.rm = TRUE),
-    n_2019_2020 = n()
+    sd_2019_2020_hw = sd(hump_risk, na.rm = TRUE),
+    n_2019_2020_hw = n(),
+    Blue_risk_mean_2019_2020 = mean(blue_risk, na.rm=TRUE),
+    sd_2019_2020_bw = sd(blue_risk, na.rm = TRUE),
+    n_2019_2020_bw = n()
   )%>% 
-  mutate(se_2019_2020 = sd_2019_2020 / sqrt(n_2019_2020),
-         lower.ci_2019_2020 = Humpback_risk_mean_2019_2020 - qt(1 - (0.05 / 2), n_2019_2020 - 1) * se_2019_2020,
-         upper.ci_2019_2020 = Humpback_risk_mean_2019_2020 + qt(1 - (0.05 / 2), n_2019_2020 - 1) * se_2019_2020)
+  mutate(se_2019_2020_hw = sd_2019_2020_hw / sqrt(n_2019_2020_hw),
+         lower.ci_2019_2020_hw = Humpback_risk_mean_2019_2020 - qt(1 - (0.05 / 2), n_2019_2020_hw - 1) * se_2019_2020_hw,
+         upper.ci_2019_2020_hw = Humpback_risk_mean_2019_2020 + qt(1 - (0.05 / 2), n_2019_2020_hw - 1) * se_2019_2020_hw) %>% 
+  mutate(se_2019_2020_bw = sd_2019_2020_bw / sqrt(n_2019_2020_bw),
+         lower.ci_2019_2020_bw = Blue_risk_mean_2019_2020 - qt(1 - (0.05 / 2), n_2019_2020_bw - 1) * se_2019_2020_bw,
+         upper.ci_2019_2020_bw = Blue_risk_mean_2019_2020 + qt(1 - (0.05 / 2), n_2019_2020_bw - 1) * se_2019_2020_bw)
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -314,71 +326,28 @@ map_test
 
 # ts plot: May-Sep risk to whales in study area
 
-
 plot_subset <- risk_whales_WA_MaySep %>% 
-  filter(study_area=='Y')  #restrict calculations to study area
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Humpback_risk_mean = mean(hump_risk, na.rm=TRUE),
+    sd = sd(hump_risk, na.rm = TRUE),
+    n = n()
+  )%>% 
+  mutate(se = sd / sqrt(n),
+         lower.ci = Humpback_risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
+         upper.ci = Humpback_risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
 
-ts_hump_risk_May_Sep_study_area <- ggplot(
-  data = plot_subset %>% 
-    group_by(season) %>%
-    summarise(
-      Humpback_risk_mean = mean(hump_risk, na.rm=TRUE)
-    ),
-  aes(
-    x = season, 
-    y = Humpback_risk_mean,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-  ylab("Humpback Whale Risk\n(mean) May-Sep") + 
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_hump_risk_May_Sep_study_area
-
-
-#IF INCLUDE CI
-plot_subset <- risk_whales_WA_MaySep %>% 
-  filter(study_area=='Y') #restrict calculations to study area
+ts_hump_risk_May_Sep_study_area <- ggplot() +
+  geom_point(data = plot_subset, aes(x = season, y = Humpback_risk_mean,group = 1), size=4) +
+  geom_line(data = plot_subset, aes(x = season, y = Humpback_risk_mean,group = 1)) +
+  geom_errorbar(data = plot_subset,aes(x = season,ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
   
-ts_hump_risk_May_Sep_study_area <- ggplot(
-  data = plot_subset %>% 
-    group_by(season) %>%
-    summarise(
-      Humpback_risk_mean = mean(hump_risk, na.rm=TRUE),
-      sd = sd(hump_risk, na.rm = TRUE),
-      n = n()
-    )%>% 
-    mutate(se = sd / sqrt(n),
-           lower.ci = Humpback_risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
-           upper.ci = Humpback_risk_mean + qt(1 - (0.05 / 2), n - 1) * se),
-  aes(
-    x = season, 
-    y = Humpback_risk_mean,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-
   geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_mean_2018_2019, group = 1), size=4, colour = 'red') +
-  #geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019,aes(x = season, ymin = lower.ci_2018_2019, ymax = upper.ci_2018_2019), colour="red", width=.2)+
+  geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019,aes(x = season, ymin = lower.ci_2018_2019_hw, ymax = upper.ci_2018_2019_hw), colour="red", width=.2)+
   geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_mean_2019_2020, group = 1), size=4, colour = 'red') +
-  #geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020,aes(x = season, ymin = lower.ci_2019_2020, ymax = upper.ci_2019_2020), colour="red", width=.2)+
+  geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020,aes(x = season, ymin = lower.ci_2019_2020_hw, ymax = upper.ci_2019_2020_hw), colour="red", width=.2)+
   
-  geom_errorbar(aes(ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
   ylab("Humpback Whale Risk\nMay-Sep (mean +/- 95% CI)") + 
   xlab("Season") +
   theme_classic() +
@@ -395,59 +364,30 @@ ts_hump_risk_May_Sep_study_area <- ggplot(
   )
 ts_hump_risk_May_Sep_study_area
 
+#--------------
 
+plot_subset <- risk_whales_WA_MaySep %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Blue_risk_mean = mean(blue_risk, na.rm=TRUE),
+    sd_bw = sd(blue_risk, na.rm = TRUE),
+    n_bw = n()
+  )%>% 
+  mutate(se_bw = sd_bw / sqrt(n_bw),
+         lower.ci_bw = Blue_risk_mean - qt(1 - (0.05 / 2), n_bw - 1) * se_bw,
+         upper.ci_bw = Blue_risk_mean + qt(1 - (0.05 / 2), n_bw - 1) * se_bw)
 
-ts_blue_risk_May_Sep_study_area <- ggplot(
-  data = plot_subset %>% 
-    group_by(season) %>%
-    summarise(
-      Blue_risk_mean = mean(blue_risk, na.rm=TRUE)
-    ), 
-  aes(
-    x = season, 
-    y = Blue_risk_mean,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-  ylab("Blue Whale Risk\n(mean) May-Sep") + 
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_blue_risk_May_Sep_study_area
-
-#IF INCLUDE CI
-ts_blue_risk_May_Sep_study_area <- ggplot(
-  data = plot_subset %>% 
-    group_by(season) %>%
-    summarise(
-      Blue_risk_mean = mean(blue_risk, na.rm=TRUE),
-      sd_bw = sd(blue_risk, na.rm = TRUE),
-      n_bw = n()
-    )%>% 
-    mutate(se_bw = sd_bw / sqrt(n_bw),
-           lower.ci_bw = Blue_risk_mean - qt(1 - (0.05 / 2), n_bw - 1) * se_bw,
-           upper.ci_bw = Blue_risk_mean + qt(1 - (0.05 / 2), n_bw - 1) * se_bw),
-  aes(
-    x = season, 
-    y = Blue_risk_mean,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-  geom_errorbar(aes(ymin = lower.ci_bw, ymax = upper.ci_bw), colour="black", width=.2)+
+ts_blue_risk_May_Sep_study_area <- ggplot() +
+  geom_point(data = plot_subset, aes(x = season, y = Blue_risk_mean,group = 1), size=4) +
+  geom_line(data = plot_subset, aes(x = season, y = Blue_risk_mean,group = 1)) +
+  geom_errorbar(data = plot_subset,aes(x = season,ymin = lower.ci_bw, ymax = upper.ci_bw), colour="black", width=.2)+
+  
+  geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Blue_risk_mean_2018_2019, group = 1), size=4, colour = 'red') +
+  geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2018_2019,aes(x = season, ymin = lower.ci_2018_2019_bw, ymax = upper.ci_2018_2019_bw), colour="red", width=.2)+
+  geom_point(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Blue_risk_mean_2019_2020, group = 1), size=4, colour = 'red') +
+  geom_errorbar(data = mean_risk_whales_WA_MaySep_no_regs_2019_2020,aes(x = season, ymin = lower.ci_2019_2020_bw, ymax = upper.ci_2019_2020_bw), colour="red", width=.2)+
+  
   ylab("Blue Whale Risk\nMay-Sep (mean +/- 95% CI)") + 
   xlab("Season") +
   theme_classic() +
@@ -464,8 +404,10 @@ ts_blue_risk_May_Sep_study_area <- ggplot(
   )
 ts_blue_risk_May_Sep_study_area
 
+
+
 # plot blues and humps together and save
-# png(paste0(path_figures, "/ts_mean_blue_hump_risk_with_CI_2014_2020_in_study_area_by crab season_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+# png(paste0(path_figures, "/ts_mean_blue_hump_risk_with_CI_2014_2020_in_study_area_by crab season_MaySep_NO_REGS_2018_2020.png"), width = 14, height = 10, units = "in", res = 300)
 # ggarrange(ts_hump_risk_May_Sep_study_area,
 #           ts_blue_risk_May_Sep_study_area,
 #           ncol=1,
