@@ -37,6 +37,34 @@ x.fish_WA <- readRDS(path.fish_WA) %>%
 #   filter(!GRID5KM_ID %in% c(102128, 102458, 102787, 102788, 103117, 103118))
 
 
+#summary info of trap densities in May-Sep
+summary_x_fish_WA <- x.fish_WA %>% 
+  filter(is_May_Sep == 'Y') %>%  
+  group_by(season) %>% 
+  summarise(max_trap_dens = max(M2_trapdens),
+            trap_dens_95th = quantile(M2_trapdens, probs=0.95, na.rm=TRUE),
+            trap_dens_99th = quantile(M2_trapdens, probs=0.99, na.rm=TRUE)
+            )
+summary_pre_reg_trap_dens <- summary_x_fish_WA %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
+  summarise(
+    avg_max_trap_dens_pre_reg = mean(max_trap_dens)
+  )
+#69.2
+#% change from pre-regs average to 2018-19:
+(61.83287-69.2)/69.2*100
+#-10.64614
+#% change from pre-regs average to 2019-20:
+(48.77437-69.2)/69.2*100
+#-29.51681
+
+#-----------------------------------------------------------------------------------
+#The geom geom_density_ridges calculates density estimates from the provided data 
+#and then plots those, using the ridgeline visualization. 
+
+#'rel_min_height' = Lines with heights below this cutoff will be removed. 
+#'#The cutoff is measured relative to the overall maximum, so rel_min_height=0.01 would remove 
+#'everything that is 1\ ridgelines. Default is 0, so nothing is removed. 
 #-----------------------------------------------------------------------------------
 
 # If make ggridgeplots on full seasons, no clear difference in the last two
