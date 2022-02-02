@@ -84,8 +84,8 @@ grid.key_N46 <- grid.key %>%
 
 
 x.hump_whale <- x.hump_2009_2020 %>% 
-  inner_join(st_drop_geometry(grid.key_N44), by = "GRID5KM_ID")
-  #inner_join(st_drop_geometry(grid.key_N46), by = "GRID5KM_ID")
+  #inner_join(st_drop_geometry(grid.key_N44), by = "GRID5KM_ID")
+  inner_join(st_drop_geometry(grid.key_N46), by = "GRID5KM_ID")
 
 
 #instead of working in calendar years, work in crab seasons -- also filter to 2013-2020
@@ -115,8 +115,8 @@ x.whale.mean_all2013_2020 <- x.whale_crab_season_v2 %>% #this is already filtere
   summarise(
     #hw specific
     Mean_Humpback_dens = mean(Humpback_dens_mean, na.rm=TRUE)) %>%
-  inner_join(grid.key_N44)
-  #inner_join(grid.key_N46)
+  #inner_join(grid.key_N44)
+  inner_join(grid.key_N46)
 glimpse(x.whale.mean_all2013_2020)
 
 #find the 75th percentile value from across 2013-2020
@@ -131,6 +131,8 @@ glimpse(x.whale.all2013_2020_75th_quant)
 # if in the first clump of code above DON't get a mean for each grid across 
 # May-Sep 2013-2020, then 75th percentile value is 0.02408221
 # also the ts plot is slightly different, but overall same story
+# 0.02754667, when clipped to 46.26N
+
 
 #apply percentile value to each season
 x.whale.mean_by_season <- x.whale_crab_season_v2 %>%
@@ -138,8 +140,8 @@ x.whale.mean_by_season <- x.whale_crab_season_v2 %>%
   group_by(season, is_May_Sep, GRID5KM_ID, area_km_lno) %>%
   summarise(
     Mean_Humpback_dens = mean(Humpback_dens_mean, na.rm=TRUE)) %>%
-  inner_join(grid.key_N44)
-  #inner_join(grid.key_N46)
+  #inner_join(grid.key_N44)
+  inner_join(grid.key_N46)
 glimpse(x.whale.mean_by_season)
 
 x.whale.all2013_2020_MaySep_quant_joined <- x.whale.mean_by_season %>% 
@@ -149,8 +151,8 @@ glimpse(x.whale.all2013_2020_MaySep_quant_joined)
 x.whale.all2013_2020_MaySep_good_habitats <- x.whale.all2013_2020_MaySep_quant_joined %>% 
   ungroup() %>% 
   mutate(HW_is_75th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_75th, 'Y', 'N')) %>%
-  inner_join(grid.key_N44)
-  #inner_join(grid.key_N46)
+  #inner_join(grid.key_N44)
+  inner_join(grid.key_N46)
 glimpse(x.whale.all2013_2020_MaySep_good_habitats)
 
 #----------------
@@ -241,7 +243,7 @@ ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=s
   geom_errorbar(aes(x = season,ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
   ylab("Humpback whale risk (mean +/- 95% CI)") +
   xlab("Season") +
-  ggtitle("May-Sep risk (mean +/- 95% CI)\nin good (75th) HW habitat \n(defined across 2013-2020, clipped to 44N)") +
+  ggtitle("May-Sep risk (mean +/- 95% CI)\nin good (75th) HW habitat \n(defined across 2013-2020, clipped to 46.26N)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -257,7 +259,7 @@ ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=s
 ts_fishing_in_75th_hw_habitat
 
 
-png(paste0(path_figures, "/ts_risk_mean_CI_in_75th_hw_habitat_MaySep_clipped_to44N_risk_0_if_no_overlap.png"), width = 17, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_risk_mean_CI_in_75th_hw_habitat_MaySep_clipped_to46N_risk_0_if_no_overlap.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_fishing_in_75th_hw_habitat,
           ncol=1,
           nrow=1,
