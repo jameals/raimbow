@@ -59,6 +59,11 @@ grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 grid.depth <- read.csv(path.grid.depth) %>% 
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
+grid.key_N44 <- grid.key %>% 
+  filter(LATITUDE > 44) %>% 
+  #into this join area_km_lno info from layer: grid.5km.lno
+  left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
+
 #hw output 2009-July 2019
 # x.hump <- readRDS(path.hump) %>%
 #   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
@@ -121,7 +126,8 @@ x.blue.mean <- x.blue_crab_season_v2 %>%
   summarise(
     Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
   ) %>%
-  inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
+  inner_join(grid.key_N44)
+  #inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
 glimpse(x.blue.mean)
 
 #-----------------------------------------------------------------------------------
@@ -148,8 +154,8 @@ MaySep_good_bw_hab_050_occur <- x.blue.mean %>%
   group_by(season) %>% 
   mutate(BW_is_050_occur_or_higher = ifelse(Mean_Blue_occurrence > 0.50, 'Y', 'N')
   ) %>%
-  #inner_join(grid.key_N44)
-  inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
+  inner_join(grid.key_N44)
+  #inner_join(grid.5km.lno) #if don't want ro clip at e.g. 44N
 glimpse(MaySep_good_bw_hab_050_occur)
 
 #0.5 or 0.55 probability of occurrence seem the only values that would be useful, save a joint file
@@ -252,12 +258,18 @@ glimpse(x.fish_WA_MaySep)
 
 MaySep_good_bw_hab_050_055_occur <- read_rds(here::here('wdfw', 'data','MaySep_good_bw_hab_050_055_occur.rds'))
 MaySep_good_bw_hab_050_055_occur_fishing <- MaySep_good_bw_hab_050_055_occur %>% 
-  left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) 
+  left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) %>% 
+  left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") %>% 
+  filter(LATITUDE > 44)
 glimpse(MaySep_good_bw_hab_050_055_occur_fishing)
 
 MaySep_good_bw_hab_050_055_occur_fishing_risk <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
   mutate(
     blue_risk = Mean_Blue_occurrence * mean_trapdens
+  )%>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(blue_risk = 
+           ifelse(is.na(mean_trapdens), 0, blue_risk)
   )
 
 summary_050_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing_risk %>% 
@@ -266,10 +278,15 @@ summary_050_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing_risk 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
             trapdens_median = median(mean_trapdens, na.rm=TRUE),
             risk_mean = mean(blue_risk, na.rm=TRUE),
-            risk_sum = sum(blue_risk, na.rm=TRUE)
+            risk_sum = sum(blue_risk, na.rm=TRUE),
+            sd = sd(blue_risk, na.rm = TRUE),
+            n = n()
             #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             #tottraps_median = median(mean_tottraps, na.rm=TRUE)
-  )
+  )%>% 
+  mutate(se = sd / sqrt(n),
+         lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
+         upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
 glimpse(summary_050_bw_habitat_fishing)  
 
 
@@ -295,28 +312,37 @@ ts_fishing_in_050_bw_habitat <- ggplot(summary_050_bw_habitat_fishing, aes(x=sea
   )
 ts_fishing_in_050_bw_habitat
 
-# ts_fishing_in_050_bw_habitat <- ggplot(summary_050_bw_habitat_fishing, aes(x=season)) + 
-#   geom_line(aes(y = risk_sum, group = 1)) + 
-#   geom_point(aes(y = risk_sum, group = 1), size=2) + 
-#   #geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
-#   #geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
-#   ylab("Risk") + 
-#   xlab("Season") +
-#   ggtitle("May-Sep risk (sum)\nin good (>0.5 prob of occur.) BW habitat") +
-#   theme_classic() +
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-#         axis.text.y = element_text(size = 12),
-#         axis.title = element_text(size = 12),
-#         strip.text = element_text(size=12),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# ts_fishing_in_050_bw_habitat
+ts_fishing_in_050_bw_habitat <- ggplot(summary_050_bw_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_mean, group = 1)) +
+  geom_point(aes(y = risk_mean, group = 1), size=2) +
+  geom_errorbar(aes(x = season,ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
+  ylab("Blue whale risk (mean +/- 95% CI)") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (mean +/- 95% CI)\nin good (>0.5 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_050_bw_habitat
 
+png(paste0(path_figures, "/ts_risk_mean_CI_in_050_bw_habitat_MaySep_risk_NA_if_no_overlap_clipped_at_44N.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_050_bw_habitat,
+          ncol=1,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 #THERE IS NOT ENOUGH OVERLAP BETWEEN FISHERY AND >0.55 BW HABITAT
 # summary_055_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
