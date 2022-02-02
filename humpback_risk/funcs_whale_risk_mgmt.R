@@ -5,8 +5,8 @@ mgmt_risk_sum <- function(x1, x2, mon.keep, wa.flag = TRUE) {
     filter(mon %in% mon.keep) %>% 
     group_by(region, fish_season) %>% 
     summarise(risk_total_season = sum(risk_sum_total), 
-              risk_dens_season = sum(risk_sum_dens)) %>% 
-    ungroup() %>% 
+              risk_dens_season = sum(risk_sum_dens), 
+              .groups = "drop") %>% 
     mutate(risk_total_ratio = risk_total_season / x2$risk_total_season, 
            risk_dens_ratio = risk_dens_season / x2$risk_dens_season, 
            risk_total_diff = risk_total_season - x2$risk_total_season, 
@@ -104,21 +104,23 @@ mgmt_disp <- function(x, mon.cut, mon.dist, grid.region.summ, wa.flag = TRUE) {
   reg.areas <- x %>% 
     filter(!duplicated(GRID5KM_ID)) %>% 
     group_by(region) %>% 
-    summarize(area_sum = sum(area_km_lno))
+    summarize(area_sum = sum(area_km_lno), 
+              .groups = "drop")
   
   # Effort, summed by region and fishing season, to be redistributed
   eff.toredist <- x %>% 
     filter(mon %in% mon.cut) %>% 
     group_by(region, fish_season) %>% 
     summarise(yr_min = min(yr), 
-              eff = sum(vms_pings, na.rm = TRUE)) %>% 
-    ungroup()
+              eff = sum(vms_pings, na.rm = TRUE), 
+              .groups = "drop")
   
   # Total effort, by region and fishing season, in month from which to get redistribution proportions
   eff.redist.total <- x %>%
     filter(mon == mon.dist) %>%
     group_by(region, fish_season) %>%
-    summarise(eff_sum_region = sum(vms_pings, na.rm = TRUE))
+    summarise(eff_sum_region = sum(vms_pings, na.rm = TRUE), 
+              .groups = "drop")
   
   # 
   stopifnot(length(mon.dist) == 1)
@@ -152,8 +154,8 @@ mgmt_disp <- function(x, mon.cut, mon.dist, grid.region.summ, wa.flag = TRUE) {
     summarise(yr = min(yr), 
               area_sum = sum(area_km_lno[!duplicated(GRID5KM_ID)]), 
               risk_total_season = sum(risk_sum_total), 
-              risk_dens_season = risk_total_season / area_sum) %>% 
-    ungroup()
+              risk_dens_season = risk_total_season / area_sum, 
+              .groups = "drop")
   
   
   if (wa.flag) {

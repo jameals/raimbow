@@ -15,11 +15,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 README: This document is the same as 'Whale_risk_timeseries.Rmd', except using counties for regions and removing the anomaly section.
 
-This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and sums them by region. These summed values, as well as their densities, are then plotted. In addition, we plot the monthly ratio (x / x_mean) and z score ((x - x_mean) / x_sd), where the mean and sd are calculated by region/month and using only values from the 2009 - 2013 fishing seasons (Nov 2009 - Oct 2013).
+This document summarizes and plots time series of humpback whale risk of entanglement, as well as the humpback predictions and fishing measure values. It loads values generated in 'Whale_risk.Rmd', and sums them by region. These summed values, as well as their densities, are then plotted. 
 
-The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd'.
+The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd'. See that files for details about which fishing data are used. 
 
-This analysis currently is done using all CA data, and non-confidential OR and WA fishing data.
+This file uses 'Grid_region_county.Rdata' for the regions by which to plot the data.
 
 ```{r, message=FALSE}
 library(gridExtra)
