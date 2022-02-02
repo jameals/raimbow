@@ -132,6 +132,8 @@ glimpse(x.blue.mean)
 
 # try: if good bw habitat is defined as grids where average probability of occurrence is >0.50
 
+#these were done with the old fishing data (not clipped to WA waters, didn't include OR effort)
+#after updating fishing data, only tier 0.5 and 0.55, and 0.55 didn't have enough overlap
 # 0.75 probability of occurrence was too high cut-off, no good bw habitat in WA with that cut-off
 # 0.70 probability of occurrence was also too high cut-off, no good bw habitat overlap with fishery
 # 0.65 probability of occurrence was also too high cut-off, no good bw habitat overlap with fishery
@@ -158,7 +160,7 @@ glimpse(MaySep_good_bw_hab_050_occur)
 
 
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint.rds'))
+dissolved_2013_2014_MaySep <- read_rds(here::here('wdfw','data','dissolved_2013_2014_MaySep_WA_fishery_footprint_20220202.rds'))
 
 # grab a base map
 rmap.base <- c(
@@ -173,9 +175,9 @@ rmap.base <- c(
 bbox = c(-127,43.5,-120,49) 
 
 # plot blue whale
-bw_subset_MaySep <- MaySep_good_bw_hab_050_occur %>% 
+bw_subset_MaySep <- MaySep_good_bw_hab_050_055_occur %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% 
+  filter(season == "2013-2014") %>% 
   filter(!is.na(BW_is_050_occur_or_higher)) %>% 
   filter(BW_is_050_occur_or_higher == 'Y')
 
@@ -191,8 +193,8 @@ map_blue_MaySep_050_occur <- ggplot() +
   #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
-  ggtitle("May-Sep 2019-2020 \ngood BW habitat (>0.50 occurrence) \nwith 2019-2020 May-Sep fishery footprint") +
+  geom_sf(data = dissolved_2013_2014_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("May-Sep 2013-2014 \ngood BW habitat (>0.50 occurrence) \nwith 2013-2014 May-Sep fishery footprint") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -207,7 +209,7 @@ map_blue_MaySep_050_occur <- ggplot() +
   )
 map_blue_MaySep_050_occur
 
-png(paste0(path_figures, "/good_bw_habitat_050_occur_MaySep_2019_2020_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_bw_habitat_050_occur_MaySep_2013_2014_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_blue_MaySep_050_occur,
           ncol=1,
           nrow=1,
@@ -226,7 +228,7 @@ invisible(dev.off())
 
 #Then try to look at what trap density was like in the good bw habitat -- will need to check code
 #bring in fishing data 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
@@ -248,16 +250,23 @@ x.fish_WA_MaySep <- x.fish_WA %>%
 glimpse(x.fish_WA_MaySep)
 
 
+MaySep_good_bw_hab_050_055_occur <- read_rds(here::here('wdfw', 'data','MaySep_good_bw_hab_050_055_occur.rds'))
 MaySep_good_bw_hab_050_055_occur_fishing <- MaySep_good_bw_hab_050_055_occur %>% 
-  left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID'))
+  left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) 
 glimpse(MaySep_good_bw_hab_050_055_occur_fishing)
 
+MaySep_good_bw_hab_050_055_occur_fishing_risk <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
+  mutate(
+    blue_risk = Mean_Blue_occurrence * mean_trapdens
+  )
 
-summary_050_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
+summary_050_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing_risk %>% 
   filter(BW_is_050_occur_or_higher == 'Y') %>% 
   group_by(season) %>% 
   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
-            trapdens_median = median(mean_trapdens, na.rm=TRUE)
+            trapdens_median = median(mean_trapdens, na.rm=TRUE),
+            risk_mean = mean(blue_risk, na.rm=TRUE),
+            risk_sum = sum(blue_risk, na.rm=TRUE)
             #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             #tottraps_median = median(mean_tottraps, na.rm=TRUE)
   )
@@ -286,57 +295,79 @@ ts_fishing_in_050_bw_habitat <- ggplot(summary_050_bw_habitat_fishing, aes(x=sea
   )
 ts_fishing_in_050_bw_habitat
 
+# ts_fishing_in_050_bw_habitat <- ggplot(summary_050_bw_habitat_fishing, aes(x=season)) + 
+#   geom_line(aes(y = risk_sum, group = 1)) + 
+#   geom_point(aes(y = risk_sum, group = 1), size=2) + 
+#   #geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+#   #geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
+#   ylab("Risk") + 
+#   xlab("Season") +
+#   ggtitle("May-Sep risk (sum)\nin good (>0.5 prob of occur.) BW habitat") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_fishing_in_050_bw_habitat
 
 
+#THERE IS NOT ENOUGH OVERLAP BETWEEN FISHERY AND >0.55 BW HABITAT
+# summary_055_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
+#   filter(BW_is_055_occur_or_higher == 'Y') %>% 
+#   group_by(season) %>% 
+#   summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+#             trapdens_median = median(mean_trapdens, na.rm=TRUE)
+#             #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
+#             #tottraps_median = median(mean_tottraps, na.rm=TRUE)
+#   )
+# glimpse(summary_055_bw_habitat_fishing)
+# 
+# ts_fishing_in_055_bw_habitat <- ggplot(summary_055_bw_habitat_fishing, aes(x=season)) + 
+#   geom_line(aes(y = trapdens_mean, group = 1)) + 
+#   geom_point(aes(y = trapdens_mean, group = 1), size=2) + 
+#   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+#   geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
+#   ylab("Trap density") + 
+#   xlab("Season") +
+#   ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (>0.55 prob of occur.) BW habitat") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_fishing_in_055_bw_habitat
+# 
+# 
+# 
+# 
+# png(paste0(path_figures, "/ts_fishing_in_050_055_bw_habitat_MaySep_20220202.png"), width = 17, height = 10, units = "in", res = 300)
+# ggarrange(ts_fishing_in_050_bw_habitat,
+#           ts_fishing_in_055_bw_habitat,
+#           ncol=2,
+#           nrow=1,
+#           legend="top",
+#           labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
-summary_055_bw_habitat_fishing <- MaySep_good_bw_hab_050_055_occur_fishing %>% 
-  filter(BW_is_055_occur_or_higher == 'Y') %>% 
-  group_by(season) %>% 
-  summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
-            trapdens_median = median(mean_trapdens, na.rm=TRUE)
-            #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
-            #tottraps_median = median(mean_tottraps, na.rm=TRUE)
-  )
-glimpse(summary_050_bw_habitat_fishing)
 
-ts_fishing_in_055_bw_habitat <- ggplot(summary_055_bw_habitat_fishing, aes(x=season)) + 
-  geom_line(aes(y = trapdens_mean, group = 1)) + 
-  geom_point(aes(y = trapdens_mean, group = 1), size=2) + 
-  geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
-  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
-  ylab("Trap density") + 
-  xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (>0.55 prob of occur.) BW habitat") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_fishing_in_055_bw_habitat
-
-
-
-
-png(paste0(path_figures, "/ts_fishing_in_050_055_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_050_bw_habitat,
-          ts_fishing_in_055_bw_habitat,
-          ncol=2,
-          nrow=1,
-          legend="top",
-          labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
-
+#THIS HASN'T BEEN UPDATED FRO WA WATERS + OR DATA
 # change in mean trap dens between 2017-28 and 2019-20 seasons when prob occur >0.5
 # season      mean trap dens    max trap dens
 #2017-2018      5.0425274         49.504770
