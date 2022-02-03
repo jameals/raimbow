@@ -236,6 +236,11 @@ invisible(dev.off())
 #bring in fishing data 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA) %>% 
+  #Grid ID 122919 end up having very high trap densities in few months 
+  #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+  #this is because the grid is split across land, and few points happen to fall in a very tiny area
+  #remove it
+  filter(GRID5KM_ID != 122919) %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N'))
