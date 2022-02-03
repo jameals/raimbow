@@ -93,6 +93,11 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA)
+#Grid ID 122919 end up having very high trap densities in few months 
+#(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+#this is because the grid is split across land, and few points happen to fall in a very tiny area
+#remove it
+x.fish_WA <- x.fish_WA %>% filter(GRID5KM_ID != 122919)
 # get avg traps dens per grid cell for each yr month to allow matching with whale data
 x.fish_WA2 <- x.fish_WA %>%
   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
@@ -135,6 +140,11 @@ x.fish_WA_MaySep <- x.fish_WA2 %>%
 #if no regs in place
 path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_NO_REGS.rds"
 x.fish_WA_no_regs <- readRDS(path.fish_WA_no_regs)
+#Grid ID 122919 end up having very high trap densities in few months 
+#(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+#this is because the grid is split across land, and few points happen to fall in a very tiny area
+#remove it
+x.fish_WA_no_regs <- x.fish_WA_no_regs %>% filter(GRID5KM_ID != 122919)
 # get avg traps dens per grid cell for each yr month to allow matching with whale data
 x.fish_WA2_no_regs <- x.fish_WA_no_regs %>%
   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
@@ -406,18 +416,18 @@ ts_blue_risk_May_Sep_study_area
 
 
 
-# plot blues and humps together and save
-# png(paste0(path_figures, "/ts_mean_blue_hump_risk_with_CI_2014_2020_in_study_area_by crab season_MaySep_NO_REGS_2018_2020.png"), width = 14, height = 10, units = "in", res = 300)
-# ggarrange(ts_hump_risk_May_Sep_study_area,
-#           ts_blue_risk_May_Sep_study_area,
-#           ncol=1,
-#           nrow=2,
-#           legend="top",
-#           labels="auto",
-#           vjust=8,
-#           hjust=0
-# )
-# invisible(dev.off())
+#plot blues and humps together and save
+png(paste0(path_figures, "/ts_mean_blue_hump_risk_with_CI_2014_2020_in_study_area_by crab season_MaySep_NO_REGS_2018_2020.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_hump_risk_May_Sep_study_area,
+          ts_blue_risk_May_Sep_study_area,
+          ncol=1,
+          nrow=2,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 #risk in study area
 #season     Humpback_risk_mean    Blue_risk_mean
