@@ -26,10 +26,11 @@ grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 #fishing trap density gridded data
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
 
-#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
+#Grid ID 122919 end up having very high trap densities in few months 
+#(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
 #this is because the grid is split across land, and few points happen to fall in a very tiny area
 #remove it
-adj_summtraps <- adj_summtraps %>% filter(M2_trapdens < 244)
+adj_summtraps <- adj_summtraps %>% filter(GRID5KM_ID != 122919)
 
 #only focus on May-Sep data
 adj_summtraps_MaySep <- adj_summtraps %>% 
@@ -566,8 +567,8 @@ test3 <- ggarrange(
   hjust=0
 )
 
-png(paste0(path_figures, "/map_mean_bw_MaySep_pre_and_post_reg_test3.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(test3,
+png(paste0(path_figures, "/map_mean_bw_MaySep_pre_and_post_reg_test1.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(test1,
           ncol=1,
           nrow=1,
           #legend="top",
