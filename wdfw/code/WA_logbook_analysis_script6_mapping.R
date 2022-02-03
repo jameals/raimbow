@@ -42,10 +42,13 @@ options(dplyr.summarise.inform = FALSE)
 #adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2013_2020.rds'))
 adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
 
-#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
+#Grid ID 122919 end up having very high trap densities in few months 
+#(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
 #this is because the grid is split across land, and few points happen to fall in a very tiny area
 #remove it
-adj_summtraps <- adj_summtraps %>% filter(M2_trapdens < 244)
+adj_summtraps <- adj_summtraps %>% filter(GRID5KM_ID != 122919)
+#adj_summtraps <- adj_summtraps %>% filter(M2_trapdens < 244)
+#adj_summtraps <- adj_summtraps %>% filter(!(GRID5KM_ID == 122919 & M2_trapdens >109))
 
 
 # Read in spatial grid data 
@@ -397,7 +400,7 @@ proc.time()-tm
 # Making summary maps for May - Sep 15 period
 
 ## Cleaned and summarized, simulated crab trap data
-adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
+#adj_summtraps <- read_rds(here::here('wdfw','data','adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds'))
 
 # create a column in df to indicate whether data fall between May1 and Sep15
 # the 'periods' included between May1 and Sep15 are:
