@@ -23,6 +23,11 @@ grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 # look at May_Sep only
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA) %>% 
+  #Grid ID 122919 end up having very high trap densities in few months 
+  #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+  #this is because the grid is split across land, and few points happen to fall in a very tiny area
+  #remove it
+  filter(GRID5KM_ID != 122919) %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N'))
@@ -40,22 +45,22 @@ MaySep_area_fished <- x.fish_WA %>%
 # 2013-2014      2963
 # 2014-2015      2775
 # 2015-2016      2303
-# 2016-2017      3509
+# 2016-2017      3495
 # 2017-2018      4527
 # 2018-2019      3679
-# 2019-2020      3008
+# 2019-2020      2994
 
 #average area across pre-reg seasons
 mean_area_pre_reg <- MaySep_area_fished %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
   summarise(mean_area_pre_reg = mean(total_area_km2))
-#3215.4  
+#3212.43
 #% change from pre-reg average to 2018-19
-(3679-3215.4)/3215.4*100
-#14.41811
+(3679-3212.43)/3212.43*100
+#14.5239
 #% change from pre-reg average to 2019-20
-(3008-3215.4)/3215.4*100
-#-6.450208
+(2994-3212.43)/3212.43*100
+#-6.799526
 
 #--------------------------------------------------------------------------------
 
@@ -362,6 +367,20 @@ map_outline_2014_2020 <- ggplot() +
   )
 map_outline_2014_2020
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer_all_seasons.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(
+  map_outline_2014_2020, 
+  ncol=1,
+  nrow=1,
+  #legend="top",
+  #common.legend = TRUE,
+  #legend="right",
+  #labels="auto",
+  vjust=8,
+  hjust=0
+)
+invisible(dev.off())
 
 
 
