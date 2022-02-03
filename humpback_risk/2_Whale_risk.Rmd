@@ -11,9 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-The code in this document calculates (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure (e.g. # of VMS pings or $ of Dungeness crab landed). Thus, the units of the calculated risk values are (humpback abundance * VMS measure) / km^2.
+The code in this document calculates (humpback) whale risk of entanglement for each grid cell as: humpback density * fishing measure (e.g. # of VMS pings or $ of Dungeness crab landed). Thus, the units of the calculated risk values are (humpback density * VMS measure) / km^2. 
 
-Currently, this document uses non-confidential VMS data for Oregon and Washington, and confidential (i.e. all) data for California.
+Currently (as of 2 Feb 2022):
+
+1) the VMS measure is VMS pings.
+
+2) this document uses non-confidential (i.e., only cells with >= 3 pings) VMS data for Oregon and Washington and confidential (i.e. all) data for California.
 
 ```{r, message=FALSE}
 library(lubridate)
@@ -30,7 +34,7 @@ source(here::here("User_script_local.R"))
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  flag.save <- FALSE
+  flag.save <- TRUE
   
   # file.data.mnpreds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/WEAR5km_76_2009-01-02to2019-08-14_Bidaily_dens.csv"
   file.data.mnpreds <- "C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds"
@@ -42,7 +46,7 @@ if (user == "JS") {
   
   file.out.risk <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk.Rdata"
   file.out.risk.long <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
-
+  
 } else {
   stop("User not recognized")
 }
@@ -106,26 +110,32 @@ fish.summ.ca <- fish.daily.ca %>%
          year_mo = paste0("DC_", year_month)) %>%
   group_by(year_mo, GRID5KM_ID) %>%
   summarise(year = unique(year),
-            VMS_sum = sum(VMS_metric, na.rm = TRUE)) %>%
-  ungroup() %>%
+            VMS_sum = sum(VMS_metric, na.rm = TRUE), 
+            .groups = "drop") %>%
+  left_join(grid.5km.geom, by = "GRID5KM_ID") %>% 
+  filter(LATITUDE < 42) %>% 
   select(year, year_mo, GRID5KM_ID, VMS_sum)
 
 ### Read and process other (all) data - OR and WA
-fish.summ.all <- read_csv(file.vms) %>%
+fish.summ.all <- read_csv(file.vms, show_col_types = FALSE) %>%
   rename(VMS_curr = !!vms.colname.all) %>%
   mutate(VMS_metric = suppressWarnings(as.numeric(VMS_curr)),
          year_mo = paste0("DC_", year_mo)) %>%
   group_by(year_mo, GRID5KM_ID) %>%
   summarise(year = unique(year),
-            VMS_sum = sum(VMS_metric, na.rm = TRUE)) %>%
-  ungroup() %>%
-  select(year, year_mo, GRID5KM_ID, VMS_sum) %>% 
-  filter(!(GRID5KM_ID %in% fish.summ.ca$GRID5KM_ID))
+            VMS_sum = sum(VMS_metric, na.rm = TRUE), 
+            .groups = "drop") %>%
+  left_join(grid.5km.geom, by = "GRID5KM_ID") %>% 
+  filter(LATITUDE >= 42,
+         !(GRID5KM_ID %in% fish.summ.ca$GRID5KM_ID)) %>% 
+  select(year, year_mo, GRID5KM_ID, VMS_sum)
 
 ### Join CA and other data
 fish.summ <- bind_rows(fish.summ.ca, fish.summ.all) %>%
+  arrange(year_mo) %>% 
   select(year_mo, GRID5KM_ID, VMS_sum) %>%
-  spread(key = year_mo, value = VMS_sum)
+  pivot_wider(id_cols = GRID5KM_ID, names_from = year_mo, values_from = VMS_sum) %>% 
+  arrange(GRID5KM_ID)
 
 ### Add grid info
 fish.out <- humpback.dens %>% 

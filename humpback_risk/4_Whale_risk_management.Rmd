@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
+# if (Sys.info()["nodename"] == "SWC-SWOODMAN-L") knitr::opts_knit$set(root.dir = "../")
 ```
 
 ## Introduction
@@ -20,15 +20,15 @@ The goal of this document is to examine the change in risk under different manag
 library(scales)
 library(tidyverse)
 
-load("../raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
-source("humpback_risk/funcs_whale_risk_mgmt.R")
+load("C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata")
+source("funcs_whale_risk_mgmt.R")
 
-flag.save <- FALSE
-wa.inc <- FALSE
+flag.save <- TRUE
+wa.inc <- TRUE
 path.plots <- if (wa.inc) {
-  "../raimbow-local/Plots/Management/"
+  "C:/SMW/RAIMBOW/raimbow-local/Plots/Management/"
 } else {
-  "../raimbow-local/Plots/Management_noWA/"
+  "C:/SMW/RAIMBOW/raimbow-local/Plots/Management_noWA/"
 }
 ```
 
@@ -45,10 +45,14 @@ x.orig <- x %>%
   group_by(region, fish_season) %>% 
   summarise(yr = min(yr), 
             risk_total_season = sum(risk_sum_total), 
-            risk_dens_season = sum(risk_sum_dens)) %>% 
-  ungroup()
+            risk_dens_season = sum(risk_sum_dens), 
+            .groups = "drop")
 
-head(x.orig)
+# TODO: update as needed, No OR data for 2018
+x.orig.tmp <- x.orig %>% 
+  filter(!(region %in% c("WA", "OR") & fish_season == 10))
+
+head(x.orig, 15)
 ```
 
 ## Make function(s) and assign vals
@@ -66,54 +70,56 @@ ylab.total <- "Risk (whlaes*VMS pings)"
 This scenario is meant to test how risk would have changed if the CA-CBD settlement, closing the DC fishery April 15, had been in place beginning in 2009. Because we are working with monthly-summarized data, we will consider the fishery to be open through April.
 
 ```{r late}
-x.close05 <- mgmt_risk_sum(x, x.orig, c(11, 12, 1:4), wa.flag = wa.inc)
-
-# ### Line plot(s)
-# mgmt_plot_perc(
-#   x.close05, x.orig, 
-#   x.title = "Percentage of risk remaining with closing DC fishery May 1", 
-#   x.xlab = xlab.all, x.ylab = "Percentage"
-# )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+# x.close05 <- mgmt_risk_sum(x, x.orig, c(11, 12, 1:4), wa.flag = wa.inc)
 # 
-# mgmt_plot_diff(
-#   x.close05, x.orig, 
-#   x.title = "Difference in risk for fishing season with closing DC fishery May 1", 
-#   x.xlab = xlab.all, x.ylab = ylab.dens
-# )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
-
-
-### Bar plot(s)
-# mgmt_plot_bar(
+# # ### Line plot(s)
+# # mgmt_plot_perc(
+# #   x.close05, x.orig, 
+# #   x.title = "Percentage of risk remaining with closing DC fishery May 1", 
+# #   x.xlab = xlab.all, x.ylab = "Percentage"
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05.png"))
+# # 
+# # mgmt_plot_diff(
+# #   x.close05, x.orig, 
+# #   x.title = "Difference in risk for fishing season with closing DC fishery May 1", 
+# #   x.xlab = xlab.all, x.ylab = ylab.dens
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_diff.png"))
+# 
+# 
+# ### Bar plot(s)
+# # mgmt_plot_bar(
+# #   x.close05, x.orig, risk_dens_season, 
+# #   "Summed risk (density) - closing DC fishery May 1", ylab.dens
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar.png"))
+# # 
+# # mgmt_plot_bar(
+# #   x.close05, x.orig, risk_total_season, 
+# #   "Summed risk (total) - closing DC fishery May 1", ylab.total
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar_total.png"))
+# 
+# mgmt_plot_bardot(
 #   x.close05, x.orig, risk_dens_season, 
-#   "Summed risk (density) - closing DC fishery May 1", ylab.dens
+#   "Summed risk (density) - closing DC fishery May 1", ylab.dens, wa.flag = wa.inc
 # )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar.png"))
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_dens.png"))
 # 
-# mgmt_plot_bar(
+# mgmt_plot_bardot(
 #   x.close05, x.orig, risk_total_season, 
-#   "Summed risk (total) - closing DC fishery May 1", ylab.total
+#   "Summed risk (total) - closing DC fishery May 1", ylab.total, wa.flag = wa.inc
 # )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bar_total.png"))
-
-mgmt_plot_bardot(
-  x.close05, x.orig, risk_dens_season, 
-  "Summed risk (density) - closing DC fishery May 1", ylab.dens, wa.flag = wa.inc
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_dens.png"))
-
-mgmt_plot_bardot(
-  x.close05, x.orig, risk_total_season, 
-  "Summed risk (total) - closing DC fishery May 1", ylab.total, wa.flag = wa.inc
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.png"))
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close05_bardot_total.png"))
 ```
 
 Close April 1
 
 ```{r late2}
-x.close04 <- mgmt_risk_sum(x, x.orig, c(11, 12, 1:3), wa.flag = wa.inc)
+# TODO: update as needed, No OR data for 2018
+x.close04 <- mgmt_risk_sum(x, x.orig, c(11, 12, 1:3), wa.flag = wa.inc) %>% 
+  filter(!(region %in% c("WA", "OR") & fish_season == 10))
 
 # ### Line plot(s)
 # mgmt_plot_perc(
@@ -145,13 +151,13 @@ x.close04 <- mgmt_risk_sum(x, x.orig, c(11, 12, 1:3), wa.flag = wa.inc)
 # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bar_total.png"))
 
 mgmt_plot_bardot(
-  x.close04, x.orig, risk_dens_season, 
+  x.close04, x.orig.tmp, risk_dens_season, 
   "Summed risk (density) - closing DC fishery April 1", ylab.dens, wa.flag = wa.inc
 )
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_dens.png"))
+if (flag.save) ggsave(filename = "Mn_DC_close04_bardot_dens.png", path = path.plots)
 
 mgmt_plot_bardot(
-  x.close04, x.orig, risk_total_season, 
+  x.close04, x.orig.tmp, risk_total_season, 
   "Summed risk (total) - closing DC fishery April 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_close04_bardot_total.png"))
@@ -164,54 +170,56 @@ The only fishing season in which this closure had a strong impact on regions in 
 Opening fishery Dec 1
 
 ```{r early1}
-x.open12 <- mgmt_risk_sum(x, x.orig, c(12, 1:10), wa.flag = wa.inc)
-
-# ### Line plots
-# mgmt_plot_perc(
-#   x.open12, x.orig, 
-#   x.title = "Percentage of risk remaining with opening DC fishery Dec 1", 
-#   x.xlab = xlab.all, x.ylab = "Percentage"
-# )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+# x.open12 <- mgmt_risk_sum(x, x.orig, c(12, 1:10), wa.flag = wa.inc)
 # 
-# mgmt_plot_diff(
-#   x.open12, x.orig, 
-#   x.title = "Difference in risk for fishing season with opening DC fishery Dec 1", 
-#   x.xlab = xlab.all, x.ylab = ylab.dens
-# )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
-
-
-### Bar plot(s)
-# mgmt_plot_bar(
+# # ### Line plots
+# # mgmt_plot_perc(
+# #   x.open12, x.orig, 
+# #   x.title = "Percentage of risk remaining with opening DC fishery Dec 1", 
+# #   x.xlab = xlab.all, x.ylab = "Percentage"
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12.png"))
+# # 
+# # mgmt_plot_diff(
+# #   x.open12, x.orig, 
+# #   x.title = "Difference in risk for fishing season with opening DC fishery Dec 1", 
+# #   x.xlab = xlab.all, x.ylab = ylab.dens
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_diff.png"))
+# 
+# 
+# ### Bar plot(s)
+# # mgmt_plot_bar(
+# #   x.open12, x.orig, risk_dens_season, 
+# #   "Summed risk (density) - opening DC fishery Dec 1", ylab.dens
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar.png"))
+# # 
+# # mgmt_plot_bar(
+# #   x.open12, x.orig, risk_total_season, 
+# #   "Summed risk (total) - opening DC fishery Dec 1", ylab.total
+# # )
+# # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar_total.png"))
+# 
+# mgmt_plot_bardot(
 #   x.open12, x.orig, risk_dens_season, 
-#   "Summed risk (density) - opening DC fishery Dec 1", ylab.dens
+#   "Summed risk (density) - opening DC fishery Dec 1", ylab.dens, wa.flag = wa.inc
 # )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar.png"))
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_dens.png"))
 # 
-# mgmt_plot_bar(
+# mgmt_plot_bardot(
 #   x.open12, x.orig, risk_total_season, 
-#   "Summed risk (total) - opening DC fishery Dec 1", ylab.total
+#   "Summed risk (total) - opening DC fishery Dec 1", ylab.total, wa.flag = wa.inc
 # )
-# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bar_total.png"))
-
-mgmt_plot_bardot(
-  x.open12, x.orig, risk_dens_season, 
-  "Summed risk (density) - opening DC fishery Dec 1", ylab.dens, wa.flag = wa.inc
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_dens.png"))
-
-mgmt_plot_bardot(
-  x.open12, x.orig, risk_total_season, 
-  "Summed risk (total) - opening DC fishery Dec 1", ylab.total, wa.flag = wa.inc
-)
-if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.png"))
+# if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open12_bardot_total.png"))
 ```
 
 Opening fishery Jan 1
 
 ```{r early2}
-x.open01 <- mgmt_risk_sum(x, x.orig, c(1:10), wa.flag = wa.inc)
+# TODO: update as needed, No OR data for 2018
+x.open01 <- mgmt_risk_sum(x, x.orig, c(1:10), wa.flag = wa.inc) %>% 
+  filter(!(region %in% c("WA", "OR") & fish_season == 10))
 
 # ### Line plots
 # mgmt_plot_perc(
@@ -243,13 +251,13 @@ x.open01 <- mgmt_risk_sum(x, x.orig, c(1:10), wa.flag = wa.inc)
 # if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bar_total.png"))
 
 mgmt_plot_bardot(
-  x.open01, x.orig, risk_dens_season, 
+  x.open01, x.orig.tmp, risk_dens_season, 
   "Summed risk (density) - opening DC fishery Jan 1", ylab.dens, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_dens.png"))
 
 mgmt_plot_bardot(
-  x.open01, x.orig, risk_total_season, 
+  x.open01, x.orig.tmp, risk_total_season, 
   "Summed risk (total) - opening DC fishery Jan 1", ylab.total, wa.flag = wa.inc
 )
 if (flag.save) ggsave(filename = paste0(path.plots, "Mn_DC_open01_bardot_total.png"))

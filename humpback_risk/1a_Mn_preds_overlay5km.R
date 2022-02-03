@@ -7,7 +7,6 @@
 
 ###############################################################################
 library(dplyr)
-# devtools::install_github("smwoodman/eSDM") #Currently need dev version of eSDM
 library(eSDM)
 library(purrr)
 library(readr)

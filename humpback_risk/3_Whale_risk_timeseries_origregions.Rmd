@@ -17,9 +17,10 @@ This document summarizes and plots time series of humpback whale risk of entangl
 
 The whale risk file, e.g. 'Whale_risk_long_nona.Rdata', is created in 'Whale_risk.Rmd'. See that files for details about which fishing data are used. 
 
-This file uses 'Grid_region_zones.Rdata' for the regions by which to plot the data.
+This file uses 'Grid_region.Rdata' for the regions by which to plot the data.
 
 The user should also specifies `flag.save`, i.e. if, when knitting, the plots are saved to a file as well as being displayed in the knitted file.
+
 
 ```{r, message=FALSE}
 library(gridExtra)
@@ -27,26 +28,24 @@ library(lubridate)
 library(sf)
 library(tidyverse)
 
-library(rnaturalearth)
-
 source(here::here("humpback_risk/funcs_whale_risk_timeseries.R"))
 
 source(here::here("User_script_local.R"))
 if (user == "JS") {
   
 } else if (user == "SMW") {
-  flag.save <- TRUE
+  flag.save <- FALSE
   wa.inc <- TRUE
   file.landerased.rds <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_5km_landerased.rds"
   file.risk <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_long_nona.Rdata"
-  file.grid.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region_zones.Rdata"
+  file.grid.region <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Grid_region.Rdata"
   
-  file.out.timeseries <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_timeseries.Rdata"
-  path.plots <- if (wa.inc) {
-    "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries/"
-  } else {
-    "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries_noWA/"
-  }
+  file.out.timeseries <- "C:/SMW/RAIMBOW/raimbow-local/RDATA_files/Whale_risk_timeseries_origregions.Rdata"
+  # path.plots <- if (wa.inc) {
+  #   "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries/"
+  # } else {
+  #   "C:/SMW/RAIMBOW/raimbow-local/Plots/Whale_risk_timeseries_noWA/"
+  # }
   
 } else {
   stop("User not recognized")
@@ -60,13 +59,12 @@ Load humpback, fishing, and risk absolute values from "2_Whale_risk.Rmd", and th
 ```{r}
 load(file.risk)
 load(file.grid.region)
-all.df.orig <- all.df
-rm(all.df)
 ```
 
 We can visualize regions
 
 ```{r,fig.width=4, fig.height=6}
+library(rnaturalearth)
 rmap.base <- c(
   st_geometry(ne_states(country = "United States of America", returnclass = "sf")), 
   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>% 
@@ -79,8 +77,7 @@ grid.region.sf <- grid.region %>%
   mutate(region = factor(region, levels = reg.names)) %>% 
   left_join(grid.5km.lno, by = "GRID5KM_ID") %>% 
   st_sf()
-plot(grid.region.sf["region"], main = "Regions", 
-     axes = TRUE, border = NA, pal = rev(RColorBrewer::brewer.pal(6, "Set1")), 
+plot(grid.region.sf["region"], main = "Regions", axes = TRUE, border = NA, 
      xaxt = "n", key.length = 1, key.width = lcm(3.2), reset = FALSE)
 sf::.degAxis(1, at = c(-126, -122, -118))
 plot(rmap.base, add = TRUE, col = "tan", border = "black")
@@ -90,46 +87,41 @@ We want to sum the values by region and time period. We also calculate the densi
 
 ```{r}
 # Join regions by grid cell IDs
-all.df <- all.df.orig %>% 
+all.df <- all.df %>% 
   left_join(grid.region, by = "GRID5KM_ID") %>% 
-  filter(region != "CA-S")%>% 
-  replace_na(list(vms_pings = 0, risk_total = 0)) %>% 
-  mutate(region = droplevels(region), 
-         tokeep = !(region %in% c("OR", "WA") & (yr >= 2019 | (yr == 2018 & mon >= 8))), 
-         vms_pings = if_else(tokeep, vms_pings, NA_real_), 
-         risk_total = if_else(tokeep, risk_total, NA_real_)) %>% 
-  select(-tokeep)
-# filter(!(region %in% c("OR", "WA") & (yr >= 2019 | (yr == 2018 & mon >= 8))))
+  filter(region != "CA-S") %>% 
+  mutate(region = factor(region, levels = head(rev(reg.names), -1)))
 
 # Summarize
 all.df.summ <- all.df %>% 
   group_by(region, ym) %>% 
   summarise(yr = unique(yr), 
             mon = unique(mon), 
-            mn_sum_abund = sum(mn_abund, na.rm = F), 
-            vms_sum_pings = sum(vms_pings, na.rm = F), 
-            risk_sum_total = sum(risk_total, na.rm = F), 
+            mn_sum_abund = sum(mn_abund, na.rm = TRUE), 
+            vms_sum_pings = sum(vms_pings, na.rm = TRUE), 
+            risk_sum_total = sum(risk_total, na.rm = TRUE), 
             area_sum = sum(area_km_lno), 
             area_sum_mon1 = sum(area_km_lno[!is.na(mn_abund)]), 
-            area_sum_mon2 = sum(area_km_lno[!is.na(risk_total)]), 
-            .groups = "drop") %>% 
+            area_sum_mon2 = sum(area_km_lno[!is.na(risk_total)])) %>% 
+  ungroup() %>% 
   mutate(mn_sum_dens = mn_sum_abund / area_sum, 
          vms_sum_dens = vms_sum_pings / area_sum, 
          risk_sum_dens = risk_sum_total / area_sum, 
          mn_sum_dens_mon = mn_sum_abund / area_sum_mon1, 
          vms_sum_dens_mon = vms_sum_pings / area_sum_mon2, 
-         risk_sum_dens_mon = risk_sum_total / area_sum_mon2)# %>% 
-# replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
-
+         risk_sum_dens_mon = risk_sum_total / area_sum_mon2) %>% 
+  replace_na(list(vms_sum_dens_mon = 0, risk_sum_dens_mon = 0))
 
 if (flag.save) save(all.df, all.df.summ, file = file.out.timeseries)
 
-all.df.summ %>% distinct(region, area_sum)
+all.df.summ %>% 
+  filter(!duplicated(region)) %>% 
+  select(region, area_sum)
 ```
 
 ## Plot
 
-Once we have done all of the above data processing, we can generate plots. First, total sum plots:
+Once we have done all ofthe above data processing, we can generate plots. First, total sum plots:
 
 ```{r, fig.height=10, fig.width=10}
 p1 <- raimbow_ggplot(
@@ -147,9 +139,9 @@ p3 <- raimbow_ggplot(
 
 p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 
-# if (flag.save) 
-#   ggsave(filename = "Linear_humpback_risk_regional.png", p123, path = path.plots, 
-#          height = 10, width = 10)
+if (flag.save) 
+  ggsave(filename = "Linear_humpback_risk_regional.png", p123, path = path.plots, 
+         height = 10, width = 10)
 ```
 
 Next we plot the risk, humpback, and fishing densities, calculated using the area of cells with non-NA values for the whole time series
@@ -196,58 +188,6 @@ p123 <- grid.arrange(p1, p2, p3, nrow = 3)
 if (flag.save) 
   ggsave(filename = "Linear_humpback_risk_regional_monthlydens.png", p123, path = path.plots, 
          height = 10, width = 10)
-```
-
-## Plot Humpback abundance for paper
-
-Make humpback abundance-specific plot for Forney et al
-
-```{r}
-mn.all <- readRDS("C:/SMW/RAIMBOW/raimbow-local/Outputs/Humpback_5km_long_monthly.rds") %>% 
-  left_join(grid.region, by = "GRID5KM_ID") %>% 
-  filter(!region %in% c("CA-S", "CA-SCen"), !is.na(region)) %>% 
-  mutate(region = droplevels(region), 
-         ym = paste(year(date), str_pad(month(date), width = 2, pad = "0"), sep = "-"), 
-         mn_abund = Humpback_dens_mean * area_km_lno) %>% 
-    filter(if (!wa.inc) region != "WA" else !is.na(region))
-
-mn.all.summ <- mn.all %>% 
-  group_by(region, ym) %>% 
-  summarise(yr = unique(year(date)), 
-            mon = unique(month(date)), 
-            mn_sum_abund = sum(mn_abund, na.rm = TRUE),
-            area_sum = sum(area_km_lno), 
-            area_sum_mon1 = sum(area_km_lno[!is.na(mn_abund)]), 
-            .groups = "drop") %>% 
-  mutate(mn_sum_dens = mn_sum_abund / area_sum, 
-         mn_sum_dens_mon = mn_sum_abund / area_sum_mon1) 
-```
-
-```{r, fig.height=4, fig.width=10}
-p.mn.dens <- all.df.summ %>% 
-  filter(region != "CA-SCen") %>% 
-  mutate(region = droplevels(region)) %>%
-  filter(if (!wa.inc) region != "WA" else !is.na(region)) %>% 
-  raimbow_ggplot(mn_sum_dens_mon, plot.main = "Humpback whales", 
-                 y.lab = "Whales / km2", wa.flag = TRUE) + 
-  theme(legend.position = "left")
-
-
-p.mn.dens
-if (flag.save) 
-  ggsave(filename = "Humpback_monthlydens_.png", p.mn.dens, path = path.plots, 
-         height = 4, width = 10)
-```
-
-```{r, fig.height = 4, fig.width = 12}
-p.mn.dens.fullts <- raimbow_ggplot(mn.all.summ, mn_sum_dens_mon, plot.main = "Humpback whales", 
-                                   y.lab = "Whales / km2", wa.flag = TRUE) + 
-  theme(legend.position = "left")
-
-p.mn.dens.fullts
-if (flag.save) 
-  ggsave(filename = "Humpback_monthlydens_fullts.png", p.mn.dens.fullts, path = path.plots, 
-         height = 4, width = 12)
 ```
 
 ## Anomalies
