@@ -21,10 +21,12 @@ x.fish_WA <- readRDS(path.fish_WA) %>%
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N')) %>%
-#Grid ID 122919 has very high trap density (244pots/km2) in May 2013-2014 season
-#this is because the grid is split across land, and few points happen to fall in a very tiny area
-#remove it
-    filter(M2_trapdens < 244)
+  #Grid ID 122919 end up having very high trap densities in few months 
+  #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+  #this is because the grid is split across land, and few points happen to fall in a very tiny area
+  #remove it
+filter(GRID5KM_ID != 122919)
+
 
 
 #the above data is filtered to be only effort that is in WA waters
@@ -50,13 +52,13 @@ summary_pre_reg_trap_dens <- summary_x_fish_WA %>%
   summarise(
     avg_max_trap_dens_pre_reg = mean(max_trap_dens)
   )
-#69.2
+#59.4
 #% change from pre-regs average to 2018-19:
-(61.83287-69.2)/69.2*100
-#-10.64614
+(61.83287-59.4)/59.4*100
+#4.095741
 #% change from pre-regs average to 2019-20:
-(48.77437-69.2)/69.2*100
-#-29.51681
+(48.77437-59.4)/59.4*100
+#-17.88827
 
 #-----------------------------------------------------------------------------------
 #The geom geom_density_ridges calculates density estimates from the provided data 
