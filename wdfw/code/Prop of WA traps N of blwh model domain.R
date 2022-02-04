@@ -1,5 +1,5 @@
 ## WA logbook analysis 
-# BW model domains cuts short aroun 47.3N
+# BW model domains cuts short around 47.3N
 # Investigate proportion of WA DCRB traps that are north of where BW domain ends
 
 library(tidyverse)
@@ -36,11 +36,11 @@ options(dplyr.summarise.inform = FALSE)
 
 #------------------------------------------------------------------------------
 
-# Bring in WA logbook data as points (not summarised on grid cell level yet)
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_license_all_logs_2013_2020.rds'))
+# Bring in logbook data clipped to WA waters as points (not summarised on grid cell level yet)
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
 
 logs_all <- traps_g_all_logs %>% 
-  st_set_geometry(NULL) %>% 
+  #st_set_geometry(NULL) %>% 
   mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
   mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
   mutate(season = str_sub(SetID,1,9)) %>% 
@@ -66,7 +66,7 @@ distinct_bw_grids$bw_domain <- "bw_domain"
 bw_log_joined <- left_join(logs_all, distinct_bw_grids, by = c("GRID5KM_ID"))
 
 
-#If 'bw_domain' is NA, it means the simualted pot/logbook records is outside bw domain
+#If 'bw_domain' is NA, it means the simulated pot/logbook records is outside bw domain
 bw_log_joined_v2 <- bw_log_joined %>% 
   mutate(bw_domain=ifelse(is.na(bw_domain), "outside_bw_domain", "bw_domain")) %>% 
   #instances where labelled as outside_bw_domain: grids along klipsan beach (not full grid cells), 
@@ -76,7 +76,7 @@ bw_log_joined_v2 <- bw_log_joined %>%
 
 
 #-------------------------------------------------------------------------------------------------
-#visualisation
+#visualization
 
 # Read in spatial grid data 
 # example spatial grid - 5x5 grid shapefile
@@ -117,6 +117,7 @@ test_map_out <- sub_set %>%
   #scale_fill_viridis(na.value='grey70',option="C",limits=c(0,120),breaks=c(0,30,60,90,120),oob=squish)+
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4]))+
   labs(x='',y='',fill='2019-2020')
+test_map_out
 
 #-------------------------------------------------------------------------------------------------
 
@@ -135,6 +136,7 @@ percent_pots_outisde_bw_domain <-  bw_log_joined_v2 %>%
   mutate(is_May_Sep = 
            ifelse(m %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N')) %>% 
+  filter(is_May_Sep == 'Y') %>% 
   group_by(season, is_May_Sep) %>% 
   summarise(n_records = n(),
             n_outise_domain = length(bw_domain[bw_domain == "outside_bw_domain"])
