@@ -102,13 +102,16 @@ QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.s
 # there can be memory issues if running all 2009-2020 data
 
 #run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2019 data due to memory limits
-logs2013_2020 <- logs_WA %>% 
+logs2013_2020_WA <- logs_WA %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
-df <- logs2013_2020
+df <- logs2013_2020_WA
 
-logs2013_2020 <- logs_Q999999 %>% 
+logs2013_2020_Q999999 <- logs_Q999999 %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
-df <- logs2013_2020
+df <- logs2013_2020_Q999999
+
+#here could join the two pieces - ended up running the two separately and joining later
+#df <- rbind(logs2013_2020_WA, logs2013_2020_Q999999)
 
 #these might have memory issues
 # df <- logs_WA # run functions on all WA logs from 2009-10 onwards
@@ -152,10 +155,12 @@ df_v4 <- df_v3 %>%
 #mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
 
 #what percentage was excluded?
-# 0.049% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines longer than 80km
+# 0.054% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines longer than 80km
+#using both WA logs and Q99999 (but not clipped to WA waters)
 #nrow(df_v3 %>% filter(line_length_m > 80000))/nrow(df_v3)*100 
-# 0.087% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines 
+# 0.084% of data (logbook records/strings reported in logbooks) excluded (between 2013-2020) when remove stringlines 
 # that were 0m and had more than 50 pots reported on them
+#using both WA logs and Q99999 (but not clipped to WA waters)
 # nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
 
 #------------------
