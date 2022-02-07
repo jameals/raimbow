@@ -109,7 +109,9 @@ nrow(test_join %>% filter(!is.na(EXVESSEL_REVENUE)))
 #5038 --> 98.75%
 #cases where no Fishticket info found
 nrow(test_join %>% filter(is.na(EXVESSEL_REVENUE)))
-#64 --> 0.013%
+#64 --> 0.013% #this is 9 fishtickets that didn't match to Fishtix2014 file, 
+#some seem to be cases where set date and landing date don't match
+#plus 21 strings with no Fishticket number
 
 
 
@@ -193,4 +195,6 @@ test_join_Q999999 <- test_df_Q999999_2 %>%
 #nrow(test_join_Q999999) #6 --> it was 6 stringlines, all Q99999 so were they all landed on same fishticket??
 #might need to make an assumption that there would be only one fishticket per vessel per day
 
-
+##WHAT IF STRINGLINES WERE PART IN WA WATERS AND PART IN OR WATERS?? 
+#--> only seems to have happened in 2013-2014 season. 35% of pots were on WA side (stringlines continue to OR)
+#so could make the assumption that 35% of catch came from that side
