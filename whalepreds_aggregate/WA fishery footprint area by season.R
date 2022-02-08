@@ -19,9 +19,11 @@ path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 #-----------------------------------------------------------------------------------
 
-# bring in gridded WA logbook data, with trap density calculated per grid per 2-week period
+# bring in gridded WA logbook data, with trap density calculated per grid per 2-week ste or 1-month step
 # look at May_Sep only
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   #Grid ID 122919 end up having very high trap densities in few months 
   #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
@@ -41,12 +43,13 @@ MaySep_area_fished <- x.fish_WA %>%
   distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
   summarise(total_area_km2 = sum(AREA)/1e6)
 
-#  season    total_area (km2)
+#only one season differes if use 2w vs 1m data
+#  season    total_area (km2) using 1-mon data
 # 2013-2014      2963
 # 2014-2015      2775
 # 2015-2016      2303
 # 2016-2017      3495
-# 2017-2018      4527
+# 2017-2018      4527            4550
 # 2018-2019      3679
 # 2019-2020      2994
 
@@ -61,6 +64,16 @@ mean_area_pre_reg <- MaySep_area_fished %>%
 #% change from pre-reg average to 2019-20
 (2994-3212.43)/3212.43*100
 #-6.799526
+
+#using 1-month gridded data
+# mean_area_pre_reg = 3217.07 
+#% change from pre-reg average to 2018-19
+(3679-3217.07)/3217.07*100
+#14.35872
+#% change from pre-reg average to 2019-20
+(2994-3217.07)/3217.07*100
+#-6.933949
+
 
 #--------------------------------------------------------------------------------
 
@@ -312,7 +325,7 @@ map_outline_2019_2020
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
-png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer_using 1monthly gridded data.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(
   map_outline_2013_2014, 
   map_outline_2014_2015,
@@ -368,7 +381,7 @@ map_outline_2014_2020 <- ggplot() +
 map_outline_2014_2020
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
-png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer_all_seasons.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer_all_seasons_using 1monthly gridded data.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(
   map_outline_2014_2020, 
   ncol=1,
