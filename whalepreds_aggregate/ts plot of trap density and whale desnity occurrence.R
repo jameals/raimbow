@@ -239,6 +239,8 @@ ts_blue_dens
 #--------------------------------------------------------------------------
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
 #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
@@ -325,7 +327,7 @@ ts_trap_dens
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-png(paste0(path_figures, "/ts_mean_traps_and_whales_2014_2020_by crab season_study_area_or_fishing_grids.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_mean_traps_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_trap_dens,
           ts_hump_dens,
           ts_blue_dens,
