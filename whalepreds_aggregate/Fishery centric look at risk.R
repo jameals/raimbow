@@ -92,6 +92,8 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 #fishing effort
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
 #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
@@ -429,7 +431,7 @@ ggarrange(ts_hump_risk_May_Sep_study_area,
 )
 invisible(dev.off())
 
-#risk in study area
+#risk in study area on 2-weekly step
 #season     Humpback_risk_mean    Blue_risk_mean
 #2013-2014    0.03605983            0.5607328
 #2014-2015    0.01747583            0.2945987
@@ -460,6 +462,42 @@ invisible(dev.off())
 #% change 2019-20 from the average
 (0.3654850-0.4773763)/0.4773763*100
 #-23.4388
+
+
+
+#risk in study area on 1-monthly step
+#season     Humpback_risk_mean    Blue_risk_mean
+#2013-2014    0.03787078            0.5841150
+#2014-2015    0.01928306            0.3170477
+#2015-2016    0.02716107            0.4860761
+#2016-2017    0.03115241            0.4756449
+#2017-2018    0.03567586            0.6185416
+#2018-2019    0.01871023            0.4557479
+#2019-2020    0.01474822            0.3929198
+
+#note that this is taking 'average of averages'
+#hump risk: average across non-reg seasons
+(0.03787078+0.01928306+0.02716107+0.03115241+0.03567586)/5
+#0.03022864
+#% change 2018-19 from the average
+(0.01871023-0.03022864)/0.03022864*100
+#-38.10429
+#% change 2019-20 from the average
+(0.01474822-0.03022864)/0.03022864*100
+#-51.2111
+
+
+#note that this is taking 'average of averages'
+#blue risk: average across non-reg seasons
+(0.5841150+0.3170477+0.4860761+0.4756449+0.6185416)/5
+#0.4962851
+#% change 2018-19 from the average
+(0.4557479-0.4962851)/0.4962851*100
+#-8.168128
+#% change 2019-20 from the average
+(0.3929198-0.4962851)/0.4962851*100
+#-20.82781
+
 
 
 
