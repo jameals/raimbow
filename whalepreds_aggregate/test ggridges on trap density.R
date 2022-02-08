@@ -15,8 +15,10 @@ library(ggridges)
 
 #-----------------------------------------------------------------------------------
 
-# bring in gridded WA logbook data, with trap density calculated per grid per 2-week period
+# bring in gridded WA logbook data, with trap density calculated per grid per 2-week step or 1-month step
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   mutate(is_May_Sep = 
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
@@ -52,13 +54,29 @@ summary_pre_reg_trap_dens <- summary_x_fish_WA %>%
   summarise(
     avg_max_trap_dens_pre_reg = mean(max_trap_dens)
   )
-#59.4
+# on 2-week step: 59.4   on 1-month step: 60.5
 #% change from pre-regs average to 2018-19:
-(61.83287-59.4)/59.4*100
-#4.095741
+#on 2-week step:
+(61.83287-59.4)/59.4*100 #4.095741
+#on 1-month step:
+(58.97082-60.5)/60.5*100 #-2.52757
+
+#on 2-week step:
 #% change from pre-regs average to 2019-20:
-(48.77437-59.4)/59.4*100
-#-17.88827
+(48.77437-59.4)/59.4*100  #-17.88827
+#on 1-month step:
+(46.66595-60.5)/60.5*100  #-22.8662
+
+
+#Pre-regulations average 99th percentile of trap density 
+#on 2-week step: 42.8   on 1-month step: 45.7
+#% change from pre-reg average to 2018-19: 
+#on 2-week step: -12.0 
+#on 1-month step: -21.4
+
+#2019-20: 
+#on 2-week step:-30.6
+#on 1-month step:-34.4
 
 #-----------------------------------------------------------------------------------
 #The geom geom_density_ridges calculates density estimates from the provided data 
