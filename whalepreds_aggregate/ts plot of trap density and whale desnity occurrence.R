@@ -1,4 +1,4 @@
-# ts plot of trap density and whale desnity/occurrence
+# ts plot of trap density and whale density/occurrence
 
 #-----------------------------------------------------------------------------------
 
@@ -237,6 +237,129 @@ ts_blue_dens <- ggplot(
 ts_blue_dens
 
 #--------------------------------------------------------------------------
+#bar chart for whales mean +/- se Dec-Apr vs May-Sep
+#x.blue_2014_2020_crab_season
+#x.hump_2014_2020_crab_season
+
+x.blue_2014_2020_crab_season_bar <- x.blue_2014_2020_crab_season %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'May-Sep', 'Dec-Apr')) %>%  
+  group_by(is_May_Sep) %>%
+  summarise(
+    dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    sd = sd(Blue_occurrence_mean, na.rm = TRUE),
+    n = n()
+  )%>% 
+  mutate(se = sd / sqrt(n)
+  ) %>% 
+  mutate(species = 'bw')
+glimpse(x.blue_2014_2020_crab_season_bar)
+
+
+x.hump_2014_2020_crab_season_bar <- x.hump_2014_2020_crab_season %>% 
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'May-Sep', 'Dec-Apr')) %>%  
+  group_by(is_May_Sep) %>%
+  summarise(
+    dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
+    sd = sd(Humpback_dens_mean, na.rm = TRUE),
+    n = n()
+  )%>% 
+  mutate(se = sd / sqrt(n)
+  )%>% 
+  mutate(species = 'hw')
+glimpse(x.hump_2014_2020_crab_season_bar)
+
+whale_data_bar <- rbind(x.blue_2014_2020_crab_season_bar, x.hump_2014_2020_crab_season_bar)
+
+
+
+
+
+barchart <- ggplot(whale_data_bar, aes(x = species , y= dens_mean, fill = is_May_Sep )) +
+  geom_bar(position="dodge", stat = "identity") +
+  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), width=.25, position=position_dodge(.9)) +
+  labs(y = "Mean (+/- se) density/occurrence\n")+
+  scale_fill_manual(values=c('#999999','#E69F00'))+
+  theme_bw()+
+  theme(legend.title = element_blank()) 
+barchart
+
+
+
+
+
+p <- ggplot() +
+  geom_bar(data=x.blue_2014_2020_crab_season_bar, 
+           aes(x = species, y = dens_mean, fill = is_May_Sep), 
+           position="dodge", stat = "identity")+
+  
+  geom_errorbar(data=x.blue_2014_2020_crab_season_bar,
+                aes(x = species, ymin=dens_mean-se, ymax=dens_mean+se), 
+                width=.25, position=position_dodge()) +
+  
+  geom_bar(data=x.hump_2014_2020_crab_season_bar,
+                  aes(x = species, y = dens_mean*19.48371, fill = is_May_Sep),
+                      position="dodge", stat = "identity")+
+  
+  geom_errorbar(data=x.hump_2014_2020_crab_season_bar,
+                aes(x = species, ymin=dens_mean-se, ymax=dens_mean+se), 
+                width=.25, position=position_dodge()) +
+  
+# now adding the secondary axis, following the example in the help file ?scale_y_continuous
+# and, very important, reverting the above transformation
+  #name="blue whale\nmean probability of occurrence",
+  scale_y_continuous( 
+                     sec.axis = sec_axis(~./19.48371, name = "humpback whale\n mean density"))+
+
+  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
+  labs(y = "blue whale\nmean probability of occurrence",
+       x = "species")+
+  theme_bw()+
+  theme(legend.title = element_blank())
+p
+
+
+
+p1 <- ggplot(data=x.blue_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
+  geom_bar(position="dodge", stat = "identity")+
+  
+  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
+                width=.25, position=position_dodge(0.9)) +
+  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
+  labs(y = "blue whale\nmean probability of occurrence")+
+  theme_bw()+
+  theme(legend.title = element_blank())
+p1
+
+p2 <- ggplot(data=x.hump_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
+  geom_bar(position="dodge", stat = "identity")+
+  
+  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
+                width=.25, position=position_dodge(0.9)) +
+  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
+  labs(y = "humpback whale\nmean density")+
+  theme_bw()+
+  theme(legend.title = element_blank())
+p2
+
+#--------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
