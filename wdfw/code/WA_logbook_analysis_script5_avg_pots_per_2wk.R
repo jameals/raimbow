@@ -230,7 +230,7 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
   scale_colour_brewer(palette = "PRGn") +
   ylab("No. active vessels per month in WA \n(unique vessels in logs)") +
   xlab("Month") + #Month_1st or 2nd half
-  scale_y_continuous(breaks=seq(0, 160, 20),limits=c(0,160))+
+  scale_y_continuous(breaks=seq(0, 165, 20),limits=c(0,165))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
