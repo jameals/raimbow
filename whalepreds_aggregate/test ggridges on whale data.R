@@ -193,10 +193,18 @@ ggplot(study_area_bw, aes(x = Blue_occurrence_mean, y = season, height = ..densi
 
 
 
+x.blue_2014_2020_crab_season_May_Sep_44N <- x.blue_2014_2020_crab_season_May_Sep %>% 
+left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") %>% 
+  #filter(LATITUDE > 44) %>% 
+  filter(LATITUDE > 46.26)
 
-
-
-
+ggplot(x.blue_2014_2020_crab_season_May_Sep_44N, aes(x = Blue_occurrence_mean, y = season, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Blue whale occurrence (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
 
 
