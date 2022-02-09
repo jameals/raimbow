@@ -83,7 +83,8 @@ glimpse(testdf)
 
 #bring in 'raw' logs 
 logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
+#want to keep effort in WA waters by OR vessels
+#logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
 
 #sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
 logsdf <- logs %>% 
@@ -241,7 +242,7 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
         legend.position="bottom"
   )
 vessels_by_month_plot
-#ggsave(here('wdfw','plots', paste0('test number of active vessels by month_WA_waters_only_2wk_input_file_20220127','.png')),vessels_by_month_plot,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('test number of active vessels by month_WA_waters_only_2wk_input_file_20220209','.png')),vessels_by_month_plot,w=12,h=10)
 
 
 active_vessels_by_season <- testdf %>% 
@@ -251,13 +252,13 @@ active_vessels_by_season <- testdf %>%
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
 #UPDATED, does include effort in WA waters landed in OR:
 # season      n_unique_licenses
-# 2013-2014   157
-# 2014-2015   159
-# 2015-2016   153
-# 2016-2017   161
-# 2017-2018   152
-# 2018-2019   157
-# 2019-2020   136
+# 2013-2014   161
+# 2014-2015   165
+# 2015-2016   158
+# 2016-2017   168
+# 2017-2018   158
+# 2018-2019   162
+# 2019-2020   148
 
 #OLD, doesn't include effort in WA waters landed in OR:
 # season      n_unique_licenses
@@ -364,5 +365,5 @@ bar_chart <- ggplot(active_vessels_by_month_3, aes(x = month_name, y = n_unique_
         legend.position="bottom"
   )
 bar_chart
-#ggsave(here('wdfw','plots', paste0('Prop of active vessels per month by permit tier groups_WA_waters_only_2wk_input_file_20220120','.png')),bar_chart,w=12,h=10)
+#ggsave(here('wdfw','plots', paste0('Prop of active vessels per month by permit tier groups_WA_waters_only_2wk_input_file_20220209','.png')),bar_chart,w=12,h=10)
 
