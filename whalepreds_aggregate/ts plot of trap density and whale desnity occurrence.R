@@ -106,8 +106,9 @@ ts_hump_dens <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line() +
+  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
-  #                   limits = c(2009.5,2021.5)) +
+  #                   limits = c(2013-2014_12,2019-2020_09)) +
   ylab("Mean Humpback Whale Density\nin study area") + 
   xlab("Season_month") +
   theme_classic() +
@@ -205,6 +206,7 @@ x.blue_2014_2020_crab_season_v2 <- x.blue_2014_2020_crab_season %>%
   filter(season_month != '2019-2020_10')
 glimpse(x.blue_2014_2020_crab_season_v2)
 
+
 ordered.ids <- factor(x.blue_2014_2020_crab_season_v2$season_month, levels=x.blue_2014_2020_crab_season_v2$season_month)
 
 ts_blue_dens <- ggplot(
@@ -218,6 +220,7 @@ ts_blue_dens <- ggplot(
 ) +
   geom_point(size=4) +
   geom_line() +
+  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
   ylab("Mean Blue Whale Occurrence\nin study area") + 
@@ -240,6 +243,7 @@ ts_blue_dens
 #bar chart for whales mean +/- se Dec-Apr vs May-Sep
 #x.blue_2014_2020_crab_season
 #x.hump_2014_2020_crab_season
+
 
 x.blue_2014_2020_crab_season_bar <- x.blue_2014_2020_crab_season %>% 
   mutate(is_May_Sep = 
@@ -272,78 +276,69 @@ x.hump_2014_2020_crab_season_bar <- x.hump_2014_2020_crab_season %>%
   mutate(species = 'hw')
 glimpse(x.hump_2014_2020_crab_season_bar)
 
-whale_data_bar <- rbind(x.blue_2014_2020_crab_season_bar, x.hump_2014_2020_crab_season_bar)
-
-
-
-
-
-barchart <- ggplot(whale_data_bar, aes(x = species , y= dens_mean, fill = is_May_Sep )) +
-  geom_bar(position="dodge", stat = "identity") +
-  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), width=.25, position=position_dodge(.9)) +
-  labs(y = "Mean (+/- se) density/occurrence\n")+
-  scale_fill_manual(values=c('#999999','#E69F00'))+
-  theme_bw()+
-  theme(legend.title = element_blank()) 
-barchart
-
-
-
-
-
-p <- ggplot() +
-  geom_bar(data=x.blue_2014_2020_crab_season_bar, 
-           aes(x = species, y = dens_mean, fill = is_May_Sep), 
-           position="dodge", stat = "identity")+
-  
-  geom_errorbar(data=x.blue_2014_2020_crab_season_bar,
-                aes(x = species, ymin=dens_mean-se, ymax=dens_mean+se), 
-                width=.25, position=position_dodge()) +
-  
-  geom_bar(data=x.hump_2014_2020_crab_season_bar,
-                  aes(x = species, y = dens_mean*19.48371, fill = is_May_Sep),
-                      position="dodge", stat = "identity")+
-  
-  geom_errorbar(data=x.hump_2014_2020_crab_season_bar,
-                aes(x = species, ymin=dens_mean-se, ymax=dens_mean+se), 
-                width=.25, position=position_dodge()) +
-  
-# now adding the secondary axis, following the example in the help file ?scale_y_continuous
-# and, very important, reverting the above transformation
-  #name="blue whale\nmean probability of occurrence",
-  scale_y_continuous( 
-                     sec.axis = sec_axis(~./19.48371, name = "humpback whale\n mean density"))+
-
-  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
-  labs(y = "blue whale\nmean probability of occurrence",
-       x = "species")+
-  theme_bw()+
-  theme(legend.title = element_blank())
-p
-
 
 
 p1 <- ggplot(data=x.blue_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
   geom_bar(position="dodge", stat = "identity")+
-  
   geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
                 width=.25, position=position_dodge(0.9)) +
   scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
-  labs(y = "blue whale\nmean probability of occurrence")+
+  scale_y_continuous(position = "right")+
+  labs(y = "blue whale mean (+/-SE)\nprobability of occurrence",
+       x = "Dec-Apr   May-Sep")+
   theme_bw()+
-  theme(legend.title = element_blank())
+  theme(legend.position = "none",
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 p1
 
 p2 <- ggplot(data=x.hump_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
   geom_bar(position="dodge", stat = "identity")+
-  
   geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
                 width=.25, position=position_dodge(0.9)) +
   scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
-  labs(y = "humpback whale\nmean density")+
+  scale_y_continuous(position = "right")+
+  labs(y = "humpback whale\nmean (+/-SE) density",
+       x = "Dec-Apr   May-Sep")+
   theme_bw()+
-  theme(legend.title = element_blank())
+  theme(legend.position = "none",
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 p2
+
+
+ts_plots <- ggarrange(ts_hump_dens,
+                      ts_blue_dens,
+                      ncol=1,
+                      nrow=2,
+                      #legend="top",
+                      #labels="auto",
+                      vjust=8,
+                      hjust=0
+)
+
+
+
+
+#https://stackoverflow.com/questions/18427455/multiple-ggplots-of-different-sizes
+lay_out = function(...) {    
+  x <- list(...)
+  n <- max(sapply(x, function(x) max(x[[2]])))
+  p <- max(sapply(x, function(x) max(x[[3]])))
+  grid::pushViewport(grid::viewport(layout = grid::grid.layout(n, p)))    
+  
+  for (i in seq_len(length(x))) {
+    print(x[[i]][[1]], vp = grid::viewport(layout.pos.row = x[[i]][[2]], 
+                                           layout.pos.col = x[[i]][[3]]))
+  }
+} 
+
+lay_out(list(ts_plots, 1:2, 1:3),
+        list(p2, 1, 4),
+        list(p1, 2, 4))
+
+
+
 
 #--------------------------------------------------------------------------
 
@@ -358,7 +353,8 @@ p2
 
 
 
-
+#--------------------------------------------------------------------------
+#if wanted to have third layer to ts to show fishing data
 
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
@@ -442,7 +438,7 @@ ts_trap_dens <- ggplot(
 ts_trap_dens
 
 
-#-----------------------------------------------------------------------------------
+#--------
 #join and save all plots into one figure
 #ts_trap_dens
 #ts_hump_dens
