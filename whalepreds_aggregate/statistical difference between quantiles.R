@@ -90,16 +90,16 @@ x.fish_WA_MaySep_groups <- x.fish_WA_MaySep %>%
                   "post-reg")
                   )
 
-testx2 <- qcomhd(M2_trapdens ~ seasons_with_regs, data = x.fish_WA_MaySep_groups, q = c(0.25, 0.5, 0.75), nboot = 500)
+testx2 <- qcomhd(M2_trapdens ~ seasons_with_regs, data = x.fish_WA_MaySep_groups, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 testx2
 
 
 #comparing the two post-reg seasons against each other
 x.fish_WA_MaySep_xx <- x.fish_WA_MaySep %>% 
-  filter(season %in% c('2018-2019','2019-2020')) %>% 
-  mutate(season = factor(season, levels = c('2018-2019','2019-2020')))
+  filter(season %in% c('2016-2017','2018-2019')) %>% 
+  mutate(season = factor(season, levels = c('2016-2017','2018-2019')))
 
-testx3 <- qcomhd(M2_trapdens ~ season, data = x.fish_WA_MaySep_xx, q = c(0.25, 0.5, 0.75), nboot = 500)
+testx3 <- qcomhd(M2_trapdens ~ season, data = x.fish_WA_MaySep_xx, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 testx3
 
 
