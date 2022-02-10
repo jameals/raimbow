@@ -87,6 +87,67 @@ summary_pre_reg_trap_dens <- summary_x_fish_WA %>%
 #'everything that is 1\ ridgelines. Default is 0, so nothing is removed. 
 #-----------------------------------------------------------------------------------
 
+# May-Sep only
+# data left on 2-week time step
+
+x.fish_WA_MaySep <-  x.fish_WA %>% 
+  filter(is_May_Sep == "Y") %>% 
+  mutate(month_name = factor(month_name, levels = c('September', 'August', 'July', 'June', 'May')))
+
+x.fish_WA_MaySep$season <- factor(x.fish_WA_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
+
+
+###########################################################################
+## THIS IS PERHAPS THE BEST LOOKING ONE
+ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = ..density..)) + 
+  geom_density_ridges(stat = "density", 
+                      rel_min_height = 0.005, 
+                      fill = "#0072B250", 
+                      scale = 1.5) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Trap density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+#Trailing tails can be cut off using the rel_min_height aesthetic. 
+#This aesthetic sets a percent cutoff relative to the highest point of any of the density curves. 
+#A value of 0.01 usually works well, but you may have to modify this parameter for different datasets
+# cuts out anything that is below 1% of the top height of the distribution
+
+
+#colour each quantile
+#https://r-charts.com/distribution/ggridges/
+#colour palettes: https://colorhunt.co/
+pot_density_ridges_quantiles <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1.5) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 72), expand = c(0, 0))+
+  xlab("Pot density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+pot_density_ridges_quantiles
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/pot_density_ridges_quantiles_by crab season.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(pot_density_ridges_quantiles,
+          ncol=1,
+          nrow=1,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+##############################################################
+
+
 # If make ggridgeplots on full seasons, no clear difference in the last two
 x.fish_WA$season <- factor(x.fish_WA$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 ggplot(x.fish_WA, aes(x = M2_trapdens, y = season, height = ..density..)) + 
@@ -98,14 +159,6 @@ ggplot(x.fish_WA, aes(x = M2_trapdens, y = season, height = ..density..)) +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
 
-# May-Sep only
-# data left on 2-week time step
-
-x.fish_WA_MaySep <-  x.fish_WA %>% 
-  filter(is_May_Sep == "Y") %>% 
-  mutate(month_name = factor(month_name, levels = c('September', 'August', 'July', 'June', 'May')))
-  
-x.fish_WA_MaySep$season <- factor(x.fish_WA_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 
 mid <- mean(x.fish_WA_MaySep$M2_trapdens)
 
@@ -148,18 +201,9 @@ ridgeplot_WA_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season)
   theme_ridges()
 ridgeplot_WA_MaySep
 
-## THIS IS PERHAPS THE BEST LOOKING ONE
-ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.5) + #, scale = 1.5
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Trap density [pots/km2] (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
-#Trailing tails can be cut off using the rel_min_height aesthetic. 
-#This aesthetic sets a percent cutoff relative to the highest point of any of the density curves. 
-#A value of 0.01 usually works well, but you may have to modify this parameter for different datasets
-# cuts out anything that is below 1% of the top height of the distribution
+
+
+
 
 ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, fill = season, color = season)) +
   geom_density_ridges(rel_min_height = 0.005) +
