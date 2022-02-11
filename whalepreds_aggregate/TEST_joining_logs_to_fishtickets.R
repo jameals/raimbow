@@ -13,7 +13,7 @@ library(ggpubr)
 
 #-----------------------------------------------------------------------------------
 
-#start with WA landed WA logs, clipped to WA waters
+#read in all logs in WA waters
 
 path_WA_landed_WA_logs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220126.rds"
 WA_landed_WA_logs_clipped_to_WA_waters <- readRDS(path_WA_landed_WA_logs)
@@ -36,6 +36,188 @@ WA_landed_WA_logs_clipped_to_WA_waters <- WA_landed_WA_logs_clipped_to_WA_waters
     season_month_interval = ssn_mn_, 
     is_May_Sep = is_My_S
   ) 
+
+
+path_WA_landed_all_logs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds"
+WA_landed_all_logs_clipped_to_WA_waters <- readRDS(path_WA_landed_all_logs)
+
+
+# interested only in May-Sep period
+WA_landed_all_logs_clipped_to_WA_waters_MaySep <- WA_landed_all_logs_clipped_to_WA_waters %>% 
+  filter(is_May_Sep == 'Y')
+
+#each row is a single pot, only need one record per SetID
+WA_landed_all_logs_clipped_to_WA_waters_MaySep_uniques <- WA_landed_all_logs_clipped_to_WA_waters_MaySep %>% 
+  group_by(SetID) %>% 
+  filter(row_number()==1)
+#nrow(WA_landed_all_logs_clipped_to_WA_waters_MaySep_uniques)   #20144
+
+#Fishticket and landing date columns have been dropped during pipeline, bring it back from an earlier version of raw data  
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#SetID should still be the same between teh two files
+logs_selected_columns <- logs %>% 
+  select(SetID, FishTicket1, FishTicket2, FishTicket3, FishTicket4, Vessel, License, FederalID, LandingDate ) 
+
+#try joining Fihsticket, landing date etc columns to more processed logbooks
+#getting a duplication of data: "This is because there were two y1=1 values in the d2 dataset 
+#so the join will merge these on twice." 
+joined_df <- WA_landed_all_logs_clipped_to_WA_waters_MaySep_uniques %>% 
+  left_join(logs_selected_columns,by="SetID") %>%
+  distinct #add a distinct command to remove duplication
+#nrow(joined_df) #20144 - when add distinct command
+# cases where found fishticket
+nrow(joined_df %>% filter(!is.na(FishTicket1)))
+#20074 --> 99.65%
+#cases where no Fishticket found
+nrow(joined_df %>% filter(is.na(FishTicket1)))
+#70 --> 0.35% of stringlines in WA logs don't have a fishticket number recorded
+#manually checked bunch of them and all were cases where raw logs didn't have a fishticket recorded in them
+#but only 9 stringlines (0.04%) don't have a landing date
+
+length(unique(joined_df$FishTicket1)) #4392
+
+
+
+#read in updated fishticket data
+fishtix_raw <- read_rds(here('wdfw', 'data','pacfin_compiled_2004thru2021.rds')) 
+# df is large so subset to years of interest, cut out all california records
+# because dealing with May-Sep, years of interest are 2014, 2015, 2016, 2017, 2018, 2019, 2020
+fishtix_2014_2020 <- fishtix_raw %>% 
+  filter(AGENCY_CODE != 'C') %>% 
+  filter(LANDING_YEAR %in% c(2014, 2015, 2016, 2017, 2018, 2019, 2020))
+
+
+#the FishTicket1 column in WA logs, and the FISH_TICKET_ID column in pacfin data don't match
+
+#but it might be possible to join using landing date and Federal ID in logs with VESSEL_NUM in fishtix
+
+
+library(stringr)
+test_df <- joined_df %>% 
+  select(SetID, FederalID)
+test_df_new <-as.data.frame(apply(test_df,2, str_remove_all, " ")) 
+test_df_2 <- joined_df %>% 
+  left_join(test_df_new,by="SetID") %>% 
+  rename(FederalID = FederalID.y)
+
+#landing date needs to be date, not character
+# fishtix_2014_v2 <- fishtix_2014 %>% 
+#   mutate(LANDING_DATE=as.Date(LANDING_DATE,"%d-%b-%y"))
+
+test_join <- test_df_2 %>% 
+  left_join(fishtix_2014_2020, 
+            by = c("FederalID" = "VESSEL_NUM",
+                   "LandingDate" = "LANDING_DATE"))
+#nrow(test_join) #26306 #but the number of unique SetIDs is still the same (20144)
+
+#each row is on estringline, but multiple stringlines may have been on one fishticket
+#keep only one record per fishticket
+
+test_join_uniques <- test_join %>% 
+  group_by(FISH_TICKET_ID) %>% 
+  filter(row_number()==1)
+
+
+length(unique(joined_df$FishTicket1)) #4392 unique Fishticket1 values in WA logs
+length(unique(test_join_uniques$FishTicket1)) #4352 unique Fishticket1 values after joining with pacfin
+#--> so 99% of WA Fishticket1 numbers also found a fishticket info from pacfin?
+# need to figure out the correct way of measuring how much data was lost,
+#how much of logbook data didn't find matching pacfin fishticket info
+
+
+# NOMINAL_TO_ACTUAL_PACFIN_SPECIES_NAME is not always DCRB
+#but is DCRB in 99.5% of tickets
+
+
+#columns of interest to summarise LANDED_WEIGHT_LBS and EXVESSEL_REVENUE or AFI_EXVESSEL_REVENUE??
+
+
+#FTID in pacfin looks to match Fishticket1 (and Fishticket2 if that also exists)...
+#could be harder to join that way as info in 2 columns (Fishticket1 and Fishticket2)
+
+
+summary_pacfin_data_MaySep <- test_join_uniques %>% 
+  mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
+  mutate(season = factor(season, levels = c('2013-2014', '2014-2015', '2015-2016', '2016-2017', '2017-2018', '2018-2019', '2019-2020')))  %>% 
+  group_by(season) %>% 
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+            sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T)
+  )
+
+
+sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_revenue, group=1))+
+  geom_line(size=1, lineend = "round") + 
+  geom_point(size=2.5) + 
+  ylab("Revenue $ (sum May-Sep)") +
+  xlab("Season") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+sum_MaySep_rev_ts
+
+
+sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
+  geom_line(size=1, lineend = "round") + 
+  geom_point(size=2.5) + 
+  ylab("Landings lbs (sum May-Sep)") +
+  xlab("Season") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+sum_MaySep_landings_ts
+
+
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+
+png(paste0(path_figures, "/ts_sum_revenue_landings_2014_2020_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(sum_MaySep_rev_ts,
+          sum_MaySep_landings_ts,
+          ncol=1,
+          nrow=2,
+          #legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#---------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------------
+
+#initial test with only 2014 data
 
 #for now test with 2014 fishtix, so filter to that season
 #also interested only in May-Sep period
@@ -112,12 +294,6 @@ nrow(test_join %>% filter(is.na(EXVESSEL_REVENUE)))
 #64 --> 0.013% #this is 9 fishtickets that didn't match to Fishtix2014 file, 
 #some seem to be cases where set date and landing date don't match
 #plus 21 strings with no Fishticket number
-
-
-
-
-
-
 
 
 
