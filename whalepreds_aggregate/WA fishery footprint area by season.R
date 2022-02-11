@@ -721,10 +721,10 @@ map_outline_2018_2019
 
 
 
-x.fish_WA_2019_2020_winter <- non_conf_x.fish_WA %>% filter(season == '2019-2020' & is_May_Sep == 'N')
-grids_2019_2020_winter <- sort(unique(x.fish_WA_2019_2020_winter$GRID5KM_ID))
-grids_5km_2019_2020_winter <- grid.5km %>% filter(GRID5KM_ID %in% grids_2019_2020_winter)
-dissolved_2019_2020_winter <- st_union(grids_5km_2019_2020_winter)
+non_conf_x.fish_WA_2019_2020_winter <- non_conf_x.fish_WA %>% filter(season == '2019-2020' & is_May_Sep == 'N')
+non_conf_grids_2019_2020_winter <- sort(unique(non_conf_x.fish_WA_2019_2020_winter$GRID5KM_ID))
+non_conf_grids_5km_2019_2020_winter <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_2019_2020_winter)
+non_conf_dissolved_2019_2020_winter <- st_union(non_conf_grids_5km_2019_2020_winter)
 #plot(dissolved_2019_2020_winter)
 
 x.fish_WA_2019_2020_summer <- non_conf_x.fish_WA %>% filter(season == '2019-2020' & is_May_Sep == 'Y')
@@ -804,16 +804,16 @@ non_conf_x.fish_WA <- x.fish_WA_v2 %>%
   filter(is_confidential == FALSE)
 
 
-x.fish_WA_all_winter <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'N')
-grids_all_winter <- sort(unique(x.fish_WA_all_winter$GRID5KM_ID))
-grids_5km_all_winter <- grid.5km %>% filter(GRID5KM_ID %in% grids_all_winter)
-dissolved_all_winter <- st_union(grids_5km_all_winter)
+non_conf_x.fish_WA_all_winter <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'N')
+non_conf_grids_all_winter <- sort(unique(non_conf_x.fish_WA_all_winter$GRID5KM_ID))
+non_conf_grids_5km_all_winter <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_all_winter)
+non_conf_dissolved_all_winter <- st_union(non_conf_grids_5km_all_winter)
 #plot(dissolved_all_winter)
 
-x.fish_WA_all_summer <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'Y')
-grids_all_summer <- sort(unique(x.fish_WA_all_summer$GRID5KM_ID))
-grids_5km_all_summer <- grid.5km %>% filter(GRID5KM_ID %in% grids_all_summer)
-dissolved_all_summer <- st_union(grids_5km_all_summer)
+non_conf_x.fish_WA_all_summer <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'Y')
+non_conf_grids_all_summer <- sort(unique(non_conf_x.fish_WA_all_summer$GRID5KM_ID))
+non_conf_grids_5km_all_summer <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_all_summer)
+non_conf_dissolved_all_summer <- st_union(non_conf_grids_5km_all_summer)
 #plot(dissolved_all_summer)
 
 
@@ -850,4 +850,57 @@ ggarrange(
   hjust=0
 )
 invisible(dev.off())
+
+
+
+#% overlap between confidential and non-confidential data
+#grids_5km_all_winter
+#non_conf_grids_5km_all_winter
+
+grids_5km_all_winter_v2 <- grids_5km_all_winter %>% 
+  st_drop_geometry() %>% 
+  mutate(conf_nonconf = "confidential")
+
+non_conf_grids_5km_all_winter_v2 <- non_conf_grids_5km_all_winter %>% 
+  st_drop_geometry() %>% 
+  mutate(conf_nonconf = "non-confidential")
+
+full_join_grids_winter_all_seasons <- 
+  full_join(grids_5km_all_winter_v2, non_conf_grids_5km_all_winter_v2, by=c('GRID5KM_ID'))
+
+nrow(full_join_grids_winter_all_seasons %>%  filter(!is.na(conf_nonconf.y)))
+#every grid in the non-confidential data set also exists in the confidential data
+
+nrow(full_join_grids_winter_all_seasons %>%  filter(conf_nonconf.x == "confidential")) #414
+nrow(full_join_grids_winter_all_seasons %>%  filter(!is.na(conf_nonconf.y))) #352
+352/414*100
+#85% of of confidential grids overlap/exist in the non-confidential version
+
+
+
+
+#summer
+#grids_5km_all_summer
+#non_conf_grids_5km_all_summer
+
+
+grids_5km_all_summer_v2 <- grids_5km_all_summer %>% 
+  st_drop_geometry() %>% 
+  mutate(conf_nonconf = "confidential")
+
+non_conf_grids_5km_all_summer_v2 <- non_conf_grids_5km_all_summer %>% 
+  st_drop_geometry() %>% 
+  mutate(conf_nonconf = "non-confidential")
+
+full_join_grids_summer_all_seasons <- 
+  full_join(grids_5km_all_summer_v2, non_conf_grids_5km_all_summer_v2, by=c('GRID5KM_ID'))
+
+nrow(full_join_grids_summer_all_seasons %>%  filter(!is.na(conf_nonconf.y)))
+#every grid in the non-confidential data set also exists in the confidential data
+
+nrow(full_join_grids_summer_all_seasons %>%  filter(conf_nonconf.x == "confidential")) #281
+nrow(full_join_grids_summer_all_seasons %>%  filter(!is.na(conf_nonconf.y))) #173
+173/281*100
+#62% of of confidential grids overlap/exist in the non-confidential version
+
 
