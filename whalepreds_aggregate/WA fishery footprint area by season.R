@@ -109,6 +109,7 @@ logs_all_pre_post_regs <- logs_all %>%
 
 pot_depth_dist_bar <- logs_all_pre_post_regs %>% 
   mutate(depth=-depth) %>% 
+  mutate(pre_post_regs = factor(pre_post_regs, levels = c("pre_regulations","2018-2019","2019-2020"))) %>% 
   ggplot() + 
   geom_bar(aes(x=depth, y=stat(prop), fill=win_or_spsum), position = "dodge") +
   scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
