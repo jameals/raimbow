@@ -359,7 +359,7 @@ grids_all_summer <- sort(unique(x.fish_WA_all_summer$GRID5KM_ID))
 grids_5km_all_summer <- grid.5km %>% filter(GRID5KM_ID %in% grids_all_summer)
 dissolved_all_summer <- st_union(grids_5km_all_summer)
 #plot(dissolved_all_summer)
-
+#write_rds(dissolved_all_summer,here::here('wdfw','data',"dissolved_2014_2020_MaySep_WA_fishery_footprint.rds"))
 
 map_outline_2014_2020 <- ggplot() + 
   geom_sf(data = dissolved_all_winter, color = 'blue', fill = 'blue',alpha=0.1) +
