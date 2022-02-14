@@ -534,7 +534,7 @@ study_area_bw <- full_join(study_area_df_with_all_season_month_combos, x.blue_20
 
 #----------
 # #if want to visualise using ggridges
-# library(ggridges)
+library(ggridges)
 study_area_bw$season <- factor(study_area_bw$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 #warning message: removed 1400 rows containing non-finite values is due to NAs
 ggplot(study_area_bw, aes(x = Blue_occurrence_mean, y = season, height = ..density..)) +
@@ -585,7 +585,7 @@ glimpse(x.blue.mean)
 # start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
 MaySep_good_bw_hab <- x.blue.mean %>% 
   group_by(season) %>% 
-  mutate(good_bw_hab = ifelse(Mean_Blue_occurrence > 0.24, 'Y', 'N')
+  mutate(good_bw_hab = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N')
   ) %>%
   inner_join(grid.5km.lno) #join to have geometry column
 glimpse(MaySep_good_bw_hab)
@@ -687,7 +687,6 @@ x.fish_WA_MaySep <- x.fish_WA %>%
 glimpse(x.fish_WA_MaySep)
 
 
-#MaySep_good_bw_hab_050_055_occur <- read_rds(here::here('wdfw', 'data','MaySep_good_bw_hab_050_055_occur.rds'))
 MaySep_good_bw_hab_fishing <- MaySep_good_bw_hab %>% 
   left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) %>% 
   left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") 
@@ -848,5 +847,85 @@ ggarrange(map_blue_MaySep_good_hab,
 invisible(dev.off())
 
 
+
+
+
+
+
+#ggridge of MaySep_good_bw_hab_fishing_risk - risk calculated but not aceraged for ts
+MaySep_good_bw_hab_fishing_risk$season <- factor(MaySep_good_bw_hab_fishing_risk$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
+
+MaySep_good_bw_hab_fishing_risk_v2 <- MaySep_good_bw_hab_fishing_risk %>% 
+  filter(good_bw_hab == 'Y') %>% 
+  filter(!is.na(mean_trapdens))
+
+ggplot(MaySep_good_bw_hab_fishing_risk_v2, aes(x = blue_risk, y = season, height = ..density..)) +
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Risk (May-Sep) in 'most likely bw habitat' (>0.469") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+
+
+
+# # grab a base map
+# rmap.base <- c(
+#   st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+#     filter(admin %in% c("Canada", "Mexico")) %>%
+#     st_geometry() %>%
+#     st_transform(st_crs(grid.5km.lno))
+# )
+# 
+# #bbox
+# bbox = c(-127,46,-120,49) 
+# 
+# # plot blue whale
+# bw_subset_MaySep <- MaySep_good_bw_hab_fishing_risk_v2 %>% 
+#   #select season to map 
+#   filter(season == "2015-2016") 
+# 
+# map_blue_MaySep_good_hab <- ggplot() + 
+#   geom_sf(data=sf::st_as_sf(bw_subset_MaySep), 
+#           aes(fill=blue_risk,
+#               col=blue_risk
+#           )
+#   ) +
+#   # facet_wrap(~time_period, nrow=1) +
+#   geom_sf(data=rmap.base,col=NA,fill='gray50') +
+#   #scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+#   #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
+#   #scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+#   #scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+#   ggtitle("May-Sep 2015-20164 \ngood BW habitat (>0.469 occurrence) \nwith May-Sep fishery footprint (across all 2014-2020") +
+#   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+#   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+#   theme_minimal() + #theme_classic() +
+#   theme(text=element_text(family="sans",size=10,color="black"),
+#         legend.text = element_text(size=10),
+#         axis.title=element_text(family="sans",size=14,color="black"),
+#         axis.text=element_text(family="sans",size=8,color="black"),
+#         panel.grid.major = element_line(color="gray50",linetype=3),
+#         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+#         strip.text = element_text(size=14),
+#         title=element_text(size=16)
+#   )
+# map_blue_MaySep_good_hab
+
+
+
+test_summary <- MaySep_good_bw_hab_fishing_risk %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+#when use 0.469
+# season    n_grids
+#  2013-2014      10
+#  2014-2015       9
+#  2015-2016      55
+#  2016-2017      63
+#  2017-2018      95
+#  2018-2019      77
+#  2019-2020     101
 
 
