@@ -75,51 +75,7 @@ mean_area_pre_reg <- MaySep_area_fished %>%
 #-6.933949
 
 
-#bar chart of proportions -- need data in point for (simulated pots)
-traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
-glimpse(traps_g_all_logs)
 
-logs_all <- traps_g_all_logs %>% 
-  #st_set_geometry(NULL) %>% 
-  mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
-  mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
-  mutate(season = str_sub(SetID,1,9)) %>% 
-  mutate(season_month = paste0(season,"_",m)) %>% 
-  # dataset has highly negative values (~ -30000) to denote port and bay areas - remove those. 
-  # Also note that place_traps function (script 1) already removes depths deeper than 200m as crab fishing at deeper depths is not likely
-  filter(depth > -1000) %>% 
-  mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))
-glimpse(logs_all)
-
-#add label for pooled pre-reg seasons, 2018-19 and 2019-20 dfs, and winter vs summer
-spsum <- c("May","June","July","August","September")
-
-logs_all_pre_post_regs <- logs_all %>%
-  mutate(pre_post_regs = case_when(
-    season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')  ~ 'pre_regulations',
-    season == '2018-2019' ~ '2018-2019',
-    season == '2019-2020' ~ '2019-2020'
-  )) %>%
-  mutate(
-    win_or_spsum = case_when(
-      m %in% spsum ~ "May-Sep",
-      TRUE ~ "Dec-Apr"
-    ))
-
-
-pot_depth_dist_bar <- logs_all_pre_post_regs %>% 
-  mutate(depth=-depth) %>% 
-  mutate(pre_post_regs = factor(pre_post_regs, levels = c("pre_regulations","2018-2019","2019-2020"))) %>% 
-  ggplot() + 
-  geom_bar(aes(x=depth, y=stat(prop), fill=win_or_spsum), position = "dodge") +
-  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
-  scale_x_binned(breaks=seq(0, 200, 25),limits=c(0,200)) + 
-  facet_wrap(~ pre_post_regs) +
-  #scale_y_continuous(breaks=seq(0, 0.5, 0.05),limits=c(0,0.5))+
-  labs(x="Depth (m)",y="Proportion") +
-  #ggtitle('WA - spacing between pots (m)') +
-  theme_bw()
-pot_depth_dist_bar
 #--------------------------------------------------------------------------------
 
 x.fish_WA_2013_2014_winter <- x.fish_WA %>% filter(season == '2013-2014' & is_May_Sep == 'N')
