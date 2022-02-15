@@ -121,15 +121,16 @@ pre_reg_seasons <- x.fish_WA_MaySep %>%
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'))
 post_reg_2018_2019 <- x.fish_WA_MaySep %>%  filter(season == '2018-2019')
 post_reg_2019_2020 <- x.fish_WA_MaySep %>%  filter(season == '2019-2020')
+post_reg_2018_2019_2020 <- x.fish_WA_MaySep %>%  filter(season %in% c('2018-2019','2019-2020'))
 
 pre_reg_2017_2018 <- x.fish_WA_MaySep %>%  filter(season == '2017-2018')
 
 
 kstest1 <- ks.test(pre_reg_seasons$M2_trapdens, post_reg_2018_2019$M2_trapdens)
 kstest2 <- ks.test(pre_reg_seasons$M2_trapdens, post_reg_2019_2020$M2_trapdens)
-kstest3 <- ks.test(post_reg_2019_2020$M2_trapdens, post_reg_2019_2020$M2_trapdens)
+kstest3 <- ks.test(post_reg_2018_2019$M2_trapdens, post_reg_2019_2020$M2_trapdens)
 
-kstest4 <- ks.test(pre_reg_2017_2018$M2_trapdens, post_reg_2018_2019$M2_trapdens)
+kstest4 <- ks.test(pre_reg_seasons$M2_trapdens, post_reg_2018_2019_2020$M2_trapdens)
 
 
 
