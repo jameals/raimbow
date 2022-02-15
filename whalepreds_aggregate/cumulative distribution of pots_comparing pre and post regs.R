@@ -114,6 +114,101 @@ invisible(dev.off())
 
 
 
+#---------------------------------------------------------
+#bar chart of proportions -- need data in point for (simulated pots)
+traps_g_all_logs <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
+glimpse(traps_g_all_logs)
+
+logs_all <- traps_g_all_logs %>% 
+  #st_set_geometry(NULL) %>% 
+  mutate(m=month(SetDate),d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(m = month.name[m], period = ifelse(period==1,"first half","second half")) %>% 
+  mutate(season = str_sub(SetID,1,9)) %>% 
+  mutate(season_month = paste0(season,"_",m)) %>% 
+  # dataset has highly negative values (~ -30000) to denote port and bay areas - remove those. 
+  # Also note that place_traps function (script 1) already removes depths deeper than 200m as crab fishing at deeper depths is not likely
+  filter(depth > -1000) %>% 
+  mutate(m = factor(m, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))
+glimpse(logs_all)
+
+#add label for pooled pre-reg seasons, 2018-19 and 2019-20 dfs, and winter vs summer
+spsum <- c("May","June","July","August","September")
+
+logs_all_pre_post_regs <- logs_all %>%
+  mutate(pre_post_regs = case_when(
+    season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')  ~ 'pre_regulations',
+    season == '2018-2019' ~ '2018-2019',
+    season == '2019-2020' ~ '2019-2020'
+  )) %>%
+  mutate(pre_post_regs = factor(pre_post_regs, levels = c("pre_regulations","2018-2019","2019-2020"))) %>% 
+  mutate(
+    win_or_spsum = case_when(
+      m %in% spsum ~ "May-Sep",
+      TRUE ~ "Dec-Apr"
+    ))
+
+
+pot_depth_dist_bar <- logs_all_pre_post_regs %>% 
+  mutate(depth=-depth) %>% 
+  mutate(pre_post_regs = factor(pre_post_regs, levels = c("pre_regulations","2018-2019","2019-2020"))) %>% 
+  ggplot() + 
+  geom_bar(aes(x=depth, y=stat(prop), fill=win_or_spsum), position = "dodge") +
+  scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
+  scale_x_binned(breaks=seq(0, 200, 25),limits=c(0,200)) + 
+  facet_wrap(~ pre_post_regs) +
+  #scale_y_continuous(breaks=seq(0, 0.5, 0.05),limits=c(0,0.5))+
+  labs(x="Depth (m)",y="Proportion") +
+  #ggtitle('WA - spacing between pots (m)') +
+  theme_bw()
+pot_depth_dist_bar
+
+
+
+
+
+##K-S test on pot distribution (raw, not cumulative pots)
+pre_reg_seasons <- logs_all_pre_post_regs %>%  
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
+  filter(win_or_spsum == 'May-Sep')
+post_reg_2018_2019 <- logs_all_pre_post_regs %>%  filter(season == '2018-2019') %>% 
+  filter(win_or_spsum == 'May-Sep')
+post_reg_2019_2020 <- logs_all_pre_post_regs %>%  filter(season == '2019-2020') %>% 
+  filter(win_or_spsum == 'May-Sep')
+
+post_reg_2018_2019_2020 <- logs_all_pre_post_regs %>%  filter(season %in% c('2018-2019', '2019-2020')) %>% 
+  filter(win_or_spsum == 'May-Sep')
+
+
+
+kstest1 <- ks.test(pre_reg_seasons$depth, post_reg_2018_2019$depth) #p<0.005
+kstest2 <- ks.test(pre_reg_seasons$depth, post_reg_2019_2020$depth) #p<0.005
+
+kstest3 <- ks.test(pre_reg_seasons$depth, post_reg_2018_2019_2020$depth) #p<0.005
+
+
+
+
+
+library(ggridges)
+logs_all_pre_post_regs_MaySep <- logs_all_pre_post_regs %>% 
+  filter(win_or_spsum == 'May-Sep') %>% 
+  mutate(depth=-depth)
+logs_all_pre_post_regs_MaySep$season <- factor(logs_all_pre_post_regs_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
+
+pot_depth_ridges_quantiles <- ggplot(logs_all_pre_post_regs_MaySep, aes(x = depth, y = season, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1.5) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 200), expand = c(0, 0))+
+  xlab("Pot depth [m] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+pot_depth_ridges_quantiles
 
 
 
@@ -121,11 +216,31 @@ invisible(dev.off())
 
 
 
+pre_reg_seasons <- logs_all_pre_post_regs %>%  
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
+  filter(win_or_spsum == 'Dec-Apr')
+post_reg_2018_2019 <- logs_all_pre_post_regs %>%  filter(season == '2018-2019') %>% 
+  filter(win_or_spsum == 'Dec-Apr')
+post_reg_2019_2020 <- logs_all_pre_post_regs %>%  filter(season == '2019-2020') %>% 
+  filter(win_or_spsum == 'Dec-Apr')
+
+post_reg_2018_2019_2020 <- logs_all_pre_post_regs %>%  filter(season %in% c('2018-2019', '2019-2020')) %>% 
+  filter(win_or_spsum == 'Dec-Apr')
+
+kstest1 <- ks.test(pre_reg_seasons$depth, post_reg_2018_2019$depth) #p<0.005
+kstest2 <- ks.test(pre_reg_seasons$depth, post_reg_2019_2020$depth) #p<0.005
 
 
 
 
-
-
-
-
+library(WRS2)
+logs_all_pre_post_regs_groups <- logs_all_pre_post_regs %>% 
+  mutate(seasons_with_regs = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'),
+                  "pre-reg",
+                  "post-reg")
+  ) %>% 
+  filter(win_or_spsum == 'May-Sep')
+#taking too long to run - not working
+testx2 <- qcomhd(depth ~ seasons_with_regs, data = logs_all_pre_post_regs_groups, q = c(0.25, 0.5, 0.75, 1), nboot = 200)
+testx2
