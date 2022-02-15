@@ -244,3 +244,41 @@ logs_all_pre_post_regs_groups <- logs_all_pre_post_regs %>%
 #taking too long to run - not working
 testx2 <- qcomhd(depth ~ seasons_with_regs, data = logs_all_pre_post_regs_groups, q = c(0.25, 0.5, 0.75, 1), nboot = 200)
 testx2
+
+
+
+logs_all_pre_post_regs_groups_MaySep <- logs_all_pre_post_regs %>%  
+  mutate(seasons_with_regs = 
+         ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'),
+                "pre-reg",
+                "post-reg")
+) %>% 
+  filter(win_or_spsum == 'May-Sep')
+
+res <- wilcox.test(depth ~ seasons_with_regs, data = logs_all_pre_post_regs_groups_MaySep,
+                   exact = FALSE)
+res #p< 0.005
+
+
+post_reg_2018_2019_2020 <- logs_all_pre_post_regs %>%  filter(season %in% c('2018-2019','2019-2020'))  %>% 
+  filter(win_or_spsum == 'May-Sep')
+res <- wilcox.test(depth ~ season, data = post_reg_2018_2019_2020,
+                   exact = FALSE)
+res #p< 0.005
+
+
+
+pre_regs_vs_2018_2019 <- logs_all_pre_post_regs %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  mutate(seasons_with_regs = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'),
+                  "pre-reg",
+                  "post-reg")
+  ) %>% 
+  filter(is_May_Sep == 'Y')
+
+res <- wilcox.test(depth ~ seasons_with_regs, data = pre_regs_vs_2018_2019,
+                   exact = FALSE)
+res #p< 0.005
+
+
