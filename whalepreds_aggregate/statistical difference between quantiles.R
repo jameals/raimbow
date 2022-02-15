@@ -96,8 +96,8 @@ testx2
 
 #comparing the two post-reg seasons against each other
 x.fish_WA_MaySep_xx <- x.fish_WA_MaySep %>% 
-  filter(season %in% c('2016-2017','2018-2019')) %>% 
-  mutate(season = factor(season, levels = c('2016-2017','2018-2019')))
+  filter(season %in% c('2018-2019','2019-2020')) %>% 
+  mutate(season = factor(season, levels = c('2018-2019','2019-2020')))
 
 testx3 <- qcomhd(M2_trapdens ~ season, data = x.fish_WA_MaySep_xx, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 testx3
@@ -148,3 +148,21 @@ p2
 
 
 
+res <- wilcox.test(M2_trapdens ~ seasons_with_regs, data = x.fish_WA_MaySep_groups,
+                   exact = FALSE)
+res #p< 0.005
+
+
+res <- wilcox.test(M2_trapdens ~ season, data = post_reg_2018_2019_2020,
+                   exact = FALSE)
+res #p< 0.005
+
+
+pre_reg_2015_2016_2017 <- x.fish_WA_MaySep %>%  filter(season %in% c('2015-2016','2016-2017'))
+res <- wilcox.test(M2_trapdens ~ season, data = pre_reg_2015_2016_2017,
+                   exact = FALSE)
+res #p=0.8115
+
+pre_reg_2015_2016 <- x.fish_WA_MaySep %>%  filter(season == '2015-2016')
+pre_reg_2016_2017 <- x.fish_WA_MaySep %>%  filter(season == '2016-2017')
+kstest4 <- ks.test(pre_reg_2015_2016$M2_trapdens, pre_reg_2016_2017$M2_trapdens) #p= 0.7721
