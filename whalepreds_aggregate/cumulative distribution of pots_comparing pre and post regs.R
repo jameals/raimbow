@@ -88,8 +88,10 @@ p1 <- ggplot() +
             size=1)+
   scale_color_manual(values = c("deepskyblue3", "indianred1"))+
   scale_x_continuous(breaks=seq(0, 200, 20),limits=c(0,200))+
+  scale_y_continuous(breaks=seq(0, 100, 10),limits=c(0,100))+
   labs(x="Depth (m)",y="Cumulative % of pots") +
   facet_wrap(~ pre_post_regs)+ 
+  theme_bw()+
   theme(legend.title = element_blank(),
         legend.position = c(0.90,0.2)) 
 p1
