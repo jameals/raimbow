@@ -166,3 +166,27 @@ res #p=0.8115
 pre_reg_2015_2016 <- x.fish_WA_MaySep %>%  filter(season == '2015-2016')
 pre_reg_2016_2017 <- x.fish_WA_MaySep %>%  filter(season == '2016-2017')
 kstest4 <- ks.test(pre_reg_2015_2016$M2_trapdens, pre_reg_2016_2017$M2_trapdens) #p= 0.7721
+
+
+
+
+pre_reg_vs_2018_2019 <- rbind(pre_reg_seasons, post_reg_2018_2019) %>% 
+  mutate(seasons_with_regs = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'),
+                  "pre-reg",
+                  "2018-2019")
+  )
+res <- wilcox.test(M2_trapdens ~ seasons_with_regs, data = pre_reg_vs_2018_2019,
+                   exact = FALSE)
+res #p< 0.005
+
+
+pre_reg_vs_2019_2020 <- rbind(pre_reg_seasons, post_reg_2019_2020) %>% 
+  mutate(seasons_with_regs = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'),
+                  "pre-reg",
+                  "2019-2020")
+  )
+res <- wilcox.test(M2_trapdens ~ seasons_with_regs, data = pre_reg_vs_2019_2020,
+                   exact = FALSE)
+res #p< 0.005
