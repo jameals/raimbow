@@ -122,6 +122,8 @@ x.fish_WA_MaySep_regs_2019_2020 <-  x.fish_WA_MaySep_regs %>%
   #because whale data will be joined by month, remove season column
   #select(-season)
 
+x.fish_WA_MaySep_regs_2018_2019 <-  x.fish_WA_MaySep_regs %>% 
+  filter(season == '2018-2019')
 
 
 #WITHOUT REGULATIONS
@@ -206,6 +208,11 @@ study_area_whale_fishing_with_regs <- left_join(study_area_whale, x.fish_WA_MayS
 #make sure regs column doesn't have NAs
 study_area_whale_fishing_with_regs$regs <- c("Y")
 
+study_area_whale_fishing_with_regs_2018_2019 <- left_join(study_area_whale, x.fish_WA_MaySep_regs_2018_2019, by=c("GRID5KM_ID", "month")) %>% 
+  select(-season.y) %>% 
+  rename(season = season.x) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+
 
 #join fishing data to study area grid with whale data - seasons without regs
 #because we will hold fishing data constant, joined by month and grid (not by season)
@@ -220,6 +227,24 @@ study_area_whale_fishing_without_regs$regs <- c("N")
 
 #calculate risk  metric - fishing data held constant - seasons with regs
 risk_whales_WA_MaySep_study_area_with_regs <- study_area_whale_fishing_with_regs %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) 
+
+risk_whales_WA_MaySep_study_area_with_regs_2018_2019 <- study_area_whale_fishing_with_regs_2018_2019 %>%
   mutate(
     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
@@ -316,6 +341,14 @@ plot_subset_with_regs <- risk_whales_WA_MaySep_study_area_with_regs %>%
     Humpback_risk_sum = sum(hump_risk, na.rm=TRUE),
     Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
 
+plot_subset_with_regs_2018_2019 <- risk_whales_WA_MaySep_study_area_with_regs_2018_2019 %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    #use summed approach
+    Humpback_risk_sum = sum(hump_risk, na.rm=TRUE),
+    Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
 plot_subset_without_regs <- risk_whales_WA_MaySep_study_area_without_regs %>% 
   filter(study_area=='Y') %>% #restrict calculations to study area
   group_by(season) %>%
@@ -329,6 +362,9 @@ ts_hump_risk_May_Sep_study_area <- ggplot() +
   #with regs
   geom_point(data = plot_subset_with_regs, aes(x = season, y = Humpback_risk_sum,group = 1), size=4) +
   geom_line(data = plot_subset_with_regs, aes(x = season, y = Humpback_risk_sum,group = 1)) +
+  #2018-2019
+  geom_point(data = plot_subset_with_regs_2018_2019, aes(x = season, y = Humpback_risk_sum,group = 1),colour="gray", size=4) +
+  geom_line(data = plot_subset_with_regs_2018_2019, aes(x = season, y = Humpback_risk_sum,group = 1),colour="gray") +
   #without regs
   #geom_point(data = plot_subset_without_regs, aes(x = season, y = Humpback_risk_sum,group = 1), colour="red", size=4) +
   #geom_line(data = plot_subset_without_regs, aes(x = season, y = Humpback_risk_sum,group = 1), colour="red") +
@@ -353,6 +389,9 @@ ts_blue_risk_May_Sep_study_area <- ggplot() +
   #with regs
   geom_point(data = plot_subset_with_regs, aes(x = season, y = Blue_risk_sum,group = 1), size=4) +
   geom_line(data = plot_subset_with_regs, aes(x = season, y = Blue_risk_sum,group = 1)) +
+  #2018-2019
+  geom_point(data = plot_subset_with_regs_2018_2019, aes(x = season, y = Blue_risk_sum,group = 1),colour="gray", size=4) +
+  geom_line(data = plot_subset_with_regs_2018_2019, aes(x = season, y = Blue_risk_sum,group = 1),colour="gray") +
   #without regs
   #geom_point(data = plot_subset_without_regs, aes(x = season, y = Blue_risk_sum,group = 1), colour="red", size=4) +
   #geom_line(data = plot_subset_without_regs, aes(x = season, y = Blue_risk_sum,group = 1), colour="red") +
@@ -415,6 +454,23 @@ invisible(dev.off())
 
         
 
-          
+#fishing data held constant 2019-2020
+#season      Humpback_risk_sum     Blue_risk_sum
+# 2013-2014     51.19867            556.4575
+# 2014-2015     44.97481            593.8966
+# 2015-2016     52.00878            634.6979
+# 2016-2017     54.46291            623.9529
+# 2017-2018     52.35124            673.4007
+# 2018-2019     33.06973            655.3008
+# 2019-2020     45.75299            749.2442          
 
+#fishing data held constant 2018-2019
+#season     Humpback_risk_sum     Blue_risk_sum
+# 2013-2014     84.14357            742.8685
+# 2014-2015     71.82169            798.2301
+# 2015-2016     84.51042            861.7217
+# 2016-2017     87.19612            843.5239
+# 2017-2018     86.64246            916.6605
+# 2018-2019     58.81001            889.2715
+# 2019-2020     81.37870            1052.7046
 
