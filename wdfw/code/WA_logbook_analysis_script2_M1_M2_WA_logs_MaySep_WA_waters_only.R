@@ -104,6 +104,19 @@ df2 %<>%
 traps_g_x <- rbind(df1,df2)
 
 
+## adjust pot limit for all May-Sep months
+df1 <- traps_g_pot_limit %>%
+  filter(Pot_Limit == 500) %>% 
+  mutate(Pot_Limit_SummerReduction=ifelse(month_name %in% c('May','June','July','August','September'),330,500))
+         
+df2 <- traps_g_pot_limit %>%
+  filter(Pot_Limit == 300)%>% 
+  mutate(Pot_Limit_SummerReduction=ifelse(month_name %in% c('May','June','July','August','September'),200,300))
+
+## join dfs back together  
+traps_g_x <- rbind(df1,df2)
+
+
 # apply weighting based on permitted max pot number (this is Method 2 or M2)
 adj_traps_g_x <- traps_g_x %>% 
   filter(!is.na(GRID5KM_ID)) %>% 
@@ -206,6 +219,9 @@ glimpse(adj_summtraps)
 
 #write a version that is done using logs 2014-2020 in WA waters only
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"))
+
+#version where all May-Sep in every season had reductions
+#write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"))
 
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2013_2020.rds"))
 #write_rds(adj_summtraps,here::here('wdfw','data',"adj_summtraps_2.rds")) #make a different version where don't run
