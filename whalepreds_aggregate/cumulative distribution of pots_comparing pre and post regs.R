@@ -84,13 +84,13 @@ glimpse(pots_by_depth_spsumvswinter_pre_post_regs)
 
 p1 <- ggplot() +
   geom_line(data=pots_by_depth_spsumvswinter_pre_post_regs, 
-            aes(x=depth, y=perc_pots, color=win_or_spsum), 
+            aes(x=depth, y=perc_pots, color=win_or_spsum, linetype=pre_post_regs), 
             size=1)+
   scale_color_manual(values = c("deepskyblue3", "indianred1"))+
   scale_x_continuous(breaks=seq(0, 200, 20),limits=c(0,200))+
   scale_y_continuous(breaks=seq(0, 100, 10),limits=c(0,100))+
   labs(x="Depth (m)",y="Cumulative % of pots") +
-  facet_wrap(~ pre_post_regs)+ 
+  #facet_wrap(~ pre_post_regs)+ 
   theme_bw()+
   theme(legend.title = element_blank(),
         legend.position = c(0.90,0.2)) 
@@ -192,10 +192,20 @@ kstest3 <- ks.test(pre_reg_seasons$depth, post_reg_2018_2019_2020$depth) #p<0.00
 library(ggridges)
 logs_all_pre_post_regs_MaySep <- logs_all_pre_post_regs %>% 
   filter(win_or_spsum == 'May-Sep') %>% 
-  mutate(depth=-depth)
+  mutate(depth=-depth) 
+logs_all_pre_post_regs <- logs_all %>%
+  mutate(pre_post_regs = case_when(
+    season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')  ~ 'pre_regulations',
+    season == '2018-2019' ~ '2018-2019',
+    season == '2019-2020' ~ '2019-2020'
+  ))
+
+ # mutate(pre_post_regs = factor(pre_post_regs, levels = c("2019-2020", "2018-2019", "pre_regulations")))  
+logs_all_pre_post_regs_MaySep$pre_post_regs <- factor(logs_all_pre_post_regs_MaySep$pre_post_regs, levels = c("2019-2020", "2018-2019", "pre_regulations"))
+
 logs_all_pre_post_regs_MaySep$season <- factor(logs_all_pre_post_regs_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 
-pot_depth_ridges_quantiles <- ggplot(logs_all_pre_post_regs_MaySep, aes(x = depth, y = season, fill = stat(quantile))) +
+pot_depth_ridges_quantiles <- ggplot(logs_all_pre_post_regs_MaySep, aes(x = depth, y = pre_post_regs, fill = stat(quantile))) +
   stat_density_ridges(quantile_lines = TRUE,
                       calc_ecdf = TRUE,
                       geom = "density_ridges_gradient",
