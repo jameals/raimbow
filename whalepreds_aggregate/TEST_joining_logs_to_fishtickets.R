@@ -100,6 +100,15 @@ length(unique(test_join_uniques$FishTicket1)) #4352 unique Fishticket1 values af
 # NOMINAL_TO_ACTUAL_PACFIN_SPECIES_NAME column is not always DCRB
 #but is DCRB in 99.5% of tickets
 
+#also in test_join_uniques:
+#PACFIN_SPECIES_CODE  n_rows
+#CHNK                   7
+#COHO                   1
+#DCRB                   4569
+#PHLB                   5
+#SABL                   4
+#SPRW                   4
+#NA                     1
 
 
 
