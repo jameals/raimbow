@@ -137,19 +137,21 @@ summary_pacfin_data_MaySep <- test_join_uniques %>%
   group_by(season) %>% 
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
-            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T)
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+            avg_price_per_pound = mean(PRICE_PER_POUND)
   )
 
 
-sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_revenue, group=1))+
-  geom_line(size=1, lineend = "round") + 
-  geom_point(size=2.5) + 
+sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
+  geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
+  geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
+  #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
   ylab("Revenue $ (sum May-Sep)") +
   xlab("Season") + 
-  geom_hline(yintercept=1988695, linetype="dashed", 
-             color = "red", size=2)+ #average across 5 pre-reg seasons
-  geom_hline(yintercept=1451688, linetype="dashed", 
-             color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
+  #geom_hline(yintercept=1988695, linetype="dashed", 
+            # color = "red", size=2)+ #average across 5 pre-reg seasons
+  #geom_hline(yintercept=1451688, linetype="dashed", 
+            # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
   theme_bw()+
   theme(legend.title = element_blank(),
         legend.text = element_text(size=12),
