@@ -409,6 +409,7 @@ invisible(dev.off())
 #start with study_area_whale df - data already filtered to May-Sep, but filter seasons, and separate species
 
 study_area_hw <- study_area_whale %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
   select(GRID5KM_ID:Humpback_dens_mean) %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
   group_by(season) %>% 
@@ -416,7 +417,8 @@ study_area_hw <- study_area_whale %>%
     Hump_dens_sum = sum(Humpback_dens_mean, na.rm=TRUE))
 
 study_area_bw <- study_area_whale %>%
-  select(-Humpback_dens_mean) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+    select(-Humpback_dens_mean) %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
   group_by(season) %>%
   summarise(
@@ -464,7 +466,7 @@ ts_blue_occur_MaySep_study_area_sum <- ggplot() +
 ts_blue_occur_MaySep_study_area_sum
 
 # plot blues and humps together
-png(paste0(path_figures, "/ts_sum_blue_occur_hump_dens_2014_2020_by crab season_MaySep only_in_study_area.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_sum_blue_occur_hump_dens_2014_2020_by crab season_MaySep only_in_study_area_CORRECTLY FILTERED.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_hump_dens_MaySep_study_area_sum,
           ts_blue_occur_MaySep_study_area_sum,
           ncol=1,
