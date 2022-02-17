@@ -84,7 +84,8 @@ x.hump_2014_2020_crab_season_v2 <- x.hump_2014_2020_crab_season %>%
   #summarise across all grid cells in given season_month
   summarise(
     Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
-    Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE)
+    Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    Humpback_dens_sum = sum(Humpback_dens_mean, na.rm=TRUE)
   ) %>% 
   mutate(season_month2 = season_month) %>% 
   separate(season_month2, into = c("season", "month"), sep = "_") %>% 
@@ -99,7 +100,8 @@ ts_hump_dens <- ggplot(
   data = x.hump_2014_2020_crab_season_v2, 
   aes(
     x = factor(season_month, levels=ordered.ids), 
-    y = Humpback_dens_mean,
+    y = Humpback_dens_sum,
+    #y = Humpback_dens_mean,
     #y = Humpback_dens_median,
     group = 1
   )
@@ -109,7 +111,8 @@ ts_hump_dens <- ggplot(
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2013-2014_12,2019-2020_09)) +
-  ylab("Mean Humpback Whale Density\nin study area") + 
+  ylab("Sum Humpback Whale Density\nin study area") + 
+  #ylab("Mean Humpback Whale Density\nin study area") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -124,7 +127,7 @@ ts_hump_dens <- ggplot(
         strip.placement = "left"
   )
 ts_hump_dens
-
+#ts of mean (when 0s included) and sum looks the same
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -195,7 +198,8 @@ x.blue_2014_2020_crab_season_v2 <- x.blue_2014_2020_crab_season %>%
   #summarise across all grid cells in given season_month
   summarise(
     Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
-    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE)
+    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE),
+    Blue_dens_sum = sum(Blue_occurrence_mean, na.rm=TRUE)
   ) %>% 
   mutate(season_month2 = season_month) %>% 
   separate(season_month2, into = c("season", "month"), sep = "_") %>% 
@@ -213,7 +217,8 @@ ts_blue_dens <- ggplot(
   data = x.blue_2014_2020_crab_season_v2, 
   aes(
     x = factor(season_month, levels=ordered.ids), 
-    y = Blue_dens_mean,
+    y = Blue_dens_sum,
+    #y = Blue_dens_mean,
     #y = Blue_dens_median,
     group = 1
   )
@@ -223,7 +228,8 @@ ts_blue_dens <- ggplot(
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
-  ylab("Mean Blue Whale Occurrence\nin study area") + 
+  ylab("Sum Blue Whale Occurrence\nin study area") + 
+  #ylab("Mean Blue Whale Occurrence\nin study area") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
