@@ -83,8 +83,8 @@ x.hump_2014_2020_crab_season_v2 <- x.hump_2014_2020_crab_season %>%
   group_by(season_month) %>%
   #summarise across all grid cells in given season_month
   summarise(
-    Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
-    Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
+    #Humpback_dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
+    #Humpback_dens_median = median(Humpback_dens_mean, na.rm=TRUE),
     Humpback_dens_sum = sum(Humpback_dens_mean, na.rm=TRUE)
   ) %>% 
   mutate(season_month2 = season_month) %>% 
@@ -127,7 +127,7 @@ ts_hump_dens <- ggplot(
         strip.placement = "left"
   )
 ts_hump_dens
-#ts of mean (when 0s included) and sum looks the same
+#ts of mean (when 0s included) and sum looks the same (shape is same, y-axis is different)
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -197,8 +197,8 @@ x.blue_2014_2020_crab_season_v2 <- x.blue_2014_2020_crab_season %>%
   group_by(season_month) %>%
   #summarise across all grid cells in given season_month
   summarise(
-    Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
-    Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE),
+    #Blue_dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    #Blue_dens_median = median(Blue_occurrence_mean, na.rm=TRUE),
     Blue_dens_sum = sum(Blue_occurrence_mean, na.rm=TRUE)
   ) %>% 
   mutate(season_month2 = season_month) %>% 
@@ -246,7 +246,7 @@ ts_blue_dens <- ggplot(
 ts_blue_dens
 
 #--------------------------------------------------------------------------
-#bar chart for whales mean +/- se Dec-Apr vs May-Sep
+#bar chart for whales SUM Dec-Apr vs May-Sep
 #x.blue_2014_2020_crab_season
 #x.hump_2014_2020_crab_season
 
@@ -257,12 +257,13 @@ x.blue_2014_2020_crab_season_bar <- x.blue_2014_2020_crab_season %>%
                   ,'May-Sep', 'Dec-Apr')) %>%  
   group_by(is_May_Sep) %>%
   summarise(
-    dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
-    sd = sd(Blue_occurrence_mean, na.rm = TRUE),
-    n = n()
+    occur_sum = sum(Blue_occurrence_mean, na.rm=TRUE) #,
+    #dens_mean = mean(Blue_occurrence_mean, na.rm=TRUE),
+    #sd = sd(Blue_occurrence_mean, na.rm = TRUE),
+    #n = n()
   )%>% 
-  mutate(se = sd / sqrt(n)
-  ) %>% 
+  #mutate(se = sd / sqrt(n)
+  #) %>% 
   mutate(species = 'bw')
 glimpse(x.blue_2014_2020_crab_season_bar)
 
@@ -273,24 +274,25 @@ x.hump_2014_2020_crab_season_bar <- x.hump_2014_2020_crab_season %>%
                   ,'May-Sep', 'Dec-Apr')) %>%  
   group_by(is_May_Sep) %>%
   summarise(
-    dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
-    sd = sd(Humpback_dens_mean, na.rm = TRUE),
-    n = n()
+    dens_sum = sum(Humpback_dens_mean, na.rm=TRUE) #,
+    #dens_mean = mean(Humpback_dens_mean, na.rm=TRUE),
+    #sd = sd(Humpback_dens_mean, na.rm = TRUE),
+    #n = n()
   )%>% 
-  mutate(se = sd / sqrt(n)
-  )%>% 
+  #mutate(se = sd / sqrt(n)
+  #)%>% 
   mutate(species = 'hw')
 glimpse(x.hump_2014_2020_crab_season_bar)
 
 
 
-p1 <- ggplot(data=x.blue_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
+p1 <- ggplot(data=x.blue_2014_2020_crab_season_bar, aes(x = species, y = occur_sum, fill = is_May_Sep))+
   geom_bar(position="dodge", stat = "identity")+
-  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
-                width=.25, position=position_dodge(0.9)) +
+  #geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
+   #             width=.25, position=position_dodge(0.9)) +
   scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
   scale_y_continuous(position = "right")+
-  labs(y = "blue whale mean (+/-SE)\nprobability of occurrence",
+  labs(y = "Sum blue whale\nprobability of occurrence",
        x = "Dec-Apr   May-Sep")+
   theme_bw()+
   theme(legend.position = "none",
@@ -298,13 +300,13 @@ p1 <- ggplot(data=x.blue_2014_2020_crab_season_bar, aes(x = species, y = dens_me
         axis.ticks.x=element_blank())
 p1
 
-p2 <- ggplot(data=x.hump_2014_2020_crab_season_bar, aes(x = species, y = dens_mean, fill = is_May_Sep))+
+p2 <- ggplot(data=x.hump_2014_2020_crab_season_bar, aes(x = species, y = dens_sum, fill = is_May_Sep))+
   geom_bar(position="dodge", stat = "identity")+
-  geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
-                width=.25, position=position_dodge(0.9)) +
+  #geom_errorbar(aes(ymin=dens_mean-se, ymax=dens_mean+se), 
+   #             width=.25, position=position_dodge(0.9)) +
   scale_fill_manual(values = c("deepskyblue3", "indianred1"))+
   scale_y_continuous(position = "right")+
-  labs(y = "humpback whale\nmean (+/-SE) density",
+  labs(y = "Sum humpback whale density",
        x = "Dec-Apr   May-Sep")+
   theme_bw()+
   theme(legend.position = "none",
@@ -323,7 +325,15 @@ ts_plots <- ggarrange(ts_hump_dens,
                       hjust=0
 )
 
-
+bar_plots <- ggarrange(p2,
+                       p1,
+                      ncol=1,
+                      nrow=2,
+                      #legend="top",
+                      #labels="auto",
+                      vjust=8,
+                      hjust=0
+)
 
 
 #https://stackoverflow.com/questions/18427455/multiple-ggplots-of-different-sizes
@@ -342,6 +352,7 @@ lay_out = function(...) {
 lay_out(list(ts_plots, 1:2, 1:3),
         list(p2, 1, 4),
         list(p1, 2, 4))
+#how to save this?? other than using cnipping tool...?
 
 
 
