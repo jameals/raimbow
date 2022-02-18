@@ -809,13 +809,14 @@ non_conf_x.fish_WA_all_winter <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'N'
 non_conf_grids_all_winter <- sort(unique(non_conf_x.fish_WA_all_winter$GRID5KM_ID))
 non_conf_grids_5km_all_winter <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_all_winter)
 non_conf_dissolved_all_winter <- st_union(non_conf_grids_5km_all_winter)
-#plot(dissolved_all_winter)
+#plot(non_conf_dissolved_all_winter)
 
 non_conf_x.fish_WA_all_summer <- non_conf_x.fish_WA %>% filter(is_May_Sep == 'Y')
 non_conf_grids_all_summer <- sort(unique(non_conf_x.fish_WA_all_summer$GRID5KM_ID))
 non_conf_grids_5km_all_summer <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_all_summer)
 non_conf_dissolved_all_summer <- st_union(non_conf_grids_5km_all_summer)
-#plot(dissolved_all_summer)
+#plot(non_conf_dissolved_all_summer)
+#write_rds(non_conf_dissolved_all_summer,here::here('wdfw','data',"dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds"))
 
 
 map_outline_2014_2020 <- ggplot() + 
