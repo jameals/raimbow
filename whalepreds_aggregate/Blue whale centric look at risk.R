@@ -585,7 +585,7 @@ glimpse(x.blue.mean)
 # start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
 MaySep_good_bw_hab <- x.blue.mean %>% 
   group_by(season) %>% 
-  mutate(good_bw_hab = ifelse(Mean_Blue_occurrence > 0.5, 'Y', 'N')
+  mutate(good_bw_hab = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N')
   ) %>%
   inner_join(grid.5km.lno) #join to have geometry column
 glimpse(MaySep_good_bw_hab)
@@ -704,18 +704,19 @@ MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>%
 summary_good_bw_habitat_fishing <- MaySep_good_bw_hab_fishing_risk %>% 
   filter(good_bw_hab == 'Y') %>% 
   group_by(season) %>% 
-  summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
-            trapdens_median = median(mean_trapdens, na.rm=TRUE),
-            risk_mean = mean(blue_risk, na.rm=TRUE),
-            risk_sum = sum(blue_risk, na.rm=TRUE),
-            sd = sd(blue_risk, na.rm = TRUE),
-            n = n()
+  summarise(
+    #trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+            #trapdens_median = median(mean_trapdens, na.rm=TRUE),
+            #risk_mean = mean(blue_risk, na.rm=TRUE),
+            risk_sum = sum(blue_risk, na.rm=TRUE)#,
+            #sd = sd(blue_risk, na.rm = TRUE),
+            #n = n()
             #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             #tottraps_median = median(mean_tottraps, na.rm=TRUE)
-  )%>% 
-  mutate(se = sd / sqrt(n),
-         lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
-         upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
+  )#%>% 
+  #mutate(se = sd / sqrt(n),
+   #      lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
+    #     upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
 glimpse(summary_good_bw_habitat_fishing)  
 
 
@@ -749,7 +750,7 @@ ts_risk_in_good_bw_habitat <- ggplot(summary_good_bw_habitat_fishing, aes(x=seas
   ylab("Blue whale risk (sum)") +
   xlab("Season") +
   #ggtitle("May-Sep risk (mean +/- 95% CI)\nin good (>0.469 prob of occur.) BW habitat") +
-  ggtitle("May-Sep risk (sum)\nin good (>0.5 prob of occur.) BW habitat") +
+  ggtitle("May-Sep risk (sum)\nin good (>0.469 prob of occur.) BW habitat") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -782,10 +783,11 @@ invisible(dev.off())
 # map example of most likely bw habitat with NON-confidential summer fishery footprint
 
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2014_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint.rds'))
+#dissolved_2014_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint.rds'))
+dissolved_2013_2014_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
 
 dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
-  st_transform(st_crs(dissolved_2014_2020_MaySep)) #make it have same projection 
+  st_transform(st_crs(dissolved_2013_2014_MaySep_non_conf)) #make it have same projection 
 
 
 # grab a base map
@@ -802,7 +804,7 @@ bbox = c(-127,46,-120,49)
 # plot blue whale
 bw_subset_MaySep <- MaySep_good_bw_hab %>% 
   #select season to map 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   filter(!is.na(good_bw_hab)) %>% 
   filter(good_bw_hab == 'Y')
 
@@ -818,9 +820,9 @@ map_blue_MaySep_good_hab <- ggplot() +
   #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2014_2020_MaySep, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_2013_2014_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
-  ggtitle("May-Sep 2013-2014 \ngood BW habitat (>0.469 occurrence) \nwith May-Sep fishery footprint (across all 2014-2020") +
+  ggtitle("May-Sep 2019-2020 \ngood BW habitat (>0.469 occurrence) \nnon-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
@@ -837,7 +839,7 @@ map_blue_MaySep_good_hab
 
 
 
-png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2013_2014_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_blue_MaySep_good_hab,
           ncol=1,
           nrow=1,
