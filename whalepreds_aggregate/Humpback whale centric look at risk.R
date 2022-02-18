@@ -67,7 +67,9 @@ grid.key <- left_join(grid.5km %>% st_drop_geometry(),
 grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 #glimpse(grid.key)
 
-
+grid.key_2 <- grid.key %>% 
+  #into this join area_km_lno info from layer: grid.5km.lno
+  left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
 #-----------------------------------------------------------------------------------
 #WA fishery footprint is north of 44N during all of 2013-2020 - clip whale data to that
@@ -85,7 +87,9 @@ grid.key_N46 <- grid.key %>%
 
 x.hump_whale <- x.hump_2009_2020 %>% 
   #inner_join(st_drop_geometry(grid.key_N44), by = "GRID5KM_ID")
-  inner_join(st_drop_geometry(grid.key_N46), by = "GRID5KM_ID")
+  #inner_join(st_drop_geometry(grid.key_N46), by = "GRID5KM_ID")
+  inner_join(st_drop_geometry(grid.key_2), by = "GRID5KM_ID")
+
 
 
 #instead of working in calendar years, work in crab seasons -- also filter to 2013-2020
@@ -116,15 +120,23 @@ x.whale.mean_all2013_2020 <- x.whale_crab_season_v2 %>% #this is already filtere
     #hw specific
     Mean_Humpback_dens = mean(Humpback_dens_mean, na.rm=TRUE)) %>%
   #inner_join(grid.key_N44)
-  inner_join(grid.key_N46)
+  #inner_join(grid.key_N46)
+  left_join(grid.key_2, by = "GRID5KM_ID")
 glimpse(x.whale.mean_all2013_2020)
 
 #find the 75th percentile value from across 2013-2020
 x.whale.all2013_2020_75th_quant <- x.whale.mean_all2013_2020 %>%
+  filter(LATITUDE > 46.26) %>% #Only calcualte the percentile values within WA waters
   #select(Mean_Humpback_dens, Mean_Blue_occurrence) %>%
   ungroup() %>% 
   summarise(
-    Humpback_dens_75th = quantile(Mean_Humpback_dens, probs=0.75, na.rm=TRUE)
+    Humpback_dens_75th = quantile(Mean_Humpback_dens, probs=0.75, na.rm=TRUE),
+    #for 'sensitivity testing', also get other percentiles
+    Humpback_dens_65th = quantile(Mean_Humpback_dens, probs=0.65, na.rm=TRUE),
+    Humpback_dens_70th = quantile(Mean_Humpback_dens, probs=0.70, na.rm=TRUE),
+    Humpback_dens_80th = quantile(Mean_Humpback_dens, probs=0.80, na.rm=TRUE),
+    Humpback_dens_85th = quantile(Mean_Humpback_dens, probs=0.85, na.rm=TRUE),
+    Humpback_dens_90th = quantile(Mean_Humpback_dens, probs=0.90, na.rm=TRUE)
   ) 
 glimpse(x.whale.all2013_2020_75th_quant)
 # 0.02466905, when clipped to 44N
@@ -141,7 +153,7 @@ x.whale.mean_by_season <- x.whale_crab_season_v2 %>%
   summarise(
     Mean_Humpback_dens = mean(Humpback_dens_mean, na.rm=TRUE)) %>%
   #inner_join(grid.key_N44)
-  inner_join(grid.key_N46)
+  inner_join(grid.5km)
 glimpse(x.whale.mean_by_season)
 
 x.whale.all2013_2020_MaySep_quant_joined <- x.whale.mean_by_season %>% 
@@ -150,9 +162,15 @@ glimpse(x.whale.all2013_2020_MaySep_quant_joined)
 
 x.whale.all2013_2020_MaySep_good_habitats <- x.whale.all2013_2020_MaySep_quant_joined %>% 
   ungroup() %>% 
-  mutate(HW_is_75th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_75th, 'Y', 'N')) %>%
+  mutate(HW_is_75th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_75th, 'Y', 'N'),
+         HW_is_65th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_65th, 'Y', 'N'),
+         HW_is_70th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_70th, 'Y', 'N'),
+         HW_is_80th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_80th, 'Y', 'N'),
+         HW_is_85th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_85th, 'Y', 'N'),
+         HW_is_90th_or_higher = ifelse(Mean_Humpback_dens > Humpback_dens_90th, 'Y', 'N')
+         ) #%>%
   #inner_join(grid.key_N44)
-  inner_join(grid.key_N46)
+  #inner_join(grid.key_N46)
 glimpse(x.whale.all2013_2020_MaySep_good_habitats)
 
 #----------------
@@ -203,52 +221,96 @@ x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_
 summary_75th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_75th_or_higher == 'Y') %>% 
   group_by(season) %>% 
-  summarise(trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
-            trapdens_median = median(mean_trapdens, na.rm=TRUE),
-            risk_mean = mean(hump_risk, na.rm=TRUE),
+  summarise(
+    #trapdens_mean = mean(mean_trapdens, na.rm=TRUE),
+    #        trapdens_median = median(mean_trapdens, na.rm=TRUE),
+    #        risk_mean = mean(hump_risk, na.rm=TRUE),
             risk_sum = sum(hump_risk, na.rm=TRUE),
-            sd = sd(hump_risk, na.rm = TRUE),
-            n = n()
+    #        sd = sd(hump_risk, na.rm = TRUE),
+    #        n = n()
             #tottraps_mean = mean(mean_tottraps, na.rm=TRUE),
             #tottraps_median = median(mean_tottraps, na.rm=TRUE)
             
-  ) %>% 
-  mutate(se = sd / sqrt(n),
-         lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
-         upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
-glimpse(summary_75th_HW_habitat_fishing)  
+  ) #%>% 
+  #mutate(se = sd / sqrt(n),
+  #       lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
+  #       upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
+glimpse(summary_75th_HW_habitat_fishing) 
+
+summary_65th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_65th_or_higher == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+    risk_sum = sum(hump_risk, na.rm=TRUE)
+  ) 
+glimpse(summary_65th_HW_habitat_fishing) 
+
+summary_70th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_70th_or_higher == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+        risk_sum = sum(hump_risk, na.rm=TRUE)
+  ) 
+glimpse(summary_70th_HW_habitat_fishing) 
+
+summary_80th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_80th_or_higher == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+    risk_sum = sum(hump_risk, na.rm=TRUE)
+  ) 
+glimpse(summary_80th_HW_habitat_fishing) 
+
+summary_85th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_85th_or_higher == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+    risk_sum = sum(hump_risk, na.rm=TRUE)
+  ) 
+glimpse(summary_85th_HW_habitat_fishing) 
+
+summary_90th_HW_habitat_fishing <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_90th_or_higher == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+    risk_sum = sum(hump_risk, na.rm=TRUE)
+  ) 
+glimpse(summary_90th_HW_habitat_fishing)
+#for other years, 0 is included for 2018-19, but not in the 90th test
+#summary_90th_HW_habitat_fishing <- summary_90th_HW_habitat_fishing %>% add_row(season = c("2018-2019"), risk_sum = 0)
 
 
-ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=season)) + 
-  geom_line(aes(y = trapdens_mean, group = 1)) + 
-  geom_point(aes(y = trapdens_mean, group = 1), size=2) + 
-  geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
-  geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
-  ylab("Trap density") + 
-  xlab("Season") +
-  ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (75th) HW habitat \n(defined across 2013-2020)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_fishing_in_75th_hw_habitat
+# 
+# ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=season)) + 
+#   geom_line(aes(y = trapdens_mean, group = 1)) + 
+#   geom_point(aes(y = trapdens_mean, group = 1), size=2) + 
+#   geom_line(aes(y = trapdens_median, group = 1), color = "darkred", linetype="twodash") + 
+#   geom_point(aes(y = trapdens_median, group = 1), color = "darkred", size=2) + 
+#   ylab("Trap density") + 
+#   xlab("Season") +
+#   ggtitle("May-Sep trap density \nmean = solid line, median = dashed line \nin good (75th) HW habitat \n(defined across 2013-2020)") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_fishing_in_75th_hw_habitat
 
-#plot follows same curve if use risk (instead of trap)
+
 ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=season)) +
-  geom_line(aes(y = risk_mean, group = 1)) +
-  geom_point(aes(y = risk_mean, group = 1), size=2) +
-  geom_errorbar(aes(x = season,ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
-  ylab("Humpback whale risk (mean +/- 95% CI)") +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  #geom_errorbar(aes(x = season,ymin = lower.ci, ymax = upper.ci), colour="black", width=.2)+
+  ylab("Summed humpback whale risk") +
   xlab("Season") +
-  ggtitle("May-Sep risk (mean +/- 95% CI)\nin good (75th) HW habitat \n(defined across 2013-2020, clipped to 46.26N)") +
+  ggtitle("May-Sep risk (sum)\nin good (75th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -263,13 +325,113 @@ ts_fishing_in_75th_hw_habitat <- ggplot(summary_75th_HW_habitat_fishing, aes(x=s
   )
 ts_fishing_in_75th_hw_habitat
 
+ts_fishing_in_65th_hw_habitat <- ggplot(summary_65th_HW_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Summed humpback whale risk") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (sum)\nin good (65th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_65th_hw_habitat
 
-png(paste0(path_figures, "/ts_risk_mean_CI_in_75th_hw_habitat_MaySep_clipped_to46N_risk_0_if_no_overlap.png"), width = 17, height = 10, units = "in", res = 300)
-ggarrange(ts_fishing_in_75th_hw_habitat,
+
+ts_fishing_in_70th_hw_habitat <- ggplot(summary_70th_HW_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Summed humpback whale risk") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (sum)\nin good (70th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_70th_hw_habitat
+
+ts_fishing_in_80th_hw_habitat <- ggplot(summary_80th_HW_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Summed humpback whale risk") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (sum)\nin good (80th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_80th_hw_habitat
+
+ts_fishing_in_85th_hw_habitat <- ggplot(summary_85th_HW_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Summed humpback whale risk") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (sum)\nin good (85th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_85th_hw_habitat
+
+ts_fishing_in_90th_hw_habitat <- ggplot(summary_90th_HW_habitat_fishing, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Summed humpback whale risk") +
+  xlab("Season") +
+  ggtitle("May-Sep risk (sum)\nin good (90th) HW habitat\n(defined across 2013-2020, clipped to 46.26N)") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_fishing_in_90th_hw_habitat
+
+png(paste0(path_figures, "/ts_risk_sum_in_65th_hw_habitat_MaySep_clipped_to46N_20220218p.png"), width = 17, height = 10, units = "in", res = 300)
+ggarrange(ts_fishing_in_65th_hw_habitat,
           ncol=1,
           nrow=1,
-          legend="top",
-          labels="auto",
+          #legend="top",
+          #labels="auto",
           vjust=8,
           hjust=0
 )
@@ -281,6 +443,12 @@ invisible(dev.off())
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
 dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint_20220202.rds'))
 
+#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
+dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
+
+dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
+  st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
+
 # grab a base map
 rmap.base <- c(
   st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
@@ -290,21 +458,21 @@ rmap.base <- c(
 )
 
 #bbox
-bbox = c(-127,43.5,-120,49) 
+bbox = c(-127,46,-120,49) 
 #bbox = c(-127,45.5,-120,49) 
 
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   #select season to map 
   filter(season == "2019-2020") %>% 
-  filter(!is.na(HW_is_75th_or_higher)) %>% 
-  filter(HW_is_75th_or_higher == 'Y')
+  filter(!is.na(HW_is_65th_or_higher)) %>% 
+  filter(HW_is_65th_or_higher == 'Y')
 
 
-map_hump_MaySep_75th <- ggplot() + 
+map_hump_MaySep_65th <- ggplot() + 
   geom_sf(data=sf::st_as_sf(hw_subset_MaySep), 
-          aes(fill=HW_is_75th_or_higher,
-              col=HW_is_75th_or_higher
+          aes(fill=HW_is_65th_or_higher,
+              col=HW_is_65th_or_higher
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
@@ -313,9 +481,10 @@ map_hump_MaySep_75th <- ggplot() +
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
-  ggtitle("May-Sep 2019-2020 \ngood HW habitat (75th+) \nspatially clip at 44N \nwith 2019-2020 May-Sep fishery footprint") +
+  #geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
+  ggtitle("May-Sep 2019-2020 \ngood HW habitat (>65th) \nspatially clip at 46.26N \nwith non-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
-  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
@@ -326,9 +495,9 @@ map_hump_MaySep_75th <- ggplot() +
         strip.text = element_text(size=14),
         title=element_text(size=16)
   )
-map_hump_MaySep_75th
+map_hump_MaySep_65th
 
-png(paste0(path_figures, "/good_wh_habitat_MaySep_75th_across_20132020_applied to each season_2019-2020_spatially_clipped_44.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_wh_habitat_MaySep_75th_across_20132020_applied to 2013_2014_spatially_clipped_4626_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump_MaySep_75th,
           ncol=1,
           nrow=1,
@@ -341,14 +510,298 @@ invisible(dev.off())
 
 #------------------------------------------------------------------------------------------------------------
 
+test_summary <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_75th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+
+#no overlap in 2018-2019, add a row
+test_summary <- test_summary %>% add_row(season = c("2018-2019"), n_grids = 0)
+
+#season     n_grids
+#2013-2014    124
+#2014-2015    103
+#2015-2016    105
+#2016-2017    121
+#2017-2018    158
+#2018-2019    0
+#2019-2020    82
+
+ts_overlapping_grids <- ggplot(test_summary, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>75th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids
+
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_75th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
+test_summary_65 <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_65th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+
+#season     n_grids
+#2013-2014    125
+#2014-2015    119
+#2015-2016    106
+#2016-2017    137
+#2017-2018    168
+#2018-2019    4
+#2019-2020    87
+
+ts_overlapping_grids_65 <- ggplot(test_summary_65, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>65th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_65
+
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_65th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids_65,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
+test_summary_70 <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_70th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
 
+#no overlap in 2018-2019, add a row
+test_summary_70 <- test_summary_70 %>% add_row(season = c("2018-2019"), n_grids = 0)
 
+#season     n_grids
+#2013-2014    125
+#2014-2015    114
+#2015-2016    106
+#2016-2017    129
+#2017-2018    164
+#2018-2019    0
+#2019-2020    85
 
+ts_overlapping_grids_70 <- ggplot(test_summary_70, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>70th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_70
 
-
-
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_70th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids_70,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
  
+
+test_summary_80 <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_80th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+
+#no overlap in 2018-2019, add a row
+test_summary_80 <- test_summary_80 %>% add_row(season = c("2018-2019"), n_grids = 0)
+
+#season     n_grids
+#2013-2014    123
+#2014-2015    96
+#2015-2016    100
+#2016-2017    115
+#2017-2018    150
+#2018-2019    0
+#2019-2020    79
+
+ts_overlapping_grids_80 <- ggplot(test_summary_80, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>80th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_80
+
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_80th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids_80,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+test_summary_85 <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_85th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+
+#no overlap in 2018-2019, add a row
+test_summary_85 <- test_summary_85 %>% add_row(season = c("2018-2019"), n_grids = 0)
+
+#season     n_grids
+#2013-2014    120
+#2014-2015    87
+#2015-2016    97
+#2016-2017    111
+#2017-2018    131
+#2018-2019    0
+#2019-2020    78
+
+ts_overlapping_grids_85 <- ggplot(test_summary_85, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>80th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_85
+
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_85th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids_85,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+test_summary_90 <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
+  filter(HW_is_90th_or_higher == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n())
+
+#no overlap in 2018-2019, add a row
+test_summary_90 <- test_summary_90 %>% add_row(season = c("2018-2019"), n_grids = 0)
+
+#season     n_grids
+#2013-2014    108
+#2014-2015    67
+#2015-2016    83
+#2016-2017    96
+#2017-2018    95
+#2018-2019    0
+#2019-2020    72
+
+ts_overlapping_grids_90 <- ggplot(test_summary_90, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("May-Sep overlapping grids\nin good (>90th density) HW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_90
+
+png(paste0(path_figures, "/overlap_fishery_and_good_wh_habitat_MaySep_90th_.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_overlapping_grids_90,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
