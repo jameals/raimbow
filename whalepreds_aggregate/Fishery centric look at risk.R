@@ -25,8 +25,8 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 
-#path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
@@ -304,8 +304,8 @@ plot_subset <- risk_whales_WA_MaySep %>%
 ts_sum_hump_risk_May_Sep_study_area <- ggplot() +
   geom_point(data = plot_subset, aes(x = season, y = Humpback_risk_sum,group = 1), size=4) +
   geom_line(data = plot_subset, aes(x = season, y = Humpback_risk_sum,group = 1)) +
-  geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_sum_2018_2019, group = 1), size=4, colour = 'red') +
-  geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_sum_2019_2020, group = 1), size=4, colour = 'red') +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_sum_2018_2019, group = 1), size=4, colour = 'red') +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_sum_2019_2020, group = 1), size=4, colour = 'red') +
   ylab("summed humpback Whale Risk May-Sep") + 
   xlab("Season") +
   theme_classic() +
@@ -477,6 +477,314 @@ ggarrange(ts_hump_dens_MaySep_study_area_sum,
           hjust=0
 )
 invisible(dev.off())
+
+
+
+
+
+#-------------------
+#####comparing pre-reg 2013-2018 seasons to post-reg (a) 2018-2019, and (b) 2019-2020 seasons separately. 
+#####For (a) focus on Jul-Sep of 2013-18 vs 2018-19. For (b) focus on May-Sep 2013-18 vs 2019-20
+
+# ts plot: summed Jul-Sep risk to whales in study area
+# compare pre-reg and 2018-2019
+
+plot_subset_pre_reg_vs_2018_2019 <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Humpback_risk_sum = sum(hump_risk, na.rm=TRUE))
+
+ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_point(data = plot_subset_pre_reg_vs_2018_2019, aes(x = season, y = Humpback_risk_sum,group = 1), size=4) +
+  geom_line(data = plot_subset_pre_reg_vs_2018_2019, aes(x = season, y = Humpback_risk_sum,group = 1)) +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_sum_2018_2019, group = 1), size=4, colour = 'red') +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_sum_2019_2020, group = 1), size=4, colour = 'red') +
+  ylab("summed humpback Whale Risk Jul-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2018_2019
+
+
+# ts plot: summed May-Sep risk to whales in study area
+# compare pre-reg and 2019-2020
+
+plot_subset_pre_reg_vs_2019_2020 <- risk_whales_WA_MaySep %>% 
+  #take out 2018-2019 seasons
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Humpback_risk_sum = sum(hump_risk, na.rm=TRUE))
+
+ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_point(data = plot_subset_pre_reg_vs_2019_2020, aes(x = season, y = Humpback_risk_sum,group = 1), size=4) +
+  geom_line(data = plot_subset_pre_reg_vs_2019_2020, aes(x = season, y = Humpback_risk_sum,group = 1)) +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2018_2019, aes(x = season, y = Humpback_risk_sum_2018_2019, group = 1), size=4, colour = 'red') +
+  #geom_point(data = sum_risk_whales_WA_MaySep_no_regs_2019_2020, aes(x = season, y = Humpback_risk_sum_2019_2020, group = 1), size=4, colour = 'red') +
+  ylab("summed humpback Whale Risk May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020
+
+
+#companion plot Jul-Sep
+study_area_hw_pre_reg_vs_2018_2019 <- study_area_whale %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  select(GRID5KM_ID:Humpback_dens_mean) %>% 
+  group_by(season) %>% 
+  summarise(
+    Hump_dens_sum = sum(Humpback_dens_mean, na.rm=TRUE))
+
+ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_point(data = study_area_hw_pre_reg_vs_2018_2019, aes(x = season, y = Hump_dens_sum, group = 1), size=4) +
+  geom_line(data = study_area_hw_pre_reg_vs_2018_2019, aes(x = season, y = Hump_dens_sum, group = 1)) +
+  ylab("Summed humpback Whale Density Jul-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2018_2019
+
+
+#companion plot May-Sep
+# compare pre-reg and 2019-2020
+study_area_hw_pre_reg_vs_2019_2020 <- study_area_whale %>% 
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  select(GRID5KM_ID:Humpback_dens_mean) %>% 
+  group_by(season) %>% 
+  summarise(
+    Hump_dens_sum = sum(Humpback_dens_mean, na.rm=TRUE))
+
+ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_point(data = study_area_hw_pre_reg_vs_2019_2020, aes(x = season, y = Hump_dens_sum, group = 1), size=4) +
+  geom_line(data = study_area_hw_pre_reg_vs_2019_2020, aes(x = season, y = Hump_dens_sum, group = 1)) +
+  ylab("Summed humpback Whale Density May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2019_2020
+
+
+# plot HW risk and density, Jul-Sep and May-Sep
+png(paste0(path_figures, "/ts_sum_hump_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2018_2019,
+          ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2018_2019,
+          ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020,
+          ts_hump_dens_MaySep_study_area_sum_pre_reg_vs_2019_2020,
+          ncol=2,
+          nrow=2,
+          legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+# ts plot: summed Jul-Sep risk to whales in study area
+# compare pre-reg and 2018-2019
+
+bw_plot_subset_pre_reg_vs_2018_2019 <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
+ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_point(data = bw_plot_subset_pre_reg_vs_2018_2019, aes(x = season, y = Blue_risk_sum,group = 1), size=4) +
+  geom_line(data = bw_plot_subset_pre_reg_vs_2018_2019, aes(x = season, y = Blue_risk_sum,group = 1)) +
+  ylab("summed blue Whale Risk Jul-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2018_2019
+
+
+# ts plot: summed May-Sep risk to whales in study area
+# compare pre-reg and 2019-2020
+
+bw_plot_subset_pre_reg_vs_2019_2020 <- risk_whales_WA_MaySep %>% 
+  #take out 2018-2019 seasons
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  group_by(season) %>%
+  summarise(
+    Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
+ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_point(data = bw_plot_subset_pre_reg_vs_2019_2020, aes(x = season, y = Blue_risk_sum,group = 1), size=4) +
+  geom_line(data = bw_plot_subset_pre_reg_vs_2019_2020, aes(x = season, y = Blue_risk_sum,group = 1)) +
+  ylab("Summed blue Whale Risk May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020
+
+
+#companion plot Jul-Sep
+study_area_bw_pre_reg_vs_2018_2019 <- study_area_whale %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  select(-Humpback_dens_mean) %>% 
+  group_by(season) %>% 
+  summarise(
+    Blue_dens_sum = sum(Blue_occurrence_mean, na.rm=TRUE))
+
+ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_point(data = study_area_bw_pre_reg_vs_2018_2019, aes(x = season, y = Blue_dens_sum, group = 1), size=4) +
+  geom_line(data = study_area_bw_pre_reg_vs_2018_2019, aes(x = season, y = Blue_dens_sum, group = 1)) +
+  ylab("Summed blue Whale Density Jul-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2018_2019
+
+
+#companion plot May-Sep
+# compare pre-reg and 2019-2020
+study_area_bw_pre_reg_vs_2019_2020 <- study_area_whale %>% 
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  select(-Humpback_dens_mean) %>% 
+  group_by(season) %>% 
+  summarise(
+    Blue_dens_sum = sum(Blue_occurrence_mean, na.rm=TRUE))
+
+ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_point(data = study_area_bw_pre_reg_vs_2019_2020, aes(x = season, y = Blue_dens_sum, group = 1), size=4) +
+  geom_line(data = study_area_bw_pre_reg_vs_2019_2020, aes(x = season, y = Blue_dens_sum, group = 1)) +
+  ylab("Summed blue Whale Density May-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2019_2020
+
+
+# plot BW risk and density, Jul-Sep and May-Sep
+png(paste0(path_figures, "/ts_sum_blue_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2018_2019,
+          ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2018_2019,
+          ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020,
+          ts_blue_occur_MaySep_study_area_sum_pre_reg_vs_2019_2020,
+          ncol=2,
+          nrow=2,
+          legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #######################################################################################
