@@ -27,8 +27,8 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 
-#path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
@@ -138,8 +138,11 @@ rmap.base <- c(
 bbox = c(-127,46,-122,49) 
 
 
+dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint_20220202.rds'))
+
+
 subset_data <- summary_study_area_whale %>% 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
 map_hump <- ggplot() + 
@@ -149,11 +152,11 @@ map_hump <- ggplot() +
           )
   ) +
   geom_sf(data=rmap.base,col='black',fill='gray50') +
-  
   #max hump dens 0.0427
   scale_fill_viridis(na.value=NA,option="D",name="Mean humpback\ndensity",breaks=seq(0,0.042,by=0.014),limits=c(0,0.042),oob=squish) + 
   scale_color_viridis(na.value=NA,option="D",name="Mean humpback\ndensity",breaks=seq(0,0.042,by=0.014),limits=c(0,0.042),oob=squish) + 
-  ggtitle("2013-2014 May-Sep") +
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("2019-2020 May-Sep") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -170,7 +173,7 @@ map_hump
 
 
 subset_data <- summary_study_area_whale %>% 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
 map_blue <- ggplot() + 
@@ -180,13 +183,11 @@ map_blue <- ggplot() +
           )
   ) +
   geom_sf(data=rmap.base,col='black',fill='gray50') +
-  
   #max blue occur 0.6509358
   scale_fill_viridis(na.value=NA,option="D",name="Mean blue whale\noccurrence",breaks=seq(0,0.65,by=0.325),limits=c(0,0.65),oob=squish) + 
   scale_color_viridis(na.value=NA,option="D",name="Mean blue whale\noccurrence",breaks=seq(0,0.65,by=0.325),limits=c(0,0.65),oob=squish) + 
-  
-  ggtitle("2013-2014 May-Sep") +
-  
+  geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("2019-2020 May-Sep") +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
@@ -204,7 +205,7 @@ map_blue
 
 
 # plot blues and humps together
-png(paste0(path_figures, "/map_mean_blue_hump_2013_2014.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/map_mean_blue_hump_2019_2020_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump,
           map_blue,
           ncol=2,
