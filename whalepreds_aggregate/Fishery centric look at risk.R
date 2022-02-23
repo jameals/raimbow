@@ -92,7 +92,7 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 #fishing effort
 
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
