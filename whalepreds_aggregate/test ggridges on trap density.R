@@ -17,9 +17,9 @@ library(ggridges)
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week step or 1-month step
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
 
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
@@ -147,6 +147,91 @@ ggarrange(pot_density_ridges_quantiles,
           hjust=0
 )
 invisible(dev.off())
+
+
+
+#Jul-Sep pre-reg vs 2018-2019
+
+x.fish_WA_JulSep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+
+pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
+  xlab("Pot density [pots/km2] (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+pot_density_ridges_quantiles_JulSep
+
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(pot_density_ridges_quantiles_JulSep,
+          ncol=1,
+          nrow=1,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+#May-Sep pre-reg vs 2019-2020
+
+x.fish_WA_MaySep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(is_May_Sep == "Y") %>%  
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%  
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
+  xlab("Pot density [pots/km2] (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+pot_density_ridges_quantiles_MaySep
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(pot_density_ridges_quantiles_MaySep,
+          ncol=1,
+          nrow=1,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 
 ##############################################################
 
