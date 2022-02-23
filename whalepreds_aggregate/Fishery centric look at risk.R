@@ -1044,14 +1044,179 @@ invisible(dev.off())
 
 
 
+###########################
+
+#boxplot of last 2 seasons with or wihtout regs
+
+#risk_whales_WA_MaySep
+#risk_whales_WA_MaySep_no_regs
+
+
+#HW
+box_2018_2019_with_regs <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2018-2019')) %>% 
+  filter(study_area=='Y') %>% 
+  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(regs = "with regulations")
+  
+box_2018_2019_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2018-2019')) %>% 
+  filter(study_area=='Y') %>% 
+  filter(!is.na(mean_M2_trapdens)) %>% 
+  mutate(regs = "without regulations")
+
+
+box_hw_risk_2018_2019_with_and_without_regs <- ggplot() +
+  geom_boxplot(data = box_2018_2019_with_regs, aes(x = regs, y = hump_risk)) +
+  geom_boxplot(data = box_2018_2019_without_regs, aes(x = regs, y = hump_risk)) +
+  ylab("humpback Whale Risk Jul-Sep") + 
+  xlab("2018-2019 season") +
+  #scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hw_risk_2018_2019_with_and_without_regs
 
 
 
+box_2019_2020_with_regs <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season %in% c('2019-2020')) %>% 
+  filter(study_area=='Y') %>% 
+  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(regs = "with regulations")
+
+box_2019_2020_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season %in% c('2019-2020')) %>% 
+  filter(study_area=='Y') %>% 
+  filter(!is.na(mean_M2_trapdens)) %>% 
+  mutate(regs = "without regulations")
 
 
+box_hw_risk_2019_2020_with_and_without_regs <- ggplot() +
+  geom_boxplot(data = box_2019_2020_with_regs, aes(x = regs, y = hump_risk)) +
+  geom_boxplot(data = box_2019_2020_without_regs, aes(x = regs, y = hump_risk)) +
+  ylab("humpback Whale Risk May-Sep") + 
+  xlab("2019-2020 season") +
+  #scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hw_risk_2019_2020_with_and_without_regs
 
 
+test <- rbind(box_2018_2019_with_regs, box_2018_2019_without_regs, box_2019_2020_with_regs, box_2019_2020_without_regs)
 
+box_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+  
+  #geom_boxplot(data = test, aes(x = season, y = hump_risk, fill = regs)) +
+  #ylab("humpback Whale Risk May-Sep") + 
+  
+  geom_boxplot(data = test, aes(x = season, y = blue_risk, fill = regs)) +
+  ylab("blue Whale Risk May-Sep") + 
+  
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.2, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_bw_risk_2018_2019_2020_with_and_without_regs
+
+
+#plot things together and save
+png(paste0(path_figures, "/box_blue_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(box_bw_risk_2018_2019_2020_with_and_without_regs,
+          #box_hw_risk_2018_2019_with_and_without_regs,
+          #box_hw_risk_2019_2020_with_and_without_regs,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+summary_test <- test %>% 
+  group_by(season, regs) %>% 
+  summarise(sum_hump_risk = sum(hump_risk, na.rm = TRUE),
+            sum_blue_risk = sum(blue_risk, na.rm = TRUE),
+            n_row = n()
+            )
+#season             regs        sum_hump_risk   sum_blue_risk
+#2018-2019  with regulations      11.69176        668.5111
+#2018-2019  without regulations   17.66243        1010.3326
+#2019-2020  with regulations      45.75299        749.2442
+#2019-2020  without regulations   69.16616        1132.5630
+
+
+point_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+  
+  geom_point(data = summary_test, aes(x = season, y = sum_hump_risk, color = regs), size=4) +
+  ylab("sum hump Whale Risk") + 
+  
+  #geom_point(data = summary_test, aes(x = season, y = sum_blue_risk, color = regs), size=4) +
+  #ylab("sum blue Whale Risk") + 
+  
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.2, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+point_hw_risk_2018_2019_2020_with_and_without_regs
+
+
+#plot things together and save
+png(paste0(path_figures, "/point_hump_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(point_hw_risk_2018_2019_2020_with_and_without_regs,
+          #box_hw_risk_2018_2019_with_and_without_regs,
+          #box_hw_risk_2019_2020_with_and_without_regs,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
