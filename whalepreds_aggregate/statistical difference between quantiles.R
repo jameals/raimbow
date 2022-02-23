@@ -40,6 +40,68 @@ x.fish_WA_MaySep$season <- factor(x.fish_WA_MaySep$season, levels = c('2013-2014
 
 
 
+#Jul-Sep pre-reg vs 2018-2019
+x.fish_WA_JulSep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+x.fish_WA_JulSep_pre_reg <- x.fish_WA_JulSep %>% 
+  filter(pre_post_reg == "pre-reg")
+x.fish_WA_JulSep_2018_2019 <- x.fish_WA_JulSep %>% 
+  filter(pre_post_reg == "2018-2019")
+
+#May-Sep pre-reg vs 2019-2020
+x.fish_WA_MaySep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(is_May_Sep == "Y") %>%  
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%  
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+x.fish_WA_MaySep_pre_reg <- x.fish_WA_MaySep %>% 
+  filter(pre_post_reg == "pre-reg")
+x.fish_WA_MaySep_2019_2020 <- x.fish_WA_MaySep %>% 
+  filter(pre_post_reg == "2019-2020")
+
+
+kstest_JulSep <- ks.test(x.fish_WA_JulSep_pre_reg$M2_trapdens, x.fish_WA_JulSep_2018_2019$M2_trapdens)
+#p-value = 5.22e-08
+
+kstest_MaySep <- ks.test(x.fish_WA_MaySep_pre_reg$M2_trapdens, x.fish_WA_MaySep_2019_2020$M2_trapdens)
+#p-value < 2.2e-16
+
+wilcox_test_JulSep <- wilcox.test(M2_trapdens ~ pre_post_reg, data = x.fish_WA_JulSep, exact = FALSE)
+#p-value = 1.799e-08
+
+wilcox_test_MaySep <- wilcox.test(M2_trapdens ~ pre_post_reg, data = x.fish_WA_MaySep, exact = FALSE)
+#p-value < 2.2e-16
+
+
+qcomhd_JulSep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_JulSep, q = c(0.25, 0.5, 0.75), nboot = 500)
+qcomhd_JulSep
+# Parameter table: 
+#   q  n1   n2   est1    est2 est1-est.2  ci.low   ci.up p.crit p.value
+# 1 0.25 294 1218 1.1603  1.9000    -0.7397 -1.0615 -0.3674 0.0500       0
+# 2 0.50 294 1218 2.8241  5.3032    -2.4791 -3.4091 -1.7179 0.0250       0
+# 3 0.75 294 1218 7.3855 12.0117    -4.6262 -6.3925 -2.3675 0.0167       0
+
+qcomhd_MaySep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_MaySep, q = c(0.25, 0.5, 0.75), nboot = 500)
+qcomhd_MaySep
+# Parameter table: 
+#   q  n1   n2   est1    est2 est1-est.2  ci.low   ci.up p.crit p.value
+# 1 0.25 584 2902 0.7954  1.5698    -0.7744 -0.9261 -0.5861 0.0500       0
+# 2 0.50 584 2902 2.3946  4.7082    -2.3135 -2.8151 -1.8008 0.0250       0
+# 3 0.75 584 2902 5.5304 11.3308    -5.8004 -6.9841 -4.1890 0.0167       0
+
+
+
+
+
+
 
 
 ####### quantile regression #######
