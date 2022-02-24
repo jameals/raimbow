@@ -551,9 +551,8 @@ ggplot(study_area_bw, aes(x = Blue_occurrence_mean, y = season, height = ..densi
 
 #find the mean +/- SD / median value from the distribution (in study area)
 
-#filter to study area (bw model reaches outside of study areagiving NAs)
+#data filtered to study area (bw model reaches outside of study area, giving NAs)
 summary_study_area_bw <- study_area_bw %>% 
-  #filter(study_area == 'Y') %>% 
 #data already limited to seasons of interest, and May-Sep  
 #get mean etc. values across full dataset
   summarise(Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE),
@@ -565,6 +564,21 @@ summary_study_area_bw <- study_area_bw %>%
 # sd = 0.229
 # mean+sd = 0.698 #if use this as cutoff there is no overlap 
 # mean-sd = 0.24
+
+
+#what if want to look for value for Jul-Sep
+summary_study_area_bw_JulSep <- study_area_bw %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  #data already limited to seasons of interest, and May-Sep  
+  #get mean etc. values across full dataset
+  summarise(Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE),
+            Median_Blue_occurrence = median(Blue_occurrence_mean, na.rm=TRUE),
+            sd_Blue_occurrence = sd(Blue_occurrence_mean, na.rm=TRUE))
+# mean = 0.626
+# median = 0.629
+# sd = 0.0907
+# mean+sd = 0.717  
+# mean-sd = 0.535
 
 #----------------------------------------------------------------------------
   
@@ -581,6 +595,16 @@ x.blue.mean <- study_area_bw_v2 %>%
   ) 
 glimpse(x.blue.mean)
 
+# calculate MEAN whale values for different grid in different seasons - for JUL-Sep period (2013-2020)
+x.blue.mean_JulSep <- study_area_bw_v2 %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  group_by(season, GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
+  ) 
+glimpse(x.blue.mean_JulSep)
+
+
 
 # start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
 MaySep_good_bw_hab <- x.blue.mean %>% 
@@ -590,7 +614,12 @@ MaySep_good_bw_hab <- x.blue.mean %>%
   inner_join(grid.5km.lno) #join to have geometry column
 glimpse(MaySep_good_bw_hab)
 
-
+JulSep_good_bw_hab <- x.blue.mean_JulSep %>% 
+  group_by(season) %>% 
+  mutate(good_bw_hab = ifelse(Mean_Blue_occurrence > 0.626, 'Y', 'N')
+  ) %>%
+  inner_join(grid.5km.lno) #join to have geometry column
+glimpse(JulSep_good_bw_hab)
 #---------------------------
 
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
@@ -692,6 +721,13 @@ MaySep_good_bw_hab_fishing <- MaySep_good_bw_hab %>%
   left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") 
 glimpse(MaySep_good_bw_hab_fishing)
 
+JulSep_good_bw_hab_fishing <- JulSep_good_bw_hab %>% 
+  left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) %>% 
+  left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") 
+glimpse(JulSep_good_bw_hab_fishing)
+
+
+
 MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>% 
   mutate(
     blue_risk = Mean_Blue_occurrence * mean_trapdens
@@ -700,6 +736,16 @@ MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>%
   mutate(blue_risk = 
            ifelse(is.na(mean_trapdens), 0, blue_risk)
   )
+
+JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>% 
+  mutate(
+    blue_risk = Mean_Blue_occurrence * mean_trapdens
+  )%>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(blue_risk = 
+           ifelse(is.na(mean_trapdens), 0, blue_risk)
+  )
+
 
 summary_good_bw_habitat_fishing <- MaySep_good_bw_hab_fishing_risk %>% 
   filter(good_bw_hab == 'Y') %>% 
@@ -718,6 +764,15 @@ summary_good_bw_habitat_fishing <- MaySep_good_bw_hab_fishing_risk %>%
    #      lower.ci = risk_mean - qt(1 - (0.05 / 2), n - 1) * se,
     #     upper.ci = risk_mean + qt(1 - (0.05 / 2), n - 1) * se)
 glimpse(summary_good_bw_habitat_fishing)  
+
+summary_good_bw_habitat_fishing_JulSep <- JulSep_good_bw_hab_fishing_risk %>% 
+  filter(good_bw_hab == 'Y') %>% 
+  group_by(season) %>% 
+  summarise(
+    risk_sum = sum(blue_risk, na.rm=TRUE)) %>% 
+  #remove 2019-2020 season
+  filter(season != '2019-2020')
+glimpse(summary_good_bw_habitat_fishing_JulSep)  
 
 
 ts_fishing_in_good_bw_habitat <- ggplot(summary_good_bw_habitat_fishing, aes(x=season)) + 
@@ -776,6 +831,29 @@ ggarrange(ts_fishing_in_good_bw_habitat,
           hjust=0
 )
 invisible(dev.off())
+
+
+
+
+ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_good_bw_habitat_fishing_JulSep, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1)) +
+  geom_point(aes(y = risk_sum, group = 1), size=2) +
+  ylab("Blue whale risk (sum)\nJul-Sep") +
+  xlab("Season") +
+  ggtitle("Jul-Sep risk (sum)\nin good (>0.626 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_risk_in_good_bw_habitat_JulSep
 
 
 #---------------------------
@@ -974,4 +1052,43 @@ ts_overlapping_grids <- ggplot(test_summary, aes(x=season)) +
   )
 ts_overlapping_grids
 
+
+
+#Jul-Sep
+test_summary <- JulSep_good_bw_hab_fishing_risk %>% 
+  filter(good_bw_hab == 'Y') %>% 
+  filter(!is.na(mean_trapdens)) %>% 
+  group_by(season) %>% 
+  summarise(n_grids = n()) %>% 
+  filter(season != '2019-2020')
+#when use 0.626
+# season    n_grids
+#  2013-2014      28
+#  2014-2015      49
+#  2015-2016      55
+#  2016-2017      78
+#  2017-2018      92
+#  2018-2019      97
+#  2019-2020      48
+
+
+ts_overlapping_grids_JulSep <- ggplot(test_summary, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1)) +
+  geom_point(aes(y = n_grids, group = 1), size=2) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  ggtitle("Jul-Sep overlapping grids\nin good (>0.626 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_JulSep
 
