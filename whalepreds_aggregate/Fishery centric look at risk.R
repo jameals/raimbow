@@ -552,6 +552,8 @@ ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
 ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020
 
 
+
+
 #companion plot Jul-Sep
 study_area_hw_pre_reg_vs_2018_2019 <- study_area_whale %>% 
   filter(month %in% c('07', '08', '09')) %>% 
@@ -691,6 +693,8 @@ ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         strip.placement = "left"
   )
 ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020
+
+
 
 
 #companion plot Jul-Sep
