@@ -131,9 +131,77 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 
 #columns of interest to summarise LANDED_WEIGHT_LBS and EXVESSEL_REVENUE or AFI_EXVESSEL_REVENUE??
 
+# do separate comparisons for Jul-Sep 2019 vs pre-regs, and May-Sep 2020 vs pre-regs
+
+
+#Jul-Sep
+summary_pacfin_data_JulSep <- test_join_uniques %>% 
+  filter(month_name %in% c('July','August','September')) %>%   
+  filter(season != '2019-2020') %>% 
+  group_by(season) %>% 
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+            sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+            avg_price_per_pound = mean(PRICE_PER_POUND)
+  )
+
+
+sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
+  geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
+  geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
+  #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
+  ylab("Revenue $ (sum Jul-Sep)") +
+  xlab("Season") + 
+  #geom_hline(yintercept=1241764, linetype="dashed", 
+  # color = "red", size=2)+ #average across 5 pre-reg seasons Jul-Sep
+  #geom_hline(yintercept=673505.2, linetype="dashed", 
+  # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+sum_JulSep_rev_ts
+
+
+sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
+  geom_line(size=1, lineend = "round") + 
+  geom_point(size=2.5) + 
+  ylab("Landings lbs (sum Jul-Sep)") +
+  xlab("Season") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+sum_JulSep_landings_ts
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+
+png(paste0(path_figures, "/ts_sum_revenue_landings_JulSep_2019_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(sum_JulSep_rev_ts,
+          sum_JulSep_landings_ts,
+          ncol=1,
+          nrow=2,
+          #legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+#May-Sep
 summary_pacfin_data_MaySep <- test_join_uniques %>% 
-  mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
-  mutate(season = factor(season, levels = c('2013-2014', '2014-2015', '2015-2016', '2016-2017', '2017-2018', '2018-2019', '2019-2020')))  %>% 
+  filter(season != '2018-2019') %>% 
   group_by(season) %>% 
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
@@ -160,7 +228,7 @@ sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
         legend.position="bottom"
   )
 sum_MaySep_rev_ts
-
+#28% drop in revenue in 2020 from 2018, but drop in area size was 33% from 2018
 
 sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
   geom_line(size=1, lineend = "round") + 
@@ -175,13 +243,12 @@ sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum
         legend.position="bottom"
   )
 sum_MaySep_landings_ts
-
-
+#18% drop in landed pounds in 2020 from 2018
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-png(paste0(path_figures, "/ts_sum_revenue_landings_2014_2020_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_sum_revenue_landings_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(sum_MaySep_rev_ts,
           sum_MaySep_landings_ts,
           ncol=1,
