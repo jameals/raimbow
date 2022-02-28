@@ -129,6 +129,46 @@ ts_hump_dens <- ggplot(
 ts_hump_dens
 #ts of mean (when 0s included) and sum looks the same (shape is same, y-axis is different)
 
+
+#ts for Jul-Sep only: how steady was HW in Jul-Sep of pre-reg seasons?
+x.hump_2014_2020_crab_season_v3 <- x.hump_2014_2020_crab_season_v2 %>% 
+  filter(month %in% c('07', '08', '09'))
+
+ordered.ids <- factor(x.hump_2014_2020_crab_season_v3$season_month, levels=x.hump_2014_2020_crab_season_v3$season_month)
+
+
+ts_hump_dens <- ggplot(
+  data = x.hump_2014_2020_crab_season_v3, 
+  aes(
+    x = factor(season_month, levels=ordered.ids), 
+    y = Humpback_dens_sum,
+    #y = Humpback_dens_mean,
+    #y = Humpback_dens_median,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=1)])+
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2013-2014_12,2019-2020_09)) +
+  ylab("Sum Humpback Whale Density\nin study area") + 
+  #ylab("Mean Humpback Whale Density\nin study area") + 
+  xlab("Season_month") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_hump_dens
+
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
 
