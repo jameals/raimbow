@@ -1180,7 +1180,7 @@ invisible(dev.off())
 
 #----------------------------------------------------------------------------------------
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2018_2019_JulSep <- read_rds(here::here('wdfw','data','dissolved_2018_2019_JulSep_WA_fishery_footprint_20220227.rds'))
+dissolved_2015_2016_JulSep <- read_rds(here::here('wdfw','data','dissolved_2015_2016_JulSep_WA_fishery_footprint_20220227.rds'))
 
 #map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
 dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
@@ -1202,7 +1202,7 @@ bbox = c(-127,46,-121.5,49)
 
 hw_subset_MaySep <- x.whale.all2013_2020_JulSep_good_habitats %>%   #x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>%
   #select season to map 
-  filter(season == "2018-2019") %>% 
+  filter(season == "2015-2016") %>% 
   filter(!is.na(HW_is_80th_or_higher)) %>% 
   filter(HW_is_80th_or_higher == 'Y')
 
@@ -1218,10 +1218,10 @@ map_hump_JulSep_80th <- ggplot() +
   #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2018_2019_JulSep, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_2015_2016_JulSep, color = 'black',size=1, fill = NA) +
   #geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   #geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
-  ggtitle("May-Sep 2018-2019, good HW habitat (>80th) \nspatially clip at 45N, with conf. Jul-Sep fishery footprint") +
+  ggtitle("May-Sep 2015-2016, good HW habitat (>80th) \nspatially clip at 45N, with conf. Jul-Sep fishery footprint") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
