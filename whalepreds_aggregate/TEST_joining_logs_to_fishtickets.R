@@ -231,7 +231,7 @@ sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
   #geom_hline(yintercept=1988695, linetype="dashed", 
             # color = "red", size=2)+ #average across 5 pre-reg seasons
   #geom_hline(yintercept=1451688, linetype="dashed", 
-            # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
+             #color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
   theme_bw()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -326,6 +326,88 @@ invisible(dev.off())
 
 
 
+#Why is 2014 so different? is there a specific month driving it?
+
+summary_2014 <- test_join_uniques %>% 
+  #filter(season == '2013-2014') %>% 
+  group_by(season, month_name) %>% 
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T))
+
+summary_2014$month_name <- factor(summary_2014$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
+
+
+ts_2014 <- ggplot(summary_2014)+
+  geom_line(aes(x=month_name, y=sum_revenue, group=1),size=1, lineend = "round") + 
+  geom_point(aes(x=month_name, y=sum_revenue, group=1),size=2.5) + 
+  ylab("Revenue $") +
+  xlab("Month") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_2014
+
+
+ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= sum_revenue, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("Revenue $") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=20),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+ts_2014
+
+
+
+
+
+
+
+
+
+
+# number of vessels that were active in May-Sep of each year as per fishticket data
+#but note that this is now things landed in WA, but may have fished off OR
+
+active_vessels_in_MaySep_by_season_fishtix <- fishtix_2014_2020  %>% 
+  #only interested in May-Sep
+  filter(LANDING_MONTH %in% 5:9) %>% 
+  #group only by season
+  group_by(LANDING_YEAR, LANDING_MONTH) %>% 
+  summarise(
+    n_unique_vessels=n_distinct(VESSEL_ID), na.rm=TRUE)
+
+
+vessels_in_MaySep_by_season_plot_fishtix <- ggplot(active_vessels_in_MaySep_by_season_fishtix, aes(x= LANDING_MONTH, y= n_unique_vessels, group=as.factor(LANDING_YEAR), color=as.factor(LANDING_YEAR)))+
+  geom_line(size=1.5, lineend = "round") + 
+  ylab("No. active vessels in May-Sep in WA \n(unique vessels in fishtix)") +
+  xlab("Season") + 
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 90),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_in_MaySep_by_season_plot_fishtix
 
 
 
