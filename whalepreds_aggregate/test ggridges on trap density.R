@@ -173,7 +173,19 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
   xlab("Pot density [pots/km2] (Jul-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
 pot_density_ridges_quantiles_JulSep
 
 
@@ -215,7 +227,19 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
   xlab("Pot density [pots/km2] (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
 pot_density_ridges_quantiles_MaySep
 
 
