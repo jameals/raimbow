@@ -206,7 +206,7 @@ summary_pacfin_data_MaySep <- test_join_uniques %>%
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND)
+            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
   )
 
 
@@ -228,7 +228,7 @@ sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
         legend.position="bottom"
   )
 sum_MaySep_rev_ts
-#28% drop in revenue in 2020 from 2018, but drop in area size was 33% from 2018
+#28% drop in revenue in 2020 from 2018, drop in area size was 33% from 2018, also almost 7% drop in average $/lbs (see below)
 
 sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
   geom_line(size=1, lineend = "round") + 
@@ -265,10 +265,34 @@ invisible(dev.off())
 
 
 
+MaySep_average_price_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=avg_price_per_pound, group=1))+
+  geom_line(size=1, lineend = "round") + 
+  geom_point(size=2.5) + 
+  ylab("Average $/lbs (May-Sep)") +
+  xlab("Season") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position="bottom"
+  )
+MaySep_average_price_ts
+#-6.9% drop in average $/lbs from 2018 to 2020
 
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-
+png(paste0(path_figures, "/ts_avg_price_per_pound_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(MaySep_average_price_ts,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
