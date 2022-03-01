@@ -13,6 +13,7 @@ library(viridis)
 library(magrittr)
 library(gridExtra)
 library(nngeo)
+library(ggpubr)
 
 # ggplot theme
 plot_theme <-   theme_minimal()+
@@ -269,6 +270,88 @@ active_vessels_by_season <- testdf %>%
 # 2017-2018   153
 # 2018-2019   159
 # 2019-2020   137
+
+
+
+
+# number of vessels that were active in May-Sep of each year as per logbook data
+
+active_vessels_in_MaySep_by_season <- testdf %>% 
+  #comparing 2020 to pre-regs
+  filter(season != '2018-2019') %>% 
+  #only interested in May-Sep
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
+  #group only by season
+  group_by(season) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+
+
+vessels_in_MaySep_by_season_plot <- ggplot(active_vessels_in_MaySep_by_season, aes(x= season, y= n_unique_licenses, group=1))+
+  geom_line(size=1.5, lineend = "round") + 
+  ylab("No. active vessels in May-Sep in WA \n(unique vessels in logs)") +
+  xlab("Season") + 
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_in_MaySep_by_season_plot
+#26.2% drop in the number of unique vessels that appear in logs between May-Sep from 2018 to 2020
+
+active_vessels_in_MaySep_by_season_v2 <- testdf %>% 
+  #comparing 2020 to pre-regs
+  filter(season != '2018-2019') %>% 
+  #only interested in May-Sep
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
+  #also group by month
+  group_by(season, month_name) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+
+active_vessels_in_MaySep_by_season_v2 <- active_vessels_in_MaySep_by_season_v2 %>%
+  mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November')))  
+
+
+vessels_in_MaySep_by_season_plot_v2 <- ggplot(active_vessels_in_MaySep_by_season_v2, aes(x= month_name, y= n_unique_licenses, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("No. active vessels in May-Sep in WA \n(unique vessels in logs)") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=12),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_in_MaySep_by_season_plot_v2
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+
+png(paste0(path_figures, "/ts_number_unique_vessels_in_logs_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(vessels_in_MaySep_by_season_plot,
+          vessels_in_MaySep_by_season_plot_v2,
+          ncol=1,
+          nrow=2,
+          #legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 
 #------------------------------------------
 #above saved active_vessels_by_month.csv
