@@ -345,27 +345,28 @@ ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=s
   )
 ts_risk_in_good_bw_habitat_MaySep
 
-# ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_good_bw_habitat_fishing_MaySep, aes(x=season)) +
-#   geom_line(aes(y = risk_sum, group = 1)) +
-#   geom_point(aes(y = risk_sum, group = 1), size=2) +
-#   ylab("Blue whale risk (sum)") +
-#   xlab("Season") +
-#   ggtitle("May-Sep risk (sum)\nin good (>0.5 prob of occur.) BW habitat") +
-#   theme_classic() +
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-#         axis.text.y = element_text(size = 12),
-#         axis.title = element_text(size = 12),
-#         strip.text = element_text(size=12),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# ts_risk_in_good_bw_habitat_MaySep
+ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1), size=1.8) +
+  geom_point(aes(y = risk_sum, group = 1), size=3.5) +
+  ylab("Blue whale risk (sum)") +
+  xlab("Season") +
+  #ggtitle("May-Sep risk (sum)\nin good (>0.469 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_risk_in_good_bw_habitat_MaySep
 
-png(paste0(path_figures, "/ts_risk_in_050_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
+
+png(paste0(path_figures, "/ts_risk_in_0469_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_risk_in_good_bw_habitat_MaySep,
           ncol=1,
           nrow=1,
@@ -461,28 +462,28 @@ ts_overlapping_grids <- ggplot(summary_overlap_MaySep, aes(x=season)) +
   )
 ts_overlapping_grids
 
-# ts_overlapping_grids <- ggplot(test_summary, aes(x=season)) +
-#   geom_line(aes(y = n_grids, group = 1)) +
-#   geom_point(aes(y = n_grids, group = 1), size=2) +
-#   ylab("Number of overlapping grids") +
-#   xlab("Season") +
-#   ggtitle("May-Sep overlapping grids\nin good (>0.5 prob of occur.) BW habitat") +
-#   theme_classic() +
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-#         axis.text.y = element_text(size = 12),
-#         axis.title = element_text(size = 12),
-#         strip.text = element_text(size=12),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# ts_overlapping_grids
+ts_overlapping_grids <- ggplot(test_summary_0469, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1), size=1.8) +
+  geom_point(aes(y = n_grids, group = 1), size=3.5) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  #ggtitle("May-Sep overlapping grids\nin good (>0.469 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids
 
 
-png(paste0(path_figures, "/ts_overlap_in_050_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_overlap_in_0469_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_overlapping_grids,
           ncol=1,
           nrow=1,
@@ -741,28 +742,28 @@ ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=s
   )
 ts_risk_in_good_bw_habitat_JulSep
 
-# ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_good_bw_habitat_fishing_JulSep, aes(x=season)) +
-#   geom_line(aes(y = risk_sum, group = 1)) +
-#   geom_point(aes(y = risk_sum, group = 1), size=2) +
-#   ylab("Blue whale risk (sum)\nJul-Sep") +
-#   xlab("Season") +
-#   ggtitle("Jul-Sep risk (sum)\nin good (>0.717 prob of occur.) BW habitat") +
-#   theme_classic() +
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-#         axis.text.y = element_text(size = 12),
-#         axis.title = element_text(size = 12),
-#         strip.text = element_text(size=12),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# ts_risk_in_good_bw_habitat_JulSep
+ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_good_bw_habitat_fishing_JulSep_0626, aes(x=season)) +
+  geom_line(aes(y = risk_sum, group = 1), size=1.8) +
+  geom_point(aes(y = risk_sum, group = 1), size=3.5) +
+  ylab("Blue whale risk (sum)\nJul-Sep") +
+  xlab("Season") +
+  #ggtitle("Jul-Sep risk (sum)\nin good (>0.626 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_risk_in_good_bw_habitat_JulSep
 
 
-png(paste0(path_figures, "/ts_risk_in_0717_bw_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_risk_in_0626_bw_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_risk_in_good_bw_habitat_JulSep,
           ncol=1,
           nrow=1,
@@ -860,29 +861,29 @@ ts_overlapping_grids_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
   )
 ts_overlapping_grids_JulSep
 
-# ts_overlapping_grids_JulSep <- ggplot(test_summary, aes(x=season)) +
-#   geom_line(aes(y = n_grids, group = 1)) +
-#   geom_point(aes(y = n_grids, group = 1), size=2) +
-#   ylab("Number of overlapping grids") +
-#   xlab("Season") +
-#   ggtitle("Jul-Sep overlapping grids\nin good (>0.717 prob of occur.) BW habitat") +
-#   theme_classic() +
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-#         axis.text.y = element_text(size = 12),
-#         axis.title = element_text(size = 12),
-#         strip.text = element_text(size=12),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# ts_overlapping_grids_JulSep
+ts_overlapping_grids_JulSep <- ggplot(test_summary_0626, aes(x=season)) +
+  geom_line(aes(y = n_grids, group = 1), size=1.8) +
+  geom_point(aes(y = n_grids, group = 1), size=3.5) +
+  ylab("Number of overlapping grids") +
+  xlab("Season") +
+  #ggtitle("Jul-Sep overlapping grids\nin good (>0.626 prob of occur.) BW habitat") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_overlapping_grids_JulSep
 
 
 
-png(paste0(path_figures, "/ts_overlap_in_0717_bw_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_overlap_in_0626_bw_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 300)
 ggarrange(ts_overlapping_grids_JulSep,
           ncol=1,
           nrow=1,
