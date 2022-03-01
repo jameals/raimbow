@@ -294,10 +294,10 @@ vessels_in_MaySep_by_season_plot <- ggplot(active_vessels_in_MaySep_by_season, a
   xlab("Season") + 
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
+        legend.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 90),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
         #legend.position = c(0.9, 0.8) +
         legend.position="bottom"
   )
@@ -327,10 +327,10 @@ vessels_in_MaySep_by_season_plot_v2 <- ggplot(active_vessels_in_MaySep_by_season
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=12),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
+        legend.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 1,size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
         #legend.position = c(0.9, 0.8) +
         legend.position="bottom"
   )
@@ -339,13 +339,13 @@ vessels_in_MaySep_by_season_plot_v2
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-png(paste0(path_figures, "/ts_number_unique_vessels_in_logs_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_number_unique_vessels_in_logs_MaySep_2020_vs_pre_reg.png"), width = 16, height = 12, units = "in", res = 300)
 ggarrange(vessels_in_MaySep_by_season_plot,
           vessels_in_MaySep_by_season_plot_v2,
           ncol=1,
           nrow=2,
           #legend="top",
-          labels="auto",
+          #labels="auto",
           vjust=8,
           hjust=0
 )
