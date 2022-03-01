@@ -509,10 +509,10 @@ ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -542,10 +542,10 @@ ts_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -654,10 +654,10 @@ ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -685,10 +685,10 @@ ts_sum_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -796,10 +796,10 @@ box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -817,7 +817,7 @@ plot_subset_pre_reg_vs_2019_2020_box <- risk_whales_WA_MaySep %>%
   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
   filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
 
-box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+box_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
   geom_boxplot(data = plot_subset_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = hump_risk)) +
   ylab("humpback Whale Risk May-Sep") + 
   scale_x_discrete(limits = rev) +
@@ -827,14 +827,14 @@ box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020
+box_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020
 
 
 #companion plot Jul-Sep
@@ -856,10 +856,10 @@ box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -875,7 +875,7 @@ study_area_hw_pre_reg_vs_2019_2020_box <- study_area_whale %>%
            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
-box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+box_hump_dens_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
   geom_boxplot(data = study_area_hw_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = Humpback_dens_mean)) +
   scale_x_discrete(limits = rev) +
   ylab("humpback Whale density May-Sep") + 
@@ -885,22 +885,22 @@ box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2019_2020  
+box_hump_dens_May_Sep_study_area_pre_reg_vs_2019_2020  
 
 
 # plot HW risk and density, Jul-Sep and May-Sep
-png(paste0(path_figures, "/box_hump_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/box_hump_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 14, units = "in", res = 300)
 ggarrange(box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019,
           box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019,
-          box_sum_hump_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020,
-          box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2019_2020 ,
+          box_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020,
+          box_hump_dens_May_Sep_study_area_pre_reg_vs_2019_2020 ,
           ncol=2,
           nrow=2,
           legend="top",
@@ -932,10 +932,10 @@ box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -953,7 +953,7 @@ bw_plot_subset_pre_reg_vs_2019_2020_box <- risk_whales_WA_MaySep %>%
   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
   filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
 
-box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
   geom_boxplot(data = bw_plot_subset_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
   ylab("blue Whale Risk May-Sep") + 
   scale_x_discrete(limits = rev) +
@@ -963,14 +963,14 @@ box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020
+box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020
 
 
 #companion plot Jul-Sep
@@ -992,10 +992,10 @@ box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -1011,7 +1011,7 @@ study_area_bw_pre_reg_vs_2019_2020_box <- study_area_whale %>%
            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
-box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+box_blue_occur_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
   geom_boxplot(data = study_area_bw_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = Blue_occurrence_mean)) +
   scale_x_discrete(limits = rev) +
   ylab("blue Whale density May-Sep") + 
@@ -1021,22 +1021,22 @@ box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2019_2020  
+box_blue_occur_May_Sep_study_area_pre_reg_vs_2019_2020  
 
 
 # plot BW risk and density, Jul-Sep and May-Sep
-png(paste0(path_figures, "/box_blue_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/box_blue_risk_and_dens_JulSep_MaySep.png"), width = 14, height = 14, units = "in", res = 300)
 ggarrange(box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019,
           box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2018_2019,
-          box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2019_2020,
-          box_blue_occur_Jul_Sep_study_area_pre_reg_vs_2019_2020 ,
+          box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020,
+          box_blue_occur_May_Sep_study_area_pre_reg_vs_2019_2020 ,
           ncol=2,
           nrow=2,
           legend="top",
@@ -1132,13 +1132,13 @@ box_hw_risk_2019_2020_with_and_without_regs
 
 test <- rbind(box_2018_2019_with_regs, box_2018_2019_without_regs, box_2019_2020_with_regs, box_2019_2020_without_regs)
 
-box_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+box_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
   
-  #geom_boxplot(data = test, aes(x = season, y = hump_risk, fill = regs)) +
-  #ylab("humpback Whale Risk May-Sep") + 
+  geom_boxplot(data = test, aes(x = season, y = hump_risk, fill = regs)) +
+  ylab("humpback Whale Risk") + 
   
-  geom_boxplot(data = test, aes(x = season, y = blue_risk, fill = regs)) +
-  ylab("blue Whale Risk May-Sep") + 
+  #geom_boxplot(data = test, aes(x = season, y = blue_risk, fill = regs)) +
+  #ylab("blue Whale Risk") + 
   
   xlab("Season") +
   theme_classic() +
@@ -1146,19 +1146,19 @@ box_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.2, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_bw_risk_2018_2019_2020_with_and_without_regs
+box_hw_risk_2018_2019_2020_with_and_without_regs
 
 
 #plot things together and save
-png(paste0(path_figures, "/box_blue_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(box_bw_risk_2018_2019_2020_with_and_without_regs,
+png(paste0(path_figures, "/box_hump_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(box_hw_risk_2018_2019_2020_with_and_without_regs,
           #box_hw_risk_2018_2019_with_and_without_regs,
           #box_hw_risk_2019_2020_with_and_without_regs,
           ncol=1,
@@ -1184,13 +1184,13 @@ summary_test <- test %>%
 #2019-2020  without regulations   69.16616        1132.5630
 
 
-point_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+point_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
   
-  geom_point(data = summary_test, aes(x = season, y = sum_hump_risk, color = regs), size=4) +
-  ylab("sum hump Whale Risk") + 
+  #geom_point(data = summary_test, aes(x = season, y = sum_hump_risk, color = regs), size=5) +
+  #ylab("sum hump Whale Risk") + 
   
-  #geom_point(data = summary_test, aes(x = season, y = sum_blue_risk, color = regs), size=4) +
-  #ylab("sum blue Whale Risk") + 
+  geom_point(data = summary_test, aes(x = season, y = sum_blue_risk, color = regs), size=5) +
+  ylab("sum blue Whale Risk") + 
   
   xlab("Season") +
   theme_classic() +
@@ -1198,19 +1198,19 @@ point_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.2, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-point_hw_risk_2018_2019_2020_with_and_without_regs
+point_bw_risk_2018_2019_2020_with_and_without_regs
 
 
 #plot things together and save
-png(paste0(path_figures, "/point_hump_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(point_hw_risk_2018_2019_2020_with_and_without_regs,
+png(paste0(path_figures, "/point_blue_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(point_bw_risk_2018_2019_2020_with_and_without_regs,
           #box_hw_risk_2018_2019_with_and_without_regs,
           #box_hw_risk_2019_2020_with_and_without_regs,
           ncol=1,
