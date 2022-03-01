@@ -321,10 +321,10 @@ box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -352,10 +352,10 @@ box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -363,7 +363,7 @@ box_hump_risk_May_Sep_constant_whale_2019_2020
 
 
 #plot things together and save
-png(paste0(path_figures, "/box_hump_risk_variable_fishing_constant_whale_JulSep.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/box_hump_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(box_hump_risk_Jul_Sep_constant_whale_2018_2019,
           box_hump_risk_May_Sep_constant_whale_2019_2020,
           ncol=2,
@@ -429,10 +429,10 @@ box_blue_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -460,10 +460,10 @@ box_blue_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -471,7 +471,7 @@ box_blue_risk_May_Sep_constant_whale_2019_2020
 
 
 #plot things together and save
-png(paste0(path_figures, "/box_blue_risk_variable_fishing_constant_whale_JulSep.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/box_blue_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(box_blue_risk_Jul_Sep_constant_whale_2018_2019,
           box_blue_risk_May_Sep_constant_whale_2019_2020,
           ncol=2,
