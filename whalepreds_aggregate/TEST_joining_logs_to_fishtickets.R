@@ -158,12 +158,19 @@ sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
   # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
   theme_bw()+
   theme(legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.position="bottom"
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
   )
 sum_JulSep_rev_ts
+
+
 
 
 sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
@@ -173,10 +180,15 @@ sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum
   xlab("Season") + 
   theme_bw()+
   theme(legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.position="bottom"
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
   )
 sum_JulSep_landings_ts
 
@@ -189,7 +201,7 @@ ggarrange(sum_JulSep_rev_ts,
           ncol=1,
           nrow=2,
           #legend="top",
-          labels="auto",
+          #labels="auto",
           vjust=8,
           hjust=0
 )
@@ -222,10 +234,15 @@ sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
             # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
   theme_bw()+
   theme(legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.position="bottom"
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
   )
 sum_MaySep_rev_ts
 #28% drop in revenue in 2020 from 2018, drop in area size was 33% from 2018, also almost 7% drop in average $/lbs (see below)
@@ -237,10 +254,15 @@ sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum
   xlab("Season") + 
   theme_bw()+
   theme(legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.position="bottom"
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
   )
 sum_MaySep_landings_ts
 #18% drop in landed pounds in 2020 from 2018
@@ -254,7 +276,7 @@ ggarrange(sum_MaySep_rev_ts,
           ncol=1,
           nrow=2,
           #legend="top",
-          labels="auto",
+          #labels="auto",
           vjust=8,
           hjust=0
 )
@@ -272,10 +294,15 @@ MaySep_average_price_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=av
   xlab("Season") + 
   theme_bw()+
   theme(legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.position="bottom"
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
   )
 MaySep_average_price_ts
 #-6.9% drop in average $/lbs from 2018 to 2020
