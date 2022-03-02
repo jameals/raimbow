@@ -907,6 +907,30 @@ invisible(dev.off())
 # This mapping hasn't been updated for separate Jul-Sep and May-Sep comparisons
 #---------------------------
 
+#x.blue_2014_2020_crab_season_May_Sep #-- not restricted to study area
+
+# calculate MEAN whale values for different grid in different seasons - for May-Sep period (2013-2020)
+x.blue.mean_MaySep <- x.blue_2014_2020_crab_season_May_Sep %>% 
+  left_join(grid.5km.lno %>% st_drop_geometry()) %>% 
+  #data already restricted to be May-Sep
+  group_by(season, GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
+  ) 
+glimpse(x.blue.mean_MaySep)
+
+
+# start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
+MaySep_good_bw_hab <- x.blue.mean_MaySep %>% 
+  group_by(season) %>% 
+  mutate(good_bw_hab_0469 = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N'),
+         good_bw_hab_024 = ifelse(Mean_Blue_occurrence > 0.24, 'Y', 'N'),
+         good_bw_hab_050 = ifelse(Mean_Blue_occurrence > 0.5, 'Y', 'N')
+  ) %>%
+  inner_join(grid.5km.lno) #join to have geometry column
+glimpse(MaySep_good_bw_hab)
+
+
 # map example of most likely bw habitat with NON-confidential summer fishery footprint
 
 # would need to get Jul-Sep specific footprint
@@ -928,32 +952,28 @@ rmap.base <- c(
 )
 
 #bbox
-bbox = c(-127,46,-120,49) 
+bbox = c(-127,46,-122,49) 
 
 # plot blue whale
-bw_subset_MaySep <- JulSep_good_bw_hab %>% 
+bw_subset_MaySep <- MaySep_good_bw_hab %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% 
-  filter(!is.na(good_bw_hab)) %>% 
-  filter(good_bw_hab == 'Y')
+  filter(season == "2013-2014") %>% 
+  filter(!is.na(good_bw_hab_0469)) %>% 
+  filter(good_bw_hab_0469 == 'Y')
 
 map_blue_MaySep_good_hab <- ggplot() + 
   geom_sf(data=sf::st_as_sf(bw_subset_MaySep), 
-          aes(fill=good_bw_hab,
-              col=good_bw_hab
+          aes(fill=good_bw_hab_0469,
+              col=good_bw_hab_0469
           )
   ) +
-  # facet_wrap(~time_period, nrow=1) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  #scale_fill_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
-  #scale_color_viridis(na.value=NA,option="D",name="Blue Whale\noccurrence",breaks=seq(0.06,0.91,by=0.25),limits=c(0.06,0.91),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2013_2014_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
-  ggtitle("May-Sep 2019-2020 \ngood BW habitat (>0.469 occurrence) \nnon-conf. May-Sep fishery footprint (across 2014-2020)") +
+  ggtitle("May-Sep 2013-2014 \ngood BW habitat (>0.469 occurrence) \nnon-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
-  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
@@ -968,7 +988,7 @@ map_blue_MaySep_good_hab
 
 
 
-png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2013_2014_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_blue_MaySep_good_hab,
           ncol=1,
           nrow=1,
@@ -982,9 +1002,99 @@ invisible(dev.off())
 
 
 
+###Jul-Sep
+
+#x.blue_2014_2020_crab_season_May_Sep #-- not restricted to study area
+
+# calculate MEAN whale values for different grid in different seasons - for May-Sep period (2013-2020)
+x.blue.mean_JulSep <- x.blue_2014_2020_crab_season_May_Sep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  left_join(grid.5km.lno %>% st_drop_geometry()) %>% 
+  group_by(season, GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
+  ) 
+glimpse(x.blue.mean_JulSep)
+
+
+# start with df 'x.blue.mean' which is mean value in a grid across Jul-Sep per seasons
+JulSep_good_bw_hab <- x.blue.mean_JulSep %>% 
+  group_by(season) %>% 
+  mutate(good_bw_hab_0535 = ifelse(Mean_Blue_occurrence > 0.535, 'Y', 'N'),
+         good_bw_hab_0626 = ifelse(Mean_Blue_occurrence > 0.626, 'Y', 'N'),
+         good_bw_hab_0717 = ifelse(Mean_Blue_occurrence > 0.717, 'Y', 'N')
+  ) %>%
+  inner_join(grid.5km.lno) #join to have geometry column
+glimpse(JulSep_good_bw_hab)
+
+
+# map example of most likely bw habitat with NON-confidential summer fishery footprint
+
+# would need to get NON-CONFIDENTIAL Jul-Sep specific footprint
+
+#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
+#dissolved_2014_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint.rds'))
+dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
+
+dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
+  st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
+
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-127,46,-122,49) 
+
+# plot blue whale
+bw_subset_Julep <- JulSep_good_bw_hab %>% 
+  #select season to map 
+  filter(season == "2019-2020") %>% 
+  filter(!is.na(good_bw_hab_0626)) %>% 
+  filter(good_bw_hab_0626 == 'Y')
+
+map_blue_JulSep_good_hab <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(bw_subset_Julep), 
+          aes(fill=good_bw_hab_0626,
+              col=good_bw_hab_0626
+          )
+  ) +
+  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
+  ggtitle("Jul-Sep 2019-2020 \ngood BW habitat (>0.626 occurrence) \nnon-conf. May-Sep fishery footprint (across 2014-2020)") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue_JulSep_good_hab
 
 
 
+png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2013_2014_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_blue_MaySep_good_hab,
+          ncol=1,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
