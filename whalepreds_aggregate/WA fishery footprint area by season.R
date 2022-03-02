@@ -22,7 +22,7 @@ grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week ste or 1-month step
 # look at May_Sep only
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   #Grid ID 122919 end up having very high trap densities in few months 
@@ -75,7 +75,20 @@ mean_area_pre_reg <- MaySep_area_fished %>%
 #-6.933949
 
 
+JulSep_area_fished <- x.fish_WA %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  group_by(season) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(total_area_km2 = sum(AREA)/1e6)
 
+#season       total_area_km2
+#2013-2014      1433
+#2014-2015      1147
+#2015-2016      1551
+#2016-2017      1583
+#2017-2018      1973
+#2018-2019      1856
+#2019-2020      1476
 #--------------------------------------------------------------------------------
 
 x.fish_WA_2013_2014_winter <- x.fish_WA %>% filter(season == '2013-2014' & is_May_Sep == 'N')
