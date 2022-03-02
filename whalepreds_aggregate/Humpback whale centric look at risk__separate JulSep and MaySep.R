@@ -1382,6 +1382,7 @@ test_summary_85 <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>%
   filter(!is.na(mean_trapdens)) %>% 
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
+  add_row(season = c("2018-2019"), n_grids = 0) %>% 
   mutate(percentile = '85')
 
 
@@ -1390,6 +1391,7 @@ test_summary_90 <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>%
   filter(!is.na(mean_trapdens)) %>% 
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
+  add_row(season = c("2018-2019"), n_grids = 0) %>% 
   mutate(percentile = '90')
 
 
@@ -1458,8 +1460,8 @@ ts_overlapping_grids_count_all_JulSep
 
 
 
-png(paste0(path_figures, "/percent_overlap_fishery_and_good_hw_habitat_variable_JulSep_20220227.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_overlapping_grids_all_JulSep,
+png(paste0(path_figures, "/count_overlap_fishery_and_good_hw_habitat_variable_JulSep_20220227.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_overlapping_grids_count_all_JulSep,
           ncol=1,
           nrow=1,
           #legend="top",
