@@ -144,7 +144,7 @@ bbox = c(-127,46,-122,49)
 
 
 subset_data <- summary_study_area_whale %>% 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
 map_hump <- ggplot() + 
@@ -160,13 +160,13 @@ map_hump <- ggplot() +
   #scale_fill_viridis(na.value=NA,option="D",name="Mean humpback\ndensity",breaks=seq(0,0.042,by=0.014),limits=c(0,0.042),oob=squish) + 
   #scale_color_viridis(na.value=NA,option="D",name="Mean humpback\ndensity",breaks=seq(0,0.042,by=0.014),limits=c(0,0.042),oob=squish) + 
   
-  #max sum hump dens 0.2136640
-  scale_fill_viridis(na.value=NA,option="D",name="Sum humpback\ndensity",breaks=seq(0, 0.21,by=0.05),limits=c(0, 0.21),oob=squish) + 
-  scale_color_viridis(na.value=NA,option="D",name="Sum humpback\ndensity",breaks=seq(0, 0.21,by=0.05),limits=c(0, 0.21),oob=squish) + 
+  #max sum hump dens 0.2136640 in study area
+  scale_fill_viridis(na.value=NA,option="D",name="Sum humpback\ndensity",breaks=seq(0, 0.21,by=0.07),limits=c(0, 0.21),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Sum humpback\ndensity",breaks=seq(0, 0.21,by=0.07),limits=c(0, 0.21),oob=squish) + 
   
-  #geom_sf(data = dissolved_2013_2014_MaySep, color = 'black',size=1, fill = NA) +
+  #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
   
-  ggtitle("2013-2014 May-Sep") +
+  ggtitle("2019-2020 May-Sep") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -183,7 +183,7 @@ map_hump
 
 
 subset_data <- summary_study_area_whale %>% 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
 map_blue <- ggplot() + 
@@ -200,12 +200,12 @@ map_blue <- ggplot() +
   #scale_fill_viridis(na.value=NA,option="D",name="Mean blue whale\noccurrence",breaks=seq(0,0.65,by=0.325),limits=c(0,0.65),oob=squish) + 
   #scale_color_viridis(na.value=NA,option="D",name="Mean blue whale\noccurrence",breaks=seq(0,0.65,by=0.325),limits=c(0,0.65),oob=squish) + 
  
-  #max sum blue occur 3.254679
-  scale_fill_viridis(na.value=NA,option="D",name="Sum blue whale\noccurrence",breaks=seq(0,3.25,by=0.65),limits=c(0,3.25),oob=squish) + 
-  scale_color_viridis(na.value=NA,option="D",name="Sum blue whale\noccurrence",breaks=seq(0,3.25,by=0.65),limits=c(0,3.25),oob=squish) + 
+  #max sum blue occur 3.254679 in study area
+  scale_fill_viridis(na.value=NA,option="D",name="Sum blue whale\noccurrence",breaks=seq(0,3.25,by=1.625),limits=c(0,3.25),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Sum blue whale\noccurrence",breaks=seq(0,3.25,by=1.625),limits=c(0,3.25),oob=squish) + 
   
-  #geom_sf(data = dissolved_2013_2014_MaySep, color = 'black',size=1, fill = NA) +
-  ggtitle("2013-2014 May-Sep") +
+  #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("2019-2020 May-Sep") +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
@@ -223,7 +223,7 @@ map_blue
 
 
 # plot blues and humps together
-png(paste0(path_figures, "/map_sum_blue_hump_2013_2014_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/map_sum_blue_hump_2019_2020_with_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump,
           map_blue,
           ncol=2,
