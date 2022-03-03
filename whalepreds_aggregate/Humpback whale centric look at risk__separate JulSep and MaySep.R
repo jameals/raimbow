@@ -198,7 +198,8 @@ x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_
   mutate(hump_risk = 
            ifelse(is.na(mean_trapdens), 0, hump_risk)
   ) %>% 
-  #remove 2018-29 as comparing pre-reg May-Sep to 2020
+  #remove 2018-19 as comparing pre-reg May-Sep to 2020
+  #keep 2018-2019 if want to do a map 
   filter(season != '2018-2019')
 
 
@@ -480,12 +481,12 @@ rmap.base <- c(
 )
 
 #bbox
-bbox = c(-127,46,-120,49) 
+bbox = c(-127,46,-122,49) 
 
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   #select season to map 
-  filter(season == "2013-2014") %>% 
+  filter(season == "2019-2020") %>% 
   filter(!is.na(HW_is_75th_or_higher)) %>% 
   filter(HW_is_75th_or_higher == 'Y')
 
@@ -496,15 +497,15 @@ map_hump_MaySep_75th <- ggplot() +
               col=HW_is_75th_or_higher
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
   #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
   #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2013_2014_MaySep, color = 'black',size=1, fill = NA) +
-  #geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
-  #geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
-  ggtitle("May-Sep 2013-2014 \ngood HW habitat (>75th) \nspatially clip at 45N \nwith non-conf. May-Sep fishery footprint (across 2014-2020)") +
+  #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
+  ggtitle("May-Sep 2019-2020 \ngood HW habitat (>75th) \nspatially clip at 45N \nwith non-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -518,7 +519,7 @@ map_hump_MaySep_75th <- ggplot() +
   )
 map_hump_MaySep_75th
 
-png(paste0(path_figures, "/good_wh_habitat_MaySep_75th_across_20132020_applied to 2013_2014_spatially_clipped_4626_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_wh_habitat_MaySep_75th_across_20132020_applied to 2019_2020_spatially_clipped_45_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump_MaySep_75th,
           ncol=1,
           nrow=1,
@@ -1197,20 +1198,20 @@ rmap.base <- c(
 )
 
 #bbox
-bbox = c(-127,46,-121.5,49) 
+bbox = c(-127,46,-122,49) 
 
 
-hw_subset_MaySep <- x.whale.all2013_2020_JulSep_good_habitats %>%   #x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>%
+hw_subset_JulSep <- x.whale.all2013_2020_JulSep_good_habitats %>%   #x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>%
   #select season to map 
-  filter(season == "2015-2016") %>% 
-  filter(!is.na(HW_is_80th_or_higher)) %>% 
-  filter(HW_is_80th_or_higher == 'Y')
+  filter(season == "2013-2014") %>% 
+  filter(!is.na(HW_is_75th_or_higher)) %>% 
+  filter(HW_is_75th_or_higher == 'Y')
 
 
-map_hump_JulSep_80th <- ggplot() + 
-  geom_sf(data=sf::st_as_sf(hw_subset_MaySep), 
-          aes(fill=HW_is_80th_or_higher,
-              col=HW_is_80th_or_higher
+map_hump_JulSep_75th <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(hw_subset_JulSep), 
+          aes(fill=HW_is_75th_or_higher,
+              col=HW_is_75th_or_higher
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
@@ -1218,10 +1219,10 @@ map_hump_JulSep_80th <- ggplot() +
   #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2015_2016_JulSep, color = 'black',size=1, fill = NA) +
+  #geom_sf(data = dissolved_2015_2016_JulSep, color = 'black',size=1, fill = NA) +
   #geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   #geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
-  ggtitle("May-Sep 2015-2016, good HW habitat (>80th) \nspatially clip at 45N, with conf. Jul-Sep fishery footprint") +
+  ggtitle("Jul-Sep 2013-2014, good HW habitat (>75th) \nspatially clip at 45N, with conf. Jul-Sep fishery footprint") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -1233,7 +1234,7 @@ map_hump_JulSep_80th <- ggplot() +
         strip.text = element_text(size=14),
         title=element_text(size=16)
   )
-map_hump_JulSep_80th
+map_hump_JulSep_75th
 
 png(paste0(path_figures, "/good_wh_habitat_JulSep_80th_across_20142020_applied to 2018_2019_spatially_clipped_45_with_all_CONF_2019_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(map_hump_JulSep_80th,
