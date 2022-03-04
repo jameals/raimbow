@@ -80,7 +80,8 @@ test_join <- test_df_2 %>%
   left_join(fishtix_2014_2020, 
             by = c("FederalID" = "VESSEL_NUM",
                    "LandingDate" = "LANDING_DATE"))
-#some but not all SetIDs occur multiple times after joining with pacfin data - unsure why...
+#some but not all SetIDs occur multiple times after joining with pacfin data - unsure why... 
+  #--> this seems to have happened to those stringlines that had data in both Fishticket1 and Fishticket2 columns
 #nrow(test_join) #26306 #but the number of unique SetIDs is still the same as before (20144)
 
 #each row is one stringline, but multiple stringlines may have been on one fishticket
@@ -93,8 +94,9 @@ test_join_uniques <- test_join %>%
 length(unique(joined_df$FishTicket1)) #4392 unique Fishticket1 values in WA logs
 length(unique(test_join_uniques$FishTicket1)) #4352 unique Fishticket1 values after joining with pacfin
 #--> so 99% of WA Fishticket1 numbers also found a fishticket info from pacfin?
-# need to figure out the best way of measuring how much data was 'lost' (doesn't have fishticket landing info),
-#how much of logbook data didn't find matching pacfin fishticket info
+# is this the best way of measuring how much data was 'lost' (doesn't have fishticket landing info),
+#or how much of logbook data didn't find matching pacfin fishticket info
+
 
 
 # NOMINAL_TO_ACTUAL_PACFIN_SPECIES_NAME column is not always DCRB
@@ -112,14 +114,14 @@ length(unique(test_join_uniques$FishTicket1)) #4352 unique Fishticket1 values af
 
 
 
-#FTID in pacfin looks to match Fishticket1 (and Fishticket2 if that also exists)...
-#could be harder to join that way as info in 2 columns (Fishticket1 and Fishticket2)
+#FTID in pacfin looks to match Fishticket1 (and Fishticket2/Fishticket3... if that column also exists)...
+#could be harder to join that way as info in more than 1 column (Fishticket1, Fishticket2...)
 test_join_by_FTID_and_Fishticket1 <- test_df_2 %>% 
   left_join(fishtix_2014_2020, 
             by = c("FishTicket1" = "FTID",
                    "LandingDate" = "LANDING_DATE"))
 #more NAs this way than by joining with landing date and vessel ID, 
-#possibly because some data is in Fishticket1 column and some in Fishticket2 column
+#because some data is in Fishticket1 column and some in Fishticket2 column
 #perhaps slightly better success joining if don't join by landing date as well...
 
 
@@ -415,7 +417,7 @@ vessels_in_MaySep_by_season_plot_fishtix
 
 
 #---------------------------------------------------------------------------------
-
+## OLD ###
 #---------------------------------------------------------------------------------
 
 #initial test joining of logs and pacfin data with only 2014 data
