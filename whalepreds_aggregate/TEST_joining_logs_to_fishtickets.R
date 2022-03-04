@@ -172,9 +172,41 @@ sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
   )
 sum_JulSep_rev_ts
 
+##### as a boxplot
+summary_pacfin_data_JulSep_pre_reg <- summary_pacfin_data_JulSep %>% 
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = "pre-reg")
+
+summary_pacfin_data_JulSep_2019 <- summary_pacfin_data_JulSep %>% 
+  filter(season == '2018-2019') %>% 
+  mutate(pre_post_reg = "2018-2019")
+
+sum_JulSep_rev_box <- ggplot() +
+  geom_boxplot(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_revenue)) +
+  
+  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_revenue),
+             color = 'red', size=2.5) +
+ 
+  ylab("Revenue $ (sum Jul-Sep)") +
+  #xlab("Season") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_JulSep_rev_box
 
 
-
+  
 sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
   geom_line(size=1, lineend = "round") + 
   geom_point(size=2.5) + 
@@ -249,6 +281,42 @@ sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
 sum_MaySep_rev_ts
 #28% drop in revenue in 2020 from 2018, drop in area size was 33% from 2018, also almost 7% drop in average $/lbs (see below)
 
+
+##### as a boxplot
+summary_pacfin_data_MaySep_pre_reg <- summary_pacfin_data_MaySep %>% 
+  filter(season != '2019-2020') %>% 
+  mutate(pre_post_reg = "pre-reg")
+
+summary_pacfin_data_MaySep_2020 <- summary_pacfin_data_MaySep %>% 
+  filter(season == '2019-2020') %>% 
+  mutate(pre_post_reg = "2019-2020")
+
+sum_MaySep_rev_box <- ggplot() +
+  geom_boxplot(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_revenue)) +
+  
+  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_revenue),
+             color = 'red', size=2.5) +
+  
+  ylab("Revenue $ (sum May-Sep)") +
+  #xlab("Season") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_MaySep_rev_box
+
+
+
 sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
   geom_line(size=1, lineend = "round") + 
   geom_point(size=2.5) + 
@@ -310,6 +378,32 @@ MaySep_average_price_ts
 #-6.9% drop in average $/lbs from 2018 to 2020
 
 
+average_price_ts_v2 <- ggplot() +
+  geom_line(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round") +
+  geom_point(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5) +
+  
+  geom_line(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round", color='red') +
+  geom_point(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5, color='red') +
+  
+  ylab("Average $/lbs") +
+  xlab("Season") +
+  ggtitle("black = May-Sep, red = Jul-Sep")+
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+average_price_ts_v2
+
+
+
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
 png(paste0(path_figures, "/ts_avg_price_per_pound_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
@@ -333,11 +427,13 @@ invisible(dev.off())
 summary_2014 <- test_join_uniques %>% 
   #filter(season == '2013-2014') %>% 
   group_by(season, month_name) %>% 
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T))
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T))
 
 summary_2014$month_name <- factor(summary_2014$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
 
 
+#use this code if filtered to 2013-2014 only, and grouped by month_name only
 ts_2014 <- ggplot(summary_2014)+
   geom_line(aes(x=month_name, y=sum_revenue, group=1),size=1, lineend = "round") + 
   geom_point(aes(x=month_name, y=sum_revenue, group=1),size=2.5) + 
@@ -376,7 +472,22 @@ ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= sum_revenue, colour=season
 ts_2014
 
 
-
+ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= avg_price_per_pound, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_colour_brewer(palette = "PRGn") +
+  ylab("Average $/lbs") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=20),
+        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+ts_2014
 
 
 
