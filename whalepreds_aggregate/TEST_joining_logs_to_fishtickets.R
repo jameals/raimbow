@@ -140,6 +140,7 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 summary_pacfin_data_JulSep <- test_join_uniques %>% 
   filter(month_name %in% c('July','August','September')) %>%   
   filter(season != '2019-2020') %>% 
+  filter(LANDED_WEIGHT_LBS < 10000) %>% 
   group_by(season) %>% 
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
@@ -248,6 +249,10 @@ invisible(dev.off())
 #May-Sep
 summary_pacfin_data_MaySep <- test_join_uniques %>% 
   filter(season != '2018-2019') %>% 
+  filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% #doesn't make a difference
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
+  filter(EXVESSEL_REVENUE > 0) %>% 
   group_by(season) %>% 
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
@@ -488,6 +493,150 @@ ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= avg_price_per_pound, colou
         legend.position="bottom"
   )
 ts_2014
+
+
+
+test_join_uniques_2014 <- test_join_uniques %>% 
+  filter(season == '2013-2014')
+plot(test_join_uniques_2014$LANDED_WEIGHT_LBS)
+plot(test_join_uniques_2014$LANDED_WEIGHT_LBS,test_join_uniques_2014$EXVESSEL_REVENUE)
+
+test_join_uniques_ALMA <- test_join_uniques %>% 
+  filter(Vessel.x == 'ALMA JAYNE')
+plot(test_join_uniques_ALMA$LANDED_WEIGHT_LBS)
+
+
+
+point_landings <- ggplot(test_join_uniques)+
+  geom_jitter(aes(x=1, y=LANDED_WEIGHT_LBS, group=season),size=2.5) + 
+  ylab("landings") +
+  xlab("") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+point_landings
+
+#RandomOrder <- sample(1:nrow(test_join_uniques), nrow(test_join_uniques))
+ggplot() +
+  geom_point(data=test_join_uniques, aes(x= RandomOrder, y=LANDED_WEIGHT_LBS, color=season), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+
+ggplot() +
+  geom_point(data=test_join_uniques, aes(x= RandomOrder, y=EXVESSEL_REVENUE, color=season), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+
+test_join_uniques_calc_ppp <- test_join_uniques %>% 
+  mutate(calc_ppp = EXVESSEL_REVENUE/LANDED_WEIGHT_LBS)
+plot(test_join_uniques_calc_ppp$PRICE_PER_POUND, test_join_uniques_calc_ppp$calc_ppp)
+abline(a=0, b=1)
+
+
+
+test_join_uniques_v2 <- test_join_uniques 
+test_join_uniques_v2$month_name <- factor(test_join_uniques_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
+ggplot() +
+  geom_jitter(data=test_join_uniques_v2, aes(x= month_name, y=LANDED_WEIGHT_LBS, color=season), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+
+#makes it seem that 2018 was high price year, 2014 not so much - compliance issue
+ggplot() +
+  geom_jitter(data=test_join_uniques_v2, aes(x= season, y=PRICE_PER_POUND), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+
+
+#subset fishtix to correct years, May-Sep, WA, commercial and DCRB labelled
+pacfin_subset <- fishtix_raw %>% 
+  filter(AGENCY_CODE != 'C') %>% 
+  filter(LANDING_YEAR %in% c(2014, 2015, 2016, 2017, 2018, 2019, 2020)) %>% 
+  filter(LANDING_MONTH %in% c(5:9)) %>%  
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
+  filter(PACFIN_SPECIES_CODE=="DCRB")
+
+ggplot() +
+  geom_jitter(data=pacfin_subset, aes(x= LANDING_YEAR, y=PRICE_PER_POUND), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+#even this subset doesn't have $10/lbs data in 2014...
+
+
+ggplot() +
+  geom_jitter(data=pacfin_subset, aes(x= LANDING_MONTH , y=LANDED_WEIGHT_LBS, color=as.factor(LANDING_YEAR)), size=2) + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+#2014 seems to have had quite a few almost outlier type points in terms of lbs landed...
 
 
 
