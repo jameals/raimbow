@@ -228,6 +228,30 @@ sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum
 sum_JulSep_landings_ts
 
 
+sum_JulSep_lbs_box <- ggplot() +
+  geom_boxplot(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs)) +
+  
+  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_weight_lbs),
+             color = 'red', size=2.5) +
+  
+  ylab("Landing lbs (sum Jul-Sep)") +
+  #xlab("Season") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_JulSep_lbs_box
+
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
 png(paste0(path_figures, "/ts_sum_revenue_landings_JulSep_2019_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
@@ -343,6 +367,30 @@ sum_MaySep_landings_ts
 #18% drop in landed pounds in 2020 from 2018
 
 
+sum_MaySep_lbs_box <- ggplot() +
+  geom_boxplot(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs)) +
+  
+  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_weight_lbs),
+             color = 'red', size=2.5) +
+  
+  ylab("Landing lbs (sum May-Sep)") +
+  #xlab("Season") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_MaySep_lbs_box
+
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
 png(paste0(path_figures, "/ts_sum_revenue_landings_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
@@ -421,6 +469,39 @@ ggarrange(MaySep_average_price_ts,
           hjust=0
 )
 invisible(dev.off())
+
+
+
+test_join_uniques_price_per_pound <- test_join_uniques %>% 
+  mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+
+avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg != 'pre-reg') %>% 
+  group_by(season, month_name) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+  
+
+ppp_in_MaySep <- ggplot()+
+  geom_boxplot(data = test_join_uniques_price_per_pound %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= PRICE_PER_POUND)) + 
+  geom_point(data = avg_ppp_post_reg, aes(x= month_name, y= PRICE_PER_POUND, color=season), size=2) + 
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("Price per pound") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme_bw()+
+  theme(#panel.background = element_rect(fill = 'gray92'),
+    legend.title = element_blank(),
+    #title = element_text(size = 32),
+    legend.text = element_text(size=20),
+    axis.text.x = element_text(hjust = 1,size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title = element_text(size = 20),
+    #legend.position = c(0.9, 0.8) +
+    legend.position="bottom"
+  )
+ppp_in_MaySep
 
 
 
