@@ -437,6 +437,104 @@ vessels_in_JulSep_by_season_plot_v2
 
 
 
+##boxplots
+active_vessels_in_MaySep_by_season #-- pooled unique vessels across all of May-Sep
+active_vessels_in_JulSep_by_season #-- pooled unique vessels across all of Jul-Sep
+
+pooled_active_vessels_in_JulSep_by_season <- active_vessels_in_JulSep_by_season %>% 
+  mutate(pre_post_reg = 
+         ifelse(season == '2018-2019', "2018-2019", "pre-reg"))
+
+pooled_active_vessels_in_MaySep_by_season <- active_vessels_in_MaySep_by_season %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg"))
+
+box_pooled_unique_vessels_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_boxplot(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses)) +
+  #geom_jitter(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
+  #geom_dotplot(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
+
+  geom_point(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = n_unique_licenses), size=3, color='red') +
+  ylab("No. unique vessels, Jul-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_pooled_unique_vessels_pre_reg_vs_2018_2019
+
+
+box_pooled_unique_vessels_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_boxplot(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses)) +
+  #geom_jitter(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
+  #geom_dotplot(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
+  
+  geom_point(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = n_unique_licenses), size=3, color='red') +
+  ylab("No. unique vessels, May-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_pooled_unique_vessels_pre_reg_vs_2019_2020
+
+
+
+active_vessels_in_MaySep_by_season_v2 <- testdf %>% 
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
+  #also group by month
+  group_by(season, month_name) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+
+active_vessels_in_MaySep_by_season_v2 <- active_vessels_in_MaySep_by_season_v2 %>%
+  mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+
+
+vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
+  geom_boxplot(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= n_unique_licenses)) + 
+  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-reg'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg), size=2) + 
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("No. active vessels by month in WA \n(unique vessels in logs)") +
+  xlab("Month") + 
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme_bw()+
+  theme(#panel.background = element_rect(fill = 'gray92'),
+        legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 1,size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_in_MaySep_by_season_plot_v2
+
+
+
+
 #------------------------------------------
 #above saved active_vessels_by_month.csv
 #into that joined WDFW estimated number of active vessels per month from their CP draft (WDFW would have calculated the estimate from fishtickets)
