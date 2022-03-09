@@ -41,7 +41,7 @@ MaySep_area_fished <- x.fish_WA %>%
   filter(is_May_Sep == 'Y') %>% 
   group_by(season) %>% 
   distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
-  summarise(total_area_km2 = sum(AREA)/1e6)
+  summarise(total_area_km2 = sum(AREA)/1e6) 
 
 #only one season differes if use 2w vs 1m data
 #  season    total_area (km2) using 1-mon data
@@ -75,6 +75,34 @@ mean_area_pre_reg <- MaySep_area_fished %>%
 #-6.933949
 
 
+##boxplot
+MaySep_area_fished_box <- MaySep_area_fished %>% 
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+box_May_Sep_footprint_area_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_boxplot(data = MaySep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2)) +
+  geom_point(data = MaySep_area_fished_box %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
+  ylab("Fishery footprint area (km2) May-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_May_Sep_footprint_area_pre_reg_vs_2019_2020
+
+
 JulSep_area_fished <- x.fish_WA %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
   group_by(season) %>% 
@@ -89,6 +117,33 @@ JulSep_area_fished <- x.fish_WA %>%
 #2017-2018      1973
 #2018-2019      1856
 #2019-2020      1476
+
+##boxplot
+JulSep_area_fished_box <- JulSep_area_fished %>% 
+  filter(season != '2019-2020') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+boxJul_Sep_footprint_area_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_boxplot(data = JulSep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2)) +
+  geom_point(data = JulSep_area_fished_box %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
+  ylab("Fishery footprint area (km2) Jul-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+boxJul_Sep_footprint_area_pre_reg_vs_2018_2019
 #--------------------------------------------------------------------------------
 
 x.fish_WA_2013_2014_winter <- x.fish_WA %>% filter(season == '2013-2014' & is_May_Sep == 'N')
