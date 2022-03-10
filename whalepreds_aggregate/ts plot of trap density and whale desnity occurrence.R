@@ -442,6 +442,7 @@ x.fish_2014_2020_crab_season_v2 <- x.fish_WA_crab_season %>%
   group_by(season_month) %>%
   #summarise across all grid cells in given season_month
   summarise(
+    Trap_dens_sum = sum(mean_M2_trapdens, na.rm=TRUE),
     Trap_dens_mean = mean(mean_M2_trapdens, na.rm=TRUE),
     Trap_dens_median = median(mean_M2_trapdens, na.rm=TRUE)
   ) %>% 
@@ -469,16 +470,17 @@ ts_trap_dens <- ggplot(
   data = fish_with_all_season_month_combos, 
   aes(
     x = factor(season_month, levels=ordered.ids), 
-    y = Trap_dens_mean,
+    y = Trap_dens_sum,
     #y = Trap_dens_median,
     group = 1
   )
 ) +
   geom_point(size=4) +
   geom_line() +
+  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
-  ylab("Mean Trap Density\nin grids being used") + 
+  ylab("Sum Trap Density\nin grids being used") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -502,8 +504,10 @@ ts_trap_dens
 #ts_blue_dens
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
 
-png(paste0(path_figures, "/ts_mean_traps_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
+
+png(paste0(path_figures, "/ts_sum_traps_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_trap_dens,
           ts_hump_dens,
           ts_blue_dens,
