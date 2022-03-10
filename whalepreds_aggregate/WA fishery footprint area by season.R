@@ -83,7 +83,7 @@ MaySep_area_fished_box <- MaySep_area_fished %>%
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
 box_May_Sep_footprint_area_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_boxplot(data = MaySep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2)) +
+  geom_dotplot(data = MaySep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2),binaxis='y', stackdir='center', dotsize=1) +
   geom_point(data = MaySep_area_fished_box %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
   ylab("Fishery footprint area (km2) May-Sep") + 
   xlab("") +
@@ -126,7 +126,7 @@ JulSep_area_fished_box <- JulSep_area_fished %>%
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
 boxJul_Sep_footprint_area_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_boxplot(data = JulSep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2)) +
+  geom_dotplot(data = JulSep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2),binaxis='y', stackdir='center', dotsize=1) +
   geom_point(data = JulSep_area_fished_box %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
   ylab("Fishery footprint area (km2) Jul-Sep") + 
   xlab("") +
