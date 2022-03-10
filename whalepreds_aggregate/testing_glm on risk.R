@@ -208,6 +208,72 @@ m2_blue <- glm(sum_blue_risk ~ month_name + season + pre_post_reg,
 summary(m2_blue)
 
 #################################################################################
+# For the 'Option 2' boxplots -- maybe instead of summing across months to have one value
+#per grid, we need to sum across grids and have one value per month (as done above for glm)
+
+##Jul-Sep
+plot_subset_2018_2019_box <- risk_fishing_whale_joined_MaySep_sum_month %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  filter(season %in% c('2018-2019')) %>% 
+  mutate(pre_post_reg =  "2018-2019") %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+plot_subset_pre_reg_box <- risk_fishing_whale_joined_MaySep_sum_month %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_boxplot(data = plot_subset_pre_reg_box, aes(x = pre_post_reg, y = sum_hump_risk )) +
+  geom_boxplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = sum_hump_risk )) +
+  ylab("humpback Whale Risk Jul-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 
+##May-Sep
+MaySep_plot_subset_2019_2020_box <- risk_fishing_whale_joined_MaySep_sum_month %>% 
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
+  filter(season %in% c('2019-2020')) %>% 
+  mutate(pre_post_reg =  "2019-2020") %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+MaySep_plot_subset_pre_reg_box <- risk_fishing_whale_joined_MaySep_sum_month %>% 
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+
+box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep <- ggplot() +
+  geom_boxplot(data = MaySep_plot_subset_pre_reg_box, aes(x = pre_post_reg, y = sum_hump_risk)) +
+  geom_boxplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = sum_hump_risk)) +
+  ylab("humpback Whale Risk May-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep
 
