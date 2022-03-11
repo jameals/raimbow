@@ -757,6 +757,74 @@ vessels_in_MaySep_by_season_plot_fishtix
 
 
 
+
+
+
+#efficiency - CPUE
+test_join_uniques
+test_join
+
+efficiency_CPUE <-  test_join %>% 
+  #exclude personal use catch
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
+  #each row is a string line, multiple string lines in a FISHTICKET
+  group_by(FISH_TICKET_ID) %>% 
+  summarise(sum_pots_per_ticket = sum(PotsFished, na.rm = T))
+
+efficiency_CPUE <- left_join(efficiency_CPUE,
+                             test_join_uniques %>% select(LANDED_WEIGHT_LBS, EXVESSEL_REVENUE, season, month_name),
+                             by = "FISH_TICKET_ID"
+                             )
+
+efficiency_CPUE_v2 <- efficiency_CPUE %>% 
+  mutate(dollar_per_pot = EXVESSEL_REVENUE/sum_pots_per_ticket, na.rm = T,
+         lbs_per_pot = LANDED_WEIGHT_LBS/sum_pots_per_ticket, na.rm = T)
+
+efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
+
+
+summary_efficiency_CPUE_v2 <- efficiency_CPUE_v2 %>% 
+  group_by(season, month_name) %>% 
+  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
+            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T))
+
+CPUE_ts <- ggplot(efficiency_CPUE_v2)+
+  geom_boxplot(aes(x=month_name, y=lbs_per_pot, color=season)) + #,size=2.5  group=season,
+  ylab("lbs/trap") +
+  xlab("") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts
+
+
+CPUE_ts <- ggplot(summary_efficiency_CPUE_v2)+
+  geom_line(aes(x=month_name, y=mean_dollar_per_pot, group=season, color=season),size=2.5) + 
+  ylab("mean $/trap") +
+  xlab("") + 
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts
+
 #---------------------------------------------------------------------------------
 ## OLD ###
 #---------------------------------------------------------------------------------
