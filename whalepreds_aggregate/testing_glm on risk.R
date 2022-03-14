@@ -114,9 +114,12 @@ x.whale_crab_season <- x.whale %>%
   mutate(season = paste0(season_start,"-",season_end))
 
 
-
+x.whale_crab_season_May_Sep <-  x.whale_crab_season %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  select(-season_start, -season_end)
 #-----------------------------------------------------------------------------------
 
+# if working in the realised fishery footprint:
 
 #join whale data to fishing data
 fishing_whale_joined <- left_join(x.fish_WA_MaySep, x.whale_crab_season, by=c("GRID5KM_ID", "season", "month")) %>% 
@@ -147,6 +150,67 @@ risk_fishing_whale_joined <- risk_fishing_whale_joined %>%
 risk_fishing_whale_joined$month <- as.numeric(risk_fishing_whale_joined$month)
 
 #-----------------------------------------------------------------------------------
+#if work in consistent study area
+
+#'study area' created in QGIS, to encompass all fished grids plus 'buffer' (grids that could be fished)
+#read in 'study area' (grid)
+study_area <- read_sf(here::here('wdfw','data', 'study_area.shp'))
+glimpse(study_area)
+#plot(study_area)
+
+study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) 
+
+study_area_df <- as.data.frame(study_area_grids_id) %>% 
+  rename(GRID5KM_ID = study_area_grids_id)
+
+
+#the study area grid needs to have all season-month combos for May-Sep
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("05", "06", "07", "08", "09"))
+season_month_combos <- crossing(season, month)
+study_area_df_with_all_season_month_combos <- crossing(study_area_df, season_month_combos) %>%
+  #and add to that the column to denote study area
+  mutate(study_area = 'Y')
+
+
+#join whale data to study area grid
+study_area_whale <- full_join(study_area_df_with_all_season_month_combos, x.whale_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+
+#join fishing data to study area grid with whale data
+study_area_whale_fishing <- left_join(study_area_whale, x.fish_WA_MaySep, by=c("GRID5KM_ID", "season", "month")) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+
+
+#calculate risk  metric
+risk_whales_WA_MaySep <- study_area_whale_fishing %>%
+  mutate(
+    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+         blue_risk = 
+           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk = 
+           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+         blue_risk = 
+           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N')) %>% 
+  mutate(
+    pre_post_reg = case_when(
+      season == '2018-2019' & month %in% c('07', '08', '09') ~ "xpost-reg",  #and 'x' to name so that pre-reg comes first
+      season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "xpost-reg")) %>% 
+  mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
+
+
+
+#-----------------------------------------------------------------------------------
 
 #glm
 
@@ -163,8 +227,13 @@ risk_fishing_whale_joined$month <- as.numeric(risk_fishing_whale_joined$month)
 
 #probably want to focus on summer season only
 
-risk_fishing_whale_joined_MaySep <- risk_fishing_whale_joined %>% 
+#HW
+#risk_whales_WA_MaySep -- constant study area
+#risk_fishing_whale_joined -- fished grids only
+
+risk_fishing_whale_joined_MaySep <- risk_whales_WA_MaySep %>% 
   filter(is_May_Sep=='Y') 
+
 
 hist(risk_fishing_whale_joined_MaySep$hump_risk)
 
@@ -174,26 +243,94 @@ m1_hump <- glm(hump_risk ~ month_name + season + pre_post_reg,
 summary(m1_hump)
 
 
+#compare Jul-Sep only -- 
+#getting NA in summary for whatever is last variable,
+#because pre_post_reg and season are linearly correlated/dependent
+
+risk_fishing_whale_joined_JulSep <-  risk_fishing_whale_joined %>% 
+  filter(month %in% (7:9)) 
+  
+
+risk_fishing_whale_joined_JulSep$month_name <- droplevels(risk_fishing_whale_joined_JulSep$month_name)
+
+m3_hump <- glm(hump_risk ~  month_name +  pre_post_reg  + season+1,
+               family=gaussian, data=risk_fishing_whale_joined_JulSep, na.action = na.omit)
+summary(m3_hump)
 
 
+
+#sum across grids
 risk_fishing_whale_joined_MaySep_sum_month <- risk_fishing_whale_joined_MaySep %>% 
-  group_by(season, month_name, pre_post_reg) %>% 
+  filter(season != '2018-2019') %>% 
+  #if used fished only grids df:
+  #group_by(season, month_name, pre_post_reg) %>% 
+  #if used constant study area:
+  filter(study_area == 'Y')  %>% 
+  group_by(season, month, pre_post_reg) %>%
   summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
             sum_blue_risk = sum(blue_risk, na.rm = T))
 
 hist(risk_fishing_whale_joined_MaySep_sum_month$sum_hump_risk)
+hist(risk_fishing_whale_joined_MaySep_sum_month$sum_blue_risk)
 
+#perfect correlation with pre-post-reg and season 2019-2020 as all months have regs
+library(ggcorrplot)
+model.matrix(~0+., data=risk_fishing_whale_joined_MaySep_sum_month) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 m2_hump <- glm(sum_hump_risk ~ month_name + season + pre_post_reg,
                family=gaussian, data=risk_fishing_whale_joined_MaySep_sum_month, na.action = na.omit)
 summary(m2_hump)
 
+#pre_post_reg and season are linearly dependent (colinear) -- remove season
+m2b_hump <- glm(sum_hump_risk ~ pre_post_reg + month_name,
+               family=gaussian, data=risk_fishing_whale_joined_MaySep_sum_month, na.action = na.omit)
+summary(m2b_hump)
+
+#just pre-post-reg
+m2c_hump <- glm(sum_hump_risk ~ pre_post_reg,
+                family=gaussian, data=risk_fishing_whale_joined_MaySep_sum_month, na.action = na.omit)
+summary(m2c_hump)
+
+#compare Jul-Sep only -- 
+risk_fishing_whale_joined_JulSep_sum <-  risk_whales_WA_MaySep %>% 
+  #if used fished only grids df:
+  #filter(month %in% (7:9)) %>% 
+  #if used constant study area:
+  filter(month %in% c('07', '08','09')) %>% 
+  filter(study_area == 'Y')  %>% 
+  filter(season != '2019-2020') %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
+            sum_blue_risk = sum(blue_risk, na.rm = T))
+
+#risk_fishing_whale_joined_JulSep_sum$month_name <- droplevels(risk_fishing_whale_joined_JulSep_sum$month_name)
+
+hist(risk_fishing_whale_joined_JulSep_sum$sum_hump_risk)
+hist(risk_fishing_whale_joined_JulSep_sum$sum_blue_risk)
 
 
+library(ggcorrplot)
+model.matrix(~0+., data=risk_fishing_whale_joined_JulSep_sum) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+m4_hump <- glm(sum_hump_risk ~ month_name + pre_post_reg + season ,
+               family=gaussian, data=risk_fishing_whale_joined_JulSep_sum, na.action = na.omit)
+summary(m4_hump)
+
+m4b_hump <- glm(sum_hump_risk ~  pre_post_reg + month_name,
+               family=gaussian, data=risk_fishing_whale_joined_JulSep_sum, na.action = na.omit)
+summary(m4b_hump)
+
+m4c_hump <- glm(sum_hump_risk ~  pre_post_reg,
+                family=gaussian, data=risk_fishing_whale_joined_JulSep_sum, na.action = na.omit)
+summary(m4c_hump)
 
 
+#BW
 hist(risk_fishing_whale_joined_MaySep$blue_risk)
 
 m1_blue <- glm(blue_risk ~ month_name + season + pre_post_reg,
