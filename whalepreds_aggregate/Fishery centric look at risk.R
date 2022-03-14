@@ -841,35 +841,28 @@ box_sum_hump_risk_May_Sep_study_area_pre_reg_vs_2019_2020
 ##making the boxplot how Jameal suggested:
 #sum risk across months, each grid has 1 value for the post-reg season, use that for post-reg seasons boxplot
 #for pre-reg seasons, sum across months and then average across pre-reg years and use that for boxplot
+## --> actually, what we want to do here instead, is to sum across grids, so that each month has 1 value
+##but note that this way Jul-Sep 2018-2019 only has 3 values, 1 for each month
+
+#sum across grids
 
 ##Jul-Sep
 plot_subset_2018_2019_box <- risk_whales_WA_MaySep %>% 
   filter(month %in% c('07', '08', '09')) %>% 
-  filter(season %in% c('2018-2019')) %>% 
+  filter(season != '2019-2020') %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  group_by(GRID5KM_ID) %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
   summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE)) %>% 
-  mutate(pre_post_reg =  "2018-2019") %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
+            blue_risk = sum(blue_risk, na.rm=TRUE)) 
   
-plot_subset_pre_reg_box <- risk_whales_WA_MaySep %>% 
-  filter(month %in% c('07', '08', '09')) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
-  filter(study_area=='Y')  %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  group_by(GRID5KM_ID) %>%
-  summarise(sum_hump_risk = sum(hump_risk, na.rm=TRUE),
-            n_seasons = n_distinct(season),
-            hump_risk = sum_hump_risk/n_seasons) %>% 
-  mutate(pre_post_reg = "pre-reg") %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
-
 
 box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_boxplot(data = plot_subset_pre_reg_box, aes(x = pre_post_reg, y = hump_risk)) +
-  geom_boxplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk)) +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk)) +
+  #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("humpback Whale Risk Jul-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
@@ -888,34 +881,24 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
 box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 
+
 ##May-Sep
 MaySep_plot_subset_2019_2020_box <- risk_whales_WA_MaySep %>% 
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  filter(season %in% c('2019-2020')) %>% 
+  filter(season != '2018-2019') %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  group_by(GRID5KM_ID) %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
   summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE)) %>% 
-  mutate(pre_post_reg =  "2019-2020") %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
-
-MaySep_plot_subset_pre_reg_box <- risk_whales_WA_MaySep %>% 
-  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) %>% 
-  filter(study_area=='Y')  %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  group_by(season, GRID5KM_ID) %>%
-  summarise(sum_hump_risk = sum(hump_risk, na.rm=TRUE)) %>% 
-  group_by(GRID5KM_ID) %>%
-  summarise(hump_risk = mean(sum_hump_risk, na.rm=TRUE)) %>%
-  mutate(pre_post_reg = "pre-reg") %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
+            blue_risk = sum(blue_risk, na.rm=TRUE)) 
 
 
-box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep <- ggplot() +
-  geom_boxplot(data = MaySep_plot_subset_pre_reg_box, aes(x = pre_post_reg, y = hump_risk)) +
-  geom_boxplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk)) +
+box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk)) +
+  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("humpback Whale Risk May-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
@@ -931,7 +914,8 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep <- ggplot() +
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep
+box_hump_risk_MaySep_pre_reg_vs_2019_2020
+
 
 
 ################################
@@ -940,6 +924,8 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2019_2020_MaySep
 
 
 #companion plot Jul-Sep
+
+#all grid_year_month as rows in df
 study_area_hw_pre_reg_vs_2018_2019_box <- study_area_whale %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
@@ -949,7 +935,7 @@ study_area_hw_pre_reg_vs_2018_2019_box <- study_area_whale %>%
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
 box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_boxplot(data = study_area_hw_pre_reg_vs_2018_2019_box, aes(x = pre_post_reg, y = Humpback_dens_mean)) +
+  geom_violin(data = study_area_hw_pre_reg_vs_2018_2019_box, aes(x = pre_post_reg, y = Humpback_dens_mean)) +
   scale_x_discrete(limits = rev) +
   ylab("humpback Whale density Jul-Sep") + 
   xlab("Season") +
@@ -966,6 +952,38 @@ box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
         strip.placement = "left"
   )
 box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019  
+
+#sum across grids as did for risk
+study_area_hw_pre_reg_vs_2018_2019_box <- study_area_whale %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(Humpback_dens_mean, na.rm=TRUE))
+
+box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_violin(data = study_area_hw_pre_reg_vs_2018_2019_box, aes(x = pre_post_reg, y = hump_risk_sum)) +
+  scale_x_discrete(limits = rev) +
+  ylab("humpback Whale density sum Jul-Sep") + 
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_dens_Jul_Sep_study_area_pre_reg_vs_2018_2019  
+
+
 
 
 #companion plot May-Sep
@@ -1015,51 +1033,96 @@ invisible(dev.off())
 
 
 #BW
-bw_plot_subset_pre_reg_vs_2018_2019_box <- risk_whales_WA_MaySep %>% 
-  filter(month %in% c('07', '08', '09')) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+# bw_plot_subset_pre_reg_vs_2018_2019_box <- risk_whales_WA_MaySep %>% 
+#   filter(month %in% c('07', '08', '09')) %>% 
+#   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
 
-box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_boxplot(data = bw_plot_subset_pre_reg_vs_2018_2019_box, aes(x = pre_post_reg, y = blue_risk )) +
-  ylab("blue Whale Risk Jul-Sep") + 
-  xlab("Season") +
-  scale_x_discrete(limits = rev) +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019
+
+# box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019 <- ggplot() +
+#   geom_boxplot(data = bw_plot_subset_pre_reg_vs_2018_2019_box, aes(x = pre_post_reg, y = blue_risk )) +
+#   ylab("blue Whale Risk Jul-Sep") + 
+#   xlab("Season") +
+#   scale_x_discrete(limits = rev) +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# box_blue_risk_Jul_Sep_study_area_pre_reg_vs_2018_2019
 #warning: Removed 141 rows containing non-finite values (stat_boxplot)
 #--> this is because bw domain is smaller than study area
 
+# box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
+#   geom_violin(data = plot_subset_pre_reg_box, aes(x = pre_post_reg, y = blue_risk)) +
+#   geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk)) +
+#   ylab("blue Whale Risk Jul-Sep") + 
+#   xlab("") +
+#   scale_x_discrete(limits = rev) +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
 
-bw_plot_subset_pre_reg_vs_2019_2020_box <- risk_whales_WA_MaySep %>% 
-  #take out 2018-2019 season
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
 
-box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_boxplot(data = bw_plot_subset_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
-  ylab("blue Whale Risk May-Sep") + 
+# bw_plot_subset_pre_reg_vs_2019_2020_box <- risk_whales_WA_MaySep %>% 
+#   #take out 2018-2019 season
+#   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+# 
+# box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
+#   geom_boxplot(data = bw_plot_subset_pre_reg_vs_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
+#   ylab("blue Whale Risk May-Sep") + 
+#   scale_x_discrete(limits = rev) +
+#   xlab("Season") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020
+
+
+#Jul-Sep
+plot_subset_2018_2019_box
+
+box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk)) +
+  #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  ylab("humpback Whale Risk Jul-Sep") + 
+  xlab("") +
   scale_x_discrete(limits = rev) +
-  xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -1072,7 +1135,33 @@ box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020 <- ggplot() +
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_blue_risk_May_Sep_study_area_pre_reg_vs_2019_2020
+box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
+
+
+#May-Sep
+MaySep_plot_subset_2019_2020_box 
+
+box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
+  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  ylab("blue Whale Risk May-Sep") + 
+  xlab("") +
+  scale_x_discrete(limits = rev) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_blue_risk_MaySep_pre_reg_vs_2019_2020
+
+
 
 
 #companion plot Jul-Sep
