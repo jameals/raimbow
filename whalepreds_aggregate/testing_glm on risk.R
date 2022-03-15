@@ -256,7 +256,7 @@ model.matrix(~0+., data=risk_whales_WA_JulSep_summed) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 #in the Jul-Sep glm log link doesn't improve things from basic gaussian
-mod1_hump <- glm(sum_hump_risk ~ month_num + pre_post_reg,
+mod1_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
                family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod1_hump)
 hist(mod1_hump$residuals)
@@ -272,7 +272,7 @@ plot(mod1_hump)
 
 
 
-#just pre-posr-reg as the only variable
+#just pre-post-reg as the only variable
 mod1_hump <- glm(sum_hump_risk ~ pre_post_reg,
                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod1_hump)
@@ -287,10 +287,11 @@ abline(h = 0, col="blue")
 
 plot(mod1_hump)
 
+library(car)
+qqPlot(mod1_hump$residuals)
 
 
-
-mod1_blue <- glm(sum_blue_risk ~ month_num + pre_post_reg,
+mod1_blue <- glm(sum_blue_risk ~ month + pre_post_reg,
                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
 summary(mod1_blue)
 hist(mod1_blue$residuals)
@@ -303,6 +304,9 @@ title("Residual plot", line = 0.7)
 abline(h = 0, col="blue")
 
 plot(mod1_blue)
+qqPlot(mod1_blue$residuals)
+
+
 
 
 #separate glm using may-sep data for 2013-18 and 2019-20 data only.
@@ -326,7 +330,7 @@ model.matrix(~0+., data=risk_whales_WA_MaySep_summed) %>%
 
 #in the May-Sep glm log link is maybe better than basic gaussian if 2018-19 excluded
 #if 2018-19 included, then gaussian is good
-mod2_hump <- glm(sum_hump_risk ~ month_num + pre_post_reg,
+mod2_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod2_hump) #interpreting significant intercept: It means you have enough evidence to say that the intercept isn't 0.
 #We typically don't care if the intercept is significant or not. It's important to have in the model but unless there is a good reason to typically you don't interpret the significance test of the intercept
@@ -340,10 +344,10 @@ title("Residual plot", line = 0.7)
 abline(h = 0, col="blue")
 
 plot(mod2_hump)
-
+qqPlot(mod2_hump$residuals)
 
 #in the May-Sep glm log link is maybe better than basic gaussian
-mod2_blue <- glm(sum_blue_risk ~ month_num + pre_post_reg ,
+mod2_blue <- glm(sum_blue_risk ~ month + pre_post_reg ,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod2_blue)
 hist(mod2_blue$residuals)
@@ -356,6 +360,10 @@ title("Residual plot", line = 0.7)
 abline(h = 0, col="blue")
 
 plot(mod2_blue)
+qqPlot(mod2_blue$residuals)
+
+
+
 
 
 
@@ -375,8 +383,8 @@ min(risk_whales_WA_JulSep_summed$sum_hump_risk)
 max(risk_whales_WA_JulSep_summed$sum_hump_risk)
 
 risk_whales_WA_JulSep_summed_standardized <- risk_whales_WA_JulSep_summed %>% 
-  mutate(hw_stand_risk = (sum_hump_risk-13.61182)/8.672362,
-         hw_stand_risk2 = (sum_hump_risk-3.118496)/(36.88234-3.118496)
+  mutate(hw_stand_risk = (sum_hump_risk-13.61182)/8.672362, #use sd in the standardization 
+         hw_stand_risk2 = (sum_hump_risk-3.118496)/(36.88234-3.118496) #normalize to range from 1-0
          )
 
 risk_whales_WA_JulSep_summed_standardized <- risk_whales_WA_JulSep_summed_standardized %>% 
@@ -386,14 +394,47 @@ risk_whales_WA_JulSep_summed_standardized <- risk_whales_WA_JulSep_summed_standa
 hist(risk_whales_WA_JulSep_summed_standardized$hw_stand_risk2)
 hist(risk_whales_WA_JulSep_summed_standardized$sum_blue_risk)
 
+
+
+#what if we standardise before summing...?
+# Jul-Sep, all seasons, summed data across all grids in each month
+
+sd(risk_whales_WA_MaySep$hump_risk, na.rm=T )
+mean(risk_whales_WA_MaySep$hump_risk, na.rm=T )
+min(risk_whales_WA_MaySep$hump_risk, na.rm=T )
+max(risk_whales_WA_MaySep$hump_risk, na.rm=T )
+
+risk_whales_WA_MaySep_standardized <- risk_whales_WA_MaySep %>% 
+  mutate(hw_stand_risk = (hump_risk-0.001051685)/0.02671779, #use sd in the standardization 
+         hw_stand_risk2 = (hump_risk-0)/(2.596234-0) #normalize to range from 1-0
+  )
+
+risk_whales_WA_MaySep_standardized_summed <- risk_whales_WA_MaySep_standardized %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(study_area == 'Y')  %>% 
+  group_by(season, month, pre_post_reg) %>%
+  summarise(sum_hump_risk_stand = sum(hw_stand_risk, na.rm = T),
+            sum_hump_risk_stand2 = sum(hw_stand_risk2, na.rm = T))
+
+
+
+risk_whales_WA_MaySep_standardized_summed <- risk_whales_WA_MaySep_standardized_summed %>% 
+  mutate(month_num = as.integer(month))
+
+
+hist(risk_whales_WA_MaySep_standardized_summed$sum_hump_risk_stand)
+hist(risk_whales_WA_MaySep_standardized_summed$sum_hump_risk_stand2)
+
+
+
 library(ggcorrplot)
 model.matrix(~0+., data=risk_whales_WA_JulSep_summed_standardized) %>% 
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 #in the Jul-Sep glm log link doesn't improve things from basic gaussian
-mod3_hump <- glm(hw_stand_risk2 ~ month_num + pre_post_reg,
-                 family=gaussian, data=risk_whales_WA_JulSep_summed_standardized, na.action = na.omit) #family = gaussian(link = "inverse")
+mod3_hump <- glm(sum_hump_risk_stand2 ~ month_num + pre_post_reg,
+                 family=gaussian, data=risk_whales_WA_MaySep_standardized_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod3_hump)
 hist(mod3_hump$residuals)
 
