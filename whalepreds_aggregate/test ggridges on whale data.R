@@ -13,15 +13,29 @@ library(ggpubr)
 library(scales)
 library(ggridges)
 
-path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
-
-path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
-grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
-
+#-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
-#bring in whale data -- data is on a year_month level
+#bring in some grids
+path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+
+grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
+grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
+#glimpse(grid.5km.lno)
+grid.depth <- read.csv(path.grid.depth) %>% 
+  rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+
+#whale density/occurrence STUDY AREA during Jul-Sep or May-Sep
+
 
 #whale data
 
@@ -58,33 +72,296 @@ glimpse(x.blue_2019_2021) #why does data end June 2021??
 x.blue.all <- rbind(x.blue, x.blue_2019_2021)
 
 
-#only want to work on May-Sep data, and 2014-2020
+# join blue and hump whale outputs
+#x.whale <- full_join(x.hump, x.blue, 
+x.whale <- full_join(x.hump_2009_2020, x.blue.all, 
+                     by = c("GRID5KM_ID", "year_month")) %>% # full_join ensures we retain cells with hump but not blue predictions and vice versa
+  left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID") # adds grid cell area
 
-x.hump_2009_2020_crab_season <- x.hump_2009_2020 %>% 
+x.whale_crab_season <- x.whale %>% 
   separate(year_month, into = c("year", "month"), sep = "_") %>% 
   mutate(year = as.numeric(year)) %>% 
   mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
   mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
   mutate(season = paste0(season_start,"-",season_end))
 
-x.hump_2014_2020_crab_season_May_Sep <-  x.hump_2009_2020_crab_season %>% 
+x.whale_crab_season_May_Sep <-  x.whale_crab_season %>% 
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  select(-season_start, -season_end) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+  select(-season_start, -season_end)
 
-x.blue.all_crab_season <- x.blue.all %>% 
-  separate(year_month, into = c("year", "month"), sep = "_") %>% 
-  mutate(year = as.numeric(year)) %>% 
-  mutate(season_start = ifelse(month == "12", year, year-1)) %>% 
-  mutate(season_end = ifelse(month == "12", year+1, year)) %>% 
-  mutate(season = paste0(season_start,"-",season_end))
+#-----------------------------------------------------------------------------------
 
-x.blue_2014_2020_crab_season_May_Sep <-  x.blue.all_crab_season %>% 
-  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  select(-season_start, -season_end) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
+#'study area' created in QGIS, to encompass all fished grids plus 'buffer' (grids that could be fished)
+#read in 'study area' (grid)
+study_area <- read_sf(here::here('wdfw','data', 'study_area.shp'))
+glimpse(study_area)
+#plot(study_area)
 
-#note that at this point the data are not spatially constrained
+study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) 
+
+study_area_df <- as.data.frame(study_area_grids_id) %>% 
+  rename(GRID5KM_ID = study_area_grids_id)
+
+
+#the study area grid needs to have all season-month combos for May-Sep
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("05", "06", "07", "08", "09"))
+season_month_combos <- crossing(season, month)
+study_area_df_with_all_season_month_combos <- crossing(study_area_df, season_month_combos) %>%
+  #and add to that the column to denote study area
+  mutate(study_area = 'Y')
+
+
+#join whale data to study area grid
+study_area_whale <- full_join(study_area_df_with_all_season_month_combos, x.whale_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
+
+#----------------------------------------------------------------------------------------------------
+#companion plots pre-reg vs reg years - companion plots for risk
+
+
+#all grid_year_month as rows in df
+study_area_hw_pre_reg_vs_2018_2019 <- study_area_whale %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+
+#companion plot May-Sep
+study_area_hw_pre_reg_vs_2019_2020 <- study_area_whale %>% 
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
+  filter(study_area=='Y') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+
+
+
+
+#warning message: removed rows containing non-finite values is due to NAs
+ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Humpback whale density (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank()
+  )
+
+
+ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Humpback whale density (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank()
+  )
+
+
+ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Blue whale occurrence (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE)+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank()
+  )
+
+ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
+  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  #coord_cartesian(clip = "off") +
+  xlab("Blue whale occurrence  (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank()
+  )
+
+
+
+
+
+
+#ggridges plot with quantiles
+
+hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Humpback_dens_mean, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Humpback whale density (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+hw_density_ridges_quantiles_JulSep
+
+
+
+hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Humpback_dens_mean, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Humpback whale density (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+hw_density_ridges_quantiles_MaySep
+
+
+bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #scale_x_continuous(limits = c(0.3, 0.9), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Blue whale occurrence (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+bw_density_ridges_quantiles_JulSep
+
+
+bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Blue_occurrence_mean, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #scale_x_continuous(limits = c(0.3, 0.9), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Blue whale occurrence (May-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+bw_density_ridges_quantiles_MaySep
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
 
@@ -135,79 +412,3 @@ map_test
 
 
 #-----------------------------------------------------------------------------------
-
-#'study area' created in QGIS, to encompass all fished grids plus 'buffer' (grids that could be fished)
-#read in 'study area' (grid)
-study_area <- read_sf(here::here('wdfw','data', 'study_area.shp'))
-glimpse(study_area)
-#plot(study_area)
-
-study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) 
-
-study_area_df <- as.data.frame(study_area_grids_id) %>% 
-  rename(GRID5KM_ID = study_area_grids_id)
-
-#the study area grid needs to have all season-month combos for May-Sep
-season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
-month <- as.factor(c("05", "06", "07", "08", "09"))
-season_month_combos <- crossing(season, month)
-study_area_df_with_all_season_month_combos <- crossing(study_area_df, season_month_combos) %>%
-  #and add to that the column to denote study area
-  mutate(study_area = 'Y')
-
-#join whale data to study area grid
-study_area_hw <- full_join(study_area_df_with_all_season_month_combos, x.hump_2014_2020_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
-
-#join whale data to study area grid
-study_area_bw <- full_join(study_area_df_with_all_season_month_combos, x.blue_2014_2020_crab_season_May_Sep, by=c("GRID5KM_ID", "season", "month"))
-
-
-#-----------------------------------------------------------------------------------
-
-#ggridges plot of hw predicted densities in grids, only in study area instead of the entirety of west coast
-
-#this will swap the order of seasons in hte ridgeplot
-study_area_hw$season <- factor(study_area_hw$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
-
-#warning message: removed 1400 rows containing non-finite values is due to NAs
-ggplot(study_area_hw, aes(x = Humpback_dens_mean, y = season, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Humpback whale density (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
-
-
-study_area_bw$season <- factor(study_area_bw$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
-
-#warning message: removed 1400 rows containing non-finite values is due to NAs
-ggplot(study_area_bw, aes(x = Blue_occurrence_mean, y = season, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Blue whale occurrence (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
-
-
-
-
-x.blue_2014_2020_crab_season_May_Sep_44N <- x.blue_2014_2020_crab_season_May_Sep %>% 
-left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") %>% 
-  #filter(LATITUDE > 44) %>% 
-  filter(LATITUDE > 46.26)
-
-ggplot(x.blue_2014_2020_crab_season_May_Sep_44N, aes(x = Blue_occurrence_mean, y = season, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Blue whale occurrence (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
-
-
-
-
-
-
