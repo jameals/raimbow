@@ -225,6 +225,194 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
 #(in GLM context log link, normal or Gaussian family) and choosing which works better."
 
 
+
+
+
+#Jameal message on Slack: focus on jul-sep data only, and consider a model that is 
+#summed_risk ~ month + year + pre_post_reg. in this model pre_post_reg includes the 2018-19 and 2019-20 seasons 
+#and won't be perfectly correlated. the downside is we lose 2 months of data annually for the 
+#comparison of 2019-20 to 2013-2018. so i would suggest you run a separate glm using may-sep data 
+#for 2013-18 and 2019-20 data only. that model would be summed_risk ~ month + year,  and  
+#a sig effect of the 2019-20 year would indicate an influence of the regulations and/or internannual variability.
+
+
+# Jul-Sep, all seasons, summed data across all grids in each month
+risk_whales_WA_JulSep_summed <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(study_area == 'Y')  %>% 
+  group_by(season, month, pre_post_reg) %>%
+  summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
+            sum_blue_risk = sum(blue_risk, na.rm = T))
+
+hist(risk_whales_WA_JulSep_summed$sum_hump_risk)
+hist(risk_whales_WA_JulSep_summed$sum_blue_risk)
+
+library(ggcorrplot)
+model.matrix(~0+., data=risk_whales_WA_JulSep_summed) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
+#in the Jul-Sep glm log link doesn't improve things from basic gaussian
+mod1_hump <- glm(sum_hump_risk ~ month + season + pre_post_reg,
+               family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
+summary(mod1_hump)
+hist(mod1_hump$residuals)
+
+scatter.smooth(fitted(mod1_hump), residuals(mod1_hump, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+
+
+#try as a logistic regression
+risk_whales_WA_JulSep_summed_v2 <- risk_whales_WA_JulSep_summed %>% 
+  mutate(reg_season = ifelse(pre_post_reg == "pre-reg", 0, 1))
+
+mod1_hump_logistic <- glm(sum_hump_risk ~ reg_season,
+                 family=binomial, data=risk_whales_WA_JulSep_summed_v2, na.action = na.omit) #family = gaussian(link = "inverse")
+summary(mod1_hump_logistic)
+hist(mod1_hump_logistic$residuals)
+
+scatter.smooth(fitted(mod1_hump_logistic), residuals(mod1_hump_logistic, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+
+plot(mod1_hump_logistic)
+
+
+
+
+mod1_blue <- glm(sum_blue_risk ~ month + season + pre_post_reg,
+                 family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
+summary(mod1_blue)
+hist(mod1_blue$residuals)
+
+scatter.smooth(fitted(mod1_hump), residuals(mod1_blue, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+
+
+
+#separate glm using may-sep data for 2013-18 and 2019-20 data only.
+#that model would be summed_risk ~ month + year
+risk_whales_WA_MaySep_summed <- risk_whales_WA_MaySep %>% 
+  #filter(season != '2018-2019') %>% 
+  filter(study_area == 'Y')  %>% 
+  group_by(season, month, pre_post_reg) %>%
+  summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
+            sum_blue_risk = sum(blue_risk, na.rm = T))
+
+hist(risk_whales_WA_MaySep_summed$sum_hump_risk)
+hist(risk_whales_WA_MaySep_summed$sum_blue_risk)
+
+model.matrix(~0+., data=risk_whales_WA_MaySep_summed) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
+#in the May-Sep glm log link is maybe better than basic gaussian if 2018-19 excluded
+#if 2018-19 included, then gaussian is good
+mod2_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
+                 family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
+summary(mod2_hump)
+hist(mod2_hump$residuals)
+
+scatter.smooth(fitted(mod2_hump), residuals(mod2_hump, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+
+
+#in the May-Sep glm log link is maybe better than basic gaussian
+mod2_blue <- glm(sum_blue_risk ~ month + pre_post_reg ,
+                 family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
+summary(mod2_blue)
+hist(mod2_blue$residuals)
+
+scatter.smooth(fitted(mod2_blue), residuals(mod2_blue, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+
+
+
+
+#what if we standardise after summing...?
+# Jul-Sep, all seasons, summed data across all grids in each month
+risk_whales_WA_JulSep_summed <- risk_whales_WA_MaySep %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(study_area == 'Y')  %>% 
+  group_by(season, month, pre_post_reg) %>%
+  summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
+            sum_blue_risk = sum(blue_risk, na.rm = T))
+
+
+sd(risk_whales_WA_JulSep_summed$sum_hump_risk)
+mean(risk_whales_WA_JulSep_summed$sum_hump_risk)
+min(risk_whales_WA_JulSep_summed$sum_hump_risk)
+max(risk_whales_WA_JulSep_summed$sum_hump_risk)
+
+risk_whales_WA_JulSep_summed_standardized <- risk_whales_WA_JulSep_summed %>% 
+  mutate(hw_stand_risk = (sum_hump_risk-13.61182)/8.672362,
+         hw_stand_risk2 = (sum_hump_risk-3.118496)/(36.88234-3.118496)
+         )
+  
+hist(risk_whales_WA_JulSep_summed_standardized$hw_stand_risk2)
+hist(risk_whales_WA_JulSep_summed_standardized$sum_blue_risk)
+
+library(ggcorrplot)
+model.matrix(~0+., data=risk_whales_WA_JulSep_summed_standardized) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
+#in the Jul-Sep glm log link doesn't improve things from basic gaussian
+mod3_hump <- glm(hw_stand_risk2 ~ month + season + pre_post_reg,
+                 family=gaussian, data=risk_whales_WA_JulSep_summed_standardized, na.action = na.omit) #family = gaussian(link = "inverse")
+summary(mod3_hump)
+hist(mod3_hump$residuals)
+
+scatter.smooth(fitted(mod3_hump), residuals(mod3_hump, type = "pearson"),
+               #mgp = c(2.2, 1, 0),
+               ylab = "Residuals (Pearson)",
+               xlab = "Predicted")
+title("Residual plot", line = 0.7)
+abline(h = 0, col="blue")
+##the residual plot for either standardization isn't any different to the non-standardized version
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------------------------------------
+
 #probably want to focus on summer season only
 
 #HW
