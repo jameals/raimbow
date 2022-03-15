@@ -100,6 +100,165 @@ x.fish_WA_MaySep <-  x.fish_WA %>%
 x.fish_WA_MaySep$season <- factor(x.fish_WA_MaySep$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 
 
+
+
+#Jul-Sep pre-reg vs 2018-2019
+
+x.fish_WA_JulSep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+
+pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+    xlab("Pot density [pots/km2] (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+pot_density_ridges_quantiles_JulSep
+
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(pot_density_ridges_quantiles_JulSep,
+          ncol=1,
+          nrow=1,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+#May-Sep pre-reg vs 2019-2020
+
+x.fish_WA_MaySep <- x.fish_WA %>% 
+  mutate(month_name = as.character(month_name)) %>% 
+  filter(is_May_Sep == "Y") %>%  
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%  
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg))
+
+pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      calc_ecdf = TRUE,
+                      geom = "density_ridges_gradient",
+                      quantiles = c(0.25, 0.5, 0.75),
+                      rel_min_height = 0.005,
+                      scale = 1) +
+  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
+  #xlim(0,72)+
+  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0)) +
+  xlab("Pot density [pots/km2] (Jul-Sep)") +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        axis.title.y=element_blank(),
+  )
+pot_density_ridges_quantiles_MaySep
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(pot_density_ridges_quantiles_MaySep,
+          ncol=1,
+          nrow=1,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################
+
 ###########################################################################
 ## THIS IS PERHAPS THE BEST LOOKING ONE
 ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = ..density..)) + 
@@ -149,117 +308,7 @@ ggarrange(pot_density_ridges_quantiles,
 invisible(dev.off())
 
 
-
-#Jul-Sep pre-reg vs 2018-2019
-
-x.fish_WA_JulSep <- x.fish_WA %>% 
-  mutate(month_name = as.character(month_name)) %>% 
-  filter(month_name %in% c('July', 'August', 'September')) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019')) %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
-
-
-pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
-                      calc_ecdf = TRUE,
-                      geom = "density_ridges_gradient",
-                      quantiles = c(0.25, 0.5, 0.75),
-                      rel_min_height = 0.005,
-                      scale = 1) +
-  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
-                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
-  #xlim(0,72)+
-  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
-  xlab("Pot density [pots/km2] (Jul-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank(),
-  )
-pot_density_ridges_quantiles_JulSep
-
-
-
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(pot_density_ridges_quantiles_JulSep,
-          ncol=1,
-          nrow=1,
-          legend="right",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
-
-
-#May-Sep pre-reg vs 2019-2020
-
-x.fish_WA_MaySep <- x.fish_WA %>% 
-  mutate(month_name = as.character(month_name)) %>% 
-  filter(is_May_Sep == "Y") %>%  
-  #take out 2018-2019 season
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%  
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg))
-
-pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
-                      calc_ecdf = TRUE,
-                      geom = "density_ridges_gradient",
-                      quantiles = c(0.25, 0.5, 0.75),
-                      rel_min_height = 0.005,
-                      scale = 1) +
-  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
-                    labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
-  #xlim(0,72)+
-  scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
-  xlab("Pot density [pots/km2] (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank(),
-  )
-pot_density_ridges_quantiles_MaySep
-
-
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(pot_density_ridges_quantiles_MaySep,
-          ncol=1,
-          nrow=1,
-          legend="right",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
-
-
-##############################################################
-
-
+#####################
 # If make ggridgeplots on full seasons, no clear difference in the last two
 x.fish_WA$season <- factor(x.fish_WA$season, levels = c('2019-2020', '2018-2019', '2017-2018', '2016-2017', '2015-2016', '2014-2015', '2013-2014'))
 ggplot(x.fish_WA, aes(x = M2_trapdens, y = season, height = ..density..)) + 
