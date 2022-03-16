@@ -348,6 +348,65 @@ bw_density_ridges_quantiles_MaySep
 
 
 
+#############
+##statistical tests
+#study_area_hw_pre_reg_vs_2018_2019 
+#study_area_hw_pre_reg_vs_2019_2020
+
+
+
+#need to separate df fro K-S test
+JulSep_pre_reg <- study_area_hw_pre_reg_vs_2018_2019 %>% 
+  filter(pre_post_reg =='pre-reg')
+JulSep_2018_2019 <- study_area_hw_pre_reg_vs_2018_2019 %>% 
+  filter(pre_post_reg =='2018-2019')
+
+kstest_JulSep_HW <- ks.test(JulSep_pre_reg$Humpback_dens_mean, JulSep_2018_2019$Humpback_dens_mean)
+kstest_JulSep_BW <- ks.test(JulSep_pre_reg$Blue_occurrence_mean, JulSep_2018_2019$Blue_occurrence_mean)
+#even BW is significant
+
+wilcox_test_JulSep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
+wilcox_test_JulSep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
+#even BW is significant
+
+library(WRS2)
+qcomhd_JulSep_HW <- qcomhd(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
+qcomhd_JulSep_BW <- qcomhd(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
+#even BW is significant, 2019 higher in other quantiles except for 75-100%
+#which fits as top 15 BW values are pre-reg
+
+
+##May-Sep
+#need to separate df fro K-S test
+MaySep_pre_reg <- study_area_hw_pre_reg_vs_2019_2020 %>% 
+  filter(pre_post_reg =='pre-reg')
+MaySep_2019_2020 <- study_area_hw_pre_reg_vs_2019_2020 %>% 
+  filter(pre_post_reg =='2019-2020')
+
+kstest_MaySep_HW <- ks.test(MaySep_pre_reg$Humpback_dens_mean, MaySep_2019_2020$Humpback_dens_mean)
+kstest_MaySep_BW <- ks.test(MaySep_pre_reg$Blue_occurrence_mean, MaySep_2019_2020$Blue_occurrence_mean)
+#both are significant
+
+wilcox_test_MaySep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
+wilcox_test_MaySep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
+#both are significant
+
+library(WRS2) #- This test provides a more detailed understanding of where and how distributions differ. 
+qcomhd_MaySep_HW <- qcomhd(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
+qcomhd_MaySep_BW <- qcomhd(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
+#significantly diff, overall higher in 2020, tho top values in pre-reg
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
