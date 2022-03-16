@@ -13,6 +13,7 @@ library(sf)
 library(rgeos)
 library(viridis)
 library(ggpubr)
+library(car)
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
@@ -299,7 +300,7 @@ plot_subset_with_regs_2018_2019 <- risk_whales_WA_MaySep_study_area_with_regs_20
 
 
 violin_hump_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Humpback_risk_sum)) +
+  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1) +
   #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Summed Humpback Whale Risk May-Sep") + 
   xlab("") +
@@ -319,7 +320,7 @@ violin_hump_risk_MaySep_constant_fishing <- ggplot() +
 violin_hump_risk_MaySep_constant_fishing
 
 violin_hump_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum)) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Summed Humpback Whale Risk Jul-Sep") + 
   xlab("") +
@@ -340,8 +341,27 @@ violin_hump_risk_JulSep_constant_fishing
 
 
 
+#Jul-Sep
+mod1_hump_JulSep <- glm(Humpback_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=plot_subset_with_regs_2018_2019, na.action = na.omit) 
+summary(mod1_hump_JulSep)
+plot(mod1_hump_JulSep)
+qqPlot(mod1_hump_JulSep$residuals)
+wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_2019)
+
+
+#May-Sep
+mod1_hump <- glm(Humpback_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=plot_subset_with_regs, na.action = na.omit) 
+summary(mod1_hump)
+plot(mod1_hump)
+qqPlot(mod1_hump$residuals)
+wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs)
+
+
+
 violin_blue_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum)) +
+  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1) +
   #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Summed Blue Whale Risk May-Sep") + 
   xlab("") +
@@ -361,7 +381,7 @@ violin_blue_risk_MaySep_constant_fishing <- ggplot() +
 violin_blue_risk_MaySep_constant_fishing
 
 violin_blue_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum)) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Summed Blue Whale Risk Jul-Sep") + 
   xlab("") +
@@ -379,6 +399,25 @@ violin_blue_risk_JulSep_constant_fishing <- ggplot() +
         strip.placement = "left"
   )
 violin_blue_risk_JulSep_constant_fishing
+
+
+#Jul-Sep
+mod1_blue_JulSep <- glm(Blue_risk_sum ~ month + pre_post_reg,
+                        family=gaussian, data=plot_subset_with_regs_2018_2019, na.action = na.omit) 
+summary(mod1_blue_JulSep)
+plot(mod1_blue_JulSep)
+qqPlot(mod1_blue_JulSep$residuals)
+wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_2019)
+
+
+#May-Sep
+mod1_blue_MaySep <- glm(Blue_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=plot_subset_with_regs, na.action = na.omit) 
+summary(mod1_blue_MaySep)
+plot(mod1_blue_MaySep)
+qqPlot(mod1_blue_MaySep$residuals)
+wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs)
+
 
 
 #plot blues and humps together and save
