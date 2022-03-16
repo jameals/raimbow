@@ -395,6 +395,7 @@ summary(mod1_hump) #no sig diff in pre vs post in Jul-Sep
 hist(mod1_hump$residuals)
 plot(mod1_hump)
 qqPlot(mod1_hump$residuals)
+wilcox.test(hump_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2018_2019)
 
 
 mod1_blue <- glm(blue_risk_sum ~ month + pre_post_reg,
@@ -403,6 +404,7 @@ summary(mod1_blue) #no sig diff in pre vs post in Jul-Sep
 hist(mod1_blue$residuals)
 plot(mod1_blue)
 qqPlot(mod1_blue$residuals)
+wilcox.test(blue_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2018_2019)
 
 
 #May-Sep
@@ -413,6 +415,7 @@ summary(mod2_hump) #sig diff in pre vs post in Jul-Sep
 hist(mod2_hump$residuals)
 plot(mod2_hump)
 qqPlot(mod2_hump$residuals)
+wilcox.test(hump_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2019_2020)
 
 
 mod2_blue <- glm(blue_risk_sum ~ month + pre_post_reg,
@@ -421,12 +424,12 @@ summary(mod2_blue) #sig diff in pre vs post in Jul-Sep
 hist(mod2_blue$residuals)
 plot(mod2_blue)
 qqPlot(mod2_blue$residuals)
+wilcox.test(blue_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2019_2020)
 
 
 
 
 
-kruskal.test(blue_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2019_2020)
 
 
 
