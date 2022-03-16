@@ -118,36 +118,36 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
   select(-season_start, -season_end)
 #-----------------------------------------------------------------------------------
-
-# if working in the realised fishery footprint:
-
-#join whale data to fishing data
-fishing_whale_joined <- left_join(x.fish_WA_MaySep, x.whale_crab_season, by=c("GRID5KM_ID", "season", "month")) %>% 
-  select(-season_start, -season_end, -area_km_lno)
-
-#calculate risk  metric
-risk_fishing_whale_joined <- fishing_whale_joined %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) 
-
-#add column to denote pre-post regulation
-risk_fishing_whale_joined <- risk_fishing_whale_joined %>% 
-  mutate(
-  pre_post_reg = case_when(
-    season == '2018-2019' & month %in% c('07', '08', '09') ~ "xpost-reg",  #and 'x' to name so that pre-reg comes first
-    season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "xpost-reg")) %>% 
-  mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
-    
-
-risk_fishing_whale_joined$month <- as.numeric(risk_fishing_whale_joined$month)
+# 
+# # if working in the realised fishery footprint:
+# 
+# #join whale data to fishing data
+# fishing_whale_joined <- left_join(x.fish_WA_MaySep, x.whale_crab_season, by=c("GRID5KM_ID", "season", "month")) %>% 
+#   select(-season_start, -season_end, -area_km_lno)
+# 
+# #calculate risk  metric
+# risk_fishing_whale_joined <- fishing_whale_joined %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) 
+# 
+# #add column to denote pre-post regulation
+# risk_fishing_whale_joined <- risk_fishing_whale_joined %>% 
+#   mutate(
+#   pre_post_reg = case_when(
+#     season == '2018-2019' & month %in% c('07', '08', '09') ~ "xpost-reg",  #and 'x' to name so that pre-reg comes first
+#     season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "xpost-reg")) %>% 
+#   mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
+#     
+# 
+# risk_fishing_whale_joined$month <- as.numeric(risk_fishing_whale_joined$month)
 
 #-----------------------------------------------------------------------------------
 #if work in consistent study area
@@ -239,6 +239,7 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
 # Jul-Sep, all seasons, summed data across all grids in each month
 risk_whales_WA_JulSep_summed <- risk_whales_WA_MaySep %>% 
   filter(month %in% c('07', '08', '09')) %>% 
+  #filter(season != '2019-2020') %>% 
   filter(study_area == 'Y')  %>% 
   group_by(season, month, pre_post_reg) %>%
   summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
@@ -290,8 +291,34 @@ plot(mod1_hump)
 library(car)
 qqPlot(mod1_hump$residuals)
 
+#Kruskal-Wallis is testing for differences in the medians
+kruskal.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
+#testing the equality of means/medians in two independent samples
+#the Mann-Whitney test is commonly regarded as a test of population medians
+wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
+
+risk_whales_WA_JulSep_summed %>% 
+  group_by(pre_post_reg) %>%  
+  summarise(median_hump_risk = median(sum_hump_risk), 
+            median_blue_risk = median(sum_blue_risk))
+#when 2020 is included
+#pre_post_reg median_hump_risk  median_blue_risk
+#pre-reg        16.137996         260.6932
+#xpost-reg      4.843725          197.1785
+##HW: -70.0%
+##BW: -24.4%
+
+#when 2020 is excluded
+#pre_post_reg median_hump_risk  median_blue_risk
+#pre-reg        16.137996         260.6932
+#xpost-reg      4.237895          231.1482
+##HW: -73.7%
+##BW: -11.3%
+
 
 mod1_blue <- glm(sum_blue_risk ~ month + pre_post_reg,
+                 family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
+mod1_blue <- glm(sum_blue_risk ~ pre_post_reg,
                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
 summary(mod1_blue)
 hist(mod1_blue$residuals)
@@ -306,6 +333,7 @@ abline(h = 0, col="blue")
 plot(mod1_blue)
 qqPlot(mod1_blue$residuals)
 
+wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
 
 
 
@@ -346,6 +374,20 @@ abline(h = 0, col="blue")
 plot(mod2_hump)
 qqPlot(mod2_hump$residuals)
 
+wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
+risk_whales_WA_MaySep_summed %>% 
+  group_by(pre_post_reg) %>%  
+  summarise(median_hump_risk = median(sum_hump_risk), 
+            median_blue_risk = median(sum_blue_risk))
+#	comparing pre-reg to 2020 only
+#pre_post_reg median_hump_risk  median_blue_risk
+#pre-reg        17.811136         180.8941
+#xpost-reg      7.527816          157.0247
+##HW: -57.7
+##BW: -13.2
+
+
+
 #in the May-Sep glm log link is maybe better than basic gaussian
 mod2_blue <- glm(sum_blue_risk ~ month + pre_post_reg ,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
@@ -362,6 +404,7 @@ abline(h = 0, col="blue")
 plot(mod2_blue)
 qqPlot(mod2_blue$residuals)
 
+wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
 
 
 
