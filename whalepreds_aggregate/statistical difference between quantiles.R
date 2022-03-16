@@ -81,22 +81,23 @@ wilcox_test_MaySep <- wilcox.test(M2_trapdens ~ pre_post_reg, data = x.fish_WA_M
 #p-value < 2.2e-16
 
 
-qcomhd_JulSep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_JulSep, q = c(0.25, 0.5, 0.75), nboot = 500)
+qcomhd_JulSep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_JulSep, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 qcomhd_JulSep
 # Parameter table: 
 #   q  n1   n2   est1    est2 est1-est.2  ci.low   ci.up p.crit p.value
 # 1 0.25 294 1218 1.1603  1.9000    -0.7397 -1.0615 -0.3674 0.0500       0
 # 2 0.50 294 1218 2.8241  5.3032    -2.4791 -3.4091 -1.7179 0.0250       0
 # 3 0.75 294 1218 7.3855 12.0117    -4.6262 -6.3925 -2.3675 0.0167       0
+# 4 1.00 294 1218 41.9055 67.2690   -25.3636 -39.2171 -19.1724 0.0125    0
 
-qcomhd_MaySep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_MaySep, q = c(0.25, 0.5, 0.75), nboot = 500)
+qcomhd_MaySep <- qcomhd(M2_trapdens ~ pre_post_reg, data = x.fish_WA_MaySep, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 qcomhd_MaySep
 # Parameter table: 
 #   q  n1   n2   est1    est2 est1-est.2  ci.low   ci.up p.crit p.value
 # 1 0.25 584 2902 0.7954  1.5698    -0.7744 -0.9261 -0.5861 0.0500       0
 # 2 0.50 584 2902 2.3946  4.7082    -2.3135 -2.8151 -1.8008 0.0250       0
 # 3 0.75 584 2902 5.5304 11.3308    -5.8004 -6.9841 -4.1890 0.0167       0
-
+# 4 1.00 584 2902 48.7744 67.2690   -18.4947 -37.2120 -12.3035 0.0125    0
 
 
 
