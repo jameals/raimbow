@@ -861,9 +861,9 @@ plot_subset_2018_2019_box <- risk_whales_WA_MaySep %>%
   
 
 box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk)) +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), lwd=1) +
   #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("humpback Whale Risk Jul-Sep") + 
+  ylab("Summed Humpback Whale Risk Jul-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -871,7 +871,7 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -897,9 +897,9 @@ MaySep_plot_subset_2019_2020_box <- risk_whales_WA_MaySep %>%
 
 
 box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk)) +
+  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), lwd=1) +
   #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("humpback Whale Risk May-Sep") + 
+  ylab("Summed Humpback Whale Risk May-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -907,7 +907,7 @@ box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -1118,9 +1118,9 @@ invisible(dev.off())
 plot_subset_2018_2019_box
 
 box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk)) +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), lwd=1) +
   #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("humpback Whale Risk Jul-Sep") + 
+  ylab("Summed Blue Whale Risk Jul-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -1128,7 +1128,7 @@ box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -1142,9 +1142,9 @@ box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
 MaySep_plot_subset_2019_2020_box 
 
 box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
-  geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("blue Whale Risk May-Sep") + 
+  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), lwd=1) +
+  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  ylab("Summed Blue Whale Risk May-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -1152,7 +1152,7 @@ box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
