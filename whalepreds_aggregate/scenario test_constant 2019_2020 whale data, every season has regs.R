@@ -1,6 +1,6 @@
-## scenario test: all fishing years with summer reduction applied to 2019-2020 whale data
+## scenario test 3: all fishing years applied to 2018-2019 and 2019-2020 whale data
 # tests robustness of regulations to changing fishing effort/distribution
-
+# vary fishing data, hold whale data constant
 
 #-----------------------------------------------------------------------------------
 
@@ -104,10 +104,9 @@ x.whale_crab_season_Jul_Sep_2018_2019 <-  x.whale_crab_season_May_Sep %>%
 #-----------------------------------------------------------------------------------
 
 
-#fishing effort - all years with pot reduction
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
+#fishing effort 
 
-#don't impose regs to pre-seasons
+#don't impose regs to pre-seasons, post seasons have regs
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
@@ -220,6 +219,255 @@ risk_whales_WA_JulSep <- study_area_whale_fishing_JulSep %>%
 #--------------------------------------------------------------------------
 
 
+
+### BOXPLOTS
+
+#risk_whales_WA_MaySep 
+#risk_whales_WA_JulSep
+
+#sum across grids as did for main risk plot
+
+#HW
+#Jul-Sep
+box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep %>% 
+  #filter to Jul-Sep
+  filter(month %in% c('07','08','09')) %>% 
+  #take out 2019-2020 season
+  filter(season != '2019-2020') %>%
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  #filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(hump_risk, na.rm=TRUE),
+            blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
+#Boxplots of risk - fishing actual, whale constant 2018-2019
+box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
+  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1) +
+  ylab("Summed Humpback Whale Risk Jul-Sep") + 
+  scale_x_discrete(limits = rev) +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_Jul_Sep_constant_whale_2018_2019
+
+
+#May-Sep
+box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep %>% 
+  #already filtered to May-Sep
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  #filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(hump_risk, na.rm=TRUE),
+            blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
+#Boxplots of risk - fishing actual, whale constant 2018-2019
+box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
+  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1) +
+  ylab("Summed Humpback Whale Risk May-Sep") + 
+  scale_x_discrete(limits = rev) +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_May_Sep_constant_whale_2019_2020
+
+
+#plot things together and save
+png(paste0(path_figures, "/box_hump_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(box_hump_risk_Jul_Sep_constant_whale_2018_2019,
+          box_hump_risk_May_Sep_constant_whale_2019_2020,
+          ncol=2,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
+
+#BW
+#Jul-Sep
+box_fishing_actual_whale_2018_2019 
+
+#Boxplots of risk - fishing actual, whale constant 2018-2019
+box_blue_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
+  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1) +
+  ylab("Summed Blue Whale Risk Jul-Sep") + 
+  scale_x_discrete(limits = rev) +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_blue_risk_Jul_Sep_constant_whale_2018_2019
+
+
+#May-Sep
+box_fishing_actual_whale_2019_2020 
+
+#Boxplots of risk - fishing actual, whale constant 2018-2019
+box_blue_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
+  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1) +
+  ylab("Summed Blue Whale Risk May-Sep") + 
+  scale_x_discrete(limits = rev) +
+  xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_blue_risk_May_Sep_constant_whale_2019_2020
+
+
+#plot things together and save
+png(paste0(path_figures, "/box_blue_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(box_blue_risk_Jul_Sep_constant_whale_2018_2019,
+          box_blue_risk_May_Sep_constant_whale_2019_2020,
+          ncol=2,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+###### if needs stats, use GLM??
+#box_fishing_actual_whale_2018_2019 
+#box_fishing_actual_whale_2019_2020
+
+hist(box_fishing_actual_whale_2018_2019$hump_risk_sum)
+hist(box_fishing_actual_whale_2018_2019$blue_risk_sum)
+
+#Jul-Sep
+
+mod1_hump <- glm(hump_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=box_fishing_actual_whale_2018_2019, na.action = na.omit)
+summary(mod1_hump) #no sig diff in pre vs post in Jul-Sep
+hist(mod1_hump$residuals)
+plot(mod1_hump)
+qqPlot(mod1_hump$residuals)
+
+
+mod1_blue <- glm(blue_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=box_fishing_actual_whale_2018_2019, na.action = na.omit)
+summary(mod1_blue) #no sig diff in pre vs post in Jul-Sep
+hist(mod1_blue$residuals)
+plot(mod1_blue)
+qqPlot(mod1_blue$residuals)
+
+
+#May-Sep
+
+mod2_hump <- glm(hump_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=box_fishing_actual_whale_2019_2020, na.action = na.omit)
+summary(mod2_hump) #sig diff in pre vs post in Jul-Sep
+hist(mod2_hump$residuals)
+plot(mod2_hump)
+qqPlot(mod2_hump$residuals)
+
+
+mod2_blue <- glm(blue_risk_sum ~ month + pre_post_reg,
+                 family=gaussian, data=box_fishing_actual_whale_2019_2020, na.action = na.omit)
+summary(mod2_blue) #sig diff in pre vs post in Jul-Sep
+hist(mod2_blue$residuals)
+plot(mod2_blue)
+qqPlot(mod2_blue$residuals)
+
+
+
+
+
+kruskal.test(blue_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2019_2020)
+
+
+
+
+test_JulSep_all_seasons <- risk_whales_WA_JulSep %>% 
+  #filter to Jul-Sep
+  filter(month %in% c('07','08','09')) %>% 
+  #DON'T take out 2019-2020 season
+  #filter(season != '2019-2020') %>%
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  #filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(hump_risk, na.rm=TRUE),
+            blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
+kruskal.test(hump_risk_sum ~ pre_post_reg, data = test_JulSep_all_seasons)
+kruskal.test(blue_risk_sum ~ pre_post_reg, data = test_JulSep_all_seasons)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------------------
 # ts plot: May-Sep risk to whales in study area -- if whale data was always the same, and if each season had regs
 
 plot_subset <- risk_whales_WA_MaySep %>% 
@@ -293,89 +541,6 @@ invisible(dev.off())
 
 
 
-### BOXPLOTS
-
-#risk_whales_WA_MaySep 
-#risk_whales_WA_JulSep
-
-#HW
-#Jul-Sep
-box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep %>% 
-  #filter to Jul-Sep
-  filter(month %in% c('07','08','09')) %>% 
-  #take out 2019-2020 season
-  filter(season != '2019-2020') %>%
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
-
-#Boxplots of risk - fishing actual, whale constant 2018-2019
-box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
-  geom_boxplot(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = hump_risk)) +
-  ylab("humpback Whale Risk Jul-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-box_hump_risk_Jul_Sep_constant_whale_2018_2019
-
-
-#May-Sep
-box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep %>% 
-  #already filtered to May-Sep
-  #take out 2018-2019 season
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
-
-#Boxplots of risk - fishing actual, whale constant 2018-2019
-box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
-  geom_boxplot(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = hump_risk)) +
-  ylab("humpback Whale Risk May-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-box_hump_risk_May_Sep_constant_whale_2019_2020
-
-
-#plot things together and save
-png(paste0(path_figures, "/box_hump_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(box_hump_risk_Jul_Sep_constant_whale_2018_2019,
-          box_hump_risk_May_Sep_constant_whale_2019_2020,
-          ncol=2,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
-
 # just a quick test of how the ts plot would've looked if didn't epose 33% pot reduction in pre-seasons
 # plot_subset <- box_fishing_actual_whale_2019_2020 %>% 
 #   filter(study_area=='Y') %>% #restrict calculations to study area
@@ -402,84 +567,3 @@ invisible(dev.off())
 #         strip.placement = "left"
 #   )
 # ts_hump_risk_May_Sep_study_area
-
-
-
-
-#BW
-#Jul-Sep
-box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep %>% 
-  #filter to Jul-Sep
-  filter(month %in% c('07','08','09')) %>% 
-  #take out 2019-2020 season
-  filter(season != '2019-2020') %>%
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
-
-#Boxplots of risk - fishing actual, whale constant 2018-2019
-box_blue_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
-  geom_boxplot(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = blue_risk)) +
-  ylab("blue Whale Risk Jul-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-box_blue_risk_Jul_Sep_constant_whale_2018_2019
-
-
-#May-Sep
-box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep %>% 
-  #already filtered to May-Sep
-  #take out 2018-2019 season
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
-
-#Boxplots of risk - fishing actual, whale constant 2018-2019
-box_blue_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
-  geom_boxplot(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = blue_risk)) +
-  ylab("blue Whale Risk May-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-box_blue_risk_May_Sep_constant_whale_2019_2020
-
-
-#plot things together and save
-png(paste0(path_figures, "/box_blue_risk_variable_fishing_constant_whale_JulSep_scenario3.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(box_blue_risk_Jul_Sep_constant_whale_2018_2019,
-          box_blue_risk_May_Sep_constant_whale_2019_2020,
-          ncol=2,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
