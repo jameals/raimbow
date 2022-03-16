@@ -1143,7 +1143,7 @@ MaySep_plot_subset_2019_2020_box
 
 box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
   geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk)) +
-  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("blue Whale Risk May-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
@@ -1246,27 +1246,34 @@ invisible(dev.off())
 #risk_whales_WA_MaySep
 #risk_whales_WA_MaySep_no_regs
 
+#sum risk across grids so each month has one risk value, then plot
 
 #HW
 box_2018_2019_with_regs <- risk_whales_WA_MaySep %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   filter(season %in% c('2018-2019')) %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  mutate(regs = "with regulations")
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(regs = "with regulations") %>% 
+  group_by(season, month, regs) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE))
   
 box_2018_2019_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   filter(season %in% c('2018-2019')) %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>% 
-  mutate(regs = "without regulations")
+  #filter(!is.na(mean_M2_trapdens)) %>% 
+  mutate(regs = "without regulations") %>% 
+  group_by(season, month, regs) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE))
 
 
 box_hw_risk_2018_2019_with_and_without_regs <- ggplot() +
-  geom_boxplot(data = box_2018_2019_with_regs, aes(x = regs, y = hump_risk)) +
-  geom_boxplot(data = box_2018_2019_without_regs, aes(x = regs, y = hump_risk)) +
-  ylab("humpback Whale Risk Jul-Sep") + 
+  geom_violin(data = box_2018_2019_with_regs, aes(x = regs, y = hump_risk), lwd=1) +
+  geom_violin(data = box_2018_2019_without_regs, aes(x = regs, y = hump_risk), lwd=1, fill='gray88') +
+  ylab("Summed Humpback Whale Risk Jul-Sep") + 
   xlab("2018-2019 season") +
   #scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -1274,10 +1281,10 @@ box_hw_risk_2018_2019_with_and_without_regs <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -1289,21 +1296,27 @@ box_2019_2020_with_regs <- risk_whales_WA_MaySep %>%
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
   filter(season %in% c('2019-2020')) %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
-  mutate(regs = "with regulations")
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(regs = "with regulations") %>% 
+  group_by(season, month, regs) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE))
 
 box_2019_2020_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
   filter(season %in% c('2019-2020')) %>% 
   filter(study_area=='Y') %>% 
-  filter(!is.na(mean_M2_trapdens)) %>% 
-  mutate(regs = "without regulations")
+  #filter(!is.na(mean_M2_trapdens)) %>% 
+  mutate(regs = "without regulations") %>% 
+  group_by(season, month, regs) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE))
 
 
 box_hw_risk_2019_2020_with_and_without_regs <- ggplot() +
-  geom_boxplot(data = box_2019_2020_with_regs, aes(x = regs, y = hump_risk)) +
-  geom_boxplot(data = box_2019_2020_without_regs, aes(x = regs, y = hump_risk)) +
-  ylab("humpback Whale Risk May-Sep") + 
+  geom_violin(data = box_2019_2020_with_regs, aes(x = regs, y = hump_risk), lwd=1) +
+  geom_violin(data = box_2019_2020_without_regs, aes(x = regs, y = hump_risk), lwd=1, fill='gray88') +
+  ylab("Summed Humpback Whale Risk May-Sep") + 
   xlab("2019-2020 season") +
   #scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -1311,33 +1324,37 @@ box_hw_risk_2019_2020_with_and_without_regs <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 box_hw_risk_2019_2020_with_and_without_regs
 
 
+
+
 test <- rbind(box_2018_2019_with_regs, box_2018_2019_without_regs, box_2019_2020_with_regs, box_2019_2020_without_regs)
 
 box_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
   
-  geom_boxplot(data = test, aes(x = season, y = hump_risk, fill = regs)) +
-  ylab("humpback Whale Risk") + 
+  #geom_violin(data = test, aes(x = season, y = hump_risk, fill = regs), lwd=1) +
+  #scale_fill_manual(values = c("white", "gray80"))+
+  #ylab("Summed Humpback Whale Risk") + 
   
-  #geom_boxplot(data = test, aes(x = season, y = blue_risk, fill = regs)) +
-  #ylab("blue Whale Risk") + 
+  geom_violin(data = test, aes(x = season, y = blue_risk, fill = regs), lwd=1) +
+  scale_fill_manual(values = c("white", "gray80"))+
+  ylab("Summed Blue Whale Risk") + 
   
   xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.2, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        legend.position = c(.7, .9),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
