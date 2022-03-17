@@ -137,58 +137,60 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 
 
 #Jul-Sep
-summary_pacfin_data_JulSep <- test_join_uniques %>% 
-  filter(month_name %in% c('July','August','September')) %>%   
-  filter(season != '2019-2020') %>% 
-  filter(LANDED_WEIGHT_LBS < 10000) %>% 
-  group_by(season) %>% 
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
-            sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
-            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND)
-  )
-
-
-sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
-  geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
-  geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
-  #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
-  ylab("Revenue $ (sum Jul-Sep)") +
-  xlab("Season") + 
-  #geom_hline(yintercept=1241764, linetype="dashed", 
-  # color = "red", size=2)+ #average across 5 pre-reg seasons Jul-Sep
-  #geom_hline(yintercept=673505.2, linetype="dashed", 
-  # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-sum_JulSep_rev_ts
+# summary_pacfin_data_JulSep <- test_join_uniques %>% 
+#   filter(month_name %in% c('July','August','September')) %>%   
+#   filter(season != '2019-2020') %>% 
+#   filter(LANDED_WEIGHT_LBS < 10000) %>% 
+#   group_by(season) %>% 
+#   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+#             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
+#             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+#             avg_price_per_pound = mean(PRICE_PER_POUND)
+#   )
+# 
+# 
+# sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
+#   geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
+#   geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
+#   #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
+#   ylab("Revenue $ (sum Jul-Sep)") +
+#   xlab("Season") + 
+#   #geom_hline(yintercept=1241764, linetype="dashed", 
+#   # color = "red", size=2)+ #average across 5 pre-reg seasons Jul-Sep
+#   #geom_hline(yintercept=673505.2, linetype="dashed", 
+#   # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# sum_JulSep_rev_ts
 
 ##### as a boxplot
 summary_pacfin_data_JulSep_pre_reg <- summary_pacfin_data_JulSep %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   filter(season != '2018-2019') %>% 
   mutate(pre_post_reg = "pre-reg")
 
 summary_pacfin_data_JulSep_2019 <- summary_pacfin_data_JulSep %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   filter(season == '2018-2019') %>% 
   mutate(pre_post_reg = "2018-2019")
 
 sum_JulSep_rev_box <- ggplot() +
-  geom_boxplot(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_revenue)) +
+  geom_violin(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
   
-  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_revenue),
-             color = 'red', size=2.5) +
+  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_revenue/100000),
+             color = 'red', size=5) +
  
-  ylab("Revenue $ (sum Jul-Sep)") +
+  ylab("Revenue ($ x10^5) (sum Jul-Sep)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -196,7 +198,7 @@ sum_JulSep_rev_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         axis.title.x=element_blank(),
@@ -206,35 +208,44 @@ sum_JulSep_rev_box <- ggplot() +
   )
 sum_JulSep_rev_box
 
+pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep_pre_reg %>% 
+  summarise(mean_revenue = mean(sum_revenue))
+pre_reg_mean_revenue_JulSep_exc2014 <- summary_pacfin_data_JulSep_pre_reg %>% 
+  filter(season != '2013-2014') %>% 
+  summarise(mean_revenue = mean(sum_revenue))
+#% change from pre-reg mean to 2019
+(888848.8-pre_reg_mean_revenue_JulSep)/pre_reg_mean_revenue_JulSep*100
+#-25.35 --> but pre-reg mean high due to 2014
+(888848.8-pre_reg_mean_revenue_JulSep_exc2014)/pre_reg_mean_revenue_JulSep_exc2014*100
+# 31.97
 
-  
-sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
-  geom_line(size=1, lineend = "round") + 
-  geom_point(size=2.5) + 
-  ylab("Landings lbs (sum Jul-Sep)") +
-  xlab("Season") + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-sum_JulSep_landings_ts
+# sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
+#   geom_line(size=1, lineend = "round") + 
+#   geom_point(size=2.5) + 
+#   ylab("Landings lbs (sum Jul-Sep)") +
+#   xlab("Season") + 
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# sum_JulSep_landings_ts
 
 
 sum_JulSep_lbs_box <- ggplot() +
-  geom_boxplot(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs)) +
+  geom_violin(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
   
-  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_weight_lbs),
-             color = 'red', size=2.5) +
+  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
+             color = 'red', size=5) +
   
-  ylab("Landing lbs (sum Jul-Sep)") +
+  ylab("Landing (lbs x 10^5) (sum Jul-Sep)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -242,7 +253,7 @@ sum_JulSep_lbs_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         axis.title.x=element_blank(),
@@ -271,62 +282,64 @@ invisible(dev.off())
 
 
 #May-Sep
-summary_pacfin_data_MaySep <- test_join_uniques %>% 
-  filter(season != '2018-2019') %>% 
-  filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% #doesn't make a difference
-  filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
-  filter(EXVESSEL_REVENUE > 0) %>% 
-  group_by(season) %>% 
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
-            sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
-            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
-  )
-
-
-sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
-  geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
-  geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
-  #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
-  ylab("Revenue $ (sum May-Sep)") +
-  xlab("Season") + 
-  #geom_hline(yintercept=1988695, linetype="dashed", 
-            # color = "red", size=2)+ #average across 5 pre-reg seasons
-  #geom_hline(yintercept=1451688, linetype="dashed", 
-             #color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-sum_MaySep_rev_ts
+# summary_pacfin_data_MaySep <- test_join_uniques %>% 
+#   filter(season != '2018-2019') %>% 
+#   filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
+#   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% #doesn't make a difference
+#   filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
+#   filter(EXVESSEL_REVENUE > 0) %>% 
+#   group_by(season) %>% 
+#   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+#             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
+#             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+#             avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
+#   )
+# 
+# 
+# sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
+#   geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
+#   geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
+#   #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
+#   ylab("Revenue $ (sum May-Sep)") +
+#   xlab("Season") + 
+#   #geom_hline(yintercept=1988695, linetype="dashed", 
+#             # color = "red", size=2)+ #average across 5 pre-reg seasons
+#   #geom_hline(yintercept=1451688, linetype="dashed", 
+#              #color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# sum_MaySep_rev_ts
 #28% drop in revenue in 2020 from 2018, drop in area size was 33% from 2018, also almost 7% drop in average $/lbs (see below)
 
 
 ##### as a boxplot
 summary_pacfin_data_MaySep_pre_reg <- summary_pacfin_data_MaySep %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   filter(season != '2019-2020') %>% 
   mutate(pre_post_reg = "pre-reg")
 
 summary_pacfin_data_MaySep_2020 <- summary_pacfin_data_MaySep %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   filter(season == '2019-2020') %>% 
   mutate(pre_post_reg = "2019-2020")
 
 sum_MaySep_rev_box <- ggplot() +
-  geom_boxplot(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_revenue)) +
+  geom_violin(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
   
-  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_revenue),
-             color = 'red', size=2.5) +
+  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_revenue/100000),
+             color = 'red', size=5) +
   
-  ylab("Revenue $ (sum May-Sep)") +
+  ylab("Revenue ($ x10^5)  (sum May-Sep)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -334,7 +347,7 @@ sum_MaySep_rev_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         axis.title.x=element_blank(),
@@ -346,34 +359,34 @@ sum_MaySep_rev_box
 
 
 
-sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
-  geom_line(size=1, lineend = "round") + 
-  geom_point(size=2.5) + 
-  ylab("Landings lbs (sum May-Sep)") +
-  xlab("Season") + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-sum_MaySep_landings_ts
-#18% drop in landed pounds in 2020 from 2018
+# sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
+#   geom_line(size=1, lineend = "round") + 
+#   geom_point(size=2.5) + 
+#   ylab("Landings lbs (sum May-Sep)") +
+#   xlab("Season") + 
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# sum_MaySep_landings_ts
+# #18% drop in landed pounds in 2020 from 2018
 
 
 sum_MaySep_lbs_box <- ggplot() +
-  geom_boxplot(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs)) +
+  geom_violin(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
   
-  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_weight_lbs),
-             color = 'red', size=2.5) +
+  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
+             color = 'red', size=5) +
   
-  ylab("Landing lbs (sum May-Sep)") +
+  ylab("Landing (lbs x 10^5) (sum May-Sep)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev) +
   theme_classic() +
@@ -381,7 +394,7 @@ sum_MaySep_lbs_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20), #, angle = 60
+        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         axis.title.x=element_blank(),
@@ -410,50 +423,50 @@ invisible(dev.off())
 
 
 
-MaySep_average_price_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=avg_price_per_pound, group=1))+
-  geom_line(size=1, lineend = "round") + 
-  geom_point(size=2.5) + 
-  ylab("Average $/lbs (May-Sep)") +
-  xlab("Season") + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-MaySep_average_price_ts
+# MaySep_average_price_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=avg_price_per_pound, group=1))+
+#   geom_line(size=1, lineend = "round") + 
+#   geom_point(size=2.5) + 
+#   ylab("Average $/lbs (May-Sep)") +
+#   xlab("Season") + 
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# MaySep_average_price_ts
 #-6.9% drop in average $/lbs from 2018 to 2020
 
 
-average_price_ts_v2 <- ggplot() +
-  geom_line(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round") +
-  geom_point(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5) +
-  
-  geom_line(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round", color='red') +
-  geom_point(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5, color='red') +
-  
-  ylab("Average $/lbs") +
-  xlab("Season") +
-  ggtitle("black = May-Sep, red = Jul-Sep")+
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-average_price_ts_v2
+# average_price_ts_v2 <- ggplot() +
+#   geom_line(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round") +
+#   geom_point(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5) +
+#   
+#   geom_line(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round", color='red') +
+#   geom_point(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5, color='red') +
+#   
+#   ylab("Average $/lbs") +
+#   xlab("Season") +
+#   ggtitle("black = May-Sep, red = Jul-Sep")+
+#   theme_bw()+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# average_price_ts_v2
 
 
 
@@ -471,8 +484,11 @@ ggarrange(MaySep_average_price_ts,
 invisible(dev.off())
 
 
+################
+#one way of doing price per pound
 
 test_join_uniques_price_per_pound <- test_join_uniques %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
@@ -481,33 +497,79 @@ avg_ppp_post_reg <- test_join_uniques_price_per_pound %>%
   filter(pre_post_reg != 'pre-reg') %>% 
   group_by(season, month_name) %>% 
   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
-  
+
+avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg == 'pre-reg') %>% 
+  group_by(season, month_name, pre_post_reg) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
 
 ppp_in_MaySep <- ggplot()+
-  geom_boxplot(data = test_join_uniques_price_per_pound %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= PRICE_PER_POUND)) + 
-  geom_point(data = avg_ppp_post_reg, aes(x= month_name, y= PRICE_PER_POUND, color=season), size=2) + 
+  #geom_violin(data = test_join_uniques_price_per_pound %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+  geom_violin(data = avg_ppp_pre_reg, aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+  scale_fill_manual(values=c("white")) +
+
+  geom_point(data = avg_ppp_post_reg, aes(x= month_name, y= PRICE_PER_POUND, color=season), size=5) + 
+  scale_color_manual(values=c("black", "gray80")) +
+
   #scale_colour_brewer(palette = "PRGn") +
   ylab("Price per pound") +
-  xlab("Month") + 
-  guides(color = guide_legend(override.aes = list(size = 2))) +
+  xlab("") + 
+  #guides(color = guide_legend(override.aes = list(size = 2))) +
   theme_bw()+
   theme(#panel.background = element_rect(fill = 'gray92'),
     legend.title = element_blank(),
     #title = element_text(size = 32),
     legend.text = element_text(size=20),
-    axis.text.x = element_text(hjust = 1,size = 20),
+    axis.text.x = element_text(hjust = 0.5,size = 20),
     axis.text.y = element_text(size = 20),
     axis.title = element_text(size = 20),
     #legend.position = c(0.9, 0.8) +
-    legend.position="bottom"
+    legend.position = c(.86, .8)
+  )
+ppp_in_MaySep
+
+
+## another way of doing price per pound
+avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg != 'pre-reg') %>% 
+  filter(month_name %in% c('July','August','September')) %>% 
+  group_by(season, pre_post_reg) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+
+avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg == 'pre-reg') %>% 
+  filter(month_name %in% c('July','August','September')) %>% 
+  group_by(season, pre_post_reg) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+
+ppp_in_MaySep <- ggplot()+
+  geom_violin(data = avg_ppp_pre_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+  scale_fill_manual(values=c("white")) +
+  
+  geom_point(data = avg_ppp_post_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, color=season), size=5) + 
+  scale_color_manual(values=c("black", "gray80")) +
+  
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("Average price per pound (Jul-Sep)") +
+  xlab("") + 
+  #guides(color = guide_legend(override.aes = list(size = 2))) +
+  scale_x_discrete(limits=c("pre-reg","2018-2019"))+ #, "2019-2020"
+  theme_bw()+
+  theme(#panel.background = element_rect(fill = 'gray92'),
+    legend.title = element_blank(),
+    #title = element_text(size = 32),
+    legend.text = element_text(size=20),
+    axis.text.x = element_text(hjust = 0.5,size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title = element_text(size = 20),
+    #legend.position = c(.86, .2)
+    legend.position = "none"
   )
 ppp_in_MaySep
 
 
 
-
-
-
+#################################################################
 #Why is 2014 so different? is there a specific month driving it?
 
 summary_2014 <- test_join_uniques %>% 
@@ -517,7 +579,6 @@ summary_2014 <- test_join_uniques %>%
             avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T))
 
 summary_2014$month_name <- factor(summary_2014$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
-
 
 #use this code if filtered to 2013-2014 only, and grouped by month_name only
 ts_2014 <- ggplot(summary_2014)+
@@ -723,7 +784,7 @@ ggplot() +
 
 
 
-
+################################
 
 # number of vessels that were active in May-Sep of each year as per fishticket data
 #but note that this is now things landed in WA, but may have fished off OR
@@ -737,20 +798,20 @@ active_vessels_in_MaySep_by_season_fishtix <- fishtix_2014_2020  %>%
     n_unique_vessels=n_distinct(VESSEL_ID), na.rm=TRUE)
 
 
-vessels_in_MaySep_by_season_plot_fishtix <- ggplot(active_vessels_in_MaySep_by_season_fishtix, aes(x= LANDING_MONTH, y= n_unique_vessels, group=as.factor(LANDING_YEAR), color=as.factor(LANDING_YEAR)))+
-  geom_line(size=1.5, lineend = "round") + 
-  ylab("No. active vessels in May-Sep in WA \n(unique vessels in fishtix)") +
-  xlab("Season") + 
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=20),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 90),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom"
-  )
-vessels_in_MaySep_by_season_plot_fishtix
+# vessels_in_MaySep_by_season_plot_fishtix <- ggplot(active_vessels_in_MaySep_by_season_fishtix, aes(x= LANDING_MONTH, y= n_unique_vessels, group=as.factor(LANDING_YEAR), color=as.factor(LANDING_YEAR)))+
+#   geom_line(size=1.5, lineend = "round") + 
+#   ylab("No. active vessels in May-Sep in WA \n(unique vessels in fishtix)") +
+#   xlab("Season") + 
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 32),
+#         legend.text = element_text(size=20),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 90),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         #legend.position = c(0.9, 0.8) +
+#         legend.position="bottom"
+#   )
+# vessels_in_MaySep_by_season_plot_fishtix
 
 
 
@@ -824,6 +885,40 @@ CPUE_ts <- ggplot(summary_efficiency_CPUE_v2)+
         strip.placement = "left"
   )
 CPUE_ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #---------------------------------------------------------------------------------
 ## OLD ###
