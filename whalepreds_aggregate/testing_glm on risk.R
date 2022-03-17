@@ -239,7 +239,7 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
 # Jul-Sep, all seasons, summed data across all grids in each month
 risk_whales_WA_JulSep_summed <- risk_whales_WA_MaySep %>% 
   filter(month %in% c('07', '08', '09')) %>% 
-  #filter(season != '2019-2020') %>% 
+  filter(season != '2019-2020') %>% 
   filter(study_area == 'Y')  %>% 
   group_by(season, month, pre_post_reg) %>%
   summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
@@ -299,21 +299,23 @@ wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
 
 risk_whales_WA_JulSep_summed %>% 
   group_by(pre_post_reg) %>%  
-  summarise(median_hump_risk = median(sum_hump_risk), 
-            median_blue_risk = median(sum_blue_risk))
+  summarise(median_hump_risk = median(sum_hump_risk),
+            mean_hump_risk = mean(sum_hump_risk),
+            median_blue_risk = median(sum_blue_risk),
+            mean_blue_risk = mean(sum_blue_risk))
 #when 2020 is included
-#pre_post_reg median_hump_risk  median_blue_risk
-#pre-reg        16.137996         260.6932
-#xpost-reg      4.843725          197.1785
-##HW: -70.0%
+#pre_post_reg median_hump_risk  median_blue_risk  mean_hump_risk  mean_blue_risk
+#pre-reg        16.137996         260.6932          17.044269       253.3776
+#xpost-reg      4.843725          197.1785          5.030699          190.7951
+##HW: median: -70.0%    mean: -70.5
 ##BW: -24.4%
 
 #when 2020 is excluded
-#pre_post_reg median_hump_risk  median_blue_risk
-#pre-reg        16.137996         260.6932
-#xpost-reg      4.237895          231.1482
-##HW: -73.7%
-##BW: -11.3%
+#pre_post_reg median_hump_risk  median_blue_risk  mean_hump_risk  mean_blue_risk
+#pre-reg        16.137996         260.6932            17.044269       253.3776
+#xpost-reg      4.237895          231.1482            3.897254        222.8370
+##HW: median -73.7%,      mean -77.1%
+##BW: -11.3%,             mean -12.1%
 
 
 mod1_blue <- glm(sum_blue_risk ~ month + pre_post_reg,
@@ -375,16 +377,19 @@ plot(mod2_hump)
 qqPlot(mod2_hump$residuals)
 
 wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
+
 risk_whales_WA_MaySep_summed %>% 
   group_by(pre_post_reg) %>%  
   summarise(median_hump_risk = median(sum_hump_risk), 
-            median_blue_risk = median(sum_blue_risk))
+            mean_hump_risk = mean(sum_hump_risk),
+            median_blue_risk = median(sum_blue_risk),
+            mean_blue_risk = mean(sum_blue_risk))
 #	comparing pre-reg to 2020 only
-#pre_post_reg median_hump_risk  median_blue_risk
-#pre-reg        17.811136         180.8941
-#xpost-reg      7.527816          157.0247
-##HW: -57.7
-##BW: -13.2
+#pre_post_reg median_hump_risk  median_blue_risk    mean_hump_risk  mean_blue_risk
+#pre-reg        17.811136         180.8941            18.795108         192.7972
+#xpost-reg      7.527816          157.0247            9.150597          149.8488
+##HW: median -57.7,   mean -51.3
+##BW: median -13.2,   mean -22.3
 
 
 
