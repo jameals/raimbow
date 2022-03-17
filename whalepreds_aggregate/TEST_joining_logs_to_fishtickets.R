@@ -845,20 +845,25 @@ efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = 
 
 
 summary_efficiency_CPUE_v2 <- efficiency_CPUE_v2 %>% 
-  group_by(season, month_name) %>% 
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(season, pre_post_reg) %>% 
   summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
             mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T))
 
-CPUE_ts <- ggplot(efficiency_CPUE_v2)+
-  geom_boxplot(aes(x=month_name, y=lbs_per_pot, color=season)) + #,size=2.5  group=season,
-  ylab("lbs/trap") +
+CPUE_ts <- ggplot()+
+  geom_violin(data = summary_efficiency_CPUE_v2 %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_point(data = summary_efficiency_CPUE_v2 %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  ylab("mean lbs/trap (May-Sep)") +
   xlab("") + 
+  scale_x_discrete(limits = rev) +
   theme_bw()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -868,16 +873,27 @@ CPUE_ts <- ggplot(efficiency_CPUE_v2)+
 CPUE_ts
 
 
-CPUE_ts <- ggplot(summary_efficiency_CPUE_v2)+
-  geom_line(aes(x=month_name, y=mean_dollar_per_pot, group=season, color=season),size=2.5) + 
-  ylab("mean $/trap") +
+summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2019-2020') %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(season, pre_post_reg) %>% 
+  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
+            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T))
+
+CPUE_ts <- ggplot()+
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  ylab("mean $/trap (Jul-Sep)") +
   xlab("") + 
+  scale_x_discrete(limits = rev) +
   theme_bw()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -897,14 +913,42 @@ CPUE_ts
 
 
 
+#monthly revenue by vessel
+
+monthly_rev_by_vessel <- test_join_uniques %>% 
+  group_by(Vessel.x, season, month_name) %>% 
+  summarise(monthly_rev = sum(EXVESSEL_REVENUE)) 
+  
+
+
+monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>% 
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(Vessel.x, season, pre_post_reg) %>% 
+  summarise(mean_monthly_rev = mean(monthly_rev, na.rm = T))
 
 
 
-
-
-
-
-
+monthly_rev_MaySep <- ggplot()+
+  geom_boxplot(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  geom_boxplot(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  ylab("mean monthly revenue/vessel (May-Sep)") +
+  xlab("") + 
+  scale_x_discrete(limits = rev) +
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+monthly_rev_MaySep
 
 
 
