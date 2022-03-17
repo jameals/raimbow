@@ -282,7 +282,7 @@ active_vessels_in_MaySep_by_season <- testdf %>%
   #only interested in May-Sep
   filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
   #group only by season
-  group_by(season) %>% 
+  group_by(season, Pot_Limit_or_M2) %>% 
   na.omit() %>% 
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
@@ -381,7 +381,7 @@ active_vessels_in_JulSep_by_season <- testdf %>%
   #only interested in May-Sep
   filter(month_name %in% c('July', 'August', 'September')) %>% 
   #group only by season
-  group_by(season) %>% 
+  group_by(season, Pot_Limit_or_M2) %>% 
   na.omit() %>% 
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
@@ -442,19 +442,31 @@ active_vessels_in_MaySep_by_season #-- pooled unique vessels across all of May-S
 active_vessels_in_JulSep_by_season #-- pooled unique vessels across all of Jul-Sep
 
 pooled_active_vessels_in_JulSep_by_season <- active_vessels_in_JulSep_by_season %>% 
+  mutate(Pot_Limit_or_M2 = case_when(Pot_Limit_or_M2 == 300  ~ 300,
+                                     Pot_Limit_or_M2 == 500  ~ 500,
+                                     Pot_Limit_or_M2 == 200  ~ 300,
+                                     Pot_Limit_or_M2 == 330  ~ 500)) %>% 
   mutate(pre_post_reg = 
          ifelse(season == '2018-2019', "2018-2019", "pre-reg"))
 
 pooled_active_vessels_in_MaySep_by_season <- active_vessels_in_MaySep_by_season %>% 
+  mutate(Pot_Limit_or_M2 = case_when(Pot_Limit_or_M2 == 300  ~ 300,
+                                     Pot_Limit_or_M2 == 500  ~ 500,
+                                     Pot_Limit_or_M2 == 200  ~ 300,
+                                     Pot_Limit_or_M2 == 330  ~ 500)) %>% 
   mutate(pre_post_reg = 
            ifelse(season == '2019-2020', "2019-2020", "pre-reg"))
 
 box_pooled_unique_vessels_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_boxplot(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses)) +
+  geom_violin(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=1) +
   #geom_jitter(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
   #geom_dotplot(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
 
-  geom_point(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = n_unique_licenses), size=3, color='red') +
+  geom_point(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=5) +
+  
+  scale_color_manual(values=c("black", "gray80")) +
+  scale_fill_manual(values=c("black", "gray80")) +
+  
   ylab("No. unique vessels, Jul-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
@@ -463,7 +475,7 @@ box_pooled_unique_vessels_pre_reg_vs_2018_2019 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -474,11 +486,15 @@ box_pooled_unique_vessels_pre_reg_vs_2018_2019
 
 
 box_pooled_unique_vessels_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_boxplot(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses)) +
+  geom_violin(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=1) +
   #geom_jitter(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
   #geom_dotplot(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
   
-  geom_point(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = n_unique_licenses), size=3, color='red') +
+  geom_point(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=5) +
+  
+  scale_color_manual(values=c("black", "gray80")) +
+  scale_fill_manual(values=c("black", "gray80")) +
+  
   ylab("No. unique vessels, May-Sep") + 
   xlab("") +
   scale_x_discrete(limits = rev) +
@@ -487,7 +503,7 @@ box_pooled_unique_vessels_pre_reg_vs_2019_2020 <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -499,9 +515,13 @@ box_pooled_unique_vessels_pre_reg_vs_2019_2020
 
 
 active_vessels_in_MaySep_by_season_v2 <- testdf %>% 
+  mutate(Pot_Limit_or_M2 = case_when(Pot_Limit_or_M2 == 300  ~ 300,
+                                     Pot_Limit_or_M2 == 500  ~ 500,
+                                     Pot_Limit_or_M2 == 200  ~ 300,
+                                     Pot_Limit_or_M2 == 330  ~ 500)) %>% 
   filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) %>% 
   #also group by month
-  group_by(season, month_name) %>% 
+  group_by(season, month_name, Pot_Limit_or_M2) %>% 
   na.omit() %>% 
   summarise(
     n_unique_licenses=n_distinct(License), na.rm=TRUE)
@@ -511,24 +531,33 @@ active_vessels_in_MaySep_by_season_v2 <- active_vessels_in_MaySep_by_season_v2 %
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
+active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2 <- as.factor(active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2)
 
 vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
-  geom_boxplot(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= n_unique_licenses)) + 
-  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-reg'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg), size=2) + 
+  geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=1) + 
+  scale_fill_manual(values=c("white")) +
+  
+  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-reg'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=5) + 
   #scale_colour_brewer(palette = "PRGn") +
+  scale_color_manual(values=c("black", "gray80")) +
+  facet_wrap(~Pot_Limit_or_M2)+
   ylab("No. active vessels by month in WA \n(unique vessels in logs)") +
   xlab("Month") + 
-  guides(color = guide_legend(override.aes = list(size = 2))) +
+  #guides(color = guide_legend(override.aes = list(size = 2))) +
   theme_bw()+
   theme(#panel.background = element_rect(fill = 'gray92'),
         legend.title = element_blank(),
         #title = element_text(size = 32),
         legend.text = element_text(size=20),
-        axis.text.x = element_text(hjust = 1,size = 20),
+        axis.text.x = element_text(hjust = 0.5,size = 20),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom"
+        #legend.position = c(0.9, 0.8),
+        legend.position="bottom",
+        strip.text.x = element_text(
+            size = 12, color = "black", face = "bold.italic"),
+        strip.background = element_rect(
+          color="black", fill="white", size=1.5, linetype="solid")
   )
 vessels_in_MaySep_by_season_plot_v2
 
