@@ -921,6 +921,34 @@ monthly_rev_by_vessel <- test_join_uniques %>%
   
 
 
+monthly_rev_by_vessel_JulSep <- monthly_rev_by_vessel %>% 
+  filter(season != '2019-2020') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(Vessel.x, season, pre_post_reg) %>% 
+  summarise(mean_monthly_rev = mean(monthly_rev, na.rm = T))
+
+monthly_rev_JulSep <- ggplot()+
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  ylab("mean monthly revenue/vessel (Jul-Sep)") +
+  xlab("") + 
+  scale_x_discrete(limits = rev) +
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+monthly_rev_JulSep
+
+
 monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>% 
   filter(season != '2018-2019') %>% 
   mutate(pre_post_reg = 
@@ -931,8 +959,8 @@ monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>%
 
 
 monthly_rev_MaySep <- ggplot()+
-  geom_boxplot(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
-  geom_boxplot(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev), lwd=1) + #,size=2.5  group=season,
   ylab("mean monthly revenue/vessel (May-Sep)") +
   xlab("") + 
   scale_x_discrete(limits = rev) +
