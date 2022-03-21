@@ -428,7 +428,8 @@ x.fish_WA2 <- x.fish_WA %>%
   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
   summarise( 
     number_obs = n(), #no. of grid cells in that season_month that had traps in them 
-    mean_M2_trapdens = mean(M2_trapdens), 
+    mean_M2_trapdens = mean(M2_trapdens),
+    mean_M2_tottraps = mean(M2_tottraps)
   )
 
 # make column for year month for fishing data to allow matching with whale data
@@ -443,6 +444,7 @@ x.fish_2014_2020_crab_season_v2 <- x.fish_WA_crab_season %>%
   #summarise across all grid cells in given season_month
   summarise(
     Trap_dens_sum = sum(mean_M2_trapdens, na.rm=TRUE),
+    tottraps_sum = sum(mean_M2_tottraps, na.rm=TRUE),
     Trap_dens_mean = mean(mean_M2_trapdens, na.rm=TRUE),
     Trap_dens_median = median(mean_M2_trapdens, na.rm=TRUE)
   ) %>% 
@@ -470,8 +472,8 @@ ts_trap_dens <- ggplot(
   data = fish_with_all_season_month_combos, 
   aes(
     x = factor(season_month, levels=ordered.ids), 
-    y = Trap_dens_sum,
-    #y = Trap_dens_median,
+    #y = Trap_dens_sum,
+    y = tottraps_sum,
     group = 1
   )
 ) +
@@ -480,7 +482,8 @@ ts_trap_dens <- ggplot(
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2009.5,2021.5)) +
-  ylab("Sum Trap Density\nin grids being used") + 
+  #ylab("Sum Trap Density\nin grids being used") + 
+  ylab("Lines in the water") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -507,7 +510,7 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/f
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
 
 
-png(paste0(path_figures, "/ts_sum_traps_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_sum_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(ts_trap_dens,
           ts_hump_dens,
           ts_blue_dens,
