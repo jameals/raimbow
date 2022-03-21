@@ -11,6 +11,7 @@ library(rgeos)
 library(viridis)
 library(ggpubr)
 library(scales)
+library(magrittr)
 
 path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
@@ -500,18 +501,231 @@ ts_trap_dens <- ggplot(
 ts_trap_dens
 
 
+
+#--------------
+#do fishery plot as number of active unique licenses multiplied by their pot limit
+
+traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
+
+#traps_g <- traps_g_for_all_logs_full_seasons
+traps_g <- traps_g_license_logs_2013_2020
+
+# For now look at 2013-2019, traps_g_license_logs_2013_2019.rds is already filtered for these years
+#traps_g <- traps_g %>% 
+# filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
+
+# modifying the summtraps code from script 2 that adjusts for double counting
+testdf <- traps_g %>% 
+  #st_set_geometry(NULL) %>%
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count the total number of traps in each grid cell in each set
+  group_by(season_month_interval, Vessel, License,GRID5KM_ID,grd_x,grd_y,SetID2,AREA) %>%  
+  summarise(
+    ntraps_vessel_set_cell=n()
+  ) %>% 
+  # average the number of pots per vessel per grid cell
+  ungroup() %>% 
+  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
+  summarise(
+    ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
+  # finally, sum the total traps per Vessel, across all grid cells in the 2-week period in question
+  ungroup() %>% 
+  group_by(season_month_interval, Vessel, License) %>% 
+  summarise(
+    M1_tottraps=sum(ntraps_vessel_cell))
+glimpse(testdf)
+
+
+#bring in 'raw' logs 
+logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#want to keep effort in WA waters by OR vessels
+#logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
+
+#sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
+logsdf <- logs %>% 
+  mutate(
+    month_name = month(SetDate, label=TRUE, abbr = FALSE),
+    season_month = paste0(season,"_",month_name),
+    month_interval = paste0(month_name, 
+                            "_", 
+                            ifelse(day(SetDate)<=15,1,2)
+    ),
+    season_month_interval = paste0(season, 
+                                   "_", 
+                                   month_interval)
+  )
+
+#For now look at 2013-2020
+logsdf <- logsdf %>% 
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019', '2019-2020')) 
+
+#Sum the raw/unadjusted PotsFished for vessel by 2-week period
+testdf2  <- logsdf %>% 
+  distinct(SetID, .keep_all= TRUE) %>% #note in raw logs data are repeated - has a row for start and end of stringline
+  group_by(season_month_interval, Vessel) %>%  
+  summarise(
+    sum_PotsFished=sum(PotsFished,na.rm=T) #need to include na.rm=T statement
+  )
+glimpse(testdf2)
+
+
+logsdf <- logsdf %>% 
+  # count the total number of fishtickets landed by vessel in 2-week period
+  group_by(season_month_interval, Vessel) %>%  
+  summarise(
+    count_FishTicket=n_distinct(FishTicket1)) 
+glimpse(logsdf)
+
+
+#join the datasets
+testdf %<>% 
+  left_join(testdf2,by=c("season_month_interval","Vessel")) %>% 
+  left_join(logsdf, by=c("season_month_interval","Vessel")) %>% 
+  separate(season_month_interval, into = c("season", "month_name", "interval"), sep = "_") %>%
+  filter(!is.na(month_name)) %>% 
+  mutate(month_interval = paste0(month_name,"_",interval)) %>%
+  mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2'))) %>% 
+  arrange(Vessel,season, month_interval)
+glimpse(testdf)
+
+
+#Read in and join license & pot limit info
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+
+#join Pot_Limit info. 
+testdf %<>%
+  left_join(WA_pot_limit_info,by=c("License"))
+glimpse(testdf)
+
+# apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
+# apply 2020 summer pot limit reduction (May-Sep)
+## create season_month column
+testdf %<>%
+  mutate(season_month = paste0(season,"_",month_name))
+## make a new column for summer pot limit reduction
+testdf %<>% 
+  mutate(Pot_Limit_SummerReduction = Pot_Limit)
+## split df to pre and post reduction periods
+df1 <- testdf %>%
+  filter(!season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                              '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
+df2 <- testdf %>%
+  filter(season_month %in% c('2018-2019_July', '2018-2019_August', '2018-2019_September',
+                             '2019-2020_May', '2019-2020_June', '2019-2020_July', '2019-2020_August', '2019-2020_September'))
+## adjust pot limit post 1 July 2019
+df2 %<>% 
+  mutate(Pot_Limit_SummerReduction = ifelse(Pot_Limit_SummerReduction==500, 330, 200))
+## join dfs back together  
+testdf <- rbind(df1,df2)
+
+testdf %<>% 
+  select(season, month_name, season_month, interval, month_interval, Vessel, License, M1_tottraps, sum_PotsFished, Pot_Limit_SummerReduction, count_FishTicket) %>% 
+  #Vessels pot limit in a 2-week interval is same as what is assumed to be its fished pot count using M2 method
+  rename(Pot_Limit_or_M2 = Pot_Limit_SummerReduction)
+glimpse(testdf)
+# this summary df showcases the difference between pot counts via M1 or M2, an between summing raw pot count from logbooks
+
+
+
+# calculating an estimate for lines in water as the sum of pot limits for those vessels that were active in a given time period 
+
+check_lines_in_water <- testdf %>% 
+  group_by(season, month_name, Pot_Limit_or_M2) %>% 
+  na.omit() %>% 
+  summarise(numberoflicenses=n_distinct(License), na.rm=TRUE) %>% 
+  mutate(check_PotsFished=sum(numberoflicenses * Pot_Limit_or_M2)) %>% 
+  select(season, month_name, check_PotsFished) %>% 
+  distinct() %>% 
+  collect()
+
+#want to make sure that fishing data has all year - month combos so that the plot matches with whale plots
+season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+month <- as.factor(c("12","01","02","03","04", "05", "06", "07", "08", "09", "10", "11"))
+season_month_combos <- crossing(season, month)
+
+check_lines_in_water <-  check_lines_in_water %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) %>% #change month to two digit number
+  mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
+  left_join(season_month_combos, check_lines_in_water , by=c("season", "month")) %>% 
+  arrange(season, month) %>% 
+  mutate(season_month = factor(paste0(season,"_",month))) %>% 
+  filter(season_month != '2019-2020_11') %>% 
+  filter(season_month != '2019-2020_10') %>% 
+  mutate(check_PotsFished = ifelse(is.na(check_PotsFished), 0, check_PotsFished))
+
+left_join(season_month_combos, check_lines_in_water , by=c("season", "month"))
+
+#use ordered.ids as defiend from other data, as the logs won't have some months
+#ordered.ids <- factor(check_lines_in_water$season_month, levels=check_lines_in_water$season_month)
+
+ts_lines_in_water <- ggplot(
+  data = check_lines_in_water, 
+  aes(
+    x = factor(season_month, levels=ordered.ids), 
+    #y = Trap_dens_sum,
+    y = check_PotsFished,
+    group = 1
+  )
+) +
+  geom_point(size=4) +
+  geom_line() +
+  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
+  #scale_x_continuous(breaks = seq(2010, 2021, 1),
+  #                   limits = c(2009.5,2021.5)) +
+  #ylab("Sum Trap Density\nin grids being used") + 
+  ylab("Lines in water") + 
+  xlab("Season_month") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+ts_lines_in_water
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #--------
 #join and save all plots into one figure
-#ts_trap_dens
+#ts_trap_dens or ts_lines_in_water
 #ts_hump_dens
 #ts_blue_dens
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
 
+# ts_sum_lines_in_water_v2 calcualted as number of unique license multiplied by their pot limit
 
-png(paste0(path_figures, "/ts_sum_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(ts_trap_dens,
+png(paste0(path_figures, "/ts_sum_lines_in_water_v2_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(#ts_trap_dens,
+          ts_lines_in_water,
           ts_hump_dens,
           ts_blue_dens,
           ncol=1,
