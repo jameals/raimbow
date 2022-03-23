@@ -239,17 +239,18 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 1) +
-  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+  scale_fill_manual(name = "Quantile", values = c("#edf8e9", "#bae4b3", "#74c476", "#31a354"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
-  scale_y_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   xlab("Humpback whale density (Jul-Sep)") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        legend.position = "none",
+        #legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -268,17 +269,17 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 1) +
-  scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
+  scale_fill_manual(name = "Quantile", values = c("#edf8e9", "#bae4b3", "#74c476", "#31a354"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
-  scale_y_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   xlab("Humpback whale density (May-Sep)") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        legend.position = c(.8, .4),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -287,6 +288,20 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
         axis.title.y=element_blank(),
   )
 hw_density_ridges_quantiles_MaySep
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+
+png(paste0(path_figures, "/hump_whale_occurrence_in_study_area_pre_vs_post_regs.png"), width = 35, height = 15, units = "in", res = 400)
+ggarrange(hw_density_ridges_quantiles_JulSep,
+          hw_density_ridges_quantiles_MaySep,
+          ncol=2,
+          nrow=1,
+          #legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, fill = stat(quantile))) +
@@ -298,15 +313,16 @@ bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
                       scale = 1) +
   scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
-  #scale_x_continuous(limits = c(0.3, 0.9), expand = c(0, 0))+
-  scale_y_discrete(expand = c(0, 0)) +
-  xlab("Blue whale occurrence (Jul-Sep)") +
+  #scale_x_continuous(limits = c(0.01, 0.86), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  xlab("Blue whale probability of occurrence (Jul-Sep)") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        legend.position = "none",
+        #legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -326,15 +342,15 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
                       scale = 1) +
   scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
-  #scale_x_continuous(limits = c(0.3, 0.9), expand = c(0, 0))+
-  scale_y_discrete(expand = c(0, 0)) +
-  xlab("Blue whale occurrence (May-Sep)") +
+  #scale_x_continuous(limits = c(0.01, 0.86), expand = c(0, 0))+
+  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  xlab("Blue whale probability of occurrence (May-Sep)") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+        legend.position = c(.8, .4),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -344,6 +360,20 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   )
 bw_density_ridges_quantiles_MaySep
 
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+
+png(paste0(path_figures, "/blue_whale_occurrence_in_study_area_pre_vs_post_regs.png"), width = 35, height = 15, units = "in", res = 400)
+ggarrange(bw_density_ridges_quantiles_JulSep,
+          bw_density_ridges_quantiles_MaySep,
+          ncol=2,
+          nrow=1,
+          #legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
@@ -355,48 +385,48 @@ bw_density_ridges_quantiles_MaySep
 
 
 
-#need to separate df fro K-S test
-JulSep_pre_reg <- study_area_hw_pre_reg_vs_2018_2019 %>% 
-  filter(pre_post_reg =='pre-reg')
-JulSep_2018_2019 <- study_area_hw_pre_reg_vs_2018_2019 %>% 
-  filter(pre_post_reg =='2018-2019')
 
-kstest_JulSep_HW <- ks.test(JulSep_pre_reg$Humpback_dens_mean, JulSep_2018_2019$Humpback_dens_mean)
-kstest_JulSep_BW <- ks.test(JulSep_pre_reg$Blue_occurrence_mean, JulSep_2018_2019$Blue_occurrence_mean)
-#even BW is significant
-
-wilcox_test_JulSep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
-wilcox_test_JulSep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
-#even BW is significant
-
+##Jul-Sep
 library(WRS2)
 qcomhd_JulSep_HW <- qcomhd(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 qcomhd_JulSep_BW <- qcomhd(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 #even BW is significant, 2019 higher in other quantiles except for 75-100%
 #which fits as top 15 BW values are pre-reg
+# 
+# #need to separate df fro K-S test
+# JulSep_pre_reg <- study_area_hw_pre_reg_vs_2018_2019 %>% 
+#   filter(pre_post_reg =='pre-reg')
+# JulSep_2018_2019 <- study_area_hw_pre_reg_vs_2018_2019 %>% 
+#   filter(pre_post_reg =='2018-2019')
+# 
+# kstest_JulSep_HW <- ks.test(JulSep_pre_reg$Humpback_dens_mean, JulSep_2018_2019$Humpback_dens_mean)
+# kstest_JulSep_BW <- ks.test(JulSep_pre_reg$Blue_occurrence_mean, JulSep_2018_2019$Blue_occurrence_mean)
+# #even BW is significant
+# 
+# wilcox_test_JulSep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
+# wilcox_test_JulSep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2018_2019, exact = FALSE)
+# #even BW is significant
 
 
 ##May-Sep
-#need to separate df fro K-S test
-MaySep_pre_reg <- study_area_hw_pre_reg_vs_2019_2020 %>% 
-  filter(pre_post_reg =='pre-reg')
-MaySep_2019_2020 <- study_area_hw_pre_reg_vs_2019_2020 %>% 
-  filter(pre_post_reg =='2019-2020')
-
-kstest_MaySep_HW <- ks.test(MaySep_pre_reg$Humpback_dens_mean, MaySep_2019_2020$Humpback_dens_mean)
-kstest_MaySep_BW <- ks.test(MaySep_pre_reg$Blue_occurrence_mean, MaySep_2019_2020$Blue_occurrence_mean)
-#both are significant
-
-wilcox_test_MaySep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
-wilcox_test_MaySep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
-#both are significant
-
 library(WRS2) #- This test provides a more detailed understanding of where and how distributions differ. 
 qcomhd_MaySep_HW <- qcomhd(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 qcomhd_MaySep_BW <- qcomhd(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, q = c(0.25, 0.5, 0.75, 1), nboot = 500)
 #significantly diff, overall higher in 2020, tho top values in pre-reg
 
-
+# #need to separate df fro K-S test
+# MaySep_pre_reg <- study_area_hw_pre_reg_vs_2019_2020 %>% 
+#   filter(pre_post_reg =='pre-reg')
+# MaySep_2019_2020 <- study_area_hw_pre_reg_vs_2019_2020 %>% 
+#   filter(pre_post_reg =='2019-2020')
+# 
+# kstest_MaySep_HW <- ks.test(MaySep_pre_reg$Humpback_dens_mean, MaySep_2019_2020$Humpback_dens_mean)
+# kstest_MaySep_BW <- ks.test(MaySep_pre_reg$Blue_occurrence_mean, MaySep_2019_2020$Blue_occurrence_mean)
+# #both are significant
+# 
+# wilcox_test_MaySep_HW <- wilcox.test(Humpback_dens_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
+# wilcox_test_MaySep_BW <- wilcox.test(Blue_occurrence_mean ~ pre_post_reg, data = study_area_hw_pre_reg_vs_2019_2020, exact = FALSE)
+# #both are significant
 
 
 
