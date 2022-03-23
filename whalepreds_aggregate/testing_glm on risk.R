@@ -248,17 +248,19 @@ risk_whales_WA_JulSep_summed <- risk_whales_WA_MaySep %>%
 hist(risk_whales_WA_JulSep_summed$sum_hump_risk)
 hist(risk_whales_WA_JulSep_summed$sum_blue_risk)
 
-risk_whales_WA_JulSep_summed <- risk_whales_WA_JulSep_summed %>% 
-  mutate(month_num = as.integer(month))
+#risk_whales_WA_JulSep_summed <- risk_whales_WA_JulSep_summed %>% 
+#  mutate(month_num = as.integer(month))
 
 library(ggcorrplot)
 model.matrix(~0+., data=risk_whales_WA_JulSep_summed) %>% 
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
-#in the Jul-Sep glm log link doesn't improve things from basic gaussian
+#retain month in glm even tho it is not significant in Jul-Sep comparison
+#in the Jul-Sep glm log link, or other family types, doesn't improve things from basic gaussian
+#if use Gamma, results don't make sense/match the plots
 mod1_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
-               family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
+               family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_hump)
 hist(mod1_hump$residuals)
 
@@ -273,36 +275,36 @@ plot(mod1_hump)
 
 
 
-#just pre-post-reg as the only variable
-mod1_hump <- glm(sum_hump_risk ~ pre_post_reg,
-                 family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
-summary(mod1_hump)
-hist(mod1_hump$residuals)
-
-scatter.smooth(fitted(mod1_hump), residuals(mod1_hump, type = "pearson"),
-               #mgp = c(2.2, 1, 0),
-               ylab = "Residuals (Pearson)",
-               xlab = "Predicted")
-title("Residual plot", line = 0.7)
-abline(h = 0, col="blue")
-
-plot(mod1_hump)
+# #just pre-post-reg as the only variable
+# mod1_hump <- glm(sum_hump_risk ~ pre_post_reg,
+#                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "log")
+# summary(mod1_hump)
+# hist(mod1_hump$residuals)
+# 
+# scatter.smooth(fitted(mod1_hump), residuals(mod1_hump, type = "pearson"),
+#                #mgp = c(2.2, 1, 0),
+#                ylab = "Residuals (Pearson)",
+#                xlab = "Predicted")
+# title("Residual plot", line = 0.7)
+# abline(h = 0, col="blue")
+# 
+# plot(mod1_hump)
 
 library(car)
 qqPlot(mod1_hump$residuals)
 
-#Kruskal-Wallis is testing for differences in the medians
-kruskal.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
-#testing the equality of means/medians in two independent samples
-#the Mann-Whitney test is commonly regarded as a test of population medians
-wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
-
-risk_whales_WA_JulSep_summed %>% 
-  group_by(pre_post_reg) %>%  
-  summarise(median_hump_risk = median(sum_hump_risk),
-            mean_hump_risk = mean(sum_hump_risk),
-            median_blue_risk = median(sum_blue_risk),
-            mean_blue_risk = mean(sum_blue_risk))
+# #Kruskal-Wallis is testing for differences in the medians
+# kruskal.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
+# #testing the equality of means/medians in two independent samples
+# #the Mann-Whitney test is commonly regarded as a test of population medians
+# wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
+# 
+# risk_whales_WA_JulSep_summed %>% 
+#   group_by(pre_post_reg) %>%  
+#   summarise(median_hump_risk = median(sum_hump_risk),
+#             mean_hump_risk = mean(sum_hump_risk),
+#             median_blue_risk = median(sum_blue_risk),
+#             mean_blue_risk = mean(sum_blue_risk))
 #when 2020 is included
 #pre_post_reg median_hump_risk  median_blue_risk  mean_hump_risk  mean_blue_risk
 #pre-reg        16.137996         260.6932          17.044269       253.3776
@@ -320,10 +322,12 @@ risk_whales_WA_JulSep_summed %>%
 
 mod1_blue <- glm(sum_blue_risk ~ month + pre_post_reg,
                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
-mod1_blue <- glm(sum_blue_risk ~ pre_post_reg,
-                 family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
+# mod1_blue <- glm(sum_blue_risk ~ pre_post_reg,
+#                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
 summary(mod1_blue)
 hist(mod1_blue$residuals)
+
+plot(mod1_blue)
 
 scatter.smooth(fitted(mod1_hump), residuals(mod1_blue, type = "pearson"),
                #mgp = c(2.2, 1, 0),
@@ -332,10 +336,10 @@ scatter.smooth(fitted(mod1_hump), residuals(mod1_blue, type = "pearson"),
 title("Residual plot", line = 0.7)
 abline(h = 0, col="blue")
 
-plot(mod1_blue)
 qqPlot(mod1_blue$residuals)
 
-wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
+
+#wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_JulSep_summed)
 
 
 
@@ -348,8 +352,8 @@ risk_whales_WA_MaySep_summed <- risk_whales_WA_MaySep %>%
   summarise(sum_hump_risk = sum(hump_risk, na.rm = T),
             sum_blue_risk = sum(blue_risk, na.rm = T))
 
-risk_whales_WA_MaySep_summed <- risk_whales_WA_MaySep_summed %>% 
-  mutate(month_num = as.integer(month))
+#risk_whales_WA_MaySep_summed <- risk_whales_WA_MaySep_summed %>% 
+#  mutate(month_num = as.integer(month))
 
 hist(risk_whales_WA_MaySep_summed$sum_hump_risk)
 hist(risk_whales_WA_MaySep_summed$sum_blue_risk)
@@ -358,13 +362,13 @@ model.matrix(~0+., data=risk_whales_WA_MaySep_summed) %>%
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
-#in the May-Sep glm log link is maybe better than basic gaussian if 2018-19 excluded
-#if 2018-19 included, then gaussian is good
+
 mod2_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod2_hump) #interpreting significant intercept: It means you have enough evidence to say that the intercept isn't 0.
 #We typically don't care if the intercept is significant or not. It's important to have in the model but unless there is a good reason to typically you don't interpret the significance test of the intercept
 hist(mod2_hump$residuals)
+plot(mod2_hump)
 
 scatter.smooth(fitted(mod2_hump), residuals(mod2_hump, type = "pearson"),
                #mgp = c(2.2, 1, 0),
@@ -373,17 +377,16 @@ scatter.smooth(fitted(mod2_hump), residuals(mod2_hump, type = "pearson"),
 title("Residual plot", line = 0.7)
 abline(h = 0, col="blue")
 
-plot(mod2_hump)
 qqPlot(mod2_hump$residuals)
 
-wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
-
-risk_whales_WA_MaySep_summed %>% 
-  group_by(pre_post_reg) %>%  
-  summarise(median_hump_risk = median(sum_hump_risk), 
-            mean_hump_risk = mean(sum_hump_risk),
-            median_blue_risk = median(sum_blue_risk),
-            mean_blue_risk = mean(sum_blue_risk))
+# wilcox.test(sum_hump_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
+# 
+# risk_whales_WA_MaySep_summed %>% 
+#   group_by(pre_post_reg) %>%  
+#   summarise(median_hump_risk = median(sum_hump_risk), 
+#             mean_hump_risk = mean(sum_hump_risk),
+#             median_blue_risk = median(sum_blue_risk),
+#             mean_blue_risk = mean(sum_blue_risk))
 #	comparing pre-reg to 2020 only
 #pre_post_reg median_hump_risk  median_blue_risk    mean_hump_risk  mean_blue_risk
 #pre-reg        17.811136         180.8941            18.795108         192.7972
@@ -409,11 +412,49 @@ abline(h = 0, col="blue")
 plot(mod2_blue)
 qqPlot(mod2_blue$residuals)
 
-wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
+#wilcox.test(sum_blue_risk ~ pre_post_reg, data = risk_whales_WA_MaySep_summed)
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------------------------------------
 
 #what if we standardise after summing...?
 # Jul-Sep, all seasons, summed data across all grids in each month
