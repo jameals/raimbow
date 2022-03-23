@@ -1239,7 +1239,7 @@ invisible(dev.off())
 
 
 
-
+#when 2-week input file
 percent_change_in_risk_MaySep <- MaySep_plot_subset_2019_2020_box %>% 
   group_by(pre_post_reg) %>% 
   summarise(mean_hw_risk = mean(hump_risk), 
@@ -1265,6 +1265,35 @@ percent_change_in_risk_JulSep
 (3.897254-17.044269)/17.044269*100 #-77.13452
 #BW:
 (222.8370-253.3776)/253.3776*100 #-12.05339
+
+
+
+#when 1-month input file
+percent_change_in_risk_JulSep <- plot_subset_2018_2019_box %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+percent_change_in_risk_JulSep
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            4.00         232.
+#pre-reg             17.9          264.
+#HW:
+(3.998742-17.870604)/17.870604*100 #-77.62391
+#BW:
+(232.3115-263.9242)/263.9242*100 #-11.97795
+
+percent_change_in_risk_MaySep <- MaySep_plot_subset_2019_2020_box %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+percent_change_in_risk_MaySep 
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            9.85         161.
+#pre-reg             20.2          203.
+#HW:
+(9.851811-20.192729)/20.192729*100 #-51.2111
+#BW:
+(161.0971-203.4769)/203.4769*100 #-20.82782
 
 
 
