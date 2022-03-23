@@ -122,6 +122,8 @@ x.fish_WA_MaySep <- x.fish_WA2 %>%
 
 # #if no regs in place
 # path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_NO_REGS.rds"
+# path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step_NO_REGS.rds"
+
 # x.fish_WA_no_regs <- readRDS(path.fish_WA_no_regs)
 # #Grid ID 122919 end up having very high trap densities in few months 
 # #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
@@ -1400,20 +1402,20 @@ test <- rbind(box_2018_2019_with_regs, box_2018_2019_without_regs, box_2019_2020
 
 box_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
   
-  #geom_violin(data = test, aes(x = season, y = hump_risk, fill = regs), lwd=1) +
-  #scale_fill_manual(values = c("white", "gray80"))+
-  #ylab("Summed Humpback Whale Risk") + 
-  
-  geom_violin(data = test, aes(x = season, y = blue_risk, fill = regs), lwd=1) +
+  geom_violin(data = test, aes(x = season, y = hump_risk, fill = regs), lwd=1) +
   scale_fill_manual(values = c("white", "gray80"))+
-  ylab("Summed Blue Whale Risk") + 
+  ylab("Summed Humpback Whale Risk") + 
+  
+  #geom_violin(data = test, aes(x = season, y = blue_risk, fill = regs), lwd=1) +
+  #scale_fill_manual(values = c("white", "gray80"))+
+  #ylab("Summed Blue Whale Risk") + 
   
   xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.7, .9),
+        legend.position = c(.2, .95),
         axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
@@ -1446,10 +1448,17 @@ summary_test <- test %>%
             n_row = n()
             )
 #season             regs        sum_hump_risk   sum_blue_risk
-#2018-2019  with regulations      11.69176        668.5111
-#2018-2019  without regulations   17.66243        1010.3326
-#2019-2020  with regulations      45.75299        749.2442
-#2019-2020  without regulations   69.16616        1132.5630
+#2018-2019  with regulations      11.99622        696.9346
+#2018-2019  without regulations   18.12379        1053.2682
+#2019-2020  with regulations      49.25905        805.4855
+#2019-2020  without regulations   74.46154        1217.4808
+
+
+
+
+
+
+
 
 
 point_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
