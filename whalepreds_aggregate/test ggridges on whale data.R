@@ -272,7 +272,7 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   scale_fill_manual(name = "Quantile", values = c("#edf8e9", "#bae4b3", "#74c476", "#31a354"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
-  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   xlab("Humpback whale density (May-Sep)") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
