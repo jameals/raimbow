@@ -108,6 +108,8 @@ x.whale_crab_season_Jul_Sep_2018_2019 <-  x.whale_crab_season_May_Sep %>%
 
 #don't impose regs to pre-seasons, post seasons have regs
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
 #this is because the grid is split across land, and few points happen to fall in a very tiny area
@@ -245,10 +247,10 @@ box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep %>%
 
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
-  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1) +
-  ylab("Summed Humpback Whale Risk Jul-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
+  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  ylab("Summed Humpback Whale Risk") + 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -280,10 +282,10 @@ box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep %>%
 
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
-  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1) +
-  ylab("Summed Humpback Whale Risk May-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
+  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = hump_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  ylab("Summed Humpback Whale Risk") + 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -323,10 +325,10 @@ box_fishing_actual_whale_2018_2019
 
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_blue_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
-  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1) +
-  ylab("Summed Blue Whale Risk Jul-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
+  geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  ylab("Summed Blue Whale Risk") + 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -347,10 +349,10 @@ box_fishing_actual_whale_2019_2020
 
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_blue_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
-  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1) +
-  ylab("Summed Blue Whale Risk May-Sep") + 
-  scale_x_discrete(limits = rev) +
-  xlab("Season") +
+  geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  ylab("Summed Blue Whale Risk") + 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -425,6 +427,49 @@ hist(mod2_blue$residuals)
 plot(mod2_blue)
 qqPlot(mod2_blue$residuals)
 wilcox.test(blue_risk_sum ~ pre_post_reg, data = box_fishing_actual_whale_2019_2020)
+
+
+
+
+
+#when using 1-month input file
+#box_fishing_actual_whale_2018_2019 
+#box_fishing_actual_whale_2019_2020
+percent_change_in_risk_JulSep <- box_fishing_actual_whale_2018_2019 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk_sum), 
+            mean_bw_risk = mean(blue_risk_sum))
+percent_change_in_risk_JulSep
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            4.00         232.
+#pre-reg              5.22         293.
+#HW:
+(3.998742-5.222402)/5.222402*100 #-23.43098
+#BW:
+(232.3115-293.0522)/293.0522*100 #-20.72692
+
+percent_change_in_risk_MaySep <- box_fishing_actual_whale_2019_2020 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk_sum), 
+            mean_bw_risk = mean(blue_risk_sum))
+percent_change_in_risk_MaySep 
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            9.85         161.
+#pre-reg             17.9          245.
+#HW:
+(9.851811-17.865920)/17.865920*100 #-44.85696
+#BW:
+(161.0971-245.1621)/245.1621*100 #-34.28956
+
+
+
+
+
+
+
+
+
+
 
 
 
