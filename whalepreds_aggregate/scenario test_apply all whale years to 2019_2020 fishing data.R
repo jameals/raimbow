@@ -96,6 +96,8 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 # bring in fishing effort - only using 2018-19 and 2019-20 fishing effort data -hold fishing constant
 
 path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+#path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA_regs <- readRDS(path.fish_WA_regs)
 #Grid ID 122919 end up having very high trap densities in few months 
 #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
@@ -448,6 +450,7 @@ invisible(dev.off())
 
 ## get a % change from pre-reg average to post reg
 
+#when using 2-week input file
 percent_change_in_risk_JulSep <- plot_subset_with_regs_2018_2019 %>% 
   group_by(pre_post_reg) %>% 
   summarise(mean_hw_risk = mean(Humpback_risk_sum), 
@@ -476,7 +479,34 @@ percent_change_in_risk_MaySep
 
 
 
+#when using 1-month input file
+percent_change_in_risk_JulSep <- plot_subset_with_regs_2018_2019 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+            mean_bw_risk = mean(Blue_risk_sum))
+percent_change_in_risk_JulSep
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            4.00         232.
+#pre-reg             13.0          209.
+#HW:
+(3.998742-12.953327)/12.953327*100 #-69.12961
+#BW:
+(232.3115-209.1958)/209.1958*100 #11.04979
+#BW:how much lower is pre-reg to 2019
+(209.1958-232.3115)/232.3115*100 #-9.950304
 
+percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+            mean_bw_risk = mean(Blue_risk_sum))
+percent_change_in_risk_MaySep 
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            9.85         161.
+#pre-reg             10.9          131.
+#HW:
+(9.851811-10.922936)/10.922936*100 #-9.8062
+#BW:
+(161.0971-130.8961)/130.8961*100 #23.0725
 
 
 
