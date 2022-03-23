@@ -273,17 +273,7 @@ map_test
 #with and without regulations
 
 
-plot_subset_with_regs <- risk_whales_WA_MaySep_study_area_with_regs %>% 
-  filter(study_area=='Y') %>% #restrict calculations to study area
-  filter(season != '2018-2019') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  group_by(season, month, pre_post_reg) %>% 
-  summarise(
-    #use summed approach
-    Humpback_risk_sum = sum(hump_risk, na.rm=TRUE),
-    Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
 
 plot_subset_with_regs_2018_2019 <- risk_whales_WA_MaySep_study_area_with_regs_2018_2019 %>% 
   filter(month %in% c('07', '08', '09')) %>% 
@@ -299,32 +289,25 @@ plot_subset_with_regs_2018_2019 <- risk_whales_WA_MaySep_study_area_with_regs_20
     Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
 
 
-violin_hump_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1) +
-  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Humpback Whale Risk May-Sep") + 
-  xlab("") +
-  scale_x_discrete(limits = rev) +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-violin_hump_risk_MaySep_constant_fishing
+plot_subset_with_regs_2019_2020 <- risk_whales_WA_MaySep_study_area_with_regs %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(
+    #use summed approach
+    Humpback_risk_sum = sum(hump_risk, na.rm=TRUE),
+    Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
+
 
 violin_hump_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Humpback Whale Risk Jul-Sep") + 
+  ylab("Summed Humpback Whale Risk") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -339,6 +322,28 @@ violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_JulSep_constant_fishing
 
+violin_hump_risk_MaySep_constant_fishing <- ggplot() +
+  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  ylab("Summed Humpback Whale Risk") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+violin_hump_risk_MaySep_constant_fishing
+
+
+
 
 
 #Jul-Sep
@@ -352,40 +357,21 @@ wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_
 
 #May-Sep
 mod1_hump <- glm(Humpback_risk_sum ~ month + pre_post_reg,
-                 family=gaussian, data=plot_subset_with_regs, na.action = na.omit) 
+                 family=gaussian, data=plot_subset_with_regs_2019_2020, na.action = na.omit) 
 summary(mod1_hump)
 plot(mod1_hump)
 qqPlot(mod1_hump$residuals)
-wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs)
+wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2019_2020)
 
 
 
-violin_blue_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1) +
-  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Blue Whale Risk May-Sep") + 
-  xlab("") +
-  scale_x_discrete(limits = rev) +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-violin_blue_risk_MaySep_constant_fishing
 
 violin_blue_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Blue Whale Risk Jul-Sep") + 
+  ylab("Summed Blue Whale Risk") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -401,6 +387,29 @@ violin_blue_risk_JulSep_constant_fishing <- ggplot() +
 violin_blue_risk_JulSep_constant_fishing
 
 
+violin_blue_risk_MaySep_constant_fishing <- ggplot() +
+  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
+  ylab("Summed Blue Whale Risk") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+violin_blue_risk_MaySep_constant_fishing
+
+
+
+
 #Jul-Sep
 mod1_blue_JulSep <- glm(Blue_risk_sum ~ month + pre_post_reg,
                         family=gaussian, data=plot_subset_with_regs_2018_2019, na.action = na.omit) 
@@ -412,11 +421,11 @@ wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_2019
 
 #May-Sep
 mod1_blue_MaySep <- glm(Blue_risk_sum ~ month + pre_post_reg,
-                 family=gaussian, data=plot_subset_with_regs, na.action = na.omit) 
+                 family=gaussian, data=plot_subset_with_regs_2019_2020, na.action = na.omit) 
 summary(mod1_blue_MaySep)
 plot(mod1_blue_MaySep)
 qqPlot(mod1_blue_MaySep$residuals)
-wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs)
+wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2019_2020)
 
 
 
@@ -438,7 +447,37 @@ invisible(dev.off())
 
 
 ## get a % change from pre-reg average to post reg
-## run GLM?
+
+percent_change_in_risk_JulSep <- plot_subset_with_regs_2018_2019 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+            mean_bw_risk = mean(Blue_risk_sum))
+percent_change_in_risk_JulSep
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            3.90         223.
+#pre-reg             12.6          201.
+#HW:
+(3.897254-12.565592)/12.565592*100 #-68.98472
+#BW:how much lower is pre-reg to 2019
+(200.6583-222.8370)/222.8370*100 #-9.95288
+
+percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+            mean_bw_risk = mean(Blue_risk_sum))
+percent_change_in_risk_MaySep 
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            9.15         150.
+#pre-reg             10.2          123.
+#HW:
+(9.150597-10.199857)/10.199857*100 #-10.28701
+#BW:
+(149.8488-123.2962)/123.2962*100 #21.53562
+
+
+
+
+
 
 
 
