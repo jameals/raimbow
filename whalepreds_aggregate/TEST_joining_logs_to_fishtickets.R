@@ -128,71 +128,37 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 
 
 
-
+#-----------------------------------------------------------------------------------------------
 #plotting
 
-#columns of interest to summarise LANDED_WEIGHT_LBS and EXVESSEL_REVENUE or AFI_EXVESSEL_REVENUE??
 
 # do separate comparisons for Jul-Sep 2019 vs pre-regs, and May-Sep 2020 vs pre-regs
 
+# sum revenue and landings per month (but keep months separate) - as did with risk plots
 
 #Jul-Sep
-# summary_pacfin_data_JulSep <- test_join_uniques %>% 
-#   filter(month_name %in% c('July','August','September')) %>%   
-#   filter(season != '2019-2020') %>% 
-#   filter(LANDED_WEIGHT_LBS < 10000) %>% 
-#   group_by(season) %>% 
-#   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
-#             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
-#             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-#             avg_price_per_pound = mean(PRICE_PER_POUND)
-#   )
-# 
-# 
-# sum_JulSep_rev_ts <- ggplot(summary_pacfin_data_JulSep)+
-#   geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
-#   geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
-#   #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
-#   ylab("Revenue $ (sum Jul-Sep)") +
-#   xlab("Season") + 
-#   #geom_hline(yintercept=1241764, linetype="dashed", 
-#   # color = "red", size=2)+ #average across 5 pre-reg seasons Jul-Sep
-#   #geom_hline(yintercept=673505.2, linetype="dashed", 
-#   # color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# sum_JulSep_rev_ts
+summary_pacfin_data_JulSep <- test_join_uniques %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
+  filter(month_name %in% c('July','August','September')) %>%
+  filter(season != '2019-2020') %>%
+  #filter(LANDED_WEIGHT_LBS < 10000) %>% ##this doesn't make a difference in main conclusions
+  group_by(season, month_name) %>%
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+            avg_price_per_pound = mean(PRICE_PER_POUND)
+  ) %>% 
+  mutate(
+    pre_post_reg = ifelse(season == '2018-2019', '2018-2019', 'pre-reg'))
+
+
 
 ##### as a boxplot
-summary_pacfin_data_JulSep_pre_reg <- summary_pacfin_data_JulSep %>% 
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
-  filter(season != '2018-2019') %>% 
-  mutate(pre_post_reg = "pre-reg")
-
-summary_pacfin_data_JulSep_2019 <- summary_pacfin_data_JulSep %>% 
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
-  filter(season == '2018-2019') %>% 
-  mutate(pre_post_reg = "2018-2019")
-
+##REVENUE
 sum_JulSep_rev_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
-  
-  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_revenue/100000),
-             color = 'red', size=5) +
- 
-  ylab("Revenue ($ x10^5) (sum Jul-Sep)") +
+  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
+  ylab("Revenue ($ x10^5) (Jul-Sep)") +
   #xlab("Season") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -208,46 +174,36 @@ sum_JulSep_rev_box <- ggplot() +
   )
 sum_JulSep_rev_box
 
-pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep_pre_reg %>% 
-  summarise(mean_revenue = mean(sum_revenue))
-pre_reg_mean_revenue_JulSep_exc2014 <- summary_pacfin_data_JulSep_pre_reg %>% 
-  filter(season != '2013-2014') %>% 
-  summarise(mean_revenue = mean(sum_revenue))
+
+##GLM##
+hist(summary_pacfin_data_JulSep$sum_revenue)
+
+mod1_rev_JulSep <- glm(sum_revenue ~ pre_post_reg + month_name,
+                 family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_rev_JulSep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_rev_JulSep$residuals)
+
+plot(mod1_rev_JulSep)
+
+
+pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_revenue = mean(sum_revenue),
+            median_revenue = median(sum_revenue))
+
 #% change from pre-reg mean to 2019
-(888848.8-pre_reg_mean_revenue_JulSep)/pre_reg_mean_revenue_JulSep*100
-#-25.35 --> but pre-reg mean high due to 2014
-(888848.8-pre_reg_mean_revenue_JulSep_exc2014)/pre_reg_mean_revenue_JulSep_exc2014*100
-# 31.97
-
-# sum_JulSep_landings_ts <- ggplot(summary_pacfin_data_JulSep, aes(x=season, y=sum_weight_lbs, group=1))+
-#   geom_line(size=1, lineend = "round") + 
-#   geom_point(size=2.5) + 
-#   ylab("Landings lbs (sum Jul-Sep)") +
-#   xlab("Season") + 
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# sum_JulSep_landings_ts
+(296282.9-413921.2)/413921.2*100
+#-28.42 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(373038.0-266560.6)/266560.6*100 ##39.94491
 
 
+##LANDINGS
 sum_JulSep_lbs_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_JulSep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
-  
-  geom_point(data = summary_pacfin_data_JulSep_2019, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
-             color = 'red', size=5) +
-  
-  ylab("Landing (lbs x 10^5) (sum Jul-Sep)") +
+  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
+  ylab("Landings (lbs x 10^5) (Jul-Sep)") +
   #xlab("Season") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -263,85 +219,53 @@ sum_JulSep_lbs_box <- ggplot() +
   )
 sum_JulSep_lbs_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-png(paste0(path_figures, "/ts_sum_revenue_landings_JulSep_2019_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(sum_JulSep_rev_ts,
-          sum_JulSep_landings_ts,
-          ncol=1,
-          nrow=2,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+##GLM##
+hist(summary_pacfin_data_JulSep$sum_weight_lbs)
+
+mod1_lbs_JulSep <- glm(sum_weight_lbs ~ pre_post_reg + month_name,
+                       family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_lbs_JulSep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_lbs_JulSep$residuals)
+
+plot(mod1_lbs_JulSep)
 
 
+pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_landings = mean(sum_weight_lbs),
+            median_landings = median(sum_weight_lbs))
+
+#% change from pre-reg mean to 2019
+(64753.67-93902.73)/93902.73*100
+#-31.04 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(80293-60698)/60698*100 ##32.28278
 
 
 
+####################
 #May-Sep
-# summary_pacfin_data_MaySep <- test_join_uniques %>% 
-#   filter(season != '2018-2019') %>% 
-#   filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
-#   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% #doesn't make a difference
-#   filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
-#   filter(EXVESSEL_REVENUE > 0) %>% 
-#   group_by(season) %>% 
-#   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
-#             sum_AFI_exvessel_revenue = sum(AFI_EXVESSEL_REVENUE, na.rm=T),
-#             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-#             avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
-#   )
-# 
-# 
-# sum_MaySep_rev_ts <- ggplot(summary_pacfin_data_MaySep)+
-#   geom_line(aes(x=season, y=sum_revenue, group=1),size=1, lineend = "round") + 
-#   geom_point(aes(x=season, y=sum_revenue, group=1),size=2.5) + 
-#   #geom_line(aes(x=season, y=avg_price_per_pound, group=1),size=1, lineend = "round", colour='pink') + 
-#   ylab("Revenue $ (sum May-Sep)") +
-#   xlab("Season") + 
-#   #geom_hline(yintercept=1988695, linetype="dashed", 
-#             # color = "red", size=2)+ #average across 5 pre-reg seasons
-#   #geom_hline(yintercept=1451688, linetype="dashed", 
-#              #color = "blue", size=2)+ # average across 4 pre-reg seasons (excluding 2014-2014)
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# sum_MaySep_rev_ts
-#28% drop in revenue in 2020 from 2018, drop in area size was 33% from 2018, also almost 7% drop in average $/lbs (see below)
+summary_pacfin_data_MaySep <- test_join_uniques %>%
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
+  filter(season != '2018-2019') %>%
+  #filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
+  #filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
+  group_by(season, month_name) %>%
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
+            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
+  ) %>% 
+  mutate(
+    pre_post_reg = ifelse(season == '2019-2020', '2019-2020', 'pre-reg'))
 
 
-##### as a boxplot
-summary_pacfin_data_MaySep_pre_reg <- summary_pacfin_data_MaySep %>% 
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
-  filter(season != '2019-2020') %>% 
-  mutate(pre_post_reg = "pre-reg")
-
-summary_pacfin_data_MaySep_2020 <- summary_pacfin_data_MaySep %>% 
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
-  filter(season == '2019-2020') %>% 
-  mutate(pre_post_reg = "2019-2020")
-
+##REVENUE
 sum_MaySep_rev_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
-  
-  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_revenue/100000),
-             color = 'red', size=5) +
-  
-  ylab("Revenue ($ x10^5)  (sum May-Sep)") +
+  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
+  ylab("Revenue ($ x10^5) (May-Sep)") +
   #xlab("Season") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -358,37 +282,37 @@ sum_MaySep_rev_box <- ggplot() +
 sum_MaySep_rev_box
 
 
+##GLM##
+hist(summary_pacfin_data_MaySep$sum_revenue)
 
-# sum_MaySep_landings_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=sum_weight_lbs, group=1))+
-#   geom_line(size=1, lineend = "round") + 
-#   geom_point(size=2.5) + 
-#   ylab("Landings lbs (sum May-Sep)") +
-#   xlab("Season") + 
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# sum_MaySep_landings_ts
-# #18% drop in landed pounds in 2020 from 2018
+mod1_rev_MaySep <- glm(sum_revenue ~ pre_post_reg + month_name,
+                       family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_rev_MaySep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_rev_MaySep$residuals)
+
+plot(mod1_rev_MaySep)
 
 
+pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_revenue = mean(sum_revenue),
+            median_revenue = median(sum_revenue))
+
+#% change from pre-reg mean to 2019
+(346289.7-397739.1)/397739.1*100
+#-12.94 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(303595.9-257379.8)/257379.8*100 #17.95638
+
+
+
+
+##LANDINGS
 sum_MaySep_lbs_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_MaySep_pre_reg, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
-  
-  geom_point(data = summary_pacfin_data_MaySep_2020, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
-             color = 'red', size=5) +
-  
-  ylab("Landing (lbs x 10^5) (sum May-Sep)") +
+  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
+  ylab("Landings (lbs x 10^5) (May-Sep)") +
   #xlab("Season") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -404,84 +328,32 @@ sum_MaySep_lbs_box <- ggplot() +
   )
 sum_MaySep_lbs_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 
-png(paste0(path_figures, "/ts_sum_revenue_landings_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(sum_MaySep_rev_ts,
-          sum_MaySep_landings_ts,
-          ncol=1,
-          nrow=2,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+##GLM##
+hist(summary_pacfin_data_MaySep$sum_weight_lbs)
+
+mod1_lbs_MaySep <- glm(sum_weight_lbs ~ pre_post_reg + month_name,
+                       family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_lbs_MaySep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_lbs_MaySep$residuals)
+
+plot(mod1_lbs_MaySep)
 
 
+pre_reg_mean_landings_MaySep <- summary_pacfin_data_MaySep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_landings = mean(sum_weight_lbs),
+            median_landings = median(sum_weight_lbs))
+
+#% change from pre-reg mean to 2019
+(69525.20-83658.68)/83658.68*100
+#-16.89 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(77146-55860)/55860*100 ##38.10598
 
 
+#########################################
 
-
-# MaySep_average_price_ts <- ggplot(summary_pacfin_data_MaySep, aes(x=season, y=avg_price_per_pound, group=1))+
-#   geom_line(size=1, lineend = "round") + 
-#   geom_point(size=2.5) + 
-#   ylab("Average $/lbs (May-Sep)") +
-#   xlab("Season") + 
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# MaySep_average_price_ts
-#-6.9% drop in average $/lbs from 2018 to 2020
-
-
-# average_price_ts_v2 <- ggplot() +
-#   geom_line(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round") +
-#   geom_point(data = summary_pacfin_data_MaySep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5) +
-#   
-#   geom_line(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=1, lineend = "round", color='red') +
-#   geom_point(data = summary_pacfin_data_JulSep, aes(x = season, y = avg_price_per_pound, group=1), size=2.5, color='red') +
-#   
-#   ylab("Average $/lbs") +
-#   xlab("Season") +
-#   ggtitle("black = May-Sep, red = Jul-Sep")+
-#   theme_bw()+
-#   theme(legend.title = element_blank(),
-#         #title = element_text(size = 26),
-#         legend.text = element_text(size = 20),
-#         legend.position = c(.15, .85),
-#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-#         axis.text.y = element_text(size = 20),
-#         axis.title = element_text(size = 20),
-#         strip.text = element_text(size=20),
-#         strip.background = element_blank(),
-#         strip.placement = "left"
-#   )
-# average_price_ts_v2
-
-
-
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
-
-png(paste0(path_figures, "/ts_avg_price_per_pound_MaySep_2020_vs_pre_reg.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(MaySep_average_price_ts,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
 
 
 ################
@@ -493,67 +365,69 @@ test_join_uniques_price_per_pound <- test_join_uniques %>%
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
-avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
-  filter(pre_post_reg != 'pre-reg') %>% 
-  group_by(season, month_name) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+# avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
+#   filter(pre_post_reg != 'pre-reg') %>% 
+#   group_by(season, month_name) %>% 
+#   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+# 
+# avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
+#   filter(pre_post_reg == 'pre-reg') %>% 
+#   group_by(season, month_name, pre_post_reg) %>% 
+#   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
 
-avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
-  filter(pre_post_reg == 'pre-reg') %>% 
-  group_by(season, month_name, pre_post_reg) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
-
-ppp_in_MaySep <- ggplot()+
-  #geom_violin(data = test_join_uniques_price_per_pound %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
-  geom_violin(data = avg_ppp_pre_reg, aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
-  scale_fill_manual(values=c("white")) +
-
-  geom_point(data = avg_ppp_post_reg, aes(x= month_name, y= PRICE_PER_POUND, color=season), size=5) + 
-  scale_color_manual(values=c("black", "gray80")) +
-
-  #scale_colour_brewer(palette = "PRGn") +
-  ylab("Price per pound") +
-  xlab("") + 
-  #guides(color = guide_legend(override.aes = list(size = 2))) +
-  theme_bw()+
-  theme(#panel.background = element_rect(fill = 'gray92'),
-    legend.title = element_blank(),
-    #title = element_text(size = 32),
-    legend.text = element_text(size=20),
-    axis.text.x = element_text(hjust = 0.5,size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    #legend.position = c(0.9, 0.8) +
-    legend.position = c(.86, .8)
-  )
-ppp_in_MaySep
+# ppp_in_MaySep <- ggplot()+
+#   #geom_violin(data = test_join_uniques_price_per_pound %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+#   geom_violin(data = avg_ppp_pre_reg, aes(x= month_name, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+#   scale_fill_manual(values=c("white")) +
+# 
+#   geom_point(data = avg_ppp_post_reg, aes(x= month_name, y= PRICE_PER_POUND, color=season), size=5) + 
+#   scale_color_manual(values=c("black", "gray80")) +
+# 
+#   #scale_colour_brewer(palette = "PRGn") +
+#   ylab("Price per pound") +
+#   xlab("") + 
+#   #guides(color = guide_legend(override.aes = list(size = 2))) +
+#   theme_bw()+
+#   theme(#panel.background = element_rect(fill = 'gray92'),
+#     legend.title = element_blank(),
+#     #title = element_text(size = 32),
+#     legend.text = element_text(size=20),
+#     axis.text.x = element_text(hjust = 0.5,size = 20),
+#     axis.text.y = element_text(size = 20),
+#     axis.title = element_text(size = 20),
+#     #legend.position = c(0.9, 0.8) +
+#     legend.position = c(.86, .8)
+#   )
+# ppp_in_MaySep
 
 
 ## another way of doing price per pound
 avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
   filter(pre_post_reg != 'pre-reg') %>% 
-  filter(month_name %in% c('July','August','September')) %>% 
+  #filter(month_name %in% c('July','August','September')) %>% 
   group_by(season, pre_post_reg) %>% 
   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
 
 avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
   filter(pre_post_reg == 'pre-reg') %>% 
-  filter(month_name %in% c('July','August','September')) %>% 
+  #filter(month_name %in% c('July','August','September')) %>% 
   group_by(season, pre_post_reg) %>% 
   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
 
-ppp_in_MaySep <- ggplot()+
+ppp_in_JulSep <- ggplot()+
   geom_violin(data = avg_ppp_pre_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
   scale_fill_manual(values=c("white")) +
+  geom_dotplot(data = avg_ppp_pre_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND), binaxis = "y", stackdir = "center") + 
   
   geom_point(data = avg_ppp_post_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, color=season), size=5) + 
   scale_color_manual(values=c("black", "gray80")) +
   
   #scale_colour_brewer(palette = "PRGn") +
-  ylab("Average price per pound (Jul-Sep)") +
+  ylab("Average price per pound (May-Sep)") +
   xlab("") + 
-  #guides(color = guide_legend(override.aes = list(size = 2))) +
-  scale_x_discrete(limits=c("pre-reg","2018-2019"))+ #, "2019-2020"
+  #scale_x_discrete(limits=c("pre-reg","2018-2019"))+ 
+  scale_x_discrete(limits=c("pre-reg","2019-2020"))+ 
+  
   theme_bw()+
   theme(#panel.background = element_rect(fill = 'gray92'),
     legend.title = element_blank(),
@@ -562,226 +436,14 @@ ppp_in_MaySep <- ggplot()+
     axis.text.x = element_text(hjust = 0.5,size = 20),
     axis.text.y = element_text(size = 20),
     axis.title = element_text(size = 20),
-    #legend.position = c(.86, .2)
-    legend.position = "none"
+    legend.position = c(.86, .2)
+    #legend.position = "none"
   )
-ppp_in_MaySep
+ppp_in_JulSep
 
 
 
 #################################################################
-#Why is 2014 so different? is there a specific month driving it?
-
-summary_2014 <- test_join_uniques %>% 
-  #filter(season == '2013-2014') %>% 
-  group_by(season, month_name) %>% 
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T))
-
-summary_2014$month_name <- factor(summary_2014$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
-
-#use this code if filtered to 2013-2014 only, and grouped by month_name only
-ts_2014 <- ggplot(summary_2014)+
-  geom_line(aes(x=month_name, y=sum_revenue, group=1),size=1, lineend = "round") + 
-  geom_point(aes(x=month_name, y=sum_revenue, group=1),size=2.5) + 
-  ylab("Revenue $") +
-  xlab("Month") + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_2014
-
-
-ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= sum_revenue, colour=season,  group=season))+
-  geom_line(size=1.5, lineend = "round") + 
-  scale_colour_brewer(palette = "PRGn") +
-  ylab("Revenue $") +
-  xlab("Month") + 
-  guides(color = guide_legend(override.aes = list(size = 2))) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=20),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom"
-  )
-ts_2014
-
-
-ts_2014 <- ggplot(summary_2014, aes(x= month_name, y= avg_price_per_pound, colour=season,  group=season))+
-  geom_line(size=1.5, lineend = "round") + 
-  scale_colour_brewer(palette = "PRGn") +
-  ylab("Average $/lbs") +
-  xlab("Month") + 
-  guides(color = guide_legend(override.aes = list(size = 2))) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 32),
-        legend.text = element_text(size=20),
-        axis.text.x = element_blank(),#element_text(hjust = 1,size = 12, angle = 90),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        #legend.position = c(0.9, 0.8) +
-        legend.position="bottom"
-  )
-ts_2014
-
-
-
-test_join_uniques_2014 <- test_join_uniques %>% 
-  filter(season == '2013-2014')
-plot(test_join_uniques_2014$LANDED_WEIGHT_LBS)
-plot(test_join_uniques_2014$LANDED_WEIGHT_LBS,test_join_uniques_2014$EXVESSEL_REVENUE)
-
-test_join_uniques_ALMA <- test_join_uniques %>% 
-  filter(Vessel.x == 'ALMA JAYNE')
-plot(test_join_uniques_ALMA$LANDED_WEIGHT_LBS)
-
-
-
-point_landings <- ggplot(test_join_uniques)+
-  geom_jitter(aes(x=1, y=LANDED_WEIGHT_LBS, group=season),size=2.5) + 
-  ylab("landings") +
-  xlab("") + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-point_landings
-
-#RandomOrder <- sample(1:nrow(test_join_uniques), nrow(test_join_uniques))
-ggplot() +
-  geom_point(data=test_join_uniques, aes(x= RandomOrder, y=LANDED_WEIGHT_LBS, color=season), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-
-ggplot() +
-  geom_point(data=test_join_uniques, aes(x= RandomOrder, y=EXVESSEL_REVENUE, color=season), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-
-test_join_uniques_calc_ppp <- test_join_uniques %>% 
-  mutate(calc_ppp = EXVESSEL_REVENUE/LANDED_WEIGHT_LBS)
-plot(test_join_uniques_calc_ppp$PRICE_PER_POUND, test_join_uniques_calc_ppp$calc_ppp)
-abline(a=0, b=1)
-
-
-
-test_join_uniques_v2 <- test_join_uniques 
-test_join_uniques_v2$month_name <- factor(test_join_uniques_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
-ggplot() +
-  geom_jitter(data=test_join_uniques_v2, aes(x= month_name, y=LANDED_WEIGHT_LBS, color=season), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-
-#makes it seem that 2018 was high price year, 2014 not so much - compliance issue
-ggplot() +
-  geom_jitter(data=test_join_uniques_v2, aes(x= season, y=PRICE_PER_POUND), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-
-
-#subset fishtix to correct years, May-Sep, WA, commercial and DCRB labelled
-pacfin_subset <- fishtix_raw %>% 
-  filter(AGENCY_CODE != 'C') %>% 
-  filter(LANDING_YEAR %in% c(2014, 2015, 2016, 2017, 2018, 2019, 2020)) %>% 
-  filter(LANDING_MONTH %in% c(5:9)) %>%  
-  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
-  filter(PACFIN_SPECIES_CODE=="DCRB")
-
-ggplot() +
-  geom_jitter(data=pacfin_subset, aes(x= LANDING_YEAR, y=PRICE_PER_POUND), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-#even this subset doesn't have $10/lbs data in 2014...
-
-
-ggplot() +
-  geom_jitter(data=pacfin_subset, aes(x= LANDING_MONTH , y=LANDED_WEIGHT_LBS, color=as.factor(LANDING_YEAR)), size=2) + 
-  theme_bw()+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-#2014 seems to have had quite a few almost outlier type points in terms of lbs landed...
-
-
-
 
 
 ################################
