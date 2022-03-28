@@ -482,7 +482,7 @@ active_vessels_in_MaySep_by_season_fishtix <- fishtix_2014_2020  %>%
 
 
 
-
+########################################################################################
 #efficiency - CPUE
 test_join_uniques
 test_join
@@ -506,17 +506,23 @@ efficiency_CPUE_v2 <- efficiency_CPUE %>%
 efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
 
 
-summary_efficiency_CPUE_v2 <- efficiency_CPUE_v2 %>% 
-  filter(season != '2018-2019') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
-  group_by(season, pre_post_reg) %>% 
+summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2018-2019')  %>% 
+  #group_by(season, pre_post_reg) %>% 
+  group_by(season, month_name) %>% 
   summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
-            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T))
+            median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
+            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
+            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
-CPUE_ts <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2 %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
-  geom_point(data = summary_efficiency_CPUE_v2 %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
+CPUE_ts_lbs_MaySep <- ggplot()+
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  
   ylab("mean lbs/trap (May-Sep)") +
   xlab("") + 
   scale_x_discrete(limits = rev) +
@@ -532,21 +538,88 @@ CPUE_ts <- ggplot()+
         strip.background = element_blank(),
         strip.placement = "left"
   )
-CPUE_ts
+CPUE_ts_lbs_MaySep
 
 
+CPUE_ts_dollar_MaySep <- ggplot()+
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  
+  ylab("mean $/trap (May-Sep)") +
+  xlab("") + 
+  scale_x_discrete(limits = rev) +
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts_dollar_MaySep
+
+
+##GLM##
+hist(summary_efficiency_CPUE_v2_MaySep$mean_dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_MaySep$mean_lbs_per_pot)
+
+mod1_CPUE_lbs_MaySep <- glm(mean_lbs_per_pot ~ pre_post_reg + month_name,
+                            family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_lbs_MaySep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_lbs_MaySep$residuals)
+plot(mod1_CPUE_lbs_MaySep)
+
+mod1_CPUE_dollar_MaySep <- glm(mean_dollar_per_pot ~ pre_post_reg + month_name,
+                               family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_dollar_MaySep) #pre-post-reg IS a significant predictor 
+hist(mod1_CPUE_dollar_MaySep$residuals)
+plot(mod1_CPUE_dollar_MaySep)
+
+
+#this way you won't be taking the mean of a mean
+pre_reg_mean_CPUE_dollar_MaySep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2018-2019')  %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T)) 
+
+#this would be taking mean of a mean
+# pre_reg_mean_CPUE_dollar_MaySep <- summary_efficiency_CPUE_v2_MaySep %>% 
+#   group_by(pre_post_reg) %>% 
+#   summarise(mean_mean_dollar_per_pot = mean(mean_dollar_per_pot))
+
+#% change from pre-reg mean to 2020
+(17.0-13.0)/13.0*100 ##30.76923
+
+
+
+
+##Jul-Sep
 summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
   filter(season != '2019-2020') %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
-  group_by(season, pre_post_reg) %>% 
+  #group_by(season, pre_post_reg) %>% 
+  group_by(season, month_name) %>% 
   summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
-            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T))
+            median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
+            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
+            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
-CPUE_ts <- ggplot()+
+CPUE_ts_dollar_JulSep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
-  geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  
   ylab("mean $/trap (Jul-Sep)") +
   xlab("") + 
   scale_x_discrete(limits = rev) +
@@ -562,7 +635,47 @@ CPUE_ts <- ggplot()+
         strip.background = element_blank(),
         strip.placement = "left"
   )
-CPUE_ts
+CPUE_ts_dollar_JulSep
+
+CPUE_ts_lbs_JulSep <- ggplot()+
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
+  
+  ylab("mean lbs/trap (Jul-Sep)") +
+  xlab("") + 
+  scale_x_discrete(limits = rev) +
+  theme_bw()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.35, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=20),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts_lbs_JulSep
+
+
+##GLM##
+hist(summary_efficiency_CPUE_v2_JulSep$mean_dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_JulSep$mean_lbs_per_pot)
+
+mod1_CPUE_lbs_JulSep <- glm(mean_lbs_per_pot ~ pre_post_reg + month_name,
+                       family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_lbs_JulSep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_lbs_JulSep$residuals)
+plot(mod1_CPUE_lbs_JulSep)
+
+mod1_CPUE_dollar_JulSep <- glm(mean_dollar_per_pot ~ pre_post_reg + month_name,
+                            family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_dollar_JulSep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_dollar_JulSep$residuals)
+plot(mod1_CPUE_dollar_JulSep)
 
 
 
@@ -573,8 +686,7 @@ CPUE_ts
 
 
 
-
-
+######################################################################################
 #monthly revenue by vessel
 
 monthly_rev_by_vessel <- test_join_uniques %>% 
