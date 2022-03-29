@@ -1,4 +1,4 @@
-# ts plot of trap density and whale density/occurrence
+# ts plot of trap density/lines in the water and whale density/occurrence
 
 #-----------------------------------------------------------------------------------
 
@@ -92,28 +92,31 @@ x.hump_2014_2020_crab_season_v2 <- x.hump_2014_2020_crab_season %>%
   separate(season_month2, into = c("season", "month"), sep = "_") %>% 
   mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
   mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
-  arrange(season, month)
+  separate(season, into = c("season_1", "season_2"), sep = "-") %>% 
+  arrange(season_2, month) %>%
+  mutate(Season_month = paste(season_2, month, sep = "_")) 
 glimpse(x.hump_2014_2020_crab_season_v2)
 
-ordered.ids <- factor(x.hump_2014_2020_crab_season_v2$season_month, levels=x.hump_2014_2020_crab_season_v2$season_month)
+ordered.ids <- factor(x.hump_2014_2020_crab_season_v2$Season_month, levels=x.hump_2014_2020_crab_season_v2$Season_month)
 
-ts_hump_dens <- ggplot(
-  data = x.hump_2014_2020_crab_season_v2, 
-  aes(
-    x = factor(season_month, levels=ordered.ids), 
-    y = Humpback_dens_sum,
-    #y = Humpback_dens_mean,
-    #y = Humpback_dens_median,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
+rects <- tibble(xmin=c("2014_05", "2015_05", "2016_05", "2017_05", "2018_05", "2019_05", "2020_05"),
+                xmax=c("2014_09", "2015_09", "2016_09", "2017_09", "2018_09", "2019_09", "2020_09"),
+                ymin=-Inf,ymax=Inf)
+
+
+ts_hump_dens <- ggplot() +
+  geom_rect(data=rects,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill="red",alpha=0.3)+
+  
+  geom_point(data = x.hump_2014_2020_crab_season_v2, 
+             aes(x = factor(Season_month, levels=ordered.ids), y = Humpback_dens_sum,
+               group = 1) , size=4) +
+  geom_line(data = x.hump_2014_2020_crab_season_v2, 
+            aes(x = factor(Season_month, levels=ordered.ids), y = Humpback_dens_sum,
+                group = 1)) +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2013-2014_12,2019-2020_09)) +
-  ylab("Sum Humpback Whale Density\nin study area") + 
-  #ylab("Mean Humpback Whale Density\nin study area") + 
+  ylab("Humpback whale density (sum)") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -130,45 +133,45 @@ ts_hump_dens <- ggplot(
 ts_hump_dens
 #ts of mean (when 0s included) and sum looks the same (shape is same, y-axis is different)
 
-
-#ts for Jul-Sep only: how steady was HW in Jul-Sep of pre-reg seasons?
-x.hump_2014_2020_crab_season_v3 <- x.hump_2014_2020_crab_season_v2 %>% 
-  filter(month %in% c('07', '08', '09'))
-
-ordered.ids <- factor(x.hump_2014_2020_crab_season_v3$season_month, levels=x.hump_2014_2020_crab_season_v3$season_month)
-
-
-ts_hump_dens <- ggplot(
-  data = x.hump_2014_2020_crab_season_v3, 
-  aes(
-    x = factor(season_month, levels=ordered.ids), 
-    y = Humpback_dens_sum,
-    #y = Humpback_dens_mean,
-    #y = Humpback_dens_median,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=1)])+
-  #scale_x_continuous(breaks = seq(2010, 2021, 1),
-  #                   limits = c(2013-2014_12,2019-2020_09)) +
-  ylab("Sum Humpback Whale Density\nin study area") + 
-  #ylab("Mean Humpback Whale Density\nin study area") + 
-  xlab("Season_month") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_hump_dens
+#------------------------------------------------------------------------
+# #ts for Jul-Sep only: how steady was HW in Jul-Sep of pre-reg seasons?
+# x.hump_2014_2020_crab_season_v3 <- x.hump_2014_2020_crab_season_v2 %>% 
+#   filter(month %in% c('07', '08', '09'))
+# 
+# ordered.ids <- factor(x.hump_2014_2020_crab_season_v3$season_month, levels=x.hump_2014_2020_crab_season_v3$season_month)
+# 
+# 
+# ts_hump_dens <- ggplot(
+#   data = x.hump_2014_2020_crab_season_v3, 
+#   aes(
+#     x = factor(season_month, levels=ordered.ids), 
+#     y = Humpback_dens_sum,
+#     #y = Humpback_dens_mean,
+#     #y = Humpback_dens_median,
+#     group = 1
+#   )
+# ) +
+#   geom_point(size=4) +
+#   geom_line() +
+#   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=1)])+
+#   #scale_x_continuous(breaks = seq(2010, 2021, 1),
+#   #                   limits = c(2013-2014_12,2019-2020_09)) +
+#   ylab("Sum Humpback Whale Density\nin study area") + 
+#   #ylab("Mean Humpback Whale Density\nin study area") + 
+#   xlab("Season_month") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_hump_dens
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -246,31 +249,28 @@ x.blue_2014_2020_crab_season_v2 <- x.blue_2014_2020_crab_season %>%
   separate(season_month2, into = c("season", "month"), sep = "_") %>% 
   mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
   mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
-  arrange(season, month) %>% 
   filter(season_month != '2019-2020_11') %>% 
-  filter(season_month != '2019-2020_10')
+  filter(season_month != '2019-2020_10') %>% 
+  separate(season, into = c("season_1", "season_2"), sep = "-") %>% 
+  arrange(season_2, month) %>%
+  mutate(Season_month = paste(season_2, month, sep = "_")) 
 glimpse(x.blue_2014_2020_crab_season_v2)
 
 
-ordered.ids <- factor(x.blue_2014_2020_crab_season_v2$season_month, levels=x.blue_2014_2020_crab_season_v2$season_month)
+#ordered.ids <- factor(x.blue_2014_2020_crab_season_v2$season_month, levels=x.blue_2014_2020_crab_season_v2$season_month)
 
-ts_blue_dens <- ggplot(
-  data = x.blue_2014_2020_crab_season_v2, 
-  aes(
-    x = factor(season_month, levels=ordered.ids), 
-    y = Blue_dens_sum,
-    #y = Blue_dens_mean,
-    #y = Blue_dens_median,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
+ts_blue_dens <- ggplot() +
+  geom_rect(data=rects,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill="red",alpha=0.3)+
+  
+  geom_point(data = x.blue_2014_2020_crab_season_v2, 
+             aes(x = factor(Season_month, levels=ordered.ids), y = Blue_dens_sum,
+                 group = 1) , size=4) +
+  geom_line(data = x.blue_2014_2020_crab_season_v2, 
+            aes(x = factor(Season_month, levels=ordered.ids), y = Blue_dens_sum,
+                group = 1)) +
+  
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
-  #scale_x_continuous(breaks = seq(2010, 2021, 1),
-  #                   limits = c(2009.5,2021.5)) +
-  ylab("Sum Blue Whale Occurrence\nin study area") + 
-  #ylab("Mean Blue Whale Occurrence\nin study area") + 
+  ylab("Blue whale prob. of occur. (sum)") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -285,6 +285,9 @@ ts_blue_dens <- ggplot(
         strip.placement = "left"
   )
 ts_blue_dens
+
+
+
 
 #--------------------------------------------------------------------------
 #bar chart for whales SUM Dec-Apr vs May-Sep
@@ -402,104 +405,101 @@ lay_out(list(ts_plots, 1:2, 1:3),
 
 
 
-
-
-
-
-
-
-
-
-
 #--------------------------------------------------------------------------
 #if wanted to have third layer to ts to show fishing data
 
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+# #path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+# path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+# 
+# x.fish_WA <- readRDS(path.fish_WA)
+# #Grid ID 122919 end up having very high trap densities in few months 
+# #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+# #this is because the grid is split across land, and few points happen to fall in a very tiny area
+# #remove it
+# x.fish_WA <- x.fish_WA %>% filter(GRID5KM_ID != 122919)
+# # get avg traps dens per grid cell for each yr month to allow matching with whale data
+# x.fish_WA2 <- x.fish_WA %>%
+#   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+#   summarise( 
+#     number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+#     mean_M2_trapdens = mean(M2_trapdens),
+#     mean_M2_tottraps = mean(M2_tottraps)
+#   )
+# 
+# # make column for year month for fishing data to allow matching with whale data
+# x.fish_WA_crab_season <- x.fish_WA2 %>%
+#   separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+#   mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+#   mutate(month = sprintf("%02d", as.numeric(month))) #change month to two digit number
+# 
+# x.fish_2014_2020_crab_season_v2 <- x.fish_WA_crab_season %>% 
+#   mutate(season_month = factor(paste0(season,"_",month))) %>%  
+#   group_by(season_month) %>%
+#   #summarise across all grid cells in given season_month
+#   summarise(
+#     Trap_dens_sum = sum(mean_M2_trapdens, na.rm=TRUE),
+#     tottraps_sum = sum(mean_M2_tottraps, na.rm=TRUE),
+#     Trap_dens_mean = mean(mean_M2_trapdens, na.rm=TRUE),
+#     Trap_dens_median = median(mean_M2_trapdens, na.rm=TRUE)
+#   ) %>% 
+#   mutate(season_month2 = season_month) %>% 
+#   separate(season_month2, into = c("season", "month"), sep = "_")   
+# 
+# #want to make sure that fishing data has all year - month combos so that the plot matches with whale plots
+# season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
+# month <- as.factor(c("12","01","02","03","04", "05", "06", "07", "08", "09", "10", "11"))
+# season_month_combos <- crossing(season, month)
+# 
+# fish_with_all_season_month_combos <- left_join(season_month_combos, x.fish_2014_2020_crab_season_v2 , by=c("season", "month")) %>% 
+#   mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+#   mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
+#   arrange(season, month) %>% 
+#   mutate(season_month = factor(paste0(season,"_",month))) %>% 
+#   filter(season_month != '2019-2020_11') %>% 
+#   filter(season_month != '2019-2020_10') %>% 
+#   mutate(Trap_dens_mean = ifelse(is.na(Trap_dens_mean), 0, Trap_dens_mean)) %>% 
+#   separate(season, into = c("season_1", "season_2"), sep = "-") %>% 
+#   arrange(season_2, month) %>%
+#   mutate(Season_month = paste(season_2, month, sep = "_")) 
+# 
+# 
+# #ordered.ids <- factor(fish_with_all_season_month_combos$season_month, levels=fish_with_all_season_month_combos$season_month)
+# 
+# ts_trap_dens <- ggplot() +
+#   geom_rect(data=rects,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill="red",alpha=0.3)+
+#   
+#   geom_point(data = fish_with_all_season_month_combos, 
+#              aes(x = factor(Season_month, levels=ordered.ids), 
+#                #y = Trap_dens_sum,
+#                y = tottraps_sum/1000,
+#                group = 1), size=4) +
+#   geom_line(data = fish_with_all_season_month_combos, 
+#             aes(x = factor(Season_month, levels=ordered.ids), 
+#               #y = Trap_dens_sum,
+#               y = tottraps_sum/1000,
+#               group = 1)) +
+#   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
+#   #ylab("Sum Trap Density\nin grids being used") + 
+#   ylab("Lines in the water (thousands)") + 
+#   xlab("Season_month") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.15, .85),
+#         axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12),
+#         strip.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# ts_trap_dens
 
-x.fish_WA <- readRDS(path.fish_WA)
-#Grid ID 122919 end up having very high trap densities in few months 
-#(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
-#this is because the grid is split across land, and few points happen to fall in a very tiny area
-#remove it
-x.fish_WA <- x.fish_WA %>% filter(GRID5KM_ID != 122919)
-# get avg traps dens per grid cell for each yr month to allow matching with whale data
-x.fish_WA2 <- x.fish_WA %>%
-  group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
-  summarise( 
-    number_obs = n(), #no. of grid cells in that season_month that had traps in them 
-    mean_M2_trapdens = mean(M2_trapdens),
-    mean_M2_tottraps = mean(M2_tottraps)
-  )
+  
 
-# make column for year month for fishing data to allow matching with whale data
-x.fish_WA_crab_season <- x.fish_WA2 %>%
-  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
-  mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
-  mutate(month = sprintf("%02d", as.numeric(month))) #change month to two digit number
-
-x.fish_2014_2020_crab_season_v2 <- x.fish_WA_crab_season %>% 
-  mutate(season_month = factor(paste0(season,"_",month))) %>%  
-  group_by(season_month) %>%
-  #summarise across all grid cells in given season_month
-  summarise(
-    Trap_dens_sum = sum(mean_M2_trapdens, na.rm=TRUE),
-    tottraps_sum = sum(mean_M2_tottraps, na.rm=TRUE),
-    Trap_dens_mean = mean(mean_M2_trapdens, na.rm=TRUE),
-    Trap_dens_median = median(mean_M2_trapdens, na.rm=TRUE)
-  ) %>% 
-  mutate(season_month2 = season_month) %>% 
-  separate(season_month2, into = c("season", "month"), sep = "_") 
-
-#want to make sure that fishing data has all year - month combos so that the plot matches with whale plots
-season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "2018-2019", "2019-2020")
-month <- as.factor(c("12","01","02","03","04", "05", "06", "07", "08", "09", "10", "11"))
-season_month_combos <- crossing(season, month)
-
-fish_with_all_season_month_combos <- left_join(season_month_combos, x.fish_2014_2020_crab_season_v2 , by=c("season", "month")) %>% 
-  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
-  mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
-  arrange(season, month) %>% 
-  mutate(season_month = factor(paste0(season,"_",month))) %>% 
-  filter(season_month != '2019-2020_11') %>% 
-  filter(season_month != '2019-2020_10') %>% 
-  mutate(Trap_dens_mean = ifelse(is.na(Trap_dens_mean), 0, Trap_dens_mean))
-
-
-ordered.ids <- factor(fish_with_all_season_month_combos$season_month, levels=fish_with_all_season_month_combos$season_month)
-
-ts_trap_dens <- ggplot(
-  data = fish_with_all_season_month_combos, 
-  aes(
-    x = factor(season_month, levels=ordered.ids), 
-    #y = Trap_dens_sum,
-    y = tottraps_sum,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
-  scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
-  #scale_x_continuous(breaks = seq(2010, 2021, 1),
-  #                   limits = c(2009.5,2021.5)) +
-  #ylab("Sum Trap Density\nin grids being used") + 
-  ylab("Lines in the water") + 
-  xlab("Season_month") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-ts_trap_dens
-
+  
 
 
 #--------------
@@ -510,85 +510,9 @@ traps_g_license_logs_2013_2020 <- read_rds(here::here('wdfw', 'data','traps_g_al
 #traps_g <- traps_g_for_all_logs_full_seasons
 traps_g <- traps_g_license_logs_2013_2020
 
-# For now look at 2013-2019, traps_g_license_logs_2013_2019.rds is already filtered for these years
-#traps_g <- traps_g %>% 
-# filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019'))
-
-# modifying the summtraps code from script 2 that adjusts for double counting
-testdf <- traps_g %>% 
-  #st_set_geometry(NULL) %>%
-  filter(!is.na(GRID5KM_ID)) %>% 
-  # count the total number of traps in each grid cell in each set
-  group_by(season_month_interval, Vessel, License,GRID5KM_ID,grd_x,grd_y,SetID2,AREA) %>%  
-  summarise(
-    ntraps_vessel_set_cell=n()
-  ) %>% 
-  # average the number of pots per vessel per grid cell
-  ungroup() %>% 
-  group_by(season_month_interval, Vessel, License, GRID5KM_ID,grd_x,grd_y,AREA) %>% 
-  summarise(
-    ntraps_vessel_cell=mean(ntraps_vessel_set_cell)) %>% 
-  # finally, sum the total traps per Vessel, across all grid cells in the 2-week period in question
-  ungroup() %>% 
-  group_by(season_month_interval, Vessel, License) %>% 
-  summarise(
-    M1_tottraps=sum(ntraps_vessel_cell))
-glimpse(testdf)
-
-
-#bring in 'raw' logs 
-logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-#want to keep effort in WA waters by OR vessels
-#logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") 
-
-#sum raw PotsFished, and get info on how many landings a vessel did in a 2-week period
-logsdf <- logs %>% 
-  mutate(
-    month_name = month(SetDate, label=TRUE, abbr = FALSE),
-    season_month = paste0(season,"_",month_name),
-    month_interval = paste0(month_name, 
-                            "_", 
-                            ifelse(day(SetDate)<=15,1,2)
-    ),
-    season_month_interval = paste0(season, 
-                                   "_", 
-                                   month_interval)
-  )
-
-#For now look at 2013-2020
-logsdf <- logsdf %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019', '2019-2020')) 
-
-#Sum the raw/unadjusted PotsFished for vessel by 2-week period
-testdf2  <- logsdf %>% 
-  distinct(SetID, .keep_all= TRUE) %>% #note in raw logs data are repeated - has a row for start and end of stringline
-  group_by(season_month_interval, Vessel) %>%  
-  summarise(
-    sum_PotsFished=sum(PotsFished,na.rm=T) #need to include na.rm=T statement
-  )
-glimpse(testdf2)
-
-
-logsdf <- logsdf %>% 
-  # count the total number of fishtickets landed by vessel in 2-week period
-  group_by(season_month_interval, Vessel) %>%  
-  summarise(
-    count_FishTicket=n_distinct(FishTicket1)) 
-glimpse(logsdf)
-
-
-#join the datasets
-testdf %<>% 
-  left_join(testdf2,by=c("season_month_interval","Vessel")) %>% 
-  left_join(logsdf, by=c("season_month_interval","Vessel")) %>% 
-  separate(season_month_interval, into = c("season", "month_name", "interval"), sep = "_") %>%
-  filter(!is.na(month_name)) %>% 
-  mutate(month_interval = paste0(month_name,"_",interval)) %>%
-  mutate(month_interval = factor(month_interval, levels = c('December_1','December_2','January_1','January_2','February_1','February_2','March_1','March_2','April_1', 'April_2','May_1','May_2','June_1','June_2','July_1','July_2','August_1','August_2','September_1','September_2','October_1','October_2','November_1','November_2'))) %>% 
-  arrange(Vessel,season, month_interval)
-glimpse(testdf)
-
-
+traps_g_unique_vessels <- traps_g %>% 
+  distinct(season_month, License)
+  
 #Read in and join license & pot limit info
 WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
@@ -596,17 +520,13 @@ WA_pot_limit_info %<>%
   rename(License = License_ID)
 
 #join Pot_Limit info. 
-testdf %<>%
+traps_g_unique_vessels %<>%
   left_join(WA_pot_limit_info,by=c("License"))
-glimpse(testdf)
+glimpse(traps_g_unique_vessels)
 
 # apply 2019 summer pot limit reduction, which took effect July 1 and was in effect through the end of the season (Sept. 15)
 # apply 2020 summer pot limit reduction (May-Sep)
-## create season_month column
-testdf %<>%
-  mutate(season_month = paste0(season,"_",month_name))
-## make a new column for summer pot limit reduction
-testdf %<>% 
+testdf <- traps_g_unique_vessels %>% 
   mutate(Pot_Limit_SummerReduction = Pot_Limit)
 ## split df to pre and post reduction periods
 df1 <- testdf %>%
@@ -621,23 +541,13 @@ df2 %<>%
 ## join dfs back together  
 testdf <- rbind(df1,df2)
 
-testdf %<>% 
-  select(season, month_name, season_month, interval, month_interval, Vessel, License, M1_tottraps, sum_PotsFished, Pot_Limit_SummerReduction, count_FishTicket) %>% 
-  #Vessels pot limit in a 2-week interval is same as what is assumed to be its fished pot count using M2 method
-  rename(Pot_Limit_or_M2 = Pot_Limit_SummerReduction)
-glimpse(testdf)
-# this summary df showcases the difference between pot counts via M1 or M2, an between summing raw pot count from logbooks
-
-
-
 # calculating an estimate for lines in water as the sum of pot limits for those vessels that were active in a given time period 
-
 check_lines_in_water <- testdf %>% 
-  group_by(season, month_name, Pot_Limit_or_M2) %>% 
+  group_by(season_month, Pot_Limit_SummerReduction) %>% 
   na.omit() %>% 
   summarise(numberoflicenses=n_distinct(License), na.rm=TRUE) %>% 
-  mutate(check_PotsFished=sum(numberoflicenses * Pot_Limit_or_M2)) %>% 
-  select(season, month_name, check_PotsFished) %>% 
+  mutate(lines_in_water=sum(numberoflicenses * Pot_Limit_SummerReduction)) %>% 
+  select(season_month, lines_in_water) %>% 
   distinct() %>% 
   collect()
 
@@ -646,39 +556,37 @@ season <- c("2013-2014", "2014-2015", "2015-2016", "2016-2017", "2017-2018", "20
 month <- as.factor(c("12","01","02","03","04", "05", "06", "07", "08", "09", "10", "11"))
 season_month_combos <- crossing(season, month)
 
-check_lines_in_water <-  check_lines_in_water %>% 
-  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+check_lines_in_water <- check_lines_in_water %>% 
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
   mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
-  mutate(month = sprintf("%02d", as.numeric(month))) %>% #change month to two digit number
+  mutate(month = sprintf("%02d", as.numeric(month))) %>%  #change month to two digit number
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
+  mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11')))
+
+
+check_lines_in_water_with_all_season_month_combos <- left_join(season_month_combos, check_lines_in_water , by=c("season", "month")) %>% 
+  mutate(season = factor(season, levels = c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))) %>% 
   mutate(month = factor(month, levels = c('12','01','02','03','04','05','06','07','08','09','10','11'))) %>% 
-  left_join(season_month_combos, check_lines_in_water , by=c("season", "month")) %>% 
   arrange(season, month) %>% 
   mutate(season_month = factor(paste0(season,"_",month))) %>% 
   filter(season_month != '2019-2020_11') %>% 
   filter(season_month != '2019-2020_10') %>% 
-  mutate(check_PotsFished = ifelse(is.na(check_PotsFished), 0, check_PotsFished))
+  separate(season, into = c("season_1", "season_2"), sep = "-") %>% 
+  arrange(season_2, month) %>%
+  mutate(Season_month = paste(season_2, month, sep = "_")) 
 
-left_join(season_month_combos, check_lines_in_water , by=c("season", "month"))
 
-#use ordered.ids as defiend from other data, as the logs won't have some months
-#ordered.ids <- factor(check_lines_in_water$season_month, levels=check_lines_in_water$season_month)
-
-ts_lines_in_water <- ggplot(
-  data = check_lines_in_water, 
-  aes(
-    x = factor(season_month, levels=ordered.ids), 
-    #y = Trap_dens_sum,
-    y = check_PotsFished,
-    group = 1
-  )
-) +
-  geom_point(size=4) +
-  geom_line() +
+ts_lines_in_water <- ggplot() +
+  geom_rect(data=rects,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill="red",alpha=0.3)+
+  
+  geom_point(data = check_lines_in_water_with_all_season_month_combos, 
+             aes(x = factor(Season_month, levels=ordered.ids), y = lines_in_water/1000,
+                 group = 1) , size=4) +
+  geom_line(data = check_lines_in_water_with_all_season_month_combos, 
+            aes(x = factor(Season_month, levels=ordered.ids), y = lines_in_water/1000,
+                group = 1)) +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
-  #scale_x_continuous(breaks = seq(2010, 2021, 1),
-  #                   limits = c(2009.5,2021.5)) +
-  #ylab("Sum Trap Density\nin grids being used") + 
-  ylab("Lines in water") + 
+  ylab("Lines in the water (thousands)") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
@@ -700,18 +608,6 @@ ts_lines_in_water
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 #--------
 #join and save all plots into one figure
 #ts_trap_dens or ts_lines_in_water
@@ -721,19 +617,19 @@ ts_lines_in_water
 path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
 
-# ts_sum_lines_in_water_v2 calcualted as number of unique license multiplied by their pot limit
+# ts_sum_lines_in_water_v2 calculated as number of unique license multiplied by their pot limit
 
-png(paste0(path_figures, "/ts_sum_lines_in_water_v2_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 18, height = 10, units = "in", res = 400)
 ggarrange(#ts_trap_dens,
           ts_lines_in_water,
           ts_hump_dens,
           ts_blue_dens,
           ncol=1,
-          nrow=3,
-          legend="top",
-          labels="auto",
-          vjust=8,
-          hjust=0
+          nrow=3
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
 )
 invisible(dev.off())
 
