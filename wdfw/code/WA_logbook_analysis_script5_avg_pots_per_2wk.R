@@ -529,7 +529,8 @@ active_vessels_in_MaySep_by_season_v2 <- testdf %>%
 active_vessels_in_MaySep_by_season_v2 <- active_vessels_in_MaySep_by_season_v2 %>%
   mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
   mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  filter(!(month_name == "May" & season =='2018-2019' | month_name == "June" & season =='2018-2019'))
 
 active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2 <- as.factor(active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2)
 
@@ -537,11 +538,12 @@ vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
   geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-reg'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=1) + 
   scale_fill_manual(values=c("white")) +
   
-  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-reg'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=5) + 
+  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-reg'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=6) + 
   #scale_colour_brewer(palette = "PRGn") +
-  scale_color_manual(values=c("black", "gray80")) +
+  scale_color_manual(values=c("black", "black")) +
+  scale_x_discrete(labels=c("May"="May","June"="Jun","July"="Jul","August"="Aug","September"="Sep")) +
   facet_wrap(~Pot_Limit_or_M2)+
-  ylab("No. active vessels by month in WA \n(unique vessels in logs)") +
+  ylab("Number of active vessels") +
   xlab("Month") + 
   #guides(color = guide_legend(override.aes = list(size = 2))) +
   theme_bw()+
