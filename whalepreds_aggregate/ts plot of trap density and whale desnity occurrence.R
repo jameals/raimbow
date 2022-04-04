@@ -116,17 +116,18 @@ ts_hump_dens <- ggplot() +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2013-2014_12,2019-2020_09)) +
-  ylab("Humpback whale density (sum)") + 
-  xlab("Season_month") +
+  ylab("Humpback whale density") + 
+  #xlab("Season_month") +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        axis.text.y = element_text(size = 15),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=15),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -270,17 +271,17 @@ ts_blue_dens <- ggplot() +
                 group = 1)) +
   
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
-  ylab("Blue whale prob. of occur. (sum)") + 
+  ylab("Blue whale occurrence") + 
   xlab("Season_month") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
+        axis.text.y = element_text(size = 15),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=15),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -586,17 +587,18 @@ ts_lines_in_water <- ggplot() +
             aes(x = factor(Season_month, levels=ordered.ids), y = lines_in_water/1000,
                 group = 1)) +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
-  ylab("Lines in the water (thousands)") + 
-  xlab("Season_month") +
+  ylab("Lines in water (thousands)") + 
+  #xlab("Season_month") +
+  xlab("") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 12, angle = 60),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size=12),
+        axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        axis.text.y = element_text(size = 15),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size=15),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -619,7 +621,7 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 
 # ts_sum_lines_in_water_v2 calculated as number of unique license multiplied by their pot limit
 
-png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 18, height = 10, units = "in", res = 400)
+png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(#ts_trap_dens,
           ts_lines_in_water,
           ts_hump_dens,
