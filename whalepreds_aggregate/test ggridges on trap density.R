@@ -119,13 +119,13 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
-    xlab("Pot density [pots/km2] (Jul-Sep)") +
+    xlab("Pot density") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -175,13 +175,13 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
-  xlab("Pot density [pots/km2] (May-Sep)") +
+  xlab("Pot density") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
