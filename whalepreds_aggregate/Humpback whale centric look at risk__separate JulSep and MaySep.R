@@ -1055,8 +1055,10 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
   geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=1.8) +
   geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=3.5) +
   
-  ylab("Summed humpback whale risk") +
+  #ylab("Summed humpback whale risk") +
+  ylab("Risk") +
   xlab("Season") +
+  xlab("") +
   
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
   
@@ -1097,7 +1099,8 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, 
   geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=1.8) +
   geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=3.5) +
   
-  ylab("Number of overlapping grids") +
+  #ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
