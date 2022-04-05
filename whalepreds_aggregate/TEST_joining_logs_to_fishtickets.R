@@ -717,17 +717,18 @@ monthly_rev_by_vessel_JulSep <- monthly_rev_by_vessel %>%
   summarise(mean_monthly_rev = mean(monthly_rev, na.rm = T))
 
 monthly_rev_JulSep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  ylab("mean monthly revenue/vessel (Jul-Sep)") +
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
+  ylab("Mean monthly revenue/vessel (x10^4)") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  theme_classic()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.85, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0, color='black'),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -747,17 +748,18 @@ monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>%
 
 
 monthly_rev_MaySep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  ylab("mean monthly revenue/vessel (May-Sep)") +
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
+  ylab("Mean monthly revenue/vessel (x10^4)") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  theme_classic()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.85, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
+        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0, color='black'),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=20),
@@ -765,6 +767,53 @@ monthly_rev_MaySep <- ggplot()+
         strip.placement = "left"
   )
 monthly_rev_MaySep
+
+
+
+### GLM on mean monthly revenue/vessel
+## pre-post-reg not a significant predictor in any comparison (Jul-Sep, May-Sep, 300 or 500 tier)
+
+#JUL-SEP
+monthly_rev_by_vessel_JulSep_300 <- monthly_rev_by_vessel_JulSep %>% 
+  filter(Pot_Limit == 300)
+mod_monthly_rev_JulSep_300 <- glm(mean_monthly_rev ~ pre_post_reg,
+                                  family=gaussian, data=monthly_rev_by_vessel_JulSep_300, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod_monthly_rev_JulSep_300)
+plot(mod_monthly_rev_JulSep_300)
+
+
+monthly_rev_by_vessel_JulSep_500 <- monthly_rev_by_vessel_JulSep %>% 
+  filter(Pot_Limit == 500)
+mod_monthly_rev_JulSep_500 <- glm(mean_monthly_rev ~ pre_post_reg,
+                                  family=gaussian, data=monthly_rev_by_vessel_JulSep_500, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod_monthly_rev_JulSep_500)
+plot(mod_monthly_rev_JulSep_500)
+
+
+#MAY-SEP
+monthly_rev_by_vessel_MaySep_300 <- monthly_rev_by_vessel_MaySep %>% 
+  filter(Pot_Limit == 300)
+mod_monthly_rev_MaySep_300 <- glm(mean_monthly_rev ~ pre_post_reg,
+                 family=gaussian, data=monthly_rev_by_vessel_MaySep_300, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod_monthly_rev_MaySep_300)
+plot(mod_monthly_rev_MaySep_300)
+
+
+monthly_rev_by_vessel_MaySep_500 <- monthly_rev_by_vessel_MaySep %>% 
+  filter(Pot_Limit == 500)
+mod_monthly_rev_MaySep_500 <- glm(mean_monthly_rev ~ pre_post_reg,
+                                  family=gaussian, data=monthly_rev_by_vessel_MaySep_500, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod_monthly_rev_MaySep_500)
+plot(mod_monthly_rev_MaySep_500)
+
+
+
+
+
+
+
+
+
 
 
 
