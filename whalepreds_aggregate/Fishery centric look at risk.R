@@ -120,31 +120,31 @@ x.fish_WA_MaySep <- x.fish_WA2 %>%
 
 
 
-# #if no regs in place
-# path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_NO_REGS.rds"
-# path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step_NO_REGS.rds"
+ #if no regs in place
+ #path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_NO_REGS.rds"
+ path.fish_WA_no_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step_NO_REGS.rds"
 
-# x.fish_WA_no_regs <- readRDS(path.fish_WA_no_regs)
-# #Grid ID 122919 end up having very high trap densities in few months 
-# #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
-# #this is because the grid is split across land, and few points happen to fall in a very tiny area
-# #remove it
-# x.fish_WA_no_regs <- x.fish_WA_no_regs %>% filter(GRID5KM_ID != 122919)
-# # get avg traps dens per grid cell for each yr month to allow matching with whale data
-# x.fish_WA2_no_regs <- x.fish_WA_no_regs %>%
-#   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
-#   summarise( 
-#     number_obs = n(), #no. of grid cells in that season_month that had traps in them 
-#     mean_M2_trapdens = mean(M2_trapdens), 
-#   )
-# 
-# # make column for year month for fishing data to allow matching with whale data
-# x.fish_WA_MaySep_no_regs <- x.fish_WA2_no_regs %>%
-#   separate(season_month, into = c("season", "month_name"), sep = "_") %>%
-#   mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
-#   mutate(month = sprintf("%02d", as.numeric(month))) %>% #change month to two digit number
-#   #restrict fishing data to May-Sep as was done to whale data
-#   filter(month %in% c('05', '06', '07', '08', '09'))
+ x.fish_WA_no_regs <- readRDS(path.fish_WA_no_regs)
+ #Grid ID 122919 end up having very high trap densities in few months 
+ #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
+ #this is because the grid is split across land, and few points happen to fall in a very tiny area
+ #remove it
+ x.fish_WA_no_regs <- x.fish_WA_no_regs %>% filter(GRID5KM_ID != 122919)
+ # get avg traps dens per grid cell for each yr month to allow matching with whale data
+ x.fish_WA2_no_regs <- x.fish_WA_no_regs %>%
+   group_by(season_month, GRID5KM_ID, grd_x, grd_y, AREA) %>% 
+   summarise( 
+     number_obs = n(), #no. of grid cells in that season_month that had traps in them 
+     mean_M2_trapdens = mean(M2_trapdens), 
+   )
+ 
+ # make column for year month for fishing data to allow matching with whale data
+ x.fish_WA_MaySep_no_regs <- x.fish_WA2_no_regs %>%
+   separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+   mutate(month = match(month_name, month.name)) %>% #month becomes one digit number
+   mutate(month = sprintf("%02d", as.numeric(month))) %>% #change month to two digit number
+   #restrict fishing data to May-Sep as was done to whale data
+   filter(month %in% c('05', '06', '07', '08', '09'))
 
 #-----------------------------------------------------------------------------------
 
@@ -231,23 +231,48 @@ risk_whales_WA_MaySep_no_regs <- study_area_whale_fishing_no_regs %>%
 
 
 
-sum_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>%
-  filter(season == '2018-2019') %>% 
-  filter(study_area=='Y')%>% 
-  group_by(season) %>% 
-  summarise(
-    Humpback_risk_sum_2018_2019 = sum(hump_risk, na.rm=TRUE),
-    Blue_risk_sum_2018_2019 = sum(blue_risk, na.rm=TRUE)
-  )
+# sum_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>%
+#   filter(season == '2018-2019') %>% 
+#   filter(study_area=='Y')%>% 
+#   group_by(season) %>% 
+#   summarise(
+#     Humpback_risk_sum_2018_2019 = sum(hump_risk, na.rm=TRUE),
+#     Blue_risk_sum_2018_2019 = sum(blue_risk, na.rm=TRUE)
+#   )
 
-sum_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
-  filter(season == '2019-2020') %>% 
-  filter(study_area=='Y')%>% 
-  group_by(season) %>% 
-  summarise(
-    Humpback_risk_sum_2019_2020 = sum(hump_risk, na.rm=TRUE),
-    Blue_risk_sum_2019_2020 = sum(blue_risk, na.rm=TRUE)
-  )
+subset_2018_2019_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season != '2019-2020') %>% 
+  filter(study_area=='Y') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE)) 
+
+# 
+# sum_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
+#   filter(season == '2019-2020') %>% 
+#   filter(study_area=='Y')%>% 
+#   group_by(season) %>% 
+#   summarise(
+#     Humpback_risk_sum_2019_2020 = sum(hump_risk, na.rm=TRUE),
+#     Blue_risk_sum_2019_2020 = sum(blue_risk, na.rm=TRUE)
+#   )
+
+subset_2019_2020_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season != '2018-2019') %>% 
+  filter(study_area=='Y') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+            blue_risk = sum(blue_risk, na.rm=TRUE)) 
+
+
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
 
@@ -1302,6 +1327,39 @@ percent_change_in_risk_MaySep
 (161.0971-203.4769)/203.4769*100 #-20.82782
 
 
+##NO REGS, 1-month input file
+subset_2018_2019_NO_REGS 
+subset_2019_2020_NO_REGS
+
+summary_risk_JulSep_NO_REGS <- subset_2018_2019_NO_REGS %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+summary_risk_JulSep_NO_REGS
+## % change in 2018-2019 if had or did not have regs
+#HW:
+(3.998742-6.041264)/6.041264*100 #-33.80951
+#BW:
+(232.3115-351.0894)/351.0894*100 #-33.83124
+
+
+summary_risk_MaySep_NO_REGS <- subset_2019_2020_NO_REGS %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+summary_risk_MaySep_NO_REGS
+## % change in 2019-2020 if had or did not have regs
+#HW:
+(9.851811-14.89231)/14.89231*100 #-33.84632
+#BW:
+(161.0971-243.4962)/243.4962*100 #-33.83999
+
+
+
+
+
+
+
 
 
 
@@ -1445,12 +1503,12 @@ ggarrange(box_hw_risk_2018_2019_2020_with_and_without_regs,
 invisible(dev.off())
 
 
-summary_test <- test %>% 
-  group_by(season, regs) %>% 
-  summarise(sum_hump_risk = sum(hump_risk, na.rm = TRUE),
-            sum_blue_risk = sum(blue_risk, na.rm = TRUE),
-            n_row = n()
-            )
+# summary_test <- test %>% 
+#   group_by(season, regs) %>% 
+#   summarise(sum_hump_risk = sum(hump_risk, na.rm = TRUE),
+#             sum_blue_risk = sum(blue_risk, na.rm = TRUE),
+#             n_row = n()
+#             )
 #season             regs        sum_hump_risk   sum_blue_risk
 #2018-2019  with regulations      11.99622        696.9346
 #2018-2019  without regulations   18.12379        1053.2682
