@@ -156,7 +156,7 @@ summary_pacfin_data_JulSep <- test_join_uniques %>%
 ##REVENUE
 sum_JulSep_rev_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
-  ylab("Revenue ($ x10^5) (Jul-Sep)") +
+  ylab("Revenue ($ x10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
@@ -201,7 +201,7 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
 ##LANDINGS
 sum_JulSep_lbs_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
-  ylab("Landings (lbs x 10^5) (Jul-Sep)") +
+  ylab("Landings (lbs x 10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
@@ -263,7 +263,7 @@ summary_pacfin_data_MaySep <- test_join_uniques %>%
 ##REVENUE
 sum_MaySep_rev_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
-  ylab("Revenue ($ x10^5) (May-Sep)") +
+  ylab("Revenue ($ x10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -310,7 +310,7 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
 ##LANDINGS
 sum_MaySep_lbs_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
-  ylab("Landings (lbs x 10^5) (May-Sep)") +
+  ylab("Landings (lbs x 10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -523,10 +523,10 @@ CPUE_ts_lbs_MaySep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
   
-  ylab("mean lbs/trap (May-Sep)") +
+  ylab("Mean lbs/pot") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
@@ -547,10 +547,10 @@ CPUE_ts_dollar_MaySep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
   
-  ylab("mean $/trap (May-Sep)") +
+  ylab("Mean $/pot") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
@@ -614,16 +614,17 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
+
 CPUE_ts_dollar_JulSep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
   
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
   
-  ylab("mean $/trap (Jul-Sep)") +
+  ylab("Mean $/pot") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
@@ -637,16 +638,17 @@ CPUE_ts_dollar_JulSep <- ggplot()+
   )
 CPUE_ts_dollar_JulSep
 
+
 CPUE_ts_lbs_JulSep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
   
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
   
-  ylab("mean lbs/trap (Jul-Sep)") +
+  ylab("Mean lbs/pot") +
   xlab("") + 
-  scale_x_discrete(limits = rev) +
-  theme_bw()+
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
+  theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
