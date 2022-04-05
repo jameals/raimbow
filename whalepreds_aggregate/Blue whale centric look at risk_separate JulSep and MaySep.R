@@ -154,7 +154,7 @@ summary_study_area_bw_JulSep <- study_area_bw_JulSep %>%
 study_area_bw_v2 <-  study_area_bw %>% 
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID")
 
-# calculate MEAN whale values for different grid in different seasons - for JUL-Sep period (2013-2020)
+# calculate MEAN whale values for all grid cells in different seasons - for JUL-Sep period (2013-2020)
 x.blue.mean_JulSep <- study_area_bw_v2 %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   group_by(season, GRID5KM_ID, area_km_lno) %>%
@@ -263,7 +263,7 @@ x.fish_WA <- readRDS(path.fish_WA) %>%
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N'))
 
-# average trap density (and count?) for each grid cell for May-Sep period
+# average trap density (and count?) for each grid cell for Jul-Sep period
 x.fish_WA_JulSep <- x.fish_WA %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
@@ -977,8 +977,10 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=1.8) +
   geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=3.5) +
   
-  ylab("Summed blue whale risk") +
-  xlab("Season") +
+  #ylab("Summed blue whale risk") +
+  ylab("Risk") +
+  #xlab("Season") +
+  xlab("") +
   
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
   
@@ -994,8 +996,8 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
         legend.text = element_text(size = 22),
-        legend.position = "none",
-        #legend.position = c(.15, .25),
+        #legend.position = "none",
+        legend.position = c(.89, .92),
         axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
         axis.text.y = element_text(size = 22),
         axis.title = element_text(size = 22),
@@ -1018,7 +1020,8 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
   geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=1.8) +
   geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=3.5) +
   
-  ylab("Number of overlapping grids") +
+  #ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
@@ -1035,7 +1038,10 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
         legend.text = element_text(size = 22),
-        legend.position = c(.85, .8),
+        
+        #legend.position = c(.85, .8),
+        legend.position = "none",
+        
         axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
         axis.text.y = element_text(size = 22),
         axis.title = element_text(size = 22),
