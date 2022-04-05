@@ -142,88 +142,88 @@ study_area_hw_pre_reg_vs_2019_2020 <- study_area_whale %>%
 
 
 
-#warning message: removed rows containing non-finite values is due to NAs
-ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Humpback whale density (Jul-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank()
-  )
-
-
-ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Humpback whale density (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank()
-  )
-
-
-ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Blue whale occurrence (Jul-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)+
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank()
-  )
-
-ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
-  geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_discrete(expand = c(0, 0)) +
-  #coord_cartesian(clip = "off") +
-  xlab("Blue whale occurrence  (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left",
-        axis.title.y=element_blank()
-  )
+# #warning message: removed rows containing non-finite values is due to NAs
+# ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
+#   geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+#   scale_x_continuous(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   #coord_cartesian(clip = "off") +
+#   xlab("Humpback whale density (Jul-Sep)") +
+#   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.8, .5),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left",
+#         axis.title.y=element_blank()
+#   )
+# 
+# 
+# ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Humpback_dens_mean, y = pre_post_reg, height = ..density..)) + 
+#   geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+#   scale_x_continuous(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   #coord_cartesian(clip = "off") +
+#   xlab("Humpback whale density (May-Sep)") +
+#   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.8, .5),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left",
+#         axis.title.y=element_blank()
+#   )
+# 
+# 
+# ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
+#   geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+#   scale_x_continuous(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   #coord_cartesian(clip = "off") +
+#   xlab("Blue whale occurrence (Jul-Sep)") +
+#   theme_ridges(grid = TRUE, center_axis_labels = TRUE)+
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.8, .5),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left",
+#         axis.title.y=element_blank()
+#   )
+# 
+# ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Blue_occurrence_mean, y = pre_post_reg, height = ..density..)) + 
+#   geom_density_ridges(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1) + 
+#   scale_x_continuous(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   #coord_cartesian(clip = "off") +
+#   xlab("Blue whale occurrence  (May-Sep)") +
+#   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.8, .5),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 0),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left",
+#         axis.title.y=element_blank()
+#   )
 
 
 
@@ -238,12 +238,12 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#edf8e9", "#bae4b3", "#74c476", "#31a354"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
-  xlab("Humpback whale density (Jul-Sep)") +
+  xlab("Humpback whale density") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -268,12 +268,12 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#edf8e9", "#bae4b3", "#74c476", "#31a354"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0, 0.065), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
-  xlab("Humpback whale density (May-Sep)") +
+  xlab("Humpback whale density") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -310,12 +310,12 @@ bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0.01, 0.86), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
-  xlab("Blue whale probability of occurrence (Jul-Sep)") +
+  xlab("Blue whale probability of occurrence") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
@@ -339,12 +339,12 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
-                      scale = 1) +
+                      scale = 0.95) +
   scale_fill_manual(name = "Quantile", values = c("#f1eef6", "#bdc9e1", "#74a9cf", "#2b8cbe"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #scale_x_continuous(limits = c(0.01, 0.86), expand = c(0, 0))+
   scale_y_discrete(expand = c(0, 0), labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
-  xlab("Blue whale probability of occurrence (May-Sep)") +
+  xlab("Blue whale probability of occurrence") +
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
