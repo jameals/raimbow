@@ -31,8 +31,8 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 
 #fishing effort
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
@@ -205,8 +205,8 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
                   ,'Y', 'N')) %>% 
   mutate(
     pre_post_reg = case_when(
-      season == '2018-2019' & month %in% c('07', '08', '09') ~ "xpost-reg",  #and 'x' to name so that pre-reg comes first
-      season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "xpost-reg")) %>% 
+      season == '2018-2019' & month %in% c('07', '08', '09') ~ "post-reg",  #add 'x' to name so that pre-reg comes first
+      season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "post-reg")) %>% 
   mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
 
 
@@ -260,7 +260,7 @@ model.matrix(~0+., data=risk_whales_WA_JulSep_summed) %>%
 #retain month in glm even tho it is not significant in Jul-Sep comparison
 #in the Jul-Sep glm log link, or other family types, doesn't improve things from basic gaussian
 #if use Gamma, results don't make sense/match the plots
-mod1_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
+mod1_hump <- glm(sum_hump_risk ~ pre_post_reg + month,
                family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_hump)
 hist(mod1_hump$residuals)
@@ -321,7 +321,7 @@ qqPlot(mod1_hump$residuals)
 ##BW: -11.3%,             mean -12.1%
 
 
-mod1_blue <- glm(sum_blue_risk ~ month + pre_post_reg,
+mod1_blue <- glm(sum_blue_risk ~ pre_post_reg + month,
                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
 # mod1_blue <- glm(sum_blue_risk ~ pre_post_reg,
 #                  family=gaussian, data=risk_whales_WA_JulSep_summed, na.action = na.omit)
@@ -364,7 +364,7 @@ model.matrix(~0+., data=risk_whales_WA_MaySep_summed) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
-mod2_hump <- glm(sum_hump_risk ~ month + pre_post_reg,
+mod2_hump <- glm(sum_hump_risk ~ pre_post_reg + month,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod2_hump) #interpreting significant intercept: It means you have enough evidence to say that the intercept isn't 0.
 #We typically don't care if the intercept is significant or not. It's important to have in the model but unless there is a good reason to typically you don't interpret the significance test of the intercept
@@ -398,7 +398,7 @@ qqPlot(mod2_hump$residuals)
 
 
 #in the May-Sep glm log link is maybe better than basic gaussian
-mod2_blue <- glm(sum_blue_risk ~ month + pre_post_reg ,
+mod2_blue <- glm(sum_blue_risk ~ pre_post_reg +month,
                  family=gaussian, data=risk_whales_WA_MaySep_summed, na.action = na.omit) #family = gaussian(link = "inverse")
 summary(mod2_blue)
 hist(mod2_blue$residuals)
