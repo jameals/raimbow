@@ -139,6 +139,7 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 #Jul-Sep
 summary_pacfin_data_JulSep <- test_join_uniques %>% 
   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>%
   filter(month_name %in% c('July','August','September')) %>%
   filter(season != '2019-2020') %>%
   #filter(LANDED_WEIGHT_LBS < 10000) %>% ##this doesn't make a difference in main conclusions
@@ -150,6 +151,7 @@ summary_pacfin_data_JulSep <- test_join_uniques %>%
   mutate(
     pre_post_reg = ifelse(season == '2018-2019', '2018-2019', 'pre-reg'))
 
+summary_pacfin_data_JulSep$month_name <- factor(summary_pacfin_data_JulSep$month_name, levels = c('July', 'August', 'September'))
 
 
 ##### as a boxplot
@@ -192,10 +194,10 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
             median_revenue = median(sum_revenue))
 
 #% change from pre-reg mean to 2019
-(296282.9-413921.2)/413921.2*100
-#-28.42 --> but pre-reg mean high due to high year of 2014
+(293462.5-413615.7)/413615.7*100
+#-29.05 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
-(373038.0-266560.6)/266560.6*100 ##39.94491
+(364576.5-264532.4)/264532.4*100 ##37.82
 
 
 ##LANDINGS
@@ -237,10 +239,11 @@ pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>%
             median_landings = median(sum_weight_lbs))
 
 #% change from pre-reg mean to 2019
-(64753.67-93902.73)/93902.73*100
-#-31.04 --> but pre-reg mean high due to high year of 2014
+(64253.67-93850.27)/93850.27*100
+#-31.54 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
 (80293-60698)/60698*100 ##32.28278
+
 
 
 
@@ -249,8 +252,8 @@ pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>%
 summary_pacfin_data_MaySep <- test_join_uniques %>%
   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
   filter(season != '2018-2019') %>%
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
   #filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
-  #filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
   group_by(season, month_name) %>%
   summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
@@ -258,6 +261,8 @@ summary_pacfin_data_MaySep <- test_join_uniques %>%
   ) %>% 
   mutate(
     pre_post_reg = ifelse(season == '2019-2020', '2019-2020', 'pre-reg'))
+
+summary_pacfin_data_MaySep$month_name <- factor(summary_pacfin_data_MaySep$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
 
 
 ##REVENUE
@@ -299,8 +304,8 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
             median_revenue = median(sum_revenue))
 
 #% change from pre-reg mean to 2019
-(346289.7-397739.1)/397739.1*100
-#-12.94 --> but pre-reg mean high due to high year of 2014
+(344945.4-397420.4)/397420.4*100
+#-13.20 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
 (303595.9-257379.8)/257379.8*100 #17.95638
 
@@ -346,8 +351,8 @@ pre_reg_mean_landings_MaySep <- summary_pacfin_data_MaySep %>%
             median_landings = median(sum_weight_lbs))
 
 #% change from pre-reg mean to 2019
-(69525.20-83658.68)/83658.68*100
-#-16.89 --> but pre-reg mean high due to high year of 2014
+(69152.00-83601.32)/83601.32*100
+#-17.28 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
 (77146-55860)/55860*100 ##38.10598
 
