@@ -233,7 +233,7 @@ study_area_hw_pre_reg_vs_2019_2020 <- study_area_whale %>%
 #ggridges plot with quantiles
 
 hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Humpback_dens_mean, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
+  stat_density_ridges(#quantile_lines = TRUE,
                       calc_ecdf = TRUE,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
@@ -247,13 +247,13 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = "none",
         #legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
@@ -261,9 +261,25 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
 hw_density_ridges_quantiles_JulSep
 
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__JulSep_pre_reg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
+ggarrange(hw_density_ridges_quantiles_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="right",
+          #labels="auto",
+          #vjust=8,
+          #hjust=0
+)
+invisible(dev.off())
+
+
+
+
+
 
 hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Humpback_dens_mean, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
+  stat_density_ridges(#quantile_lines = TRUE,
                       calc_ecdf = TRUE,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
@@ -277,35 +293,73 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .4),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.text = element_text(size = 40),
+        legend.position = c(.75, .9),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
   )
 hw_density_ridges_quantiles_MaySep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
 
-png(paste0(path_figures, "/hump_whale_occurrence_in_study_area_pre_vs_post_regs.png"), width = 35, height = 15, units = "in", res = 400)
-ggarrange(hw_density_ridges_quantiles_JulSep,
-          hw_density_ridges_quantiles_MaySep,
-          ncol=2,
-          nrow=1,
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020.png"), width = 20, height = 15, units = "in", res = 400)
+ggarrange(hw_density_ridges_quantiles_MaySep,
+          ncol=1,
+          nrow=1
           #legend="right",
           #labels="auto",
-          vjust=8,
-          hjust=0
+          #vjust=8,
+          #hjust=0
 )
 invisible(dev.off())
 
 
+
+
+
+
+
+
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+# 
+# png(paste0(path_figures, "/hump_whale_occurrence_in_study_area_pre_vs_post_regs.png"), width = 35, height = 15, units = "in", res = 400)
+# ggarrange(hw_density_ridges_quantiles_JulSep,
+#           hw_density_ridges_quantiles_MaySep,
+#           ncol=2,
+#           nrow=1,
+#           #legend="right",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019, aes(x = Blue_occurrence_mean, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
+  stat_density_ridges(#quantile_lines = TRUE,
                       calc_ecdf = TRUE,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
@@ -319,22 +373,35 @@ bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = "none",
         #legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
   )
 bw_density_ridges_quantiles_JulSep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/blue_whale_occurrence_in_study_area__JulSep_pre_reg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
+ggarrange(bw_density_ridges_quantiles_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="right",
+          #labels="auto",
+          #vjust=8,
+          #hjust=0
+)
+invisible(dev.off())
+
+
 
 bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020, aes(x = Blue_occurrence_mean, y = pre_post_reg, fill = stat(quantile))) +
-  stat_density_ridges(quantile_lines = TRUE,
+  stat_density_ridges(#quantile_lines = TRUE,
                       calc_ecdf = TRUE,
                       geom = "density_ridges_gradient",
                       quantiles = c(0.25, 0.5, 0.75),
@@ -348,17 +415,31 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .4),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.text = element_text(size = 40),
+        legend.position = c(.85, .9),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
   )
 bw_density_ridges_quantiles_MaySep
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/blue_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020.png"), width = 20, height = 15, units = "in", res = 400)
+ggarrange(bw_density_ridges_quantiles_MaySep,
+          ncol=1,
+          nrow=1
+          #legend="right",
+          #labels="auto",
+          #vjust=8,
+          #hjust=0
+)
+invisible(dev.off())
+
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
