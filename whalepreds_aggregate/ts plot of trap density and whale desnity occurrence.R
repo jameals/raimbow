@@ -123,8 +123,9 @@ ts_hump_dens <- ggplot() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        #legend.position = c(.15, .85),
+        #axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        axis.text.x=element_blank(),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=15),
@@ -595,7 +596,8 @@ ts_lines_in_water <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        #axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
+        axis.text.x=element_blank(),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
         strip.text = element_text(size=15),
@@ -621,7 +623,7 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 
 # ts_sum_lines_in_water_v2 calculated as number of unique license multiplied by their pot limit
 
-png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data_xaxis_labels.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(#ts_trap_dens,
           ts_lines_in_water,
           ts_hump_dens,
