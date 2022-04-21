@@ -16,8 +16,8 @@ library(ggridges)
 #-----------------------------------------------------------------------------------
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week step or 1-month step
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 #path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
 
@@ -129,13 +129,13 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = "none",
         #legend.position = c(.8, .5),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
@@ -148,11 +148,11 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(pot_density_ridges_quantiles_JulSep,
           ncol=1,
-          nrow=1,
-          legend="right",
+          nrow=1
+          #legend="right",
           #labels="auto",
-          vjust=8,
-          hjust=0
+          #vjust=8,
+          #hjust=0
 )
 invisible(dev.off())
 
@@ -185,12 +185,12 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.8, .45),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.text = element_text(size = 40),
+        legend.position = c(.75, .8),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
         axis.title.y=element_blank(),
@@ -202,11 +202,11 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(pot_density_ridges_quantiles_MaySep,
           ncol=1,
-          nrow=1,
-          legend="right",
+          nrow=1
+          #legend="right",
           #labels="auto",
-          vjust=8,
-          hjust=0
+          #vjust=8,
+          #hjust=0
 )
 invisible(dev.off())
 
