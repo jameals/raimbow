@@ -466,8 +466,8 @@ summary_75th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats
 glimpse(summary_75th_HW_habitat_fishing_MaySep) 
 # % change from pre-reg average
 #pre-reg average
-(27.737974+22.585462+22.478941+28.801396+29.074314)/5 ## 26.13562
-(8.696646-26.13562)/26.13562*100 ##-66.72493
+(29.958425+25.054179+23.829820+28.636783+28.783313)/5 ## 27.2525
+(9.119614-27.2525)/27.2525*100 ##-66.5366
 
 
 summary_50th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
@@ -772,9 +772,9 @@ invisible(dev.off())
 ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x=season)) +
   geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=1.8) +
   geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=3.5) +
-  ylab("Summed humpback whale risk") +
+  ylab("Risk") +
   xlab("Season") +
-  guides(color=guide_legend(title="Percentile")) +
+  guides(color=guide_legend(nrow = 1, title="Percentile")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -784,29 +784,31 @@ ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x
                             "2019-2020" = "2020")) +
   theme_classic() +
   theme(#legend.title = element_blank(),
-    legend.title = element_text(size=22),
+    legend.title = element_text(size=50),
     #title = element_text(size = 15),
-    legend.text = element_text(size=22),
-    legend.position = c(.93, .85),
-    axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
-    axis.text.y = element_text(size = 22),
-    axis.title = element_text(size = 22),
-    strip.text = element_text(size=22),
+    legend.text = element_text(size=40),
+    #legend.position = c(.93, .85),
+    #legend.position = 'none',
+    legend.position = 'bottom',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_fishing_in_good_hw_habitat_JulSep
 
-# png(paste0(path_figures, "/ts_risk_sum_in_different_hw_habitat_JulSep_clipped_to45N_20220227.png"), width = 17, height = 10, units = "in", res = 360)
-# ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
-#           ncol=1,
-#           nrow=1,
-#           #legend="top",
-#           #labels="auto",
-#           vjust=8,
-#           hjust=0
-# )
-# invisible(dev.off())
+png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
@@ -840,7 +842,7 @@ summary(glht(mod1_hump_JulSep, mcp(percentile='Tukey')))
 ts_overlapping_grids_count_all_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
   geom_line(aes(y = n_grids, group = percentile, color=percentile), size=1.8) +
   geom_point(aes(y = n_grids, group = percentile, color=percentile), size=3.5) +
-  ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -854,11 +856,12 @@ ts_overlapping_grids_count_all_JulSep <- ggplot(summary_overlap_JulSep, aes(x=se
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.1, .3),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    #legend.position = c(.1, .3),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
@@ -866,7 +869,7 @@ ts_overlapping_grids_count_all_JulSep
 
 
 
-png(paste0(path_figures, "/count_overlap_fishery_and_good_hw_habitat_variable_JulSep_20220227.png"), width = 17, height = 10, units = "in", res = 360)
+png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
 ggarrange(ts_overlapping_grids_count_all_JulSep,
           ncol=1,
           nrow=1,
@@ -910,7 +913,7 @@ summary(glm.posthoc)
 ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season)) +
   geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=1.8) +
   geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=3.5) +
-  ylab("Summed humpback whale risk") +
+  ylab("Risk") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -925,19 +928,20 @@ ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.93, .85),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    #legend.position = c(.93, .85),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_fishing_in_good_hw_habitat
 
 
-png(paste0(path_figures, "/ts_risk_sum_75th_hw_habitat_MaySep_clipped_to45N_20220227.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_fishing_in_75th_hw_habitat,
+png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_fishing_in_good_hw_habitat,
           ncol=1,
           nrow=1,
           #legend="top",
@@ -979,7 +983,7 @@ summary(glht(mod1_hump_MaySep, mcp(percentile='Tukey')))
 ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) +
   geom_line(aes(y = n_grids, group = percentile, color=percentile), size=1.8) +
   geom_point(aes(y = n_grids, group = percentile, color=percentile), size=3.5) +
-  ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -992,11 +996,12 @@ ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) 
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.1, .7),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    #legend.position = c(.1, .7),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
@@ -1004,7 +1009,7 @@ ts_overlapping_grids_count_all
 
 
 
-png(paste0(path_figures, "/count_overlap_fishery_and_good_hw_habitat_variable_MaySep_20220227.png"), width = 17, height = 10, units = "in", res = 360)
+png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
 ggarrange(ts_overlapping_grids_count_all,
           ncol=1,
           nrow=1,
@@ -1049,11 +1054,11 @@ summary_75th_HW_habitat_fishing_MaySep
 
 
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habitat_fishing_JulSep, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=1.8) +
-  geom_point(size=3.5) +
+  geom_line(size=2) +
+  geom_point(size=5) +
   
-  geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=1.8) +
-  geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=3.5) +
+  geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
+  geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
   
   #ylab("Summed humpback whale risk") +
   ylab("Risk") +
@@ -1073,18 +1078,29 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
   theme_classic() +
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
-        legend.text = element_text(size = 22),
-        #legend.position = "none",
-        legend.position = c(.89, .92),
-        axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
-        axis.text.y = element_text(size = 22),
-        axis.title = element_text(size = 22),
-        strip.text = element_text(size=22),
+        legend.text = element_text(size = 40),
+        legend.position = "none",
+        #legend.position = c(.89, .92),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
+
+png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_fishing_in_75th_hw_habitat_JulSep_MaySep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 ## overlap
@@ -1093,11 +1109,11 @@ test_summary_75_MaySep
 
 
 ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=1.8) +
-  geom_point(size=3.5) +
+  geom_line(size=2) +
+  geom_point(size=5) +
   
-  geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=1.8) +
-  geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=3.5) +
+  geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
+  geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
   
   #ylab("Number of overlapping grids") +
   ylab("Overlap") +
@@ -1121,16 +1137,25 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, 
         #legend.position = c(.9, .85),
         legend.position = "none",
         
-        axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
-        axis.text.y = element_text(size = 22),
-        axis.title = element_text(size = 22),
-        strip.text = element_text(size=22),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_overlap_75th_hw_habitat_JulSep_MaySep
 
-
+png(paste0(path_figures, "/overlap_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_overlap_75th_hw_habitat_JulSep_MaySep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 ##############################################
 ## % change from pre-reg average to post-reg
