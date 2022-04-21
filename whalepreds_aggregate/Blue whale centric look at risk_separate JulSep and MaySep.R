@@ -732,7 +732,7 @@ summary_probabilites_MaySep
 ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=season)) +
   geom_line(aes(y = risk_sum, group = prob_of_occur, color = prob_of_occur), size=1.8) +
   geom_point(aes(y = risk_sum, group = prob_of_occur, color = prob_of_occur), size=3.5) +
-  ylab("Summed blue whale risk") +
+  ylab("Risk") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -741,22 +741,33 @@ ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=s
                             "2017-2018" = "2018",
                             "2018-2019" = "2019",
                             "2019-2020" = "2020")) +
-  guides(color=guide_legend(title="Prob. of occur.")) +
+  guides(color=guide_legend(title="Probability of occurrence")) +
   theme_classic() +
   theme(#legend.title = element_blank(),
-    legend.title = element_text(size=20),
+    legend.title = element_text(size=40),
     #title = element_text(size = 15),
-    legend.text = element_text(size=20),
-    legend.position = c(.85, .15),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    legend.text = element_text(size=40),
+    #legend.position = c(.85, .15),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 40),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_risk_in_good_bw_habitat_JulSep
 
+png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_risk_in_good_bw_habitat_JulSep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 ##GLM
 # note that this is different to the fishery perspective, as that had one data point per month
@@ -784,7 +795,7 @@ summary(glht(mod1_blue_JulSep, mcp(prob_of_occur='Tukey')))
 ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=season)) +
   geom_line(aes(y = risk_sum, group = prob_of_occur, color = prob_of_occur), size=1.8) +
   geom_point(aes(y = risk_sum, group = prob_of_occur, color = prob_of_occur), size=3.5) +
-  ylab("Summed blue whale risk") +
+  ylab("Risk") +
   xlab("Season") +
   guides(color=guide_legend(title="Prob. of occur.")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
@@ -799,27 +810,27 @@ ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=s
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.85, .25),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_risk_in_good_bw_habitat_MaySep
 
 
-# png(paste0(path_figures, "/ts_risk_in_0469_bw_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 300)
-# ggarrange(ts_risk_in_good_bw_habitat_MaySep,
-#           ncol=1,
-#           nrow=1,
-#           #legend="top",
-#           #labels="auto",
-#           vjust=8,
-#           hjust=0
-# )
-# invisible(dev.off())
+png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_risk_in_good_bw_habitat_MaySep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 ##GLM
@@ -853,7 +864,7 @@ summary_overlap_MaySep
 ts_overlapping_grids_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
   geom_line(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=1.8) +
   geom_point(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=3.5) +
-  ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -868,15 +879,29 @@ ts_overlapping_grids_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.15, .8),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_overlapping_grids_JulSep
+
+png(paste0(path_figures, "/ts_overlap_good_BW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_overlapping_grids_JulSep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
 
 ##GLM
 summary_overlap_JulSep$prob_of_occur <- as.factor(summary_overlap_JulSep$prob_of_occur)
@@ -902,7 +927,7 @@ summary(glht(mod1_blue_overlap_JulSep, mcp(prob_of_occur='Tukey')))
 ts_overlapping_grids <- ggplot(summary_overlap_MaySep, aes(x=season)) +
   geom_line(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=1.8) +
   geom_point(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=3.5) +
-  ylab("Number of overlapping grids") +
+  ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -917,16 +942,26 @@ ts_overlapping_grids <- ggplot(summary_overlap_MaySep, aes(x=season)) +
     legend.title = element_text(size=20),
     #title = element_text(size = 15),
     legend.text = element_text(size=20),
-    legend.position = c(.85, .2),
-    axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    strip.text = element_text(size=20),
+    legend.position = 'none',
+    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
   )
 ts_overlapping_grids
 
+png(paste0(path_figures, "/ts_overlap_good_BW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_overlapping_grids,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
@@ -971,11 +1006,11 @@ summary_good_bw_habitat_fishing_JulSep_0626
 summary_good_bw_habitat_fishing_MaySep_0469
 
 ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_fishing_JulSep_0626, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=1.8) +
-  geom_point(size=3.5) +
+  geom_line(size=2) +
+  geom_point(size=5) +
   
-  geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=1.8) +
-  geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=3.5) +
+  geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
+  geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
   
   #ylab("Summed blue whale risk") +
   ylab("Risk") +
@@ -995,18 +1030,28 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   theme_classic() +
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
-        legend.text = element_text(size = 22),
+        legend.text = element_text(size = 40),
         #legend.position = "none",
-        legend.position = c(.89, .92),
-        axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
-        axis.text.y = element_text(size = 22),
-        axis.title = element_text(size = 22),
-        strip.text = element_text(size=22),
+        legend.position = 'none',
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_risk_in_mean_bw_habitat_JulSep_MaySep
 
+png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_risk_in_mean_bw_habitat_JulSep_MaySep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 ## overlap
@@ -1014,11 +1059,11 @@ test_summary_JulSep_0626
 test_summary_MaySep_0469
 
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0626, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=1.8) +
-  geom_point(size=3.5) +
+  geom_line(size=2) +
+  geom_point(size=5) +
   
-  geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=1.8) +
-  geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=3.5) +
+  geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
+  geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
   
   #ylab("Number of overlapping grids") +
   ylab("Overlap") +
@@ -1042,16 +1087,26 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
         #legend.position = c(.85, .8),
         legend.position = "none",
         
-        axis.text.x = element_text(hjust = 0.5,size = 22, angle = 0),
-        axis.text.y = element_text(size = 22),
-        axis.title = element_text(size = 22),
-        strip.text = element_text(size=22),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 
 
+png(paste0(path_figures, "/ts_overlap_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+ggarrange(ts_overlap_in_mean_bw_habitat_JulSep_MaySep,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
