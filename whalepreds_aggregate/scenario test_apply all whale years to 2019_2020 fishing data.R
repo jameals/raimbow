@@ -95,8 +95,8 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 
 # bring in fishing effort - only using 2018-19 and 2019-20 fishing effort data -hold fishing constant
 
-path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-#path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA_regs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA_regs <- readRDS(path.fish_WA_regs)
 #Grid ID 122919 end up having very high trap densities in few months 
@@ -305,51 +305,73 @@ plot_subset_with_regs_2019_2020 <- risk_whales_WA_MaySep_study_area_with_regs %>
 
 
 violin_hump_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Humpback Whale Risk") + 
+  ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 violin_hump_risk_JulSep_constant_fishing
 
+png(paste0(path_figures, "/risk_HW_JulSep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(violin_hump_risk_JulSep_constant_fishing,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 violin_hump_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Humpback Whale Risk") + 
+  ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 violin_hump_risk_MaySep_constant_fishing
 
+png(paste0(path_figures, "/risk_HW_MaySep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(violin_hump_risk_MaySep_constant_fishing,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
 
 #Jul-Sep
-mod1_hump_JulSep <- glm(Humpback_risk_sum ~ month + pre_post_reg,
+mod1_hump_JulSep <- glm(Humpback_risk_sum ~ pre_post_reg + month,
                  family=gaussian, data=plot_subset_with_regs_2018_2019, na.action = na.omit) 
 summary(mod1_hump_JulSep)
 plot(mod1_hump_JulSep)
@@ -358,7 +380,7 @@ wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_
 
 
 #May-Sep
-mod1_hump <- glm(Humpback_risk_sum ~ month + pre_post_reg,
+mod1_hump <- glm(Humpback_risk_sum ~ pre_post_reg + month,
                  family=gaussian, data=plot_subset_with_regs_2019_2020, na.action = na.omit) 
 summary(mod1_hump)
 plot(mod1_hump)
@@ -369,51 +391,73 @@ wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2019_
 
 
 violin_blue_risk_JulSep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Blue Whale Risk") + 
+  ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 violin_blue_risk_JulSep_constant_fishing
 
+png(paste0(path_figures, "/risk_BW_JulSep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(violin_blue_risk_JulSep_constant_fishing,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
 
 violin_blue_risk_MaySep_constant_fishing <- ggplot() +
-  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=1, fill='lightblue1', alpha=0.5) +
+  geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
-  ylab("Summed Blue Whale Risk") + 
+  ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
+        legend.text = element_text(size = 40),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 violin_blue_risk_MaySep_constant_fishing
 
+png(paste0(path_figures, "/risk_BW_MaySep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(violin_blue_risk_MaySep_constant_fishing,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
 #Jul-Sep
-mod1_blue_JulSep <- glm(Blue_risk_sum ~ month + pre_post_reg,
+mod1_blue_JulSep <- glm(Blue_risk_sum ~ pre_post_reg + month,
                         family=gaussian, data=plot_subset_with_regs_2018_2019, na.action = na.omit) 
 summary(mod1_blue_JulSep)
 plot(mod1_blue_JulSep)
@@ -422,7 +466,7 @@ wilcox.test(Blue_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2018_2019
 
 
 #May-Sep
-mod1_blue_MaySep <- glm(Blue_risk_sum ~ month + pre_post_reg,
+mod1_blue_MaySep <- glm(Blue_risk_sum ~ pre_post_reg + month,
                  family=gaussian, data=plot_subset_with_regs_2019_2020, na.action = na.omit) 
 summary(mod1_blue_MaySep)
 plot(mod1_blue_MaySep)
