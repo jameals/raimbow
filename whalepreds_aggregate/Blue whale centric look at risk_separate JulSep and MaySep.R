@@ -127,14 +127,30 @@ study_area_bw_JulSep <- study_area_bw %>%
 #   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
 #density plot for pooled data across all 2014-2020 seasons
-ggplot(study_area_bw_JulSep, aes(x = Blue_occurrence_mean, height = ..density..)) +
+bw_prob_occur_density_JulSep <- ggplot(study_area_bw_JulSep, aes(x = Blue_occurrence_mean, height = ..density..)) +
   geom_density(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
+  ylab("") +
   #coord_cartesian(clip = "off") +
-  xlab("Blue whale probability of occurrence (Jul-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+  xlab("Blue whale probability of occurrence") +
+  theme_ridges(grid = TRUE, 
+               center_axis_labels = TRUE,
+               font_size = 50
+               )
+bw_prob_occur_density_JulSep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/density_plot_BW_prob_occur_in_study_area_JulSep.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(bw_prob_occur_density_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 #find the mean +/- SD value from the distribution (in study area) for Jul-Sep
 summary_study_area_bw_JulSep <- study_area_bw_JulSep %>% 
@@ -431,14 +447,29 @@ library(ggridges)
 #   theme_ridges(grid = TRUE, center_axis_labels = TRUE)
 
 #density plot for pooled data across all 2014-2020 seasons
-ggplot(study_area_bw, aes(x = Blue_occurrence_mean, height = ..density..)) +
+bw_prob_occur_density_MaySep <- ggplot(study_area_bw, aes(x = Blue_occurrence_mean, height = ..density..)) +
   geom_density(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_discrete(expand = c(0, 0)) +
+  ylab("") +
   #coord_cartesian(clip = "off") +
-  xlab("Blue whale probability of occurrence (May-Sep)") +
-  theme_ridges(grid = TRUE, center_axis_labels = TRUE)
+  xlab("Blue whale probability of occurrence") +
+  theme_ridges(grid = TRUE, 
+               center_axis_labels = TRUE,
+               font_size = 50)
+bw_prob_occur_density_MaySep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/density_plot_BW_prob_occur_in_study_area_MaySep.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(bw_prob_occur_density_MaySep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 #find the mean +/- SD / median value from the distribution (in study area) for May-Sep
