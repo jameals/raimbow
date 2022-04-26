@@ -457,60 +457,82 @@ pooled_active_vessels_in_MaySep_by_season <- active_vessels_in_MaySep_by_season 
   mutate(pre_post_reg = 
            ifelse(season == '2019-2020', "2019-2020", "pre-reg"))
 
+
 box_pooled_unique_vessels_pre_reg_vs_2018_2019 <- ggplot() +
-  geom_violin(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=1) +
+  geom_violin(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=2) +
   #geom_jitter(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
   #geom_dotplot(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
-
-  geom_point(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=5) +
-  
-  scale_color_manual(values=c("black", "gray80")) +
-  scale_fill_manual(values=c("black", "gray80")) +
-  
-  ylab("No. unique vessels, Jul-Sep") + 
+  geom_point(data = pooled_active_vessels_in_JulSep_by_season %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=8) +
+  scale_x_discrete(labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019"), limits = rev, ) +
+  scale_color_manual(values=c("#8bd8bd", "#243665")) +
+  scale_fill_manual(values=c("#8bd8bd", "#243665")) +
+  ylab("No. unique vessels") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        #legend.position = c(.15, .85),
+        legend.position = 'none',
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 box_pooled_unique_vessels_pre_reg_vs_2018_2019
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/number_of_unique_vessels_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(box_pooled_unique_vessels_pre_reg_vs_2018_2019,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
 
 box_pooled_unique_vessels_pre_reg_vs_2019_2020 <- ggplot() +
-  geom_violin(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=1) +
+  geom_violin(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), lwd=2) +
   #geom_jitter(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),width = 0.15) +
   #geom_dotplot(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = n_unique_licenses),binaxis='y', stackdir='center', dotsize=1)+
-  
-  geom_point(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=5) +
-  
-  scale_color_manual(values=c("black", "gray80")) +
-  scale_fill_manual(values=c("black", "gray80")) +
-  
-  ylab("No. unique vessels, May-Sep") + 
+  geom_point(data = pooled_active_vessels_in_MaySep_by_season %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = n_unique_licenses, group=Pot_Limit_or_M2, color=factor(Pot_Limit_or_M2)), size=8) +
+  scale_color_manual(values=c("#8bd8bd", "#243665")) +
+  scale_fill_manual(values=c("#8bd8bd", "#243665")) +
+  ylab("") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020"), limits = rev, ) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.text = element_text(size = 50),
+        legend.position = c(.9, .9),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 box_pooled_unique_vessels_pre_reg_vs_2019_2020
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/number_of_unique_vessels_prePreg_vs_2020_v2.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(box_pooled_unique_vessels_pre_reg_vs_2019_2020,
+          ncol=1,
+          nrow=1,
+          legend="bottom"
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
 
 
 
@@ -543,10 +565,10 @@ active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2 <- as.factor(active_vessel
 active_vessels_in_MaySep_by_season_v2$pre_post_reg <- factor(active_vessels_in_MaySep_by_season_v2$pre_post_reg, levels = c("pre-regulation", "2019", "2020"))
 
 vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
-  geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-regulation'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=1) + 
+  geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-regulation'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=2) + 
   scale_fill_manual(values=c("white"), guide = guide_legend(order = 1)) +
   
-  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-regulation'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=6) + 
+  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-regulation'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=8) + 
   scale_color_manual(values=c("black", "black")) +
   scale_x_discrete(labels=c("May"="May","June"="Jun","July"="Jul","August"="Aug","September"="Sep")) +
   facet_wrap(~Pot_Limit_or_M2)+
@@ -562,19 +584,30 @@ vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
     
         legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=20),
-        axis.text.x = element_text(hjust = 0.5,size = 20),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
+        legend.text = element_text(size=40),
+        axis.text.x = element_text(hjust = 0.5,size = 40),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
         #legend.position = c(0.9, 0.8),
-        legend.position="bottom",
+        legend.position="right",
         strip.text.x = element_text(
-            size = 12, color = "black", face = "bold"),
+            size = 40, color = "black", face = "bold"),
         strip.background = element_rect(
           color="black", fill="white", size=1.5, linetype="solid")
   )
 vessels_in_MaySep_by_season_plot_v2
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/number_of_unique_vessels_prePreg_vs_2019_2020_byt_license_category.png"), width = 30, height = 14, units = "in", res = 400)
+ggarrange(vessels_in_MaySep_by_season_plot_v2,
+          ncol=1,
+          nrow=1
+          #legend="bottom"
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 
