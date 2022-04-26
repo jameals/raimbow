@@ -457,44 +457,112 @@ test_join_uniques_price_per_pound <- test_join_uniques %>%
 
 
 ## another way of doing price per pound
-avg_ppp_post_reg <- test_join_uniques_price_per_pound %>% 
-  filter(pre_post_reg != 'pre-reg') %>% 
-  #filter(month_name %in% c('July','August','September')) %>% 
+avg_ppp_post_reg_MaySep <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg == '2019-2020') %>% 
   group_by(season, pre_post_reg) %>% 
   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
 
-avg_ppp_pre_reg <- test_join_uniques_price_per_pound %>% 
-  filter(pre_post_reg == 'pre-reg') %>% 
-  #filter(month_name %in% c('July','August','September')) %>% 
+avg_ppp_post_reg_JulSep <- test_join_uniques_price_per_pound %>% 
+  filter(month_name %in% c('July','August','September')) %>% 
+  filter(pre_post_reg == '2018-2019') %>% 
   group_by(season, pre_post_reg) %>% 
   summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+
+
+avg_ppp_pre_reg_MaySep <- test_join_uniques_price_per_pound %>% 
+  filter(pre_post_reg == 'pre-reg') %>% 
+  group_by(season, pre_post_reg) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+
+avg_ppp_pre_reg_JulSep <- test_join_uniques_price_per_pound %>% 
+  filter(month_name %in% c('July','August','September')) %>% 
+  filter(pre_post_reg == 'pre-reg') %>% 
+  group_by(season, pre_post_reg) %>% 
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+
+
 
 ppp_in_JulSep <- ggplot()+
-  geom_violin(data = avg_ppp_pre_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=1) + 
+  geom_violin(data = avg_ppp_pre_reg_JulSep, aes(x= pre_post_reg, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=2) + 
   scale_fill_manual(values=c("white")) +
-  geom_dotplot(data = avg_ppp_pre_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND), binaxis = "y", stackdir = "center") + 
+  #geom_dotplot(data = avg_ppp_pre_reg_JulSep, aes(x= pre_post_reg, y= PRICE_PER_POUND), binaxis = "y", stackdir = "center") + 
   
-  geom_point(data = avg_ppp_post_reg, aes(x= pre_post_reg, y= PRICE_PER_POUND, color=season), size=5) + 
-  scale_color_manual(values=c("black", "gray80")) +
+  geom_point(data = avg_ppp_post_reg_JulSep, aes(x= pre_post_reg, y= PRICE_PER_POUND), size=8) + 
+  scale_color_manual(values=c("black")) +
   
   #scale_colour_brewer(palette = "PRGn") +
-  ylab("Average price per pound (May-Sep)") +
+  ylab("Average price per pound ($)") +
   xlab("") + 
-  #scale_x_discrete(limits=c("pre-reg","2018-2019"))+ 
-  scale_x_discrete(limits=c("pre-reg","2019-2020"))+ 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   
-  theme_bw()+
+  theme_classic()+
   theme(#panel.background = element_rect(fill = 'gray92'),
     legend.title = element_blank(),
     #title = element_text(size = 32),
-    legend.text = element_text(size=20),
-    axis.text.x = element_text(hjust = 0.5,size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title = element_text(size = 20),
-    legend.position = c(.86, .2)
-    #legend.position = "none"
+    legend.text = element_text(size=40),
+    axis.text.x = element_text(hjust = 0.5,size = 40),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    #legend.position = c(.86, .2),
+    legend.position = "none"
   )
 ppp_in_JulSep
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(ppp_in_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
+
+ppp_in_MaySep <- ggplot()+
+  geom_violin(data = avg_ppp_pre_reg_MaySep, aes(x= pre_post_reg, y= PRICE_PER_POUND, fill=pre_post_reg), lwd=2) + 
+  scale_fill_manual(values=c("white")) +
+  #geom_dotplot(data = avg_ppp_pre_reg_MaySep, aes(x= pre_post_reg, y= PRICE_PER_POUND), binaxis = "y", stackdir = "center") + 
+  
+  geom_point(data = avg_ppp_post_reg_MaySep, aes(x= pre_post_reg, y= PRICE_PER_POUND), size=8) + 
+  scale_color_manual(values=c("black")) +
+  
+  #scale_colour_brewer(palette = "PRGn") +
+  ylab("") +
+  xlab("") + 
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
+  
+  theme_classic()+
+  theme(#panel.background = element_rect(fill = 'gray92'),
+    legend.title = element_blank(),
+    #title = element_text(size = 32),
+    legend.text = element_text(size=40),
+    axis.text.x = element_text(hjust = 0.5,size = 40),
+    axis.text.y = element_text(size = 40),
+    axis.title = element_text(size = 50),
+    #legend.position = c(.86, .2),
+    legend.position = "none"
+  )
+ppp_in_MaySep
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2020.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(ppp_in_MaySep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
 
 
 
@@ -842,7 +910,7 @@ monthly_rev_JulSep <- ggplot()+
 monthly_rev_JulSep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019.png"), width = 15, height = 14, units = "in", res = 400)
 ggarrange(monthly_rev_JulSep,
           ncol=1,
           nrow=1
@@ -875,6 +943,7 @@ monthly_rev_MaySep <- ggplot()+
         #title = element_text(size = 26),
         legend.text = element_text(size = 50),
         #legend.position = c(.85, .85),
+        legend.position="none",
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
@@ -885,11 +954,11 @@ monthly_rev_MaySep <- ggplot()+
 monthly_rev_MaySep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_v2.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020.png"), width = 15, height = 14, units = "in", res = 400)
 ggarrange(monthly_rev_MaySep,
           ncol=1,
-          nrow=1,
-          legend="bottom"
+          nrow=1
+          #legend="bottom"
           #labels="auto",
           #vjust=8,
           #hjust=-0.2
