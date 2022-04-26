@@ -157,7 +157,7 @@ summary_pacfin_data_JulSep$month_name <- factor(summary_pacfin_data_JulSep$month
 ##### as a boxplot
 ##REVENUE
 sum_JulSep_rev_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
+  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=2) +
   ylab("Revenue ($ x10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -166,15 +166,27 @@ sum_JulSep_rev_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
+        axis.text.x = element_text(hjust = 0.5,size = 40), #, angle = 60
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=20),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 sum_JulSep_rev_box
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/total_revenue_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(sum_JulSep_rev_box,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -202,7 +214,7 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
 
 ##LANDINGS
 sum_JulSep_lbs_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
+  geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=2) +
   ylab("Landings (lbs x 10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -211,15 +223,27 @@ sum_JulSep_lbs_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
+        axis.text.x = element_text(hjust = 0.5,size = 40), #, angle = 60
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=20),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 sum_JulSep_lbs_box
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/total_landings_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(sum_JulSep_lbs_box,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -267,8 +291,9 @@ summary_pacfin_data_MaySep$month_name <- factor(summary_pacfin_data_MaySep$month
 
 ##REVENUE
 sum_MaySep_rev_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=1) +
-  ylab("Revenue ($ x10^5)") +
+  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=2) +
+  #ylab("Revenue ($ x10^5)") +
+  ylab("") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -276,15 +301,27 @@ sum_MaySep_rev_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
+        axis.text.x = element_text(hjust = 0.5,size = 40), #, angle = 60
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=20),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 sum_MaySep_rev_box
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/total_revenue_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(sum_MaySep_rev_box,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -314,8 +351,9 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
 
 ##LANDINGS
 sum_MaySep_lbs_box <- ggplot() +
-  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=1) +
-  ylab("Landings (lbs x 10^5)") +
+  geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=2) +
+  #ylab("Landings (lbs x 10^5)") +
+  ylab("") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -323,15 +361,27 @@ sum_MaySep_lbs_box <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20), #, angle = 60
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
+        axis.text.x = element_text(hjust = 0.5,size = 40), #, angle = 60
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=20),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 sum_MaySep_lbs_box
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/total_landings_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(sum_MaySep_lbs_box,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -522,13 +572,14 @@ summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>%
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
+
+
 CPUE_ts_lbs_MaySep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
-  
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
-  
-  ylab("Mean lbs/pot") +
+  #ylab("Mean lbs/pot") +
+  ylab("") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -536,23 +587,35 @@ CPUE_ts_lbs_MaySep <- ggplot()+
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 CPUE_ts_lbs_MaySep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(CPUE_ts_lbs_MaySep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
 
 CPUE_ts_dollar_MaySep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
-  
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
-  
-  ylab("Mean $/pot") +
+  #ylab("Mean $/pot") +
+  ylab("") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
@@ -560,14 +623,26 @@ CPUE_ts_dollar_MaySep <- ggplot()+
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 CPUE_ts_dollar_MaySep
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(CPUE_ts_dollar_MaySep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -621,11 +696,9 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
 
 
 CPUE_ts_dollar_JulSep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
-  
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), size=5, color='red') + #,size=2.5  group=season,
-  
   ylab("Mean $/pot") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -634,22 +707,33 @@ CPUE_ts_dollar_JulSep <- ggplot()+
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 CPUE_ts_dollar_JulSep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(CPUE_ts_dollar_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
 
 CPUE_ts_lbs_JulSep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
-  
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
   #geom_point(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), size=5, color='red') + #,size=2.5  group=season,
-  
   ylab("Mean lbs/pot") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -658,14 +742,26 @@ CPUE_ts_lbs_JulSep <- ggplot()+
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.35, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 CPUE_ts_lbs_JulSep
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+ggarrange(CPUE_ts_lbs_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ##GLM##
@@ -715,32 +811,47 @@ glimpse(monthly_rev_by_vessel)
 
 
 monthly_rev_by_vessel_JulSep <- monthly_rev_by_vessel %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
   filter(season != '2019-2020') %>% 
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
   group_by(Vessel.x, season, pre_post_reg, Pot_Limit) %>% 
   summarise(mean_monthly_rev = mean(monthly_rev, na.rm = T))
 
+
 monthly_rev_JulSep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
   scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
-  ylab("Mean monthly revenue/vessel (x10^4)") +
+  ylab("Mean monthly revenue/vessel ($x10^4)") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.85, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0, color='black'),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        #legend.text = element_text(size = 20),
+        #legend.position = c(.85, .85),
+        legend.position = 'none',
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 monthly_rev_JulSep
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(monthly_rev_JulSep,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>% 
@@ -751,28 +862,39 @@ monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>%
   summarise(mean_monthly_rev = mean(monthly_rev, na.rm = T))
 
 
-
 monthly_rev_MaySep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=1) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
   scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
-  ylab("Mean monthly revenue/vessel (x10^4)") +
+  #ylab("Mean monthly revenue/vessel (x10^4)") +
+  ylab("") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.85, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0, color='black'),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.text = element_text(size = 50),
+        #legend.position = c(.85, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 monthly_rev_MaySep
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_v2.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(monthly_rev_MaySep,
+          ncol=1,
+          nrow=1,
+          legend="bottom"
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 ### GLM on mean monthly revenue/vessel
