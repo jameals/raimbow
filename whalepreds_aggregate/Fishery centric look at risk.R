@@ -1505,25 +1505,20 @@ box_hw_risk_2019_2020_with_and_without_regs
 test <- rbind(box_2018_2019_with_regs, box_2018_2019_without_regs, box_2019_2020_with_regs, box_2019_2020_without_regs)
 
 box_hw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
-  
-  geom_violin(data = test, aes(x = season, y = hump_risk, fill = regs), lwd=1) +
+    geom_violin(data = test, aes(x = season, y = hump_risk, fill = regs), lwd=2) +
   scale_fill_manual(values = c("white", "gray80"))+
-  ylab("Summed Humpback Whale Risk") + 
-  
-  #geom_violin(data = test, aes(x = season, y = blue_risk, fill = regs), lwd=1) +
-  #scale_fill_manual(values = c("white", "gray80"))+
-  #ylab("Summed Blue Whale Risk") + 
-  
+  ylab("Risk") + 
+  scale_x_discrete(labels=c("2018-2019" = "2019", "2019-2020" = "2020")) +
   xlab("Season") +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
-        legend.position = c(.2, .95),
-        axis.text.x = element_text(hjust = 0.5,size = 20, angle = 0),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        legend.position = "none",
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
@@ -1531,10 +1526,8 @@ box_hw_risk_2018_2019_2020_with_and_without_regs
 
 
 #plot things together and save
-png(paste0(path_figures, "/box_hump_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/hump_risk_2019_and_2020_with_and_without_regs.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hw_risk_2018_2019_2020_with_and_without_regs,
-          #box_hw_risk_2018_2019_with_and_without_regs,
-          #box_hw_risk_2019_2020_with_and_without_regs,
           ncol=1,
           nrow=1,
           #legend="top",
@@ -1545,6 +1538,43 @@ ggarrange(box_hw_risk_2018_2019_2020_with_and_without_regs,
 invisible(dev.off())
 
 
+box_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+  geom_violin(data = test, aes(x = season, y = blue_risk, fill = regs), lwd=2) +
+  scale_fill_manual(values = c("white", "gray80"))+
+  ylab("Risk") + 
+  scale_x_discrete(labels=c("2018-2019" = "2019", "2019-2020" = "2020")) +
+    xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        legend.position = "none",
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_bw_risk_2018_2019_2020_with_and_without_regs
+
+
+#plot things together and save
+png(paste0(path_figures, "/blue_risk_2019_and_2020_with_and_without_regs.png"), width = 22, height = 14, units = "in", res = 400)
+ggarrange(box_bw_risk_2018_2019_2020_with_and_without_regs,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
+
+
+
+
+# to calculate % change between 'with regulations' and 'without regulations' 
 # summary_test <- test %>% 
 #   group_by(season, regs) %>% 
 #   summarise(sum_hump_risk = sum(hump_risk, na.rm = TRUE),
@@ -1565,43 +1595,43 @@ invisible(dev.off())
 
 
 
-point_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
-  
-  #geom_point(data = summary_test, aes(x = season, y = sum_hump_risk, color = regs), size=5) +
-  #ylab("sum hump Whale Risk") + 
-  
-  geom_point(data = summary_test, aes(x = season, y = sum_blue_risk, color = regs), size=5) +
-  ylab("sum blue Whale Risk") + 
-  
-  xlab("Season") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        legend.text = element_text(size = 20),
-        legend.position = c(.2, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
-        strip.background = element_blank(),
-        strip.placement = "left"
-  )
-point_bw_risk_2018_2019_2020_with_and_without_regs
-
-
-#plot things together and save
-png(paste0(path_figures, "/point_blue_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(point_bw_risk_2018_2019_2020_with_and_without_regs,
-          #box_hw_risk_2018_2019_with_and_without_regs,
-          #box_hw_risk_2019_2020_with_and_without_regs,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+# point_bw_risk_2018_2019_2020_with_and_without_regs <- ggplot() +
+#   
+#   #geom_point(data = summary_test, aes(x = season, y = sum_hump_risk, color = regs), size=5) +
+#   #ylab("sum hump Whale Risk") + 
+#   
+#   geom_point(data = summary_test, aes(x = season, y = sum_blue_risk, color = regs), size=5) +
+#   ylab("sum blue Whale Risk") + 
+#   
+#   xlab("Season") +
+#   theme_classic() +
+#   theme(legend.title = element_blank(),
+#         #title = element_text(size = 26),
+#         legend.text = element_text(size = 20),
+#         legend.position = c(.2, .85),
+#         axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
+#         axis.text.y = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         strip.text = element_text(size=20),
+#         strip.background = element_blank(),
+#         strip.placement = "left"
+#   )
+# point_bw_risk_2018_2019_2020_with_and_without_regs
+# 
+# 
+# #plot things together and save
+# png(paste0(path_figures, "/point_blue_risk_2019_and_2020_with_and_without_regs_on_same_scale.png"), width = 14, height = 10, units = "in", res = 300)
+# ggarrange(point_bw_risk_2018_2019_2020_with_and_without_regs,
+#           #box_hw_risk_2018_2019_with_and_without_regs,
+#           #box_hw_risk_2019_2020_with_and_without_regs,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 
 
