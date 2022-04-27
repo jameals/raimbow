@@ -267,6 +267,18 @@ glimpse(MaySep_hw_post_reg)
 
 #-------------
 
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-126.5,45.5,-122,49) 
+
+
 pre_regs_data_hw <- MaySep_hw_pre_reg %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
@@ -276,20 +288,21 @@ map_pre_regs_hw <- ggplot() +
               col=Humpback_dens_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
   scale_fill_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   scale_color_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   #ggtitle("Pre-regulations (2013-14 to 2017-18)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16), 
+        #strip.text = element_text(size=20),
+        title=element_text(size=20), 
         legend.position = 'none'
   )
 map_pre_regs_hw
@@ -306,20 +319,21 @@ map_post_regs_2018_2019_hw <- ggplot() +
               col=Humpback_dens_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
   scale_fill_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   scale_color_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   #ggtitle("Post-regulations (2018-19)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16), 
+        #strip.text = element_text(size=20),
+        title=element_text(size=20), 
         legend.position = 'none'
   )
 map_post_regs_2018_2019_hw
@@ -336,25 +350,41 @@ map_post_regs_2019_2020_hw <- ggplot() +
               col=Humpback_dens_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
   scale_fill_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   scale_color_viridis(na.value=NA,option="A",name="Whale density",breaks=seq(0,0.043,by=0.01),limits=c(0,0.043),oob=squish) + 
   #ggtitle("Post-regulations (2019-20)") +
   #geom_sf(data = study_area, color = 'black', fill = NA) +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16)
+        #strip.text = element_text(size=20),
+        title=element_text(size=20)
   )
 map_post_regs_2019_2020_hw
 
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/map_mean_hw_density_3_panel_MaySep_pre_and_post_reg.png"), width = 22, height = 16, units = "in", res = 400)
+ggarrange(map_pre_regs_hw,
+          map_post_regs_2018_2019_hw,
+          map_post_regs_2019_2020_hw,
+          ncol=3,
+          nrow=1,
+          #legend="top",
+          common.legend = TRUE,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 #------------------------------------------------------------------------------------------
 
@@ -414,20 +444,21 @@ map_pre_regs_bw <- ggplot() +
               col=Blue_occurrence_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
-  scale_color_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
   #ggtitle("Pre-regulations (2013-14 to 2017-18)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16), 
+        #strip.text = element_text(size=20),
+        title=element_text(size=20), 
         legend.position = 'none'
   )
 map_pre_regs_bw
@@ -444,20 +475,21 @@ map_post_regs_2018_2019_bw <- ggplot() +
               col=Blue_occurrence_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
-  scale_color_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
   #ggtitle("Post-regulations (2018-19)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16), 
+        #strip.text = element_text(size=20),
+        title=element_text(size=20), 
         legend.position = 'none'
   )
 map_post_regs_2018_2019_bw
@@ -474,23 +506,41 @@ map_post_regs_2019_2020_bw <- ggplot() +
               col=Blue_occurrence_mean
           )
   ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
-  scale_color_viridis(na.value=NA,option="G",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
-  ggtitle("Post-regulations (2019-20)") +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  scale_fill_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="Probability of \noccurrence",breaks=seq(0,0.9,by=0.2),limits=c(0,0.9),oob=squish) + 
+  #ggtitle("Post-regulations (2019-20)") +
   #geom_sf(data = study_area, color = 'black', fill = NA) +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+  theme(text=element_text(family="sans",size=15,color="black"),
+        legend.title = element_text(size=30),
+        legend.text = element_text(size=20),
+        #axis.title=element_text(family="sans",size=20,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16)
+        #strip.text = element_text(size=20),
+        title=element_text(size=20)
   )
 map_post_regs_2019_2020_bw
+
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/map_mean_bw_occurrence_3_panel_MaySep_pre_and_post_reg.png"), width = 22, height = 16, units = "in", res = 400)
+ggarrange(map_pre_regs_bw,
+          map_post_regs_2018_2019_bw,
+          map_post_regs_2019_2020_bw,
+          ncol=3,
+          nrow=1,
+          #legend="top",
+          common.legend = TRUE,
+          legend="right",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 #-----------------------------------------------------------------------------------
