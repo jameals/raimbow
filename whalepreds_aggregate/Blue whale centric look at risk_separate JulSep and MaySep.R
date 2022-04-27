@@ -782,7 +782,7 @@ ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=s
     legend.position = 'none',
     axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
     axis.text.y = element_text(size = 40),
-    axis.title = element_text(size = 40),
+    axis.title = element_text(size = 50),
     strip.text = element_text(size=40),
     strip.background = element_blank(),
     strip.placement = "left"
