@@ -554,7 +554,7 @@ rmap.base <- c(
 )
 
 #bbox
-bbox = c(-127,46,-122,49) 
+bbox = c(-126.5,45.5,-122,49) 
 
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
@@ -578,26 +578,27 @@ map_hump_MaySep_75th <- ggplot() +
   #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
-  ggtitle("May-Sep 2019-2020 \ngood HW habitat (>75th) \nspatially clip at 45N \nwith non-conf. May-Sep fishery footprint (across 2014-2020)") +
+  #ggtitle("May-Sep 2019-2020 \ngood HW habitat (>75th) \nspatially clip at 45N \nwith non-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+        axis.title=element_text(family="sans",size=15,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16)
+        #strip.text = element_text(size=14),
+        title=element_text(size=20),
+        legend.position = 'none'
   )
 map_hump_MaySep_75th
 
-png(paste0(path_figures, "/good_wh_habitat_MaySep_75th_across_20132020_applied to 2019_2020_spatially_clipped_45_with_all_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_hw_habitat_75th_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
 ggarrange(map_hump_MaySep_75th,
           ncol=1,
           nrow=1,
-          legend="top",
-          labels="auto",
+          #legend="top",
+          #labels="auto",
           vjust=8,
           hjust=0
 )
