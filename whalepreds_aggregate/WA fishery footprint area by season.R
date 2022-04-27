@@ -21,8 +21,8 @@ grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week ste or 1-month step
 # look at May_Sep only
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   #Grid ID 122919 end up having very high trap densities in few months 
@@ -75,33 +75,46 @@ mean_area_pre_reg <- MaySep_area_fished %>%
 #-6.933949
 
 
-##boxplot
+##plot
 MaySep_area_fished_box <- MaySep_area_fished %>% 
   filter(season != '2018-2019') %>% 
   mutate(pre_post_reg = 
            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
-box_May_Sep_footprint_area_pre_reg_vs_2019_2020 <- ggplot() +
+plot_May_Sep_footprint_area_pre_reg_vs_2019_2020 <- ggplot() +
   geom_dotplot(data = MaySep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2),binaxis='y', stackdir='center', dotsize=1) +
-  geom_point(data = MaySep_area_fished_box %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
-  ylab("Fishery footprint area (km2) May-Sep") + 
+  geom_point(data = MaySep_area_fished_box %>% filter(pre_post_reg=='2019-2020'), aes(x = pre_post_reg, y = total_area_km2), size=12, color='red') +
+  ylab("Fishery footprint (km^2)") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-box_May_Sep_footprint_area_pre_reg_vs_2019_2020
+plot_May_Sep_footprint_area_pre_reg_vs_2019_2020
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/MaySep_fishery_footprint_area_prePreg_vs_2020.png"), width = 18, height = 14, units = "in", res = 400)
+ggarrange(plot_May_Sep_footprint_area_pre_reg_vs_2019_2020,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+  
+  
 
 JulSep_area_fished <- x.fish_WA %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
@@ -118,32 +131,46 @@ JulSep_area_fished <- x.fish_WA %>%
 #2018-2019      1856
 #2019-2020      1476
 
-##boxplot
+##plot
 JulSep_area_fished_box <- JulSep_area_fished %>% 
   filter(season != '2019-2020') %>% 
   mutate(pre_post_reg = 
            ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
   mutate(pre_post_reg = as.factor(pre_post_reg))
 
-boxJul_Sep_footprint_area_pre_reg_vs_2018_2019 <- ggplot() +
+plot_Jul_Sep_footprint_area_pre_reg_vs_2018_2019 <- ggplot() +
   geom_dotplot(data = JulSep_area_fished_box %>% filter(pre_post_reg=='pre-reg'), aes(x = pre_post_reg, y = total_area_km2),binaxis='y', stackdir='center', dotsize=1) +
-  geom_point(data = JulSep_area_fished_box %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = total_area_km2), size=3, color='red') +
-  ylab("Fishery footprint area (km2) Jul-Sep") + 
+  geom_point(data = JulSep_area_fished_box %>% filter(pre_post_reg=='2018-2019'), aes(x = pre_post_reg, y = total_area_km2), size=12, color='red') +
+  ylab("Fishery footprint (km^2)") + 
   xlab("") +
-  scale_x_discrete(limits = rev) +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 1,size = 20, angle = 60),
-        axis.text.y = element_text(size = 20),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=20),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left"
   )
-boxJul_Sep_footprint_area_pre_reg_vs_2018_2019
+plot_Jul_Sep_footprint_area_pre_reg_vs_2018_2019
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/JulSep_fishery_footprint_area_prePreg_vs_2019.png"), width = 18, height = 14, units = "in", res = 400)
+ggarrange(plot_Jul_Sep_footprint_area_pre_reg_vs_2018_2019,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
+
+
 #--------------------------------------------------------------------------------
 
 x.fish_WA_2013_2014_winter <- x.fish_WA %>% filter(season == '2013-2014' & is_May_Sep == 'N')
@@ -525,8 +552,8 @@ WA_fishery_footprint_area
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week ste or 1-month step
 # look at May_Sep only
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   #Grid ID 122919 end up having very high trap densities in few months 
@@ -847,7 +874,7 @@ invisible(dev.off())
 
 #------------------
 
-
+##THIS IS THE ONLY MAPPING THAT IS NEEDED
 
 #this is the  way of figuring if more than 3 unique vessels were in a grid cell in a given period
 #bring in data as points, not summarised by grid cell
@@ -887,27 +914,27 @@ non_conf_dissolved_all_summer <- st_union(non_conf_grids_5km_all_summer)
 #write_rds(non_conf_dissolved_all_summer,here::here('wdfw','data',"dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds"))
 
 
+bbox = c(-126,46,-122,49) 
+
 map_outline_2014_2020 <- ggplot() + 
-  geom_sf(data = dissolved_all_winter, color = 'blue', fill = 'blue',alpha=0.1) +
-  geom_sf(data = dissolved_all_summer, color = 'red', fill = 'red',alpha=0.1) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  #ggtitle("Fishery outline 2019-2020\nblue = Dec-Apr, red = May-Sep") +
-  ggtitle("All seasons") +
+  geom_sf(data = non_conf_dissolved_all_winter, color = 'blue', fill = 'blue', size=1, alpha=0.1) +
+  geom_sf(data = non_conf_dissolved_all_summer, color = 'red', fill = 'red', size=1, alpha=0.1) +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  #ggtitle("All seasons pooled, non-confidential") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
         legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
+        axis.title=element_text(family="sans",size=15,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
         panel.grid.major = element_line(color="gray50",linetype=3),
         axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=10)
+        #strip.text = element_text(size=14),
+        title=element_text(size=20)
   )
 map_outline_2014_2020
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
-png(paste0(path_figures, "/Fishery_footprint_outline_winter_summer_all_seasons_using 2w gridded data_NON_CONF.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/Non_confidential_pooled_fishery_footprint_outline_winter_summer_all_seasons.png"), width = 14, height = 10, units = "in", res = 300)
 ggarrange(
   map_outline_2014_2020, 
   ncol=1,
