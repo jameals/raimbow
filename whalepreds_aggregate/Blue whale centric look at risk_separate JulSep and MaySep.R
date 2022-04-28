@@ -363,10 +363,10 @@ summary_overlap_JulSep <- rbind(
 #----------------------------------
 
 
-# #if want to visualise bw prob. of occurrence using ggridges
-library(ggridges)
+# #if want to visualise modeled bw prob. of occurrences using ggridges
 
 #density plot for pooled data across all 2014-2020 seasons
+#NAs here are because bw model is restricted by ROMS, and the study area has more grids than the bw model output
 bw_prob_occur_density_MaySep <- ggplot(study_area_bw, aes(x = Blue_occurrence_mean, height = ..density..)) +
   geom_density(stat = "density", rel_min_height = 0.005, fill = "#0072B250", scale = 1.25) +
   scale_x_continuous(expand = c(0, 0)) +
@@ -379,7 +379,7 @@ bw_prob_occur_density_MaySep <- ggplot(study_area_bw, aes(x = Blue_occurrence_me
                font_size = 50)
 bw_prob_occur_density_MaySep
 
-## SAVE FIGURE 
+## SAVE FIGURE -- Supplementary Figure S1.2
 # path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
 # png(paste0(path_figures, "/density_plot_BW_prob_occur_in_study_area_MaySep.png"), width = 22, height = 14, units = "in", res = 400)
 # ggarrange(bw_prob_occur_density_MaySep,
@@ -393,8 +393,7 @@ bw_prob_occur_density_MaySep
 # invisible(dev.off())
 
 
-#find the mean +/- SD value from the distribution (in study area) for May-Sep
-#data filtered to study area (bw model reaches outside of study area, giving NAs)
+#find the mean +/- SD value from the distribution (in study area) for May-Sep (2014-2020)
 summary_study_area_bw_MaySep <- study_area_bw %>% 
   #data already limited to seasons of interest, and May-Sep  
   #get mean etc. values across full dataset
@@ -410,7 +409,7 @@ summary_study_area_bw_MaySep <- study_area_bw %>%
 study_area_bw_v2 <-  study_area_bw %>% 
   left_join(st_drop_geometry(grid.5km.lno), by = "GRID5KM_ID")
 
-# calculate MEAN whale values for different grids in different seasons - for May-Sep period (2014-2020)
+# calculate MEAN whale values for different grids in different seasons - across May-Sep period 
 x.blue.mean_MaySep <- study_area_bw_v2 %>% 
   #data already restricted to be May-Sep
   group_by(season, GRID5KM_ID, area_km_lno) %>%
@@ -420,7 +419,8 @@ x.blue.mean_MaySep <- study_area_bw_v2 %>%
 glimpse(x.blue.mean_MaySep)
 
 
-# start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
+#if the mean bw occurrence in a grid cell is more than the selected threshold value,
+#label grid as good bw habitat in that season
 MaySep_good_bw_hab <- x.blue.mean_MaySep %>% 
   group_by(season) %>% 
   mutate(good_bw_hab_0469 = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N'),
@@ -431,48 +431,36 @@ MaySep_good_bw_hab <- x.blue.mean_MaySep %>%
 glimpse(MaySep_good_bw_hab)
 
 
+
 #---------------------------
 
 
+#Then look at what trap density was like in the good bw habitat 
 
-
-#Then try to look at what trap density was like in the good bw habitat -- will need to check code
-#bring in fishing data 
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
-
-x.fish_WA <- readRDS(path.fish_WA) %>% 
-  #Grid ID 122919 end up having very high trap densities in few months 
-  #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
-  #this is because the grid is split across land, and few points happen to fall in a very tiny area
-  #remove it
-  filter(GRID5KM_ID != 122919) %>% 
-  mutate(is_May_Sep = 
-           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
-                  ,'Y', 'N'))
+# fishing data has already been brought in
 
 # average trap density (and count?) for each grid cell for May-Sep period
 x.fish_WA_MaySep <- x.fish_WA %>% 
-  filter(is_May_Sep == "Y") %>% 
+  filter(is_May_Sep == "Y") %>% #filter data to be May-Sep only
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
   summarise(
     sum_M2_trapdens = sum(M2_trapdens, na.rm=TRUE),
     number_obs = n(), #no. of grid cells being used for averaging
     mean_trapdens = sum_M2_trapdens/number_obs
-    #sum_M2_tottraps  = sum(M2_tottraps, na.rm=TRUE),
-    #mean_tottraps = sum_M2_tottraps/number_obs
   ) %>% 
   #and drop some columns so that after join things are little tidier
-  select(season, GRID5KM_ID, mean_trapdens) #, mean_tottraps
+  select(season, GRID5KM_ID, mean_trapdens) 
 glimpse(x.fish_WA_MaySep)
 
 
+# join fishing data and bw data
 MaySep_good_bw_hab_fishing <- MaySep_good_bw_hab %>% 
   left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) %>% 
   left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") 
 glimpse(MaySep_good_bw_hab_fishing)
 
 
+# calculate risk
 MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>% 
   mutate(
     blue_risk = Mean_Blue_occurrence * mean_trapdens
@@ -483,7 +471,8 @@ MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>%
   )
 
 
-
+# summarise risk in each season based on threshold value used to define good bw habitat
+# May-Sep comparisons are only for pre-regulations seasons vs 2020 (therefore we remove 2018-2019 season)
 summary_good_bw_habitat_fishing_MaySep_0469 <- MaySep_good_bw_hab_fishing_risk %>% 
   filter(good_bw_hab_0469 == 'Y') %>% 
   group_by(season) %>% 
@@ -527,16 +516,18 @@ summary_probabilites_MaySep <- rbind(
 
 
 
+#######
+#overlap between good bw habitat and fishery in each season 
+#(based on different threshold value used to define good bw habitat)
 
-##overlap
 test_summary_MaySep_0469 <- MaySep_good_bw_hab_fishing_risk %>% 
-  filter(good_bw_hab_0469 == 'Y') %>% 
-  filter(!is.na(mean_trapdens)) %>% 
+  filter(good_bw_hab_0469 == 'Y') %>% #select grids that were defined as good bw habitat
+  filter(!is.na(mean_trapdens)) %>% #select grids with fishing effort = fishery footprint
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
   filter(season != '2018-2019') %>% 
   mutate(prob_of_occur = '0.469')
-#when use 0.469
+#when use 0.469 threshold value
 # season    n_grids
 #  2013-2014      10
 #  2014-2015       9
@@ -554,7 +545,7 @@ test_summary_MaySep_024 <- MaySep_good_bw_hab_fishing_risk %>%
   summarise(n_grids = n()) %>% 
   filter(season != '2018-2019') %>% 
   mutate(prob_of_occur = '0.24')
-#when use 0.24
+#when use 0.24 threshold value
 #season       n_grids
 #2013-2014      98
 #2014-2015      87
@@ -572,7 +563,7 @@ test_summary_MaySep_050 <- MaySep_good_bw_hab_fishing_risk %>%
   summarise(n_grids = n()) %>% 
   filter(season != '2018-2019') %>% 
   mutate(prob_of_occur = '0.50')
-#when use 0.5
+#when use 0.5 threshold value
 #season       n_grids
 #2013-2014      8
 #2014-2015      2
@@ -599,15 +590,12 @@ summary_overlap_MaySep <- rbind(
 
 #------------------------------------------------------------------------------------------------------------
 
-
-
-
-#-------------------
+#-----------------------
 ###    Plotting and GLM
 
 
 
-###Jul-Sep
+### RISK ###
 #summary_probabilites_JulSep
 #summary_probabilites_MaySep
 
@@ -640,7 +628,7 @@ ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=s
   )
 ts_risk_in_good_bw_habitat_JulSep
 
-# SAVE FIGURE
+# SAVE FIGURE -- Supplementary Figure S1.3
 # png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_good_bw_habitat_JulSep,
 #           ncol=1,
@@ -652,6 +640,7 @@ ts_risk_in_good_bw_habitat_JulSep
 # )
 # invisible(dev.off())
 
+
 ##GLM
 # note that this is different to the fishery perspective, as that had one data point per month
 # here good habitat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
@@ -659,20 +648,18 @@ ts_risk_in_good_bw_habitat_JulSep
 hist(summary_probabilites_JulSep$risk_sum)
 summary_probabilites_JulSep$prob_of_occur <- as.factor(summary_probabilites_JulSep$prob_of_occur)
 
-library(ggcorrplot)
-model.matrix(~0+., data=summary_probabilites_JulSep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
 mod1_blue_JulSep <- glm(risk_sum ~ pre_post_reg + prob_of_occur,
-                        family=gaussian, data=summary_probabilites_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+                        family=gaussian, data=summary_probabilites_JulSep, na.action = na.omit) 
 summary(mod1_blue_JulSep)
-hist(mod1_blue_JulSep$residuals)
-plot(mod1_blue_JulSep)
+#hist(mod1_blue_JulSep$residuals)
+#plot(mod1_blue_JulSep)
 
-library(multcomp)
-summary(glht(mod1_blue_JulSep, mcp(prob_of_occur='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_blue_JulSep, mcp(prob_of_occur='Tukey')))
+
+
 
 
 ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=season)) +
@@ -704,7 +691,7 @@ ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=s
   )
 ts_risk_in_good_bw_habitat_MaySep
 
-# SAVE FIGURE
+# SAVE FIGURE -- Supplementary Figure S1.3
 # png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_MaySep_LEGEND.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_good_bw_habitat_MaySep,
 #           ncol=1,
@@ -724,25 +711,20 @@ ts_risk_in_good_bw_habitat_MaySep
 hist(summary_probabilites_MaySep$risk_sum)
 summary_probabilites_MaySep$prob_of_occur <- as.factor(summary_probabilites_MaySep$prob_of_occur)
 
-library(ggcorrplot)
-model.matrix(~0+., data=summary_probabilites_MaySep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
-
 mod2_blue_MaySep <- glm(risk_sum ~ pre_post_reg + prob_of_occur,
-                        family=gaussian, data=summary_probabilites_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+                        family=gaussian, data=summary_probabilites_MaySep, na.action = na.omit) 
 summary(mod2_blue_MaySep)
 hist(mod2_blue_MaySep$residuals)
 plot(mod2_blue_MaySep)
 
-library(multcomp)
-summary(glht(mod2_blue_MaySep, mcp(prob_of_occur='Tukey')))
+#library(multcomp)
+#summary(glht(mod2_blue_MaySep, mcp(prob_of_occur='Tukey')))
 
 
-### OVERLAP JUL-SEP
-summary_overlap_JulSep
-summary_overlap_MaySep
+
+### OVERLAP ###
+#summary_overlap_JulSep
+#summary_overlap_MaySep
 
 #plot count of overlapping grids -- Jul-Sep
 ts_overlapping_grids_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
@@ -773,7 +755,7 @@ ts_overlapping_grids_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
   )
 ts_overlapping_grids_JulSep
 
-# SAVE FIGURE
+# SAVE FIGURE -- Supplementary Figure S1.3
 # png(paste0(path_figures, "/ts_overlap_good_BW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_overlapping_grids_JulSep,
 #           ncol=1,
@@ -788,27 +770,23 @@ ts_overlapping_grids_JulSep
 
 
 
-##GLM
+## GLM (Jul-Sep pre-reg vs 2019)
 summary_overlap_JulSep$prob_of_occur <- as.factor(summary_overlap_JulSep$prob_of_occur)
 
 hist(summary_overlap_JulSep$n_grids )
 
-library(ggcorrplot)
-model.matrix(~0+., data=summary_overlap_JulSep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
-
 mod1_blue_overlap_JulSep <- glm(n_grids  ~ pre_post_reg + prob_of_occur,
                                 family=gaussian, data=summary_overlap_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_blue_overlap_JulSep)
-hist(mod1_blue_overlap_JulSep$residuals)
-plot(mod1_blue_overlap_JulSep)
+#hist(mod1_blue_overlap_JulSep$residuals)
+#plot(mod1_blue_overlap_JulSep)
 
-library(multcomp)
-summary(glht(mod1_blue_overlap_JulSep, mcp(prob_of_occur='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_blue_overlap_JulSep, mcp(prob_of_occur='Tukey')))
 
 
+
+#plot count of overlapping grids -- May-Sep
 ts_overlapping_grids <- ggplot(summary_overlap_MaySep, aes(x=season)) +
   geom_line(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=1.8) +
   geom_point(aes(y = n_grids, group = prob_of_occur, color=prob_of_occur), size=3.5) +
@@ -837,7 +815,7 @@ ts_overlapping_grids <- ggplot(summary_overlap_MaySep, aes(x=season)) +
   )
 ts_overlapping_grids
 
-# SAVE FIGURE
+# SAVE FIGURE -- Supplementary Figure S1.3
 # png(paste0(path_figures, "/ts_overlap_good_BW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_overlapping_grids,
 #           ncol=1,
@@ -852,16 +830,10 @@ ts_overlapping_grids
 
 
 
-##GLM
+## GLM (May-Sep pre-reg vs 2020)
 summary_overlap_MaySep$prob_of_occur <- as.factor(summary_overlap_MaySep$prob_of_occur)
 
 hist(summary_overlap_MaySep$n_grids )
-
-library(ggcorrplot)
-model.matrix(~0+., data=summary_overlap_MaySep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
 
 mod1_blue_overlap_MaySep <- glm(n_grids  ~ pre_post_reg + prob_of_occur,
                                 family=gaussian, data=summary_overlap_MaySep, na.action = na.omit) #family = gaussian(link = "log")
@@ -869,32 +841,29 @@ summary(mod1_blue_overlap_MaySep)
 hist(mod1_blue_overlap_MaySep$residuals)
 plot(mod1_blue_overlap_MaySep)
 
-library(multcomp)
-summary(glht(mod1_blue_overlap_MaySep, mcp(prob_of_occur='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_blue_overlap_MaySep, mcp(prob_of_occur='Tukey')))
 
 
 
-##########################################################################
-
-## ts plot of mean probability cutoff risk and overlap 
+#------------------------------------
+## ts plot of risk and overlap  - using the mean probability of occurrence cutoff 
 ## Jul-Sep and May-Sep on same plot
+
+### RISK ### 
 #summary_good_bw_habitat_fishing_JulSep_0626
 #summary_good_bw_habitat_fishing_MaySep_0469
 
 ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_fishing_JulSep_0626, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
   geom_line(size=2) +
   geom_point(size=5) +
-  
   geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
   geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
-  
   #ylab("Summed blue whale risk") +
   ylab("Risk") +
   #xlab("Season") +
   xlab("") +
-  
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -902,7 +871,6 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
                             "2017-2018" = "2018",
                             "2018-2019" = "2019",
                             "2019-2020" = "2020")) +
-  
   theme_classic() +
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
@@ -918,7 +886,7 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   )
 ts_risk_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE
+# SAVE FIGURE -- Figure 5
 # png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
@@ -931,23 +899,19 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep
 # invisible(dev.off())
 
 
-## overlap
+### OVERLAP ### 
 #test_summary_JulSep_0626
 #test_summary_MaySep_0469
 
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0626, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
   geom_line(size=2) +
   geom_point(size=5) +
-  
   geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
   geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
-  
   #ylab("Number of overlapping grids") +
   ylab("Overlap") +
   xlab("Season") +
-  
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -955,15 +919,12 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
                             "2017-2018" = "2018",
                             "2018-2019" = "2019",
                             "2019-2020" = "2020")) +
-  
   theme_classic() +
   theme(legend.title = element_blank(),
         title = element_text(size = 15),
         legend.text = element_text(size = 22),
-        
         #legend.position = c(.85, .8),
         legend.position = "none",
-        
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
@@ -973,7 +934,7 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
   )
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE
+# SAVE FIGURE -- Figure 5
 # png(paste0(path_figures, "/ts_overlap_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_overlap_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
@@ -987,7 +948,8 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 
 
 
-############################################################################################
+#------------------------------------------------------------------------------------------
+
 ## % change from pre-reg average to post-reg
 
 ##pre-reg vs 2019 (Jul-Sep)##
@@ -1029,14 +991,13 @@ percent_change_overlap_MaySep <- summary_overlap_MaySep %>%
   group_by(prob_of_occur, pre_post_reg) %>% 
   summarise(mean_n_grids = mean(n_grids))
 
-############################################################################################
+
 
 
 #---------------------------------------------------------------------------------
+
 # Mapping of example maps to go in supplementary (Supplementary Figure S1.4)
 
-
-####
 #re-do this step so that good bw habitat is not restricted to study area in the map:
 # calculate MEAN whale values for different grid in different seasons - for May-Sep period (2014-2020)
 x.blue.mean_MaySep <- x.blue_2014_2020_crab_season_May_Sep %>% 
@@ -1049,7 +1010,6 @@ x.blue.mean_MaySep <- x.blue_2014_2020_crab_season_May_Sep %>%
 glimpse(x.blue.mean_MaySep)
 
 
-# start with df 'x.blue.mean' which is mean value in a grid across May-Sep per seasons
 MaySep_good_bw_hab <- x.blue.mean_MaySep %>% 
   group_by(season) %>% 
   mutate(good_bw_hab_0469 = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N'),
@@ -1060,14 +1020,13 @@ MaySep_good_bw_hab <- x.blue.mean_MaySep %>%
 glimpse(MaySep_good_bw_hab)
 
 
-
+## MAPPING ##
 # map example of most likely bw habitat (of a chosen season) with NON-confidential summer fishery footprint (pooled 2014-2020)
 dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
 
 # optional: add to map the outline of the 'study area'
 dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
   st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
-
 
 # grab a base map
 rmap.base <- c(
@@ -1080,10 +1039,11 @@ rmap.base <- c(
 #bbox
 bbox = c(-126.5,45.5,-122,49) 
 
-# plot blue whale
+
+# map 
 bw_subset_MaySep <- MaySep_good_bw_hab %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% ## here change the seasons which good bw habitat is mapped
+  filter(season == "2019-2020") %>% 
   filter(!is.na(good_bw_hab_0469)) %>% 
   filter(good_bw_hab_0469 == 'Y')
 
@@ -1098,7 +1058,6 @@ map_blue_MaySep_good_hab <- ggplot() +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
-  #ggtitle("May-Sep 2019-2020 \ngood BW habitat (>0.469 occurrence) \nnon-conf. May-Sep fishery footprint (across 2014-2020)") +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
   theme(text=element_text(family="sans",size=10,color="black"),
@@ -1114,15 +1073,15 @@ map_blue_MaySep_good_hab <- ggplot() +
 map_blue_MaySep_good_hab
 
 
-
-png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
-ggarrange(map_blue_MaySep_good_hab,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+# SAVE FIGURE -- Supplementary Figure S1.4
+# png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# ggarrange(map_blue_MaySep_good_hab,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
