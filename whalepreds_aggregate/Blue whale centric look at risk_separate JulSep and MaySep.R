@@ -1254,7 +1254,7 @@ bbox = c(-126.5,45.5,-122,49)
 # plot blue whale
 bw_subset_MaySep <- MaySep_good_bw_hab %>% 
   #select season to map 
-  filter(season == "2018-2019") %>% 
+  filter(season == "2019-2020") %>% 
   filter(!is.na(good_bw_hab_0469)) %>% 
   filter(good_bw_hab_0469 == 'Y')
 
@@ -1286,7 +1286,7 @@ map_blue_MaySep_good_hab
 
 
 
-png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2018_2019_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
 ggarrange(map_blue_MaySep_good_hab,
           ncol=1,
           nrow=1,
