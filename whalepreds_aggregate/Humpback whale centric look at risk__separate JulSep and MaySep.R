@@ -1,4 +1,5 @@
-#'humpback whale centric' look at risk _ separate JulSep and MaySep
+#'humpback whale centric' look at risk -- changes in risk within the most likely humpback whale habitat.
+#' separate comparisons for Jul-Sep pre-regs vs 2019, and and May-Sep pre-regs vs 2020
 
 #-----------------------------------------------------------------------------------
 
@@ -12,7 +13,10 @@ library(viridis)
 library(ggpubr)
 library(scales)
 
+library(ggridges)
+
 #-----------------------------------------------------------------------------------
+# set some paths
 
 # Leena:
 path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
@@ -32,9 +36,8 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 #path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 
 #-----------------------------------------------------------------------------------
-
-
 # load the data
+
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 #glimpse(grid.5km.lno)
@@ -47,8 +50,6 @@ x.hump_2009_2020 <- readRDS(path.hump_2009_2020) %>%
   mutate(year_month = paste(year(date), sprintf("%02d", month(date)), sep = "_")) %>%
   select(GRID5KM_ID, year_month, Humpback_dens_mean) #Humpback_dens_se
 glimpse(x.hump_2009_2020)
-
-
 
 
 # join 5km grid with depths
@@ -69,7 +70,7 @@ x.hump_whale <- x.hump_2009_2020 %>%
 # for now join whale data to a larger grid, we will clip it to a specific domain later
 
 
-#instead of working in calendar years, work in crab seasons -- also filter to 2013-2020
+#instead of working in calendar years, work in crab seasons -- also filter to 2014-2020
 x.whale_crab_season <- x.hump_whale %>% 
   separate(year_month, into = c("year", "month"), sep = "_")  
 x.whale_crab_season_v2 <- x.whale_crab_season %>% 
@@ -88,15 +89,17 @@ glimpse(x.whale_crab_season_v2)
 
 #----------------------------------------------------------------------------
 
-# find 75th percentile value for hw - separately for Jul-Sep and May-Sep comparisons
+# Determine cut-off values (percentiles) for defining most likely hw habitat
+# this will be done separately for Jul-Sep pre-regs vs 2019, and and May-Sep pre-regs vs 2020
+
 
 #----------
-##  Jul-Sep
+##  Jul-Sep pre-regulations vs 2019
 #----------
 
-# calculate MEAN whale values for grids across all of 2013-2020 - for Jul-Sep period only
+# calculate MEAN whale values for grids across all of 2014-2020 - for Jul-Sep period only
 # and then look at percentiles
-x.whale.mean_all2013_2020_JulSep <- x.whale_crab_season_v2 %>% #this is already filtered for 2013-2020
+x.whale.mean_all2013_2020_JulSep <- x.whale_crab_season_v2 %>% #this is already filtered for 2014-2020
   filter(month %in% c('07', '08', '09')) %>% 
   group_by(is_May_Sep, GRID5KM_ID, area_km_lno) %>%
   summarise(
@@ -124,7 +127,9 @@ glimpse(x.whale.all2013_2020_percentiles_JulSep)
 
 
 
-#apply percentile value to each season
+#apply percentile values to each season
+#i.e., if the mean hw density in a grid cell is more than the selected threshold value,
+#label grid as good hw habitat in that season
 x.whale.mean_by_season_JulSep <- x.whale_crab_season_v2 %>%
   filter(month %in% c('07', '08', '09')) %>% 
   group_by(season, is_May_Sep, GRID5KM_ID, area_km_lno) %>%
@@ -149,8 +154,10 @@ x.whale.all2013_2020_JulSep_good_habitats <- x.whale.all2013_2020_JulSep_quant_j
   ) 
 glimpse(x.whale.all2013_2020_JulSep_good_habitats)
 
+
 #----------------
-#Then try to look at what trap density was in the good hw habitat -- will need to check code
+
+#Then look at what trap density was like in the good hw habitat 
 #bring in fishing data 
 #path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
 path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
@@ -165,7 +172,7 @@ x.fish_WA <- readRDS(path.fish_WA) %>%
            ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
                   ,'Y', 'N'))
 
-# average trap density (and count?) for each grid cell for May-Sep period
+# average trap density for each grid cell for Jul-Sep period
 x.fish_WA_JulSep <- x.fish_WA %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
@@ -173,20 +180,19 @@ x.fish_WA_JulSep <- x.fish_WA %>%
     sum_M2_trapdens = sum(M2_trapdens, na.rm=TRUE),
     number_obs = n(), #no. of grid cells being used for averaging
     mean_trapdens = sum_M2_trapdens/number_obs
-    #sum_M2_tottraps  = sum(M2_tottraps, na.rm=TRUE),
-    #mean_tottraps = sum_M2_tottraps/number_obs
   ) %>% 
   #and drop some columns so that after join things are little tidier
-  select(season, GRID5KM_ID, mean_trapdens) #, mean_tottraps
+  select(season, GRID5KM_ID, mean_trapdens) 
 glimpse(x.fish_WA_JulSep)
 
 
+# join fishing data and hw data
 x.whale.2013_2020_JulSep_good_habitats_fishing <- x.whale.all2013_2020_JulSep_good_habitats %>% 
   left_join(x.fish_WA_JulSep, by=c('season', 'GRID5KM_ID'))
 glimpse(x.whale.2013_2020_JulSep_good_habitats_fishing)
 
 
-#in this situation doesn't matter if risk is 0 or NA
+# calculate risk
 x.whale.2013_2020_JulSep_good_habitats_fishing_risk <- x.whale.2013_2020_JulSep_good_habitats_fishing %>% 
   mutate(
     hump_risk = Mean_Humpback_dens * mean_trapdens
@@ -199,7 +205,7 @@ x.whale.2013_2020_JulSep_good_habitats_fishing_risk <- x.whale.2013_2020_JulSep_
   filter(season != '2019-2020')
 
 
-
+# summarise risk in each season based on threshold value used to define good hw habitat
 summary_75th_HW_habitat_fishing_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>% 
   filter(HW_is_75th_or_higher == 'Y') %>% 
   group_by(season) %>% 
@@ -271,16 +277,17 @@ summary_percentiles_JulSep <- rbind(
 
 
 
-## overlap of fishery and good hw habitat per seasons -- JUL-SEP
+#######
+#overlap between good hw habitat and fishery in each season 
+#(based on different threshold value used to define good hw habitat)
 
 #number of fishery grids that were also good hw habitat
 test_summary_75_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>% 
-  filter(HW_is_75th_or_higher == 'Y') %>% 
-  filter(!is.na(mean_trapdens)) %>% 
+  filter(HW_is_75th_or_higher == 'Y') %>% #select grids that were defined as good hw habitat
+  filter(!is.na(mean_trapdens)) %>% #select grids with fishing effort = fishery footprint
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
   mutate(percentile = '75')
-
 #season     n_grids
 #2013-2014    65
 #2014-2015    52
@@ -304,14 +311,12 @@ test_summary_60_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>
   summarise(n_grids = n()) %>% 
   mutate(percentile = '60')
 
-
 test_summary_70_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>% 
   filter(HW_is_70th_or_higher == 'Y') %>% 
   filter(!is.na(mean_trapdens)) %>% 
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
   mutate(percentile = '70')
-
 
 test_summary_80_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>% 
   filter(HW_is_80th_or_higher == 'Y') %>% 
@@ -320,7 +325,6 @@ test_summary_80_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>
   summarise(n_grids = n()) %>% 
   mutate(percentile = '80')
 
-
 test_summary_90_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>% 
   filter(HW_is_90th_or_higher == 'Y') %>% 
   filter(!is.na(mean_trapdens)) %>% 
@@ -328,7 +332,6 @@ test_summary_90_JulSep <- x.whale.2013_2020_JulSep_good_habitats_fishing_risk %>
   summarise(n_grids = n()) %>% 
   add_row(season = c("2018-2019"), n_grids = 0) %>% 
   mutate(percentile = '90')
-
 
 
 summary_overlap_JulSep <- rbind(
@@ -346,12 +349,12 @@ summary_overlap_JulSep <- rbind(
 
 #-----------------------------------------------------------------------------------
 #----------
-##  May-Sep
+##  May-Sep pre-regulations vs 2020
 #----------
 
-# calculate MEAN whale values for grids across all of 2013-2020 - for May-Sep period only
+# calculate MEAN whale values for grids across all of 2014-2020 - for May-Sep period only
 # and then look at percentiles
-x.whale.mean_all2013_2020_MaySep <- x.whale_crab_season_v2 %>% #this is already filtered for 2013-2020
+x.whale.mean_all2013_2020_MaySep <- x.whale_crab_season_v2 %>% #this is already filtered for 2014-2020
   filter(is_May_Sep == "Y") %>% 
   group_by(is_May_Sep, GRID5KM_ID, area_km_lno) %>%
   summarise(
@@ -380,6 +383,8 @@ glimpse(x.whale.all2013_2020_percentiles_MaySep)
 
 
 #apply percentile value to each season
+#i.e., if the mean hw density in a grid cell is more than the selected threshold value,
+#label grid as good hw habitat in that season
 x.whale.mean_by_season_MaySep <- x.whale_crab_season_v2 %>%
   filter(is_May_Sep == "Y") %>% 
   group_by(season, is_May_Sep, GRID5KM_ID, area_km_lno) %>%
@@ -404,23 +409,15 @@ x.whale.all2013_2020_MaySep_good_habitats <- x.whale.all2013_2020_MaySep_quant_j
   ) 
 glimpse(x.whale.all2013_2020_MaySep_good_habitats)
 
+
 #----------------
-#Then try to look at what trap density was in the good hw habitat -- will need to check code
-#bring in fishing data 
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
-x.fish_WA <- readRDS(path.fish_WA) %>% 
-  #Grid ID 122919 end up having very high trap densities in few months 
-  #(e.g., 244pots/km2 in May 2013-2014 season, also high in July 2013-2014
-  #this is because the grid is split across land, and few points happen to fall in a very tiny area
-  #remove it
-  filter(GRID5KM_ID != 122919) %>% 
-  mutate(is_May_Sep = 
-           ifelse(month_name %in% c('May', 'June', 'July', 'August', 'September')
-                  ,'Y', 'N'))
 
-# average trap density (and count?) for each grid cell for May-Sep period
+#Then look at what trap density was like in the good bw habitat 
+
+# fishing data has already been brought in
+
+# average trap density for each grid cell for May-Sep period
 x.fish_WA_MaySep <- x.fish_WA %>% 
   filter(is_May_Sep == "Y") %>% 
   group_by(season, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
@@ -428,20 +425,19 @@ x.fish_WA_MaySep <- x.fish_WA %>%
     sum_M2_trapdens = sum(M2_trapdens, na.rm=TRUE),
     number_obs = n(), #no. of grid cells being used for averaging
     mean_trapdens = sum_M2_trapdens/number_obs
-    #sum_M2_tottraps  = sum(M2_tottraps, na.rm=TRUE),
-    #mean_tottraps = sum_M2_tottraps/number_obs
   ) %>% 
   #and drop some columns so that after join things are little tidier
-  select(season, GRID5KM_ID, mean_trapdens) #, mean_tottraps
+  select(season, GRID5KM_ID, mean_trapdens) 
 glimpse(x.fish_WA_MaySep)
 
 
+# join fishing data and hw data
 x.whale.2013_2020_MaySep_good_habitats_fishing <- x.whale.all2013_2020_MaySep_good_habitats %>% 
   left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID'))
 glimpse(x.whale.2013_2020_MaySep_good_habitats_fishing)
 
 
-#in this situation doesn't matter if risk is 0 or NA
+# calculate risk
 x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
   mutate(
     hump_risk = Mean_Humpback_dens * mean_trapdens
@@ -456,6 +452,7 @@ x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_
 
 
 
+# summarise risk in each season based on threshold value used to define good hw habitat
 summary_75th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_75th_or_higher == 'Y') %>% 
   group_by(season) %>% 
@@ -488,8 +485,6 @@ summary_60th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats
   mutate(percentile = '60')
 glimpse(summary_60th_HW_habitat_fishing_MaySep) 
 
-
-
 summary_70th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_70th_or_higher == 'Y') %>% 
   group_by(season) %>% 
@@ -507,8 +502,6 @@ summary_80th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats
   ) %>% 
   mutate(percentile = '80')
 glimpse(summary_80th_HW_habitat_fishing_MaySep) 
-
-
 
 summary_90th_HW_habitat_fishing_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_90th_or_higher == 'Y') %>% 
@@ -534,12 +527,12 @@ summary_percentiles_MaySep <- rbind(
 
 
 
-
 #----------------------------------------------------------------------------------------
-#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2013_2014_MaySep <- read_rds(here::here('wdfw','data','dissolved_2013_2014_MaySep_WA_fishery_footprint_20220202.rds'))
 
-#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
+# Mapping of example maps to go in supplementary (Supplementary Figure S2.3)
+
+
+# map example of most likely hw habitat (of a chosen season) with NON-confidential summer fishery footprint (pooled 2014-2020)
 dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
 
 dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
@@ -559,7 +552,7 @@ bbox = c(-126.5,45.5,-122,49)
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% 
+  filter(season == "2019-2020") %>% # if 2018-2019 season is not working, it was filtered out earlier
   filter(!is.na(HW_is_75th_or_higher)) %>% 
   filter(HW_is_75th_or_higher == 'Y')
 
@@ -593,37 +586,38 @@ map_hump_MaySep_75th <- ggplot() +
   )
 map_hump_MaySep_75th
 
-png(paste0(path_figures, "/good_hw_habitat_75th_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
-ggarrange(map_hump_MaySep_75th,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+# SAVE FIGURE -- Supplementary Figure S2.3
+# png(paste0(path_figures, "/good_hw_habitat_75th_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# ggarrange(map_hump_MaySep_75th,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 #------------------------------------------------------------------------------------------------------------
 
-## overlap of fishery and good hw habitat per seasons -- May-Sep
-
+#######
+#overlap between good hw habitat and fishery in each season (May-Sep)
+#(based on different threshold value used to define good hw habitat)
 
 #number of fishery grids that were also good hw habitat
 test_summary_75_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
-  filter(HW_is_75th_or_higher == 'Y') %>% 
-  filter(!is.na(mean_trapdens)) %>% 
+  filter(HW_is_75th_or_higher == 'Y') %>% #select grids that were defined as good hw habitat
+  filter(!is.na(mean_trapdens)) %>% #select grids with fishing effort = fishery footprint
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
   mutate(percentile = '75')
-
 #season     n_grids
 #2013-2014    124
 #2014-2015    119
 #2015-2016    106
 #2016-2017    136
 #2017-2018    167
-#2018-2019    0
+
 #2019-2020    87
 
 # % change from pre-reg average
@@ -646,7 +640,6 @@ test_summary_60_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>
   summarise(n_grids = n()) %>% 
   mutate(percentile = '60')
 
-
 test_summary_70_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_70th_or_higher == 'Y') %>% 
   filter(!is.na(mean_trapdens)) %>% 
@@ -654,14 +647,12 @@ test_summary_70_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>
   summarise(n_grids = n()) %>% 
   mutate(percentile = '70')
 
-
 test_summary_80_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_80th_or_higher == 'Y') %>% 
   filter(!is.na(mean_trapdens)) %>% 
   group_by(season) %>% 
   summarise(n_grids = n()) %>% 
   mutate(percentile = '80')
-
 
 test_summary_90_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   filter(HW_is_90th_or_higher == 'Y') %>% 
@@ -686,87 +677,13 @@ summary_overlap_MaySep <- rbind(
 
 
 
-
-
-
-#----------------------------------------------------------------------------------------
-#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2015_2016_JulSep <- read_rds(here::here('wdfw','data','dissolved_2015_2016_JulSep_WA_fishery_footprint_20220227.rds'))
-
-#map all seasons May_Sep good whale habitats with fishery footprint for that season's May-Sep
-dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_MaySep_WA_fishery_footprint_NONCONF.rds'))
-
-dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
-  st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
-
-# grab a base map
-rmap.base <- c(
-  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
-    filter(admin %in% c("Canada", "Mexico")) %>%
-    st_geometry() %>%
-    st_transform(st_crs(grid.5km.lno))
-)
-
-#bbox
-bbox = c(-127,46,-122,49) 
-
-
-hw_subset_JulSep <- x.whale.all2013_2020_JulSep_good_habitats %>%   #x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>%
-  #select season to map 
-  filter(season == "2013-2014") %>% 
-  filter(!is.na(HW_is_75th_or_higher)) %>% 
-  filter(HW_is_75th_or_higher == 'Y')
-
-
-map_hump_JulSep_75th <- ggplot() + 
-  geom_sf(data=sf::st_as_sf(hw_subset_JulSep), 
-          aes(fill=HW_is_75th_or_higher,
-              col=HW_is_75th_or_higher
-          )
-  ) +
-  geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  #scale_fill_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
-  #scale_color_viridis(na.value=NA,option="D",name="Humpback Whale\nDensity",breaks=seq(0,0.04,by=0.01),limits=c(0.0,0.04),oob=squish) + 
-  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  #geom_sf(data = dissolved_2015_2016_JulSep, color = 'black',size=1, fill = NA) +
-  #geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
-  #geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +  
-  ggtitle("Jul-Sep 2013-2014, good HW habitat (>75th) \nspatially clip at 45N, with conf. Jul-Sep fishery footprint") +
-  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
-  theme_minimal() + #theme_classic() +
-  theme(text=element_text(family="sans",size=10,color="black"),
-        legend.text = element_text(size=10),
-        axis.title=element_text(family="sans",size=14,color="black"),
-        axis.text=element_text(family="sans",size=8,color="black"),
-        panel.grid.major = element_line(color="gray50",linetype=3),
-        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
-        strip.text = element_text(size=14),
-        title=element_text(size=16)
-  )
-map_hump_JulSep_75th
-
-png(paste0(path_figures, "/good_wh_habitat_JulSep_80th_across_20142020_applied to 2018_2019_spatially_clipped_45_with_all_CONF_2019_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 300)
-ggarrange(map_hump_JulSep_80th,
-          ncol=1,
-          nrow=1,
-          legend="top",
-          labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
-
 #------------------------------------------------------------------------------------------------------------
-
-
-
 
 #-------------------
 ###    Plotting and GLM
 
 
-
+### RISK ###
 ###Jul-Sep
 
 ##sensitivity testing - risk in good HW habitat Jul-Sep
@@ -800,41 +717,38 @@ ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x
   )
 ts_fishing_in_good_hw_habitat_JulSep
 
-png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+#SAVE FIGURE --
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+# ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 
 
-##GLM
+##GLM (RISK - Jul-Sep pre-reg vs 2019)
 # note that this is different to the fishery perspective, as that had one data point per month
-# here good habtiat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
+# here good habitat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
 
 hist(summary_percentiles_JulSep$risk_sum)
 
 summary_percentiles_JulSep$percentile <- as.factor(summary_percentiles_JulSep$percentile)
 
-library(ggcorrplot)
-model.matrix(~0+., data=summary_percentiles_JulSep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
 
 mod1_hump_JulSep <- glm(risk_sum ~ pre_post_reg + percentile,
                         family=gaussian, data=summary_percentiles_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_hump_JulSep)
-hist(mod1_hump_JulSep$residuals)
-plot(mod1_hump_JulSep)
+#hist(mod1_hump_JulSep$residuals)
+#plot(mod1_hump_JulSep)
 
-library(multcomp)
-summary(glht(mod1_hump_JulSep, mcp(percentile='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_hump_JulSep, mcp(percentile='Tukey')))
+
 
 
 ### OVERLAP JUL-SEP
@@ -868,8 +782,7 @@ ts_overlapping_grids_count_all_JulSep <- ggplot(summary_overlap_JulSep, aes(x=se
   )
 ts_overlapping_grids_count_all_JulSep
 
-
-
+# SAVE FIGURE -- 
 png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
 ggarrange(ts_overlapping_grids_count_all_JulSep,
           ncol=1,
@@ -882,34 +795,26 @@ ggarrange(ts_overlapping_grids_count_all_JulSep,
 invisible(dev.off())
 
 
-summary_overlap_JulSep$percentile <- as.numeric(summary_overlap_JulSep$percentile)
+##GLM (OVERLAP - Jul-Sep pre-reg vs 2019)
 summary_overlap_JulSep$percentile <- as.factor(summary_overlap_JulSep$percentile)
 
-hist(summary_overlap_JulSep$n_grids )
-
-library(ggcorrplot)
-model.matrix(~0+., data=summary_overlap_JulSep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
+hist(summary_overlap_JulSep$n_grids)
 
 mod2_hump_JulSep <- glm(n_grids ~ pre_post_reg + percentile,
                         family=gaussian, data=summary_overlap_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod2_hump_JulSep)
-hist(mod2_hump_JulSep$residuals)
-plot(mod2_hump_JulSep)
+#hist(mod2_hump_JulSep$residuals)
+#plot(mod2_hump_JulSep)
 
-library(multcomp)
-summary(glht(mod2_hump_JulSep, mcp(percentile='Tukey')))
+#library(multcomp)
+#summary(glht(mod2_hump_JulSep, mcp(percentile='Tukey')))
 
-summary_overlap_JulSep$percentilexprepost <- interaction(summary_overlap_JulSep$pre_post_reg,summary_overlap_JulSep$percentile)
-glm.posthoc <- glm(n_grids ~  percentilexprepost, data=summary_overlap_JulSep,family="gaussian")
-summary(glm.posthoc)
 
 
 #---------------------------------------------------------------------
 
 ###    May-Sep    ###
+### RISK ###
 
 ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season)) +
   geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=1.8) +
@@ -940,45 +845,40 @@ ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season
   )
 ts_fishing_in_good_hw_habitat
 
+# SAVE FIGURE -- 
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# ggarrange(ts_fishing_in_good_hw_habitat,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
-png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_fishing_in_good_hw_habitat,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
 
-
-##GLM
+##GLM (RISK - May-Sep pre-reg vs 2020)
 # note that this is different to the fishery perspective, as that had one data point per month
-# here good habtiat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
+# here good habitat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
 
 summary_percentiles_MaySep$percentile <- as.factor(summary_percentiles_MaySep$percentile)
 
 hist(summary_percentiles_MaySep$risk_sum)
 
-library(ggcorrplot)
-model.matrix(~0+., data=summary_percentiles_MaySep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
 
 mod1_hump_MaySep <- glm(risk_sum ~ pre_post_reg + percentile,
                         family=gaussian, data=summary_percentiles_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_hump_MaySep)
-hist(mod1_hump_MaySep$residuals)
-plot(mod1_hump_MaySep)
+#hist(mod1_hump_MaySep$residuals)
+#plot(mod1_hump_MaySep)
 
-library(multcomp)
-summary(glht(mod1_hump_MaySep, mcp(percentile='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_hump_MaySep, mcp(percentile='Tukey')))
+
 
 
 ## OVERLAP MAY-SEP
-
 
 #plot count of overlapping grids -- May-Sep
 ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) +
@@ -1008,31 +908,25 @@ ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) 
   )
 ts_overlapping_grids_count_all
 
+# SAVE FIGURE -- 
+# png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# ggarrange(ts_overlapping_grids_count_all,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 
-png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_overlapping_grids_count_all,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
 
-
-
+##GLM (OVERLAP - May-Sep pre-reg vs 2020)
 
 summary_overlap_MaySep$percentile <- as.factor(summary_overlap_MaySep$percentile)
 
 hist(summary_overlap_MaySep$n_grids )
-
-library(ggcorrplot)
-model.matrix(~0+., data=summary_overlap_MaySep) %>% 
-  cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
-
 
 mod1_hump_overlap_MaySep <- glm(n_grids  ~ pre_post_reg + percentile,
                                 family=gaussian, data=summary_overlap_MaySep, na.action = na.omit) #family = gaussian(link = "log")
@@ -1041,17 +935,22 @@ hist(mod1_hump_overlap_MaySep$residuals)
 plot(mod1_hump_overlap_MaySep)
 
 
-library(multcomp)
-summary(glht(mod1_hump_overlap_MaySep, mcp(percentile='Tukey')))
+#library(multcomp)
+#summary(glht(mod1_hump_overlap_MaySep, mcp(percentile='Tukey')))
 
 
-##########################################################################
 
-## ts plot of 75th percentile risk and overlap 
+#------------------------------------
+
+## ts plot of risk and overlap - using the 75th percentile cutoff 
 ## Jul-Sep and May-Sep on same plot
 
-summary_75th_HW_habitat_fishing_JulSep 
-summary_75th_HW_habitat_fishing_MaySep
+
+
+## RISK ##
+
+#summary_75th_HW_habitat_fishing_JulSep 
+#summary_75th_HW_habitat_fishing_MaySep
 
 
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habitat_fishing_JulSep, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
@@ -1091,22 +990,22 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
   )
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
-
-png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_fishing_in_75th_hw_habitat_JulSep_MaySep,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+# SAVE FIGURE 
+# png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# ggarrange(ts_fishing_in_75th_hw_habitat_JulSep_MaySep,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
 
 
 ## overlap
-test_summary_75_JulSep 
-test_summary_75_MaySep
+#test_summary_75_JulSep 
+#test_summary_75_MaySep
 
 
 ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
@@ -1147,18 +1046,23 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, 
   )
 ts_overlap_75th_hw_habitat_JulSep_MaySep
 
-png(paste0(path_figures, "/overlap_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
-ggarrange(ts_overlap_75th_hw_habitat_JulSep_MaySep,
-          ncol=1,
-          nrow=1,
-          #legend="top",
-          #labels="auto",
-          vjust=8,
-          hjust=0
-)
-invisible(dev.off())
+# SAVE FIGURE -- 
+# png(paste0(path_figures, "/overlap_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# ggarrange(ts_overlap_75th_hw_habitat_JulSep_MaySep,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
+
+
 
 ##############################################
+ ### THIS WAS DONE EARLIER, DELETE IT FROM EARLIER, KEEP ALL HERE
+
 ## % change from pre-reg average to post-reg
 summary_75th_HW_habitat_fishing_JulSep 
 (27.151585+16.222773+15.964559+18.853179+20.220890)/5 ##19.6826
