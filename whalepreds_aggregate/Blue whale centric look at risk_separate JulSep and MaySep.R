@@ -1,4 +1,4 @@
-#' blue whale centric' look at risk 
+#' blue whale centric' look at risk -- changes in risk within the most likely blue whale habitat.
 #' separate comparisons for Jul-Sep pre-regs vs 2019, and and May-Sep pre-regs vs 2020
 
 #-----------------------------------------------------------------------------------
@@ -71,6 +71,7 @@ grid.key <- left_join(grid.5km,grid.depth, by = "GRID5KM_ID")
 #-----------------------------------------------------------------------------------
 # First determine cut-off value for defining most likely bw habitat
 # based on the distribution of modelled bw values in study area
+# this will be done separately for Jul-Sep pre-regs vs 2019, and and May-Sep pre-regs vs 2020
 
 x.blue.all_crab_season <- x.blue.all %>% 
   separate(year_month, into = c("year", "month"), sep = "_") %>% 
@@ -114,7 +115,7 @@ study_area_bw <- full_join(study_area_df_with_all_season_month_combos, x.blue_20
 ##  Jul-Sep pre-regulations vs 2019
 #----------------------------------
 
-# #if want to visualise modeled bw prob. of occurrences using ggridges
+# if want to visualise modeled bw prob. of occurrences using ggridges
 
 study_area_bw_JulSep <- study_area_bw %>% 
   filter(month %in% c('07','08', '09'))
@@ -286,7 +287,6 @@ summary_probabilites_JulSep <- rbind(
 
 
 
-
 #######
 #overlap between good bw habitat and fishery in each season 
 #(based on different threshold value used to define good bw habitat)
@@ -354,16 +354,13 @@ summary_overlap_JulSep <- rbind(
 
 
 
-
-
 #------------------------------------------------------------------------------------------
 
 #----------------------------------
 ##  May-Sep pre-regulations vs 2020
 #----------------------------------
 
-
-# #if want to visualise modeled bw prob. of occurrences using ggridges
+# if want to visualise modeled bw prob. of occurrences using ggridges
 
 #density plot for pooled data across all 2014-2020 seasons
 #NAs here are because bw model is restricted by ROMS, and the study area has more grids than the bw model output
@@ -514,8 +511,6 @@ summary_probabilites_MaySep <- rbind(
 
 
 
-
-
 #######
 #overlap between good bw habitat and fishery in each season 
 #(based on different threshold value used to define good bw habitat)
@@ -586,8 +581,6 @@ summary_overlap_MaySep <- rbind(
 
 
 
-
-
 #------------------------------------------------------------------------------------------------------------
 
 #-----------------------
@@ -641,7 +634,7 @@ ts_risk_in_good_bw_habitat_JulSep
 # invisible(dev.off())
 
 
-##GLM
+##GLM (RISK - Jul-Sep pre-reg vs 2019)
 # note that this is different to the fishery perspective, as that had one data point per month
 # here good habitat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
 
@@ -704,7 +697,7 @@ ts_risk_in_good_bw_habitat_MaySep
 # invisible(dev.off())
 
 
-##GLM
+##GLM (RISK - May-Sep pre-reg vs 2020)
 # note that this is different to the fishery perspective, as that had one data point per month
 # here good habitat is defined across Jul-Sep and May-Sep, and there is only 1 data point per season
 
@@ -769,8 +762,7 @@ ts_overlapping_grids_JulSep
 
 
 
-
-## GLM (Jul-Sep pre-reg vs 2019)
+## GLM (OVERLAP - Jul-Sep pre-reg vs 2019)
 summary_overlap_JulSep$prob_of_occur <- as.factor(summary_overlap_JulSep$prob_of_occur)
 
 hist(summary_overlap_JulSep$n_grids )
@@ -828,9 +820,7 @@ ts_overlapping_grids
 # invisible(dev.off())
 
 
-
-
-## GLM (May-Sep pre-reg vs 2020)
+## GLM (OVERLAP - May-Sep pre-reg vs 2020)
 summary_overlap_MaySep$prob_of_occur <- as.factor(summary_overlap_MaySep$prob_of_occur)
 
 hist(summary_overlap_MaySep$n_grids )
