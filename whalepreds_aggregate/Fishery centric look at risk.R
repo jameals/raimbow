@@ -177,6 +177,7 @@ study_area_whale_fishing <- left_join(study_area_whale, x.fish_WA_MaySep, by=c("
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
 
 
+
 #calculate risk  metric
 risk_whales_WA_MaySep <- study_area_whale_fishing %>%
   mutate(
@@ -194,6 +195,36 @@ risk_whales_WA_MaySep <- study_area_whale_fishing %>%
            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
          blue_risk = 
            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+## normalize whale and fishing data before calculating risk
+library("scales")
+
+risk_whales_WA_MaySep_normalized <- study_area_whale_fishing %>% 
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
   ) %>%
   mutate(is_May_Sep = 
            ifelse(month %in% c('05', '06', '07', '08', '09')
@@ -908,8 +939,45 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
   )
 box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
 
+
+##NORMALIZED
+plot_subset_2018_2019_box <- risk_whales_WA_MaySep_normalized %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season != '2019-2020') %>% 
+  filter(study_area=='Y') %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
+
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
+  #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  #ylab("Summed Humpback Whale Risk") + 
+  ylab("Risk") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019"), expand = c(0,0)) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
+
+
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2019_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019,
   ncol=1,
   nrow=1
@@ -956,8 +1024,45 @@ box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
   )
 box_hump_risk_MaySep_pre_reg_vs_2019_2020
 
+
+##NORMALIZED
+MaySep_plot_subset_2019_2020_box <- risk_whales_WA_MaySep_normalized %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season != '2018-2019') %>% 
+  filter(study_area=='Y') %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
+
+box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
+  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  #ylab("Summed Humpback Whale Risk") + 
+  ylab("") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020"), expand = c(0,0)) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+box_hump_risk_MaySep_pre_reg_vs_2019_2020
+
+
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2020.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2020_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
@@ -1189,7 +1294,7 @@ box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
 box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2019_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019,
           ncol=1,
           nrow=1
@@ -1225,7 +1330,7 @@ box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
 box_blue_risk_MaySep_pre_reg_vs_2019_2020
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2020.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2020_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
@@ -1354,6 +1459,15 @@ percent_change_in_risk_JulSep
 (3.998742-17.870604)/17.870604*100 #-77.62391
 #BW:
 (232.3115-263.9242)/263.9242*100 #-11.97795
+##NORMALIZED:
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            0.866         3.78
+#pre-reg             4.00          4.29
+#HW:
+(0.866-4.00)/4.00*100 #-78.35
+#BW:
+(3.78-4.29)/4.29*100 #-11.88811
+
 
 percent_change_in_risk_MaySep <- MaySep_plot_subset_2019_2020_box %>% 
   group_by(pre_post_reg) %>% 
@@ -1367,6 +1481,18 @@ percent_change_in_risk_MaySep
 (9.851811-20.192729)/20.192729*100 #-51.2111
 #BW:
 (161.0971-203.4769)/203.4769*100 #-20.82782
+##NORMALIZED:
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            2.19         2.60
+#pre-reg             4.51          3.27
+#HW:
+(2.19-4.51)/4.51*100 #-51.44124
+#BW:
+(2.60-3.27)/3.27*100 #-20.4893
+
+
+
+
 
 
 ##NO REGS, 1-month input file
