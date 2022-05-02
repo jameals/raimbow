@@ -304,6 +304,56 @@ subset_2019_2020_NO_REGS <- risk_whales_WA_MaySep_no_regs %>%
             blue_risk = sum(blue_risk, na.rm=TRUE)) 
 
 
+
+## NORMALIZED
+risk_whales_WA_MaySep_no_regs_normalized <- study_area_whale_fishing_no_regs %>% 
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+subset_2018_2019_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season != '2019-2020') %>% 
+  filter(study_area=='Y') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
+subset_2019_2020_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season != '2018-2019') %>% 
+  filter(study_area=='Y') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
 
@@ -1483,7 +1533,7 @@ percent_change_in_risk_MaySep
 (161.0971-203.4769)/203.4769*100 #-20.82782
 ##NORMALIZED:
 #pre_post_reg mean_hw_risk mean_bw_risk
-#2018-2019            2.19         2.60
+#2019-2020            2.19         2.60
 #pre-reg             4.51          3.27
 #HW:
 (2.19-4.51)/4.51*100 #-51.44124
@@ -1496,33 +1546,48 @@ percent_change_in_risk_MaySep
 
 
 ##NO REGS, 1-month input file
-subset_2018_2019_NO_REGS 
-subset_2019_2020_NO_REGS
+subset_2018_2019_NO_REGS #subset_2018_2019_NO_REGS_NORMALIZED 
+subset_2019_2020_NO_REGS #subset_2019_2020_NO_REGS_NORMALIZED 
 
-summary_risk_JulSep_NO_REGS <- subset_2018_2019_NO_REGS %>% 
+summary_risk_JulSep_NO_REGS_NORMALIZED <- subset_2018_2019_NO_REGS_NORMALIZED %>% 
   group_by(pre_post_reg) %>% 
   summarise(mean_hw_risk = mean(hump_risk), 
             mean_bw_risk = mean(blue_risk))
-summary_risk_JulSep_NO_REGS
+summary_risk_JulSep_NO_REGS_NORMALIZED
 ## % change in 2018-2019 if had or did not have regs
 #HW:
 (3.998742-6.041264)/6.041264*100 #-33.80951
 #BW:
 (232.3115-351.0894)/351.0894*100 #-33.83124
+##NORMALIZED
+#HW:2019 if no regs: 1.31 ;; 2019 with regs 0.866
+(0.866-1.31)/1.31*100 ##-33.89
+#BUT
+(1.31-0.866)/0.866*100 ##51.27
+#BW: 2019 if no regs: 5.71 ;; 2019 with regs 3.78
+(3.78-5.71)/5.71*100 ##-33.80
+#BUT
+(5.71-3.78)/3.78*100 ##51.06
 
-
-summary_risk_MaySep_NO_REGS <- subset_2019_2020_NO_REGS %>% 
+summary_risk_MaySep_NO_REGS_NORMALIZED <- subset_2019_2020_NO_REGS_NORMALIZED %>% 
   group_by(pre_post_reg) %>% 
   summarise(mean_hw_risk = mean(hump_risk), 
             mean_bw_risk = mean(blue_risk))
-summary_risk_MaySep_NO_REGS
+summary_risk_MaySep_NO_REGS_NORMALIZED
 ## % change in 2019-2020 if had or did not have regs
 #HW:
 (9.851811-14.89231)/14.89231*100 #-33.84632
 #BW:
 (161.0971-243.4962)/243.4962*100 #-33.83999
-
-
+##NORMALIZED
+#HW:2020 if no regs: 3.32 ;; 2020 with regs 2.19
+(2.19-3.32)/3.32*100 ##-34.03
+#BUT
+(3.32-2.19)/2.19*100 ##51.60
+#BW: 2020 if no regs: 3.94 ;; 2020 with regs 2.60
+(2.60-3.94)/3.94*100 ##-34.01
+#BUT
+(3.94-2.60)/2.60*100 ##51.54
 
 
 
@@ -1535,31 +1600,31 @@ summary_risk_MaySep_NO_REGS
 
 #boxplot of last 2 seasons with or wihtout regs
 
-#risk_whales_WA_MaySep
-#risk_whales_WA_MaySep_no_regs
+#risk_whales_WA_MaySep / risk_whales_WA_MaySep_normalized
+#risk_whales_WA_MaySep_no_regs / risk_whales_WA_MaySep_no_regs_normalized
 
 #sum risk across grids so each month has one risk value, then plot
 
 #HW
-box_2018_2019_with_regs <- risk_whales_WA_MaySep %>% 
+box_2018_2019_with_regs <- risk_whales_WA_MaySep_normalized %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   filter(season %in% c('2018-2019')) %>% 
   filter(study_area=='Y') %>% 
   #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
   mutate(regs = "with regulations") %>% 
   group_by(season, month, regs) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE))
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE))
   
-box_2018_2019_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
+box_2018_2019_without_regs <- risk_whales_WA_MaySep_no_regs_normalized %>% 
   filter(month %in% c('07', '08', '09')) %>% 
   filter(season %in% c('2018-2019')) %>% 
   filter(study_area=='Y') %>% 
   #filter(!is.na(mean_M2_trapdens)) %>% 
   mutate(regs = "without regulations") %>% 
   group_by(season, month, regs) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE))
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE))
 
 
 box_hw_risk_2018_2019_with_and_without_regs <- ggplot() +
@@ -1584,25 +1649,25 @@ box_hw_risk_2018_2019_with_and_without_regs
 
 
 
-box_2019_2020_with_regs <- risk_whales_WA_MaySep %>% 
+box_2019_2020_with_regs <- risk_whales_WA_MaySep_normalized %>% 
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
   filter(season %in% c('2019-2020')) %>% 
   filter(study_area=='Y') %>% 
   #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
   mutate(regs = "with regulations") %>% 
   group_by(season, month, regs) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE))
+  summarise(hump_risk = sum(hump_risk_norm , na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE))
 
-box_2019_2020_without_regs <- risk_whales_WA_MaySep_no_regs %>% 
+box_2019_2020_without_regs <- risk_whales_WA_MaySep_no_regs_normalized %>% 
   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
   filter(season %in% c('2019-2020')) %>% 
   filter(study_area=='Y') %>% 
   #filter(!is.na(mean_M2_trapdens)) %>% 
   mutate(regs = "without regulations") %>% 
   group_by(season, month, regs) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE))
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE))
 
 
 box_hw_risk_2019_2020_with_and_without_regs <- ggplot() +
@@ -1652,7 +1717,7 @@ box_hw_risk_2018_2019_2020_with_and_without_regs
 
 
 #plot things together and save
-png(paste0(path_figures, "/hump_risk_2019_and_2020_with_and_without_regs.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/hump_risk_2019_and_2020_with_and_without_regs_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hw_risk_2018_2019_2020_with_and_without_regs,
           ncol=1,
           nrow=1,
@@ -1686,7 +1751,7 @@ box_bw_risk_2018_2019_2020_with_and_without_regs
 
 
 #plot things together and save
-png(paste0(path_figures, "/blue_risk_2019_and_2020_with_and_without_regs.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/blue_risk_2019_and_2020_with_and_without_regs_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_bw_risk_2018_2019_2020_with_and_without_regs,
           ncol=1,
           nrow=1,
