@@ -125,7 +125,24 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 #perhaps slightly better success joining if don't join by landing date as well...
 
 
+#--------------------------------------------
+#adjust for inflation
 
+cpi_raw <- read_csv(here('wdfw', 'data', 'cpi_2021.csv'),col_types='idc')
+
+# add a conversion factor to 2014 $$
+cpi <- cpi_raw %>% 
+  mutate(convert2014=1/(annual_average/236.7)) %>% 
+  filter(year>2013) %>% 
+  filter(year<2021) %>% 
+  dplyr::select(year,convert2014) %>% 
+  rename(LANDING_YEAR = year)
+
+test_join_uniques_adj_inf <- test_join_uniques %>% 
+  left_join(cpi, by = c('LANDING_YEAR')) %>% 
+  mutate(EXVESSEL_REVENUE_adj = EXVESSEL_REVENUE * convert2014,
+         PRICE_PER_POUND_adj = PRICE_PER_POUND * convert2014)
+  
 
 
 #-----------------------------------------------------------------------------------------------
@@ -137,16 +154,16 @@ test_join_by_FTID_and_Fishticket1 <- test_df_2 %>%
 # sum revenue and landings per month (but keep months separate) - as did with risk plots
 
 #Jul-Sep
-summary_pacfin_data_JulSep <- test_join_uniques %>% 
+summary_pacfin_data_JulSep <- test_join_uniques_adj_inf %>% 
   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
   filter(PACFIN_SPECIES_CODE == "DCRB") %>%
   filter(month_name %in% c('July','August','September')) %>%
   filter(season != '2019-2020') %>%
   #filter(LANDED_WEIGHT_LBS < 10000) %>% ##this doesn't make a difference in main conclusions
   group_by(season, month_name) %>%
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE_adj, na.rm=T),
             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND)
+            avg_price_per_pound = mean(PRICE_PER_POUND_adj, na.rm=T)
   ) %>% 
   mutate(
     pre_post_reg = ifelse(season == '2018-2019', '2018-2019', 'pre-reg'))
@@ -177,7 +194,7 @@ sum_JulSep_rev_box <- ggplot() +
 sum_JulSep_rev_box
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_revenue_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_ADJ_INFL.png"), width = 16, height = 14, units = "in", res = 400)
 ggarrange(sum_JulSep_rev_box,
           ncol=1,
           nrow=1
@@ -210,7 +227,12 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
 #-29.05 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
 (364576.5-264532.4)/264532.4*100 ##37.82
-
+##ADJUSTED FOR INFLATION
+#% change from pre-reg mean to 2019
+(271656.5-407971.0)/407971.0*100
+#-33.41 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(337486.4-254010.8)/254010.8*100 ##32.86
 
 ##LANDINGS
 sum_JulSep_lbs_box <- ggplot() +
@@ -273,15 +295,15 @@ pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>%
 
 ####################
 #May-Sep
-summary_pacfin_data_MaySep <- test_join_uniques %>%
+summary_pacfin_data_MaySep <- test_join_uniques_adj_inf %>%
   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
   filter(season != '2018-2019') %>%
   filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
   #filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
   group_by(season, month_name) %>%
-  summarise(sum_revenue = sum(EXVESSEL_REVENUE, na.rm=T),
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE_adj, na.rm=T),
             sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T),
-            avg_price_per_pound = mean(PRICE_PER_POUND, na.rm=T)
+            avg_price_per_pound = mean(PRICE_PER_POUND_adj, na.rm=T)
   ) %>% 
   mutate(
     pre_post_reg = ifelse(season == '2019-2020', '2019-2020', 'pre-reg'))
@@ -312,7 +334,7 @@ sum_MaySep_rev_box <- ggplot() +
 sum_MaySep_rev_box
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_revenue_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/total_revenue_prePreg_vs_2020_ADJ_INFL.png"), width = 16, height = 14, units = "in", res = 400)
 ggarrange(sum_MaySep_rev_box,
           ncol=1,
           nrow=1
@@ -345,7 +367,12 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
 #-13.20 --> but pre-reg mean high due to high year of 2014
 #% change from pre-reg MEDIAN to 2019
 (303595.9-257379.8)/257379.8*100 #17.95638
-
+##ADJUSTED FOR INFLATION
+#% change from pre-reg mean to 2019
+(315489.1-389050.9)/389050.9*100
+#-18.91 --> but pre-reg mean high due to high year of 2014
+#% change from pre-reg MEDIAN to 2019
+(277670.6-248558.9)/248558.9*100 ##11.71
 
 
 
@@ -414,7 +441,7 @@ pre_reg_mean_landings_MaySep <- summary_pacfin_data_MaySep %>%
 ################
 #one way of doing price per pound
 
-test_join_uniques_price_per_pound <- test_join_uniques %>% 
+test_join_uniques_price_per_pound <- test_join_uniques_adj_inf %>% 
   filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
   mutate(month_name = factor(month_name, levels = c('May','June','July','August','September','October','November'))) %>% 
   mutate(pre_post_reg = 
@@ -460,25 +487,25 @@ test_join_uniques_price_per_pound <- test_join_uniques %>%
 avg_ppp_post_reg_MaySep <- test_join_uniques_price_per_pound %>% 
   filter(pre_post_reg == '2019-2020') %>% 
   group_by(season, pre_post_reg) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND_adj))
 
 avg_ppp_post_reg_JulSep <- test_join_uniques_price_per_pound %>% 
   filter(month_name %in% c('July','August','September')) %>% 
   filter(pre_post_reg == '2018-2019') %>% 
   group_by(season, pre_post_reg) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND_adj))
 
 
 avg_ppp_pre_reg_MaySep <- test_join_uniques_price_per_pound %>% 
   filter(pre_post_reg == 'pre-reg') %>% 
   group_by(season, pre_post_reg) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND_adj))
 
 avg_ppp_pre_reg_JulSep <- test_join_uniques_price_per_pound %>% 
   filter(month_name %in% c('July','August','September')) %>% 
   filter(pre_post_reg == 'pre-reg') %>% 
   group_by(season, pre_post_reg) %>% 
-  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND))
+  summarise(PRICE_PER_POUND = mean(PRICE_PER_POUND_adj))
 
 
 
@@ -510,7 +537,7 @@ ppp_in_JulSep
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2019.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2019_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(ppp_in_JulSep,
           ncol=1,
           nrow=1
@@ -551,7 +578,7 @@ ppp_in_MaySep
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2020.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2020_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(ppp_in_MaySep,
           ncol=1,
           nrow=1
@@ -618,12 +645,12 @@ efficiency_CPUE <-  test_join %>%
   summarise(sum_pots_per_ticket = sum(PotsFished, na.rm = T))
 
 efficiency_CPUE <- left_join(efficiency_CPUE,
-                             test_join_uniques %>% select(LANDED_WEIGHT_LBS, EXVESSEL_REVENUE, season, month_name),
+                             test_join_uniques_adj_inf %>% select(LANDED_WEIGHT_LBS, EXVESSEL_REVENUE_adj, season, month_name),
                              by = "FISH_TICKET_ID"
                              )
 
 efficiency_CPUE_v2 <- efficiency_CPUE %>% 
-  mutate(dollar_per_pot = EXVESSEL_REVENUE/sum_pots_per_ticket, na.rm = T,
+  mutate(dollar_per_pot = EXVESSEL_REVENUE_adj/sum_pots_per_ticket, na.rm = T,
          lbs_per_pot = LANDED_WEIGHT_LBS/sum_pots_per_ticket, na.rm = T)
 
 efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
@@ -701,7 +728,7 @@ CPUE_ts_dollar_MaySep <- ggplot()+
 CPUE_ts_dollar_MaySep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2020.png"), width = 16, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2020_ADJ_INFL.png"), width = 16, height = 14, units = "in", res = 400)
 ggarrange(CPUE_ts_dollar_MaySep,
           ncol=1,
           nrow=1
@@ -725,7 +752,7 @@ plot(mod1_CPUE_lbs_MaySep)
 
 mod1_CPUE_dollar_MaySep <- glm(mean_dollar_per_pot ~ pre_post_reg + month_name,
                                family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
-summary(mod1_CPUE_dollar_MaySep) #pre-post-reg IS a significant predictor 
+summary(mod1_CPUE_dollar_MaySep) #pre-post-reg IS a significant predictor if don't adjust for infaltion, NOT significant if do adjust for infaltion
 hist(mod1_CPUE_dollar_MaySep$residuals)
 plot(mod1_CPUE_dollar_MaySep)
 
@@ -745,6 +772,8 @@ pre_reg_mean_CPUE_dollar_MaySep <- efficiency_CPUE_v2 %>%
 
 #% change from pre-reg mean to 2020
 (17.0-13.0)/13.0*100 ##30.76923
+#ADJUSTED FOR INFALTION
+(15.5-12.7)/12.7*100 ##22.05
 
 
 
@@ -785,7 +814,7 @@ CPUE_ts_dollar_JulSep <- ggplot()+
 CPUE_ts_dollar_JulSep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2019.png"), width = 16, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2019_ADJ_INFL.png"), width = 16, height = 14, units = "in", res = 400)
 ggarrange(CPUE_ts_dollar_JulSep,
           ncol=1,
           nrow=1
@@ -860,10 +889,10 @@ plot(mod1_CPUE_dollar_JulSep)
 ######################################################################################
 #monthly revenue by vessel
 
-monthly_rev_by_vessel <- test_join_uniques %>% 
+monthly_rev_by_vessel <- test_join_uniques_adj_inf %>% 
   rename(License = License.x) %>% 
   group_by(Vessel.x, License, season, month_name) %>% 
-  summarise(monthly_rev = sum(EXVESSEL_REVENUE)) 
+  summarise(monthly_rev = sum(EXVESSEL_REVENUE_adj)) 
   
 
 #Read in and join license & pot limit info
@@ -910,7 +939,7 @@ monthly_rev_JulSep <- ggplot()+
 monthly_rev_JulSep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019.png"), width = 15, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
 ggarrange(monthly_rev_JulSep,
           ncol=1,
           nrow=1
@@ -954,7 +983,7 @@ monthly_rev_MaySep <- ggplot()+
 monthly_rev_MaySep
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020.png"), width = 15, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
 ggarrange(monthly_rev_MaySep,
           ncol=1,
           nrow=1
