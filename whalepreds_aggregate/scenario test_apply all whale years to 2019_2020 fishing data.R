@@ -221,6 +221,55 @@ risk_whales_WA_MaySep_study_area_with_regs_2018_2019 <- study_area_whale_fishing
   ) 
 
 
+## normalize whale and fishing data before calculating risk
+library("scales")
+
+#calculate risk  metric - fishing data held constant - seasons with regs
+risk_whales_WA_MaySep_study_area_with_regs_normalized <- study_area_whale_fishing_with_regs %>%
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+  ) 
+
+risk_whales_WA_MaySep_study_area_with_regs_2018_2019_normalized <- study_area_whale_fishing_with_regs_2018_2019 %>%
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+  )
 
 
 #--------------------------------------------------------------------------
@@ -304,6 +353,34 @@ plot_subset_with_regs_2019_2020 <- risk_whales_WA_MaySep_study_area_with_regs %>
     Blue_risk_sum = sum(blue_risk, na.rm=TRUE))
 
 
+##NORMALIZED
+plot_subset_with_regs_2018_2019 <- risk_whales_WA_MaySep_study_area_with_regs_2018_2019_normalized %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season != '2019-2020') %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(
+    #use summed approach
+    Humpback_risk_sum = sum(hump_risk_norm, na.rm=TRUE),
+    Blue_risk_sum = sum(blue_risk_norm , na.rm=TRUE))
+
+
+plot_subset_with_regs_2019_2020 <- risk_whales_WA_MaySep_study_area_with_regs_normalized %>% 
+  filter(study_area=='Y') %>% #restrict calculations to study area
+  filter(season != '2018-2019') %>% 
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(
+    #use summed approach
+    Humpback_risk_sum = sum(hump_risk_norm, na.rm=TRUE),
+    Blue_risk_sum = sum(blue_risk_norm , na.rm=TRUE))
+
+
 violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
   #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
@@ -324,7 +401,7 @@ violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_JulSep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_JulSep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -356,7 +433,7 @@ violin_hump_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_MaySep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_MaySep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -410,7 +487,7 @@ violin_blue_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_JulSep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_JulSep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -443,7 +520,7 @@ violin_blue_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_MaySep_constant_fishing.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_MaySep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -492,34 +569,35 @@ invisible(dev.off())
 #--------------
 
 
-## get a % change from pre-reg average to post reg
-
-#when using 2-week input file
-percent_change_in_risk_JulSep <- plot_subset_with_regs_2018_2019 %>% 
-  group_by(pre_post_reg) %>% 
-  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
-            mean_bw_risk = mean(Blue_risk_sum))
-percent_change_in_risk_JulSep
-#pre_post_reg mean_hw_risk mean_bw_risk
-#2018-2019            3.90         223.
-#pre-reg             12.6          201.
-#HW:
-(3.897254-12.565592)/12.565592*100 #-68.98472
-#BW:how much lower is pre-reg to 2019
-(200.6583-222.8370)/222.8370*100 #-9.95288
-
-percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
-  group_by(pre_post_reg) %>% 
-  summarise(mean_hw_risk = mean(Humpback_risk_sum), 
-            mean_bw_risk = mean(Blue_risk_sum))
-percent_change_in_risk_MaySep 
-#pre_post_reg mean_hw_risk mean_bw_risk
-#2019-2020            9.15         150.
-#pre-reg             10.2          123.
-#HW:
-(9.150597-10.199857)/10.199857*100 #-10.28701
-#BW:
-(149.8488-123.2962)/123.2962*100 #21.53562
+# ## get a % change from pre-reg average to post reg
+# 
+# #when using 2-week input file
+# percent_change_in_risk_JulSep <- plot_subset_with_regs_2018_2019 %>% 
+#   group_by(pre_post_reg) %>% 
+#   summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+#             mean_bw_risk = mean(Blue_risk_sum))
+# percent_change_in_risk_JulSep
+# #pre_post_reg mean_hw_risk mean_bw_risk
+# #2018-2019            3.90         223.
+# #pre-reg             12.6          201.
+# #HW:
+# (3.897254-12.565592)/12.565592*100 #-68.98472
+# #BW:how much lower is pre-reg to 2019
+# (222.8370-200.6583)/200.6583*100 #11.05
+# 
+# 
+# percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
+#   group_by(pre_post_reg) %>% 
+#   summarise(mean_hw_risk = mean(Humpback_risk_sum), 
+#             mean_bw_risk = mean(Blue_risk_sum))
+# percent_change_in_risk_MaySep 
+# #pre_post_reg mean_hw_risk mean_bw_risk
+# #2019-2020            9.15         150.
+# #pre-reg             10.2          123.
+# #HW:
+# (9.150597-10.199857)/10.199857*100 #-10.28701
+# #BW:
+# (149.8488-123.2962)/123.2962*100 #21.53562
 
 
 
@@ -538,6 +616,14 @@ percent_change_in_risk_JulSep
 (232.3115-209.1958)/209.1958*100 #11.04979
 #BW:how much lower is pre-reg to 2019
 (209.1958-232.3115)/232.3115*100 #-9.950304
+##NORMALIZED
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            1.04         4.54
+#pre-reg             3.48          4.08
+#HW:
+(1.04-3.48 )/3.48 *100 #-70.11
+#BW:how much lower is pre-reg to 2019
+(4.54-4.08)/4.08*100 #11.27
 
 percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
   group_by(pre_post_reg) %>% 
@@ -551,7 +637,14 @@ percent_change_in_risk_MaySep
 (9.851811-10.922936)/10.922936*100 #-9.8062
 #BW:
 (161.0971-130.8961)/130.8961*100 #23.0725
-
+##NORMALIZED
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            3.34         3.96
+#pre-reg             3.71          3.20
+#HW:
+(3.34-3.71)/3.71*100 #-9.97
+#BW:
+(3.96-3.20)/3.20*100 #23.75
 
 
 
