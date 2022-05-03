@@ -217,6 +217,68 @@ risk_whales_WA_JulSep <- study_area_whale_fishing_JulSep %>%
   mutate(is_May_Sep = 
            ifelse(month %in% c('05', '06', '07', '08', '09')
                   ,'Y', 'N'))
+
+
+
+## normalize whale and fishing data before calculating risk
+library("scales")
+
+#calculate risk  metric - whale data held constant
+risk_whales_WA_MaySep_normalized <- study_area_whale_fishing_MaySep %>%
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+risk_whales_WA_JulSep_normalized <- study_area_whale_fishing_JulSep %>%
+  filter(study_area=='Y') %>%
+  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #calculate risk  metric
+  mutate(
+    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+  ) %>% 
+  #if there is no fishing data in grid, then risk is 0, as there is no fishing
+  mutate(hump_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+  ) %>%
+  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+  mutate(hump_risk_norm = 
+           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+         blue_risk_norm = 
+           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+  ) %>%
+  mutate(is_May_Sep = 
+           ifelse(month %in% c('05', '06', '07', '08', '09')
+                  ,'Y', 'N'))
+
+
+
+
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
 
@@ -245,6 +307,21 @@ box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep %>%
   summarise(hump_risk_sum = sum(hump_risk, na.rm=TRUE),
             blue_risk_sum = sum(blue_risk, na.rm=TRUE))
 
+##NORMALIZED
+box_fishing_actual_whale_2018_2019 <- risk_whales_WA_JulSep_normalized %>% 
+  #filter to Jul-Sep
+  filter(month %in% c('07','08','09')) %>% 
+  #take out 2019-2020 season
+  filter(season != '2019-2020') %>%
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  #filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk_sum = sum(blue_risk_norm, na.rm=TRUE))
+
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
   geom_violin(data = box_fishing_actual_whale_2018_2019, aes(x = pre_post_reg, y = hump_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
@@ -265,7 +342,7 @@ box_hump_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
   )
 box_hump_risk_Jul_Sep_constant_whale_2018_2019
 
-png(paste0(path_figures, "/risk_HW_JulSep_constant_whale_data.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_JulSep_constant_whale_data_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_Jul_Sep_constant_whale_2018_2019,
           ncol=1,
           nrow=1,
@@ -291,6 +368,21 @@ box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep %>%
   summarise(hump_risk_sum = sum(hump_risk, na.rm=TRUE),
             blue_risk_sum = sum(blue_risk, na.rm=TRUE))
 
+##NORMALIZED
+box_fishing_actual_whale_2019_2020 <- risk_whales_WA_MaySep_normalized %>% 
+  #already filtered to May-Sep
+  #take out 2018-2019 season
+  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2019-2020')) %>%
+  filter(study_area=='Y') %>% #need to filter to be only study area grids
+  #filter(!is.na(mean_M2_trapdens)) #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk_sum = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk_sum = sum(blue_risk_norm, na.rm=TRUE))
+
+
 #Boxplots of risk - fishing actual, whale constant 2018-2019
 box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
   geom_violin(data = box_fishing_actual_whale_2019_2020, aes(x = pre_post_reg, y = hump_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
@@ -312,7 +404,7 @@ box_hump_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
 box_hump_risk_May_Sep_constant_whale_2019_2020
 
 
-png(paste0(path_figures, "/risk_HW_MaySep_constant_whale_data.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_MaySep_constant_whale_data_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_May_Sep_constant_whale_2019_2020,
           ncol=1,
           nrow=1,
@@ -365,7 +457,7 @@ box_blue_risk_Jul_Sep_constant_whale_2018_2019 <- ggplot() +
   )
 box_blue_risk_Jul_Sep_constant_whale_2018_2019
 
-png(paste0(path_figures, "/risk_BW_JulSep_constant_whale_data.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_JulSep_constant_whale_data_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_Jul_Sep_constant_whale_2018_2019,
           ncol=1,
           nrow=1,
@@ -399,7 +491,7 @@ box_blue_risk_May_Sep_constant_whale_2019_2020 <- ggplot() +
   )
 box_blue_risk_May_Sep_constant_whale_2019_2020
 
-png(paste0(path_figures, "/risk_BW_MaySep_constant_whale_data.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_MaySep_constant_whale_data_NORM.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_May_Sep_constant_whale_2019_2020,
           ncol=1,
           nrow=1,
@@ -491,6 +583,15 @@ percent_change_in_risk_JulSep
 (3.998742-5.222402)/5.222402*100 #-23.43098
 #BW:
 (232.3115-293.0522)/293.0522*100 #-20.72692
+##NORMALIZED
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2018-2019            1.23         3.90
+#pre-reg              1.60         4.92
+#HW:
+(1.23-1.60)/1.60*100 #-23.125
+#BW:
+(3.90-4.92)/4.92*100 #-20.73
+
 
 percent_change_in_risk_MaySep <- box_fishing_actual_whale_2019_2020 %>% 
   group_by(pre_post_reg) %>% 
@@ -504,40 +605,14 @@ percent_change_in_risk_MaySep
 (9.851811-17.865920)/17.865920*100 #-44.85696
 #BW:
 (161.0971-245.1621)/245.1621*100 #-34.28956
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+##NORMALIZED
+#pre_post_reg mean_hw_risk mean_bw_risk
+#2019-2020            2.40         2.63
+#pre-reg             4.36          3.96
+#HW:
+(2.40-4.36)/4.36*100 #-44.95
+#BW:
+(2.63-3.96)/3.96*100 #-33.59
 
 
 
