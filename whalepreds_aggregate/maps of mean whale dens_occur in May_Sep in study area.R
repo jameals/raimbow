@@ -238,6 +238,110 @@ invisible(dev.off())
 
 
 
+#--------------------------------------------------------
+#test some monthly maps
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-127,46,-122,49) 
+
+
+#dissolved_2019_2020_MaySep <- read_rds(here::here('wdfw','data','dissolved_2019_2020_MaySep_WA_fishery_footprint_20220202.rds'))
+
+
+subset_data <- x.whale_crab_season_May_Sep %>% 
+  filter(season == "2019-2020") %>%
+  filter(month == "09") %>%
+  filter(!is.na(Humpback_dens_mean)) %>%
+  left_join(grid.5km, by = "GRID5KM_ID")
+
+map_hump <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_data), 
+          aes(fill=Humpback_dens_mean,
+              #fill=Humpback_dens_mean,
+              col=Humpback_dens_mean
+              #col=mean_hump_dens
+          )
+  ) +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  
+  scale_fill_viridis(na.value=NA,option="D",name="humpback\ndensity",breaks=seq(0, 0.06,by=0.02),limits=c(0, 0.06),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="humpback\ndensity",breaks=seq(0, 0.06,by=0.02),limits=c(0, 0.06),oob=squish) + 
+  
+  #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  
+  ggtitle("2019-2020 September") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_hump
+
+
+
+subset_data <- x.whale_crab_season_May_Sep %>% 
+  filter(season == "2019-2020") %>%
+  filter(month == "09") %>%
+  filter(!is.na(Blue_occurrence_mean)) %>%
+  left_join(grid.5km, by = "GRID5KM_ID")
+
+map_blue <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(subset_data), 
+          aes(fill=Blue_occurrence_mean,
+              #fill=Blue_occurrence_mean,
+              col=Blue_occurrence_mean
+              #col=Blue_occurrence_mean
+          )
+  ) +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  
+  scale_fill_viridis(na.value=NA,option="D",name="blue whale\noccurrence",breaks=seq(0, 0.86,by=0.215),limits=c(0, 0.86),oob=squish) + 
+  scale_color_viridis(na.value=NA,option="D",name="blue whale\noccurrence",breaks=seq(0, 0.86,by=0.215),limits=c(0, 0.86),oob=squish) + 
+  
+  #geom_sf(data = dissolved_2019_2020_MaySep, color = 'black',size=1, fill = NA) +
+  ggtitle("2019-2020 September") +
+  #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=8,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        strip.text = element_text(size=14),
+        title=element_text(size=16)
+  )
+map_blue
+
+
+
+# plot blues and humps together
+png(paste0(path_figures, "/map_blue_hump_2019_2020_09.png"), width = 14, height = 10, units = "in", res = 300)
+ggarrange(map_hump,
+          map_blue,
+          ncol=2,
+          nrow=1,
+          legend="top",
+          labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 
 
 
