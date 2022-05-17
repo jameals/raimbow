@@ -242,11 +242,11 @@ glimpse(JulSep_good_bw_hab_fishing)
 
 ## normalize whale and fishing data before calculating risk
 library("scales")
-## AT THE MOMENT THIS IS NOT WORKING CORRECTLY
 JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>%
-  #filter(season != '2019-2020') %>% 
-  mutate(Mean_Blue_occurrence_norm = rescale(Mean_Blue_occurrence),
-         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #while the rescale() function has worked with all other data, somehow it does not work correctly here
+  #do the scaling 'manually'
+  mutate(Mean_Blue_occurrence_norm = (Mean_Blue_occurrence - 0.3573179) / (0.8055918 - 0.3573179),
+         mean_trapdens_norm = (mean_trapdens - 0.01785714) / (58.429451 - 0.01785714)) %>% 
   #calculate risk  metric
   mutate(
     blue_risk = Mean_Blue_occurrence_norm * mean_trapdens_norm
@@ -439,8 +439,8 @@ MaySep_good_bw_hab <- x.blue.mean_MaySep %>%
   mutate(good_bw_hab_0469 = ifelse(Mean_Blue_occurrence > 0.469, 'Y', 'N'),
          good_bw_hab_024 = ifelse(Mean_Blue_occurrence > 0.24, 'Y', 'N'),
          good_bw_hab_050 = ifelse(Mean_Blue_occurrence > 0.5, 'Y', 'N')
-  ) %>%
-  inner_join(grid.5km.lno) #join to have geometry column
+  ) #%>%
+  #inner_join(grid.5km.lno) #join to have geometry column
 glimpse(MaySep_good_bw_hab)
 
 
@@ -469,7 +469,7 @@ glimpse(x.fish_WA_MaySep)
 # join fishing data and bw data
 MaySep_good_bw_hab_fishing <- MaySep_good_bw_hab %>% 
   left_join(x.fish_WA_MaySep, by=c('season', 'GRID5KM_ID')) %>% 
-  left_join(st_drop_geometry(grid.key), by = "GRID5KM_ID") 
+  left_join(grid.key, by = "GRID5KM_ID") 
 glimpse(MaySep_good_bw_hab_fishing)
 
 
@@ -485,11 +485,10 @@ glimpse(MaySep_good_bw_hab_fishing)
 
 ## normalize whale and fishing data before calculating risk
 library("scales")
-
+##for some reason rescale() funtion does not work here, do it manually
 MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>% 
-  filter(season != '2018-2019') %>% 
-  mutate(Mean_Blue_occurrence_norm = rescale(Mean_Blue_occurrence),
-         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  mutate(Mean_Blue_occurrence_norm = (Mean_Blue_occurrence - 0.2841589) / (0.6509358 - 0.2841589),
+         mean_trapdens_norm = (mean_trapdens - 0.01090909) / (54.546545 - 0.01090909)) %>% 
   #calculate risk  metric
   mutate(
     blue_risk = Mean_Blue_occurrence_norm * mean_trapdens_norm
@@ -654,7 +653,7 @@ ts_risk_in_good_bw_habitat_JulSep <- ggplot(summary_probabilites_JulSep, aes(x=s
 ts_risk_in_good_bw_habitat_JulSep
 
 # SAVE FIGURE -- Supplementary Figure S1.3
-# png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_JulSep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_good_bw_habitat_JulSep,
 #           ncol=1,
 #           nrow=1,
@@ -717,7 +716,7 @@ ts_risk_in_good_bw_habitat_MaySep <- ggplot(summary_probabilites_MaySep, aes(x=s
 ts_risk_in_good_bw_habitat_MaySep
 
 # SAVE FIGURE -- Supplementary Figure S1.3
-# png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_MaySep_LEGEND.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_BW_habitat_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_good_bw_habitat_MaySep,
 #           ncol=1,
 #           nrow=1,
@@ -883,8 +882,8 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
   #ylab("Summed blue whale risk") +
   ylab("Risk") +
-  #xlab("Season") +
-  xlab("") +
+  xlab("Season") +
+  #xlab("") +
   scale_color_manual(name="", values = c("#00bab5","#73377e")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
@@ -909,7 +908,7 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
 ts_risk_in_mean_bw_habitat_JulSep_MaySep
 
 # SAVE FIGURE -- Figure 5
-# png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
@@ -979,6 +978,9 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 summary_good_bw_habitat_fishing_JulSep_0626
 (58.56626+160.74911+194.61349+189.30851+312.90849)/5 ##183.2292
 (241.15051-183.2292)/183.2292*100 ##31.6114
+##NORMALIZED
+(0.9739361+2.7787593+3.3551498+3.2458614+5.7945484)/5 ##3.229651
+(4.4973293-3.229651)/3.229651*100 ##39.25125
 #OVERLAP
 test_summary_JulSep_0626
 (12+21+38+38+54)/5 ##32.6
@@ -989,6 +991,9 @@ test_summary_JulSep_0626
 summary_good_bw_habitat_fishing_MaySep_0469
 (12.95299+42.48131+184.00885+200.70018+326.15871)/5 ##153.2604
 (201.57120-153.2604)/153.2604*100 ##31.52204
+##NORMALIZED
+(0.3011995+0.8442963+3.8460518+4.1329046+7.3001116)/5 ##3.284913
+(4.7419790-3.284913)/3.284913*100 ##44.3563
 #OVERLAP
 test_summary_MaySep_0469
 (10+9+55+62+94)/5 ##46
