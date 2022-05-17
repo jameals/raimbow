@@ -183,8 +183,8 @@ JulSep_good_bw_hab <- x.blue.mean_JulSep %>%
   mutate(good_bw_hab_0535 = ifelse(Mean_Blue_occurrence > 0.535, 'Y', 'N'),
          good_bw_hab_0626 = ifelse(Mean_Blue_occurrence > 0.626, 'Y', 'N'),
          good_bw_hab_0717 = ifelse(Mean_Blue_occurrence > 0.717, 'Y', 'N')
-  ) %>%
-  inner_join(grid.5km.lno) #join to have geometry column
+  ) #%>%
+  #inner_join(grid.5km.lno) #join to have geometry column
 glimpse(JulSep_good_bw_hab)
 
 
@@ -230,15 +230,31 @@ glimpse(JulSep_good_bw_hab_fishing)
 
 
 
-# calculate risk
-JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>% 
+# # calculate risk
+# JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>% 
+#   mutate(
+#     blue_risk = Mean_Blue_occurrence * mean_trapdens
+#   )%>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(blue_risk = 
+#            ifelse(is.na(mean_trapdens), 0, blue_risk)
+#   )
+
+## normalize whale and fishing data before calculating risk
+library("scales")
+## AT THE MOMENT THIS IS NOT WORKING CORRECTLY
+JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>%
+  #filter(season != '2019-2020') %>% 
+  mutate(Mean_Blue_occurrence_norm = rescale(Mean_Blue_occurrence),
+         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #calculate risk  metric
   mutate(
-    blue_risk = Mean_Blue_occurrence * mean_trapdens
-  )%>% 
+    blue_risk = Mean_Blue_occurrence_norm * mean_trapdens_norm
+  ) %>% 
   #if there is no fishing data in grid, then risk is 0, as there is no fishing
   mutate(blue_risk = 
            ifelse(is.na(mean_trapdens), 0, blue_risk)
-  )
+  ) 
 
 
 
@@ -457,15 +473,31 @@ MaySep_good_bw_hab_fishing <- MaySep_good_bw_hab %>%
 glimpse(MaySep_good_bw_hab_fishing)
 
 
-# calculate risk
+# # calculate risk
+# MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>% 
+#   mutate(
+#     blue_risk = Mean_Blue_occurrence * mean_trapdens
+#   )%>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(blue_risk = 
+#            ifelse(is.na(mean_trapdens), 0, blue_risk)
+#   )
+
+## normalize whale and fishing data before calculating risk
+library("scales")
+
 MaySep_good_bw_hab_fishing_risk <- MaySep_good_bw_hab_fishing %>% 
+  filter(season != '2018-2019') %>% 
+  mutate(Mean_Blue_occurrence_norm = rescale(Mean_Blue_occurrence),
+         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #calculate risk  metric
   mutate(
-    blue_risk = Mean_Blue_occurrence * mean_trapdens
-  )%>% 
+    blue_risk = Mean_Blue_occurrence_norm * mean_trapdens_norm
+  ) %>% 
   #if there is no fishing data in grid, then risk is 0, as there is no fishing
   mutate(blue_risk = 
            ifelse(is.na(mean_trapdens), 0, blue_risk)
-  )
+  ) 
 
 
 # summarise risk in each season based on threshold value used to define good bw habitat
