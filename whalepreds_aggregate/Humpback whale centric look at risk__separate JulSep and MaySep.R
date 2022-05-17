@@ -636,10 +636,10 @@ test_summary_90_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>
 
 
 summary_overlap_MaySep <- rbind(
-  test_summary_75_MaySep,
   test_summary_50_MaySep,
   test_summary_60_MaySep,
   test_summary_70_MaySep,
+  test_summary_75_MaySep,
   test_summary_80_MaySep,
   test_summary_90_MaySep
 ) %>% 
