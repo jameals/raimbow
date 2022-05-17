@@ -192,16 +192,35 @@ x.whale.2013_2020_JulSep_good_habitats_fishing <- x.whale.all2013_2020_JulSep_go
 glimpse(x.whale.2013_2020_JulSep_good_habitats_fishing)
 
 
-# calculate risk
+# # calculate risk
+# x.whale.2013_2020_JulSep_good_habitats_fishing_risk <- x.whale.2013_2020_JulSep_good_habitats_fishing %>% 
+#   mutate(
+#     hump_risk = Mean_Humpback_dens * mean_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_trapdens), 0, hump_risk)
+#   ) 
+  
+## normalize whale and fishing data before calculating risk
+library("scales")
+
 x.whale.2013_2020_JulSep_good_habitats_fishing_risk <- x.whale.2013_2020_JulSep_good_habitats_fishing %>% 
+  mutate(Humpback_dens_mean_norm = rescale(Mean_Humpback_dens),
+         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #calculate risk  metric
   mutate(
-    hump_risk = Mean_Humpback_dens * mean_trapdens
+    hump_risk = Humpback_dens_mean_norm * mean_trapdens_norm
   ) %>% 
   #if there is no fishing data in grid, then risk is 0, as there is no fishing
   mutate(hump_risk = 
            ifelse(is.na(mean_trapdens), 0, hump_risk)
   ) 
-  
+
+
+
+
+
 
 
 # summarise risk in each season based on threshold value used to define good hw habitat
@@ -449,16 +468,30 @@ x.whale.2013_2020_MaySep_good_habitats_fishing <- x.whale.all2013_2020_MaySep_go
 glimpse(x.whale.2013_2020_MaySep_good_habitats_fishing)
 
 
-# calculate risk
+# # calculate risk
+# x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
+#   mutate(
+#     hump_risk = Mean_Humpback_dens * mean_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_trapdens), 0, hump_risk)
+#   ) 
+
+## normalize whale and fishing data before calculating risk
+library("scales")
+
 x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
+  mutate(Humpback_dens_mean_norm = rescale(Mean_Humpback_dens),
+         mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #calculate risk  metric
   mutate(
-    hump_risk = Mean_Humpback_dens * mean_trapdens
+    hump_risk = Humpback_dens_mean_norm * mean_trapdens_norm
   ) %>% 
   #if there is no fishing data in grid, then risk is 0, as there is no fishing
   mutate(hump_risk = 
            ifelse(is.na(mean_trapdens), 0, hump_risk)
   ) 
-
 
 
 # summarise risk in each season based on threshold value used to define good hw habitat
@@ -647,8 +680,8 @@ ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x
     #title = element_text(size = 15),
     legend.text = element_text(size=40),
     #legend.position = c(.93, .85),
-    #legend.position = 'none',
-    legend.position = 'bottom',
+    legend.position = 'none',
+    #legend.position = 'bottom',
     axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
     axis.text.y = element_text(size = 40),
     axis.title = element_text(size = 50),
@@ -659,7 +692,7 @@ ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x
 ts_fishing_in_good_hw_habitat_JulSep
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
 #           ncol=1,
 #           nrow=1,
@@ -725,7 +758,7 @@ ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season
 ts_fishing_in_good_hw_habitat
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_fishing_in_good_hw_habitat,
 #           ncol=1,
 #           nrow=1,
@@ -930,7 +963,7 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
 # SAVE FIGURE -- Figure 5
-# png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_fishing_in_75th_hw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
@@ -1003,16 +1036,26 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep
 summary_75th_HW_habitat_fishing_JulSep 
 (27.151585+16.222773+15.964559+18.853179+20.220890)/5 ##19.6826
 (0.081046-19.6826)/19.6826*100 ##-99.58824
+##NORMALIZED
+(8.64636328+5.16355637+5.07796635+5.99879751+6.43189367)/5 ##6.263715
+(0.02511499-6.263715)/6.263715*100 ##-99.59904
+
 #OVERLAP
 test_summary_75_JulSep
 (65+52+71+71+88)/5 ##69.4
 (5-69.4)/69.4*100 ##-92.79539
+
+
 
 ##pre-reg vs 2020 (May-Sep)##
 #RISK
 summary_75th_HW_habitat_fishing_MaySep
 (29.958425+25.054179+23.829820+28.636783+28.783313)/5 ##27.2525
 (9.119614-27.2525)/27.2525*100 ##-66.5366
+##NORMALIZED
+(12.155622+10.161967+9.668536+11.618843+11.672750)/5 ##11.05554
+(3.692595-11.05554)/11.05554*100 ##-66.5996
+
 #OVERLAP
 test_summary_75_MaySep
 (124+119+106+136+167)/5 ##130.4
