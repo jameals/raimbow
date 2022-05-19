@@ -11,6 +11,7 @@ library(sf)
 library(rgeos)
 library(viridis)
 library(ggpubr)
+library(ggbeeswarm)
 
 #-----------------------------------------------------------------------------------
 #bring in some grids
@@ -179,26 +180,26 @@ study_area_whale_fishing <- left_join(study_area_whale, x.fish_WA_MaySep, by=c("
 
 
 #calculate risk  metric
-risk_whales_WA_MaySep <- study_area_whale_fishing %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
-         blue_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) %>%
-  mutate(is_May_Sep = 
-           ifelse(month %in% c('05', '06', '07', '08', '09')
-                  ,'Y', 'N'))
+# risk_whales_WA_MaySep <- study_area_whale_fishing %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) %>%
+#   mutate(is_May_Sep = 
+#            ifelse(month %in% c('05', '06', '07', '08', '09')
+#                   ,'Y', 'N'))
 
 
 ## normalize whale and fishing data before calculating risk
@@ -232,127 +233,127 @@ risk_whales_WA_MaySep_normalized <- study_area_whale_fishing %>%
 
 
 
-#if no regs
-#join fishing data to study area grid with whale data
-study_area_whale_fishing_no_regs <- left_join(study_area_whale, x.fish_WA_MaySep_no_regs, by=c("GRID5KM_ID", "season", "month")) %>% 
-  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
-
-
-#calculate risk  metric
-risk_whales_WA_MaySep_no_regs <- study_area_whale_fishing_no_regs %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
-         blue_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) %>%
-  mutate(is_May_Sep = 
-           ifelse(month %in% c('05', '06', '07', '08', '09')
-                  ,'Y', 'N'))
-
-
-
-# sum_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>%
-#   filter(season == '2018-2019') %>% 
-#   filter(study_area=='Y')%>% 
-#   group_by(season) %>% 
-#   summarise(
-#     Humpback_risk_sum_2018_2019 = sum(hump_risk, na.rm=TRUE),
-#     Blue_risk_sum_2018_2019 = sum(blue_risk, na.rm=TRUE)
-#   )
-
-subset_2018_2019_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
-  filter(month %in% c('07', '08', '09')) %>% 
-  filter(season != '2019-2020') %>% 
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  group_by(season, month, pre_post_reg) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE)) 
-
+# #if no regs
+# #join fishing data to study area grid with whale data
+# study_area_whale_fishing_no_regs <- left_join(study_area_whale, x.fish_WA_MaySep_no_regs, by=c("GRID5KM_ID", "season", "month")) %>% 
+#   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
 # 
-# sum_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
-#   filter(season == '2019-2020') %>% 
-#   filter(study_area=='Y')%>% 
-#   group_by(season) %>% 
-#   summarise(
-#     Humpback_risk_sum_2019_2020 = sum(hump_risk, na.rm=TRUE),
-#     Blue_risk_sum_2019_2020 = sum(blue_risk, na.rm=TRUE)
-#   )
-
-subset_2019_2020_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
-  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  filter(season != '2018-2019') %>% 
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  group_by(season, month, pre_post_reg) %>% 
-  summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
-            blue_risk = sum(blue_risk, na.rm=TRUE)) 
-
-
-
-## NORMALIZED
-risk_whales_WA_MaySep_no_regs_normalized <- study_area_whale_fishing_no_regs %>% 
-  filter(study_area=='Y') %>%
-  mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
-         Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
-         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
-  #calculate risk  metric
-  mutate(
-    hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
-    blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk_norm = 
-           ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
-         blue_risk_norm = 
-           ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk_norm = 
-           ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
-         blue_risk_norm = 
-           ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
-  ) %>%
-  mutate(is_May_Sep = 
-           ifelse(month %in% c('05', '06', '07', '08', '09')
-                  ,'Y', 'N'))
-
-subset_2018_2019_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
-  filter(month %in% c('07', '08', '09')) %>% 
-  filter(season != '2019-2020') %>% 
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  group_by(season, month, pre_post_reg) %>% 
-  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
-            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
-
-subset_2019_2020_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
-  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
-  filter(season != '2018-2019') %>% 
-  filter(study_area=='Y') %>% 
-  mutate(pre_post_reg = 
-           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
-  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
-  group_by(season, month, pre_post_reg) %>% 
-  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
-            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+# 
+# #calculate risk  metric
+# risk_whales_WA_MaySep_no_regs <- study_area_whale_fishing_no_regs %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) %>%
+#   mutate(is_May_Sep = 
+#            ifelse(month %in% c('05', '06', '07', '08', '09')
+#                   ,'Y', 'N'))
+# 
+# 
+# 
+# # sum_risk_whales_WA_MaySep_no_regs_2018_2019 <- risk_whales_WA_MaySep_no_regs %>%
+# #   filter(season == '2018-2019') %>% 
+# #   filter(study_area=='Y')%>% 
+# #   group_by(season) %>% 
+# #   summarise(
+# #     Humpback_risk_sum_2018_2019 = sum(hump_risk, na.rm=TRUE),
+# #     Blue_risk_sum_2018_2019 = sum(blue_risk, na.rm=TRUE)
+# #   )
+# 
+# subset_2018_2019_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
+#   filter(month %in% c('07', '08', '09')) %>% 
+#   filter(season != '2019-2020') %>% 
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   group_by(season, month, pre_post_reg) %>% 
+#   summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+#             blue_risk = sum(blue_risk, na.rm=TRUE)) 
+# 
+# # 
+# # sum_risk_whales_WA_MaySep_no_regs_2019_2020 <- risk_whales_WA_MaySep_no_regs %>%
+# #   filter(season == '2019-2020') %>% 
+# #   filter(study_area=='Y')%>% 
+# #   group_by(season) %>% 
+# #   summarise(
+# #     Humpback_risk_sum_2019_2020 = sum(hump_risk, na.rm=TRUE),
+# #     Blue_risk_sum_2019_2020 = sum(blue_risk, na.rm=TRUE)
+# #   )
+# 
+# subset_2019_2020_NO_REGS <- risk_whales_WA_MaySep_no_regs %>% 
+#   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+#   filter(season != '2018-2019') %>% 
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   group_by(season, month, pre_post_reg) %>% 
+#   summarise(hump_risk = sum(hump_risk, na.rm=TRUE),
+#             blue_risk = sum(blue_risk, na.rm=TRUE)) 
+# 
+# 
+# 
+# ## NORMALIZED
+# risk_whales_WA_MaySep_no_regs_normalized <- study_area_whale_fishing_no_regs %>% 
+#   filter(study_area=='Y') %>%
+#   mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
+#          Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
+#          mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+#   #calculate risk  metric
+#   mutate(
+#     hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
+#     blue_risk_norm = Blue_occurrence_mean_norm * mean_M2_trapdens_norm
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk_norm = 
+#            ifelse(is.na(mean_M2_trapdens_norm), 0, hump_risk_norm),
+#          blue_risk_norm = 
+#            ifelse(is.na(mean_M2_trapdens_norm), 0, blue_risk_norm)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk_norm = 
+#            ifelse(is.na(Humpback_dens_mean_norm), NA, hump_risk_norm),
+#          blue_risk_norm = 
+#            ifelse(is.na(Blue_occurrence_mean_norm), NA, blue_risk_norm)
+#   ) %>%
+#   mutate(is_May_Sep = 
+#            ifelse(month %in% c('05', '06', '07', '08', '09')
+#                   ,'Y', 'N'))
+# 
+# subset_2018_2019_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
+#   filter(month %in% c('07', '08', '09')) %>% 
+#   filter(season != '2019-2020') %>% 
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   group_by(season, month, pre_post_reg) %>% 
+#   summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+#             blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+# 
+# subset_2019_2020_NO_REGS_NORMALIZED <- risk_whales_WA_MaySep_no_regs_normalized %>% 
+#   filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+#   filter(season != '2018-2019') %>% 
+#   filter(study_area=='Y') %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+#   mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+#   group_by(season, month, pre_post_reg) %>% 
+#   summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+#             blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
 
 #-----------------------------------------------------------------------------------
 # quick visual check with a map
@@ -1006,7 +1007,13 @@ plot_subset_2018_2019_box <- risk_whales_WA_MaySep_normalized %>%
 
 box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
   geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
-  #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  #geom_jitter(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), size=5, seed = 1, width = 0.025) + 
+  geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Summed Humpback Whale Risk") + 
   ylab("Risk") + 
   xlab("") +
@@ -1027,7 +1034,7 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2019_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2019_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019,
   ncol=1,
   nrow=1
@@ -1091,7 +1098,12 @@ MaySep_plot_subset_2019_2020_box <- risk_whales_WA_MaySep_normalized %>%
 
 box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
   geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
-  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Summed Humpback Whale Risk") + 
   ylab("") + 
   xlab("") +
@@ -1112,7 +1124,7 @@ box_hump_risk_MaySep_pre_reg_vs_2019_2020
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2020_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2020_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
@@ -1324,7 +1336,12 @@ plot_subset_2018_2019_box
 
 box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
   geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), lwd=2) +
-  #geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Summed Blue Whale Risk") + 
   ylab("Risk") + 
   xlab("") +
@@ -1344,7 +1361,7 @@ box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
 box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2019_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2019_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019,
           ncol=1,
           nrow=1
@@ -1360,7 +1377,12 @@ MaySep_plot_subset_2019_2020_box
 
 box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
   geom_violin(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), lwd=2) +
-  #geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = MaySep_plot_subset_2019_2020_box, aes(x = pre_post_reg, y = blue_risk), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Summed Blue Whale Risk") + 
   ylab("") + 
   xlab("") +
@@ -1380,7 +1402,7 @@ box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
 box_blue_risk_MaySep_pre_reg_vs_2019_2020
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2020_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2020_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
