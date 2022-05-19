@@ -183,42 +183,42 @@ study_area_whale_fishing_with_regs_2018_2019 <- left_join(study_area_whale, x.fi
 
 
 
-#calculate risk  metric - fishing data held constant - seasons with regs
-risk_whales_WA_MaySep_study_area_with_regs <- study_area_whale_fishing_with_regs %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
-         blue_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) 
-
-risk_whales_WA_MaySep_study_area_with_regs_2018_2019 <- study_area_whale_fishing_with_regs_2018_2019 %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
-         blue_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) 
+# #calculate risk  metric - fishing data held constant - seasons with regs
+# risk_whales_WA_MaySep_study_area_with_regs <- study_area_whale_fishing_with_regs %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) 
+# 
+# risk_whales_WA_MaySep_study_area_with_regs_2018_2019 <- study_area_whale_fishing_with_regs_2018_2019 %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) 
 
 
 ## normalize whale and fishing data before calculating risk
@@ -383,7 +383,12 @@ plot_subset_with_regs_2019_2020 <- risk_whales_WA_MaySep_study_area_with_regs_no
 
 violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
-  #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Humpback_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -401,7 +406,7 @@ violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_JulSep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_JulSep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -415,7 +420,12 @@ invisible(dev.off())
 
 violin_hump_risk_MaySep_constant_fishing <- ggplot() +
   geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
-  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = hump_risk), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Humpback_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
@@ -433,7 +443,7 @@ violin_hump_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_MaySep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_MaySep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -469,7 +479,12 @@ wilcox.test(Humpback_risk_sum ~ pre_post_reg, data = plot_subset_with_regs_2019_
 
 violin_blue_risk_JulSep_constant_fishing <- ggplot() +
   geom_violin(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
-  #geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_with_regs_2018_2019, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -487,7 +502,7 @@ violin_blue_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_JulSep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_JulSep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -502,7 +517,12 @@ invisible(dev.off())
 
 violin_blue_risk_MaySep_constant_fishing <- ggplot() +
   geom_violin(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum), lwd=2, fill='lightblue1', alpha=0.5) +
-  #geom_dotplot(data = plot_subset_with_regs, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_with_regs_2019_2020, aes(x = pre_post_reg, y = Blue_risk_sum), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Risk") + 
   xlab("") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020")) +
@@ -520,7 +540,7 @@ violin_blue_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_MaySep_constant_fishing_NORM.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_MaySep_whale_countefactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
