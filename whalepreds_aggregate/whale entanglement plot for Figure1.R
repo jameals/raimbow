@@ -63,13 +63,15 @@ year_SummerWinter_combos <- crossing(Year, SummerWinter, Region)
 
 summary_all_WC_ent_2005_2020 <- whale_entl_bw_hw_2005_2020_SummerWinter_yearmonth %>% 
   group_by(Year, SummerWinter) %>% 
-  summarise(count_entl_all_WC = n()) %>% 
+  summarise(count_entl_all_WC = n(),
+            n_months_WC = n_distinct(Month)) %>% 
   mutate(Region  =  "all_WC" )
 
 summary_WA_ent_2005_2020 <- whale_entl_bw_hw_2005_2020_SummerWinter_yearmonth %>% 
   filter(Entanglement_Fishery %in% c("Dungeness crab commercial, WA","Dungeness crab commercial (OR & WA)", "Dungeness crab recreational, WA", "Dungeness crab commercial tribal, WA","Dungeness crab commercial, WA  + tribal","Commercial Dungeness crab, WA")) %>% 
   group_by(Year, SummerWinter) %>% 
-  summarise(count_entl_WA = n()) %>% 
+  summarise(count_entl_WA = n(),
+            n_months_WA = n_distinct(Month)) %>% 
   mutate(Region  =  "WA" )
 
 entl_bw_hw_WC_and_WA <-  left_join(year_SummerWinter_combos, summary_all_WC_ent_2005_2020, by=c("Year", "SummerWinter", "Region")) %>%
@@ -77,7 +79,7 @@ entl_bw_hw_WC_and_WA <-  left_join(year_SummerWinter_combos, summary_all_WC_ent_
   mutate(count_entl_all_WC = ifelse(is.na(count_entl_all_WC),0,count_entl_all_WC)) %>%
   mutate(count_entl_WA = ifelse(is.na(count_entl_WA),0,count_entl_WA)) %>%
   mutate(total_count = count_entl_all_WC + count_entl_WA)
-
+##the distinct months have to be calc across both df, and prob only then calc the entl/month
 
 
 ID <- 2005:2020
