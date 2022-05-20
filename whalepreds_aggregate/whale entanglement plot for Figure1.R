@@ -38,19 +38,24 @@ whale_entl_bw_hw_2005_2020_SummerWinter_yearmonth <- whale_entl_bw_hw_2005_2020_
 
 whale_entl_hw <- whale_entl_bw_hw_2005_2020_SummerWinter_yearmonth %>% 
   filter(Common_Name == "Humpback Whale" | Common_Name =="Humpback whale") %>% 
-  group_by(year_month) %>% 
-  summarise(count_entl = n())
+  #group_by(year_month) %>% 
+  group_by(Year) %>% 
+  summarise(count_entl = n()) %>% 
+  add_row(Year = 2013, count_entl = NA) %>% 
+  orde
+  
 
 #create all year month combos
 year <- c("2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020")
+Year <- c(2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)
 month <- as.factor(c("12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11")) 
 month <- ordered(month, levels = c("12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"))
 
 year_month_combos <- crossing(year, month) %>% 
     mutate(year_month = factor(paste0(year,"_",month)))
 
-whale_entl_hw_combos <- year_month_combos %>% 
-  left_join(whale_entl_hw, by = c("year_month")) #%>% 
+whale_entl_hw_combos <- Year %>% 
+  left_join(whale_entl_hw, by = c("Year")) #%>% 
   #mutate(count_entl  = 
   #         ifelse(is.na(count_entl ), 0, count_entl ))
 
@@ -187,8 +192,8 @@ ID <- 2005:2020
 
 
 ent_bar <-ggplot() +
-  geom_col(data=whale_entl_bw_hw_2005_2020_combos, aes(x=Year, y=count_entl_all_WC, fill=factor(SummerWinter)), color='black', position = "dodge", alpha = 0.3) + 
-  geom_col(data=whale_entl_bw_hw_2005_2020_combos, aes(x=Year, y=count_entl_WA, fill=factor(SummerWinter)), position = "dodge") +
+  geom_col(data=whale_entl_bw_hw_2005_2020_combos, aes(x=Year, y=count_entl_all_WC, fill=factor(SummerWinter)), color='black', position = "dodge", alpha = 0.2) + 
+  geom_col(data=whale_entl_bw_hw_2005_2020_combos, aes(x=Year, y=count_entl_WA, fill=factor(SummerWinter)), color='black', position = "dodge") +
   ylab("Entanglements") + 
   scale_x_continuous("Year", labels = as.character(ID), breaks = ID)+
   theme_classic() +
