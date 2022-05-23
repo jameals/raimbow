@@ -14,7 +14,6 @@ library(car)
 
 #bring in data file from Lauren Saez
 
-whale_entl <- read_csv(here::here('wdfw','data','From_Lauren_confirmed_entanglements_1982_2022_simple.csv'))
 
 whale_entl_bw_hw <- whale_entl %>% 
   filter(Common_Name %in% c("Humpback Whale", "Humpback whale", "Blue Whale"))
@@ -25,7 +24,7 @@ whale_entl_bw_hw$Common_Name[whale_entl_bw_hw$Common_Name=="Humpback whale"]<-"H
 #  filter(Year > 2004 & Year < 2021)
 
 whale_entl_bw_hw_2005_2020_not_gillnets <- whale_entl_bw_hw %>% 
-  filter(!Entanglement_Fishery %in% c("Net", "Gillnet", "Drift Gillnet, CA","Salmon troller commercial, CA","Gillnet tribal, WA","Drift gillnet"))
+  filter(!Entanglement_Fishery %in% c("Net", "Gillnet", "Drift Gillnet, CA","Salmon troller commercial, CA","Gillnet tribal, WA","Drift gillnet", "Recreational hook and line"))
 
 whale_entl_bw_hw_2005_2020_SummerWinter <- whale_entl_bw_hw_2005_2020_not_gillnets %>% 
   mutate(SummerWinter = case_when(
@@ -120,31 +119,56 @@ summary_cumulative_bw_hw_2005_2020_by_month <- whale_entl_bw_hw_2005_2020_Summer
   )) %>% 
   filter(!is.na(TimePeriod)) %>% 
   group_by(Common_Name, TimePeriod, SummerWinter) %>% 
-  summarise(count_entl = n()) 
+  summarise(count_entl = n()) %>%
+  mutate(Years = case_when(
+    TimePeriod == '1998-2013' ~ 16,
+    TimePeriod == '2014-2020' ~ 7
+  )) %>% 
+  mutate(entl_per_year = count_entl/Years) #%>% 
+  #ungroup() %>% 
+  #add_row(Common_Name  = c('Blue Whale','Blue Whale','Blue Whale'), 
+  #          TimePeriod = c('1998-2013', '1998-2013','2014-2020'), 
+  #        SummerWinter = c('OctApr','MaySep','OctApr'), 
+  #        entl_per_year= c(NA,NA,NA))
+  #mutate(Months = Years * 12) %>% 
+  #mutate(entl_per_month = count_entl/Months)
 
 
-other_bar_plot <- ggplot(data=summary_cumulative_bw_hw_2005_2020_by_month, aes(SummerWinter, count_entl, fill =Common_Name)) + 
-  geom_col(position = position_dodge2(width = 1, preserve = "single")) +
+other_bar_plot <- ggplot(data=summary_cumulative_bw_hw_2005_2020_by_month, aes(SummerWinter, entl_per_month, fill =Common_Name)) + 
+  geom_col(width = 0.9, position = position_dodge2(width = 1, preserve = "single")) +
+  #geom_col(width = 0.95, position = position_dodge(1, preserve = "single")) +
   scale_fill_manual(values=c("blue", "gray"))+
   facet_wrap(~ TimePeriod) + 
-  ylab("Entanglements") +
+  ylab("Mean entanglements per month") +
   scale_x_discrete(limits = rev) +
   xlab("") + 
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 25),
-        legend.position = c(.15, .75),
-        axis.text.x = element_text(vjust = 0.5,size = 40, angle = 0),
+        legend.text = element_text(size = 50),
+        legend.key.size = unit(2, units = "cm"),
+        legend.position = c(.2, .75),
+        axis.text.x = element_text(vjust = 0.5,size = 50, angle = 0, color='black'),
         #axis.text.x=element_blank(),
-        axis.text.y = element_text(size = 40),
+        axis.text.y = element_text(size = 40, color='black'),
         axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        strip.text = element_text(size=55),
         strip.background = element_blank(),
         strip.placement = "left"
   ) 
 other_bar_plot
 
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/confirmed_bw_hw_entl_1998-2020_by month.png"), width = 22, height = 18, units = "in", res = 400)
+ggarrange(other_bar_plot,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 
