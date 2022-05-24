@@ -108,7 +108,7 @@ x.whale.mean_all2013_2020_JulSep <- x.whale_crab_season_v2 %>% #this is already 
   left_join(grid.key_2, by = "GRID5KM_ID") # we will do spatial clip later
 glimpse(x.whale.mean_all2013_2020_JulSep)
 
-#find various percentile values from across 2013-2020
+#find various percentile values from across 2014-2020
 x.whale.all2013_2020_percentiles_JulSep <- x.whale.mean_all2013_2020_JulSep %>%
   filter(LATITUDE > 45) %>% #see email with Karin - clip data at ~45N
   #but we don't do any clipping in E-W of model
@@ -908,8 +908,8 @@ hist(summary_overlap_MaySep$n_grids )
 mod1_hump_overlap_MaySep <- glm(n_grids  ~ pre_post_reg + percentile,
                                 family=gaussian, data=summary_overlap_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_hump_overlap_MaySep)
-hist(mod1_hump_overlap_MaySep$residuals)
-plot(mod1_hump_overlap_MaySep)
+#hist(mod1_hump_overlap_MaySep$residuals)
+#plot(mod1_hump_overlap_MaySep)
 
 
 #library(multcomp)
