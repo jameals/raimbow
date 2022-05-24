@@ -108,7 +108,11 @@ rmap.base <- c(
 
 #map depth data and grids with fishing effort - depth data not available for some grids in bays
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+#this is not restricted to WA waters:
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+
 x.fish_WA <- readRDS(path.fish_WA) 
 ### Get grid cells with non-NA values for all
 grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID))
@@ -376,7 +380,9 @@ plot2b
 #----------------------------------------------------------------------
 #what if first limit whale data to those grids that had fishing? -- try out with just WA
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+#this file is not clipped to WA waters:
+#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2013_2020.rds"
+
 x.fish_WA <- readRDS(path.fish_WA) 
 ### Get grid cells with non-NA values for all, and save that of fishing data
 grid.studyarea.id_WA <- sort(unique(x.fish_WA$GRID5KM_ID)) #find those unique grid cells that had data at some point in 2013-2020
@@ -478,7 +484,7 @@ plot3b
 
 
 
-#OREGON
+#OREGON -- note OR data not clipped to OR waters only
 grid_depth_and_fish_OR_v2 <-  grid_depth_and_fish_OR %>% 
   st_drop_geometry() %>%
   filter(!is.na(depth)) %>% 
