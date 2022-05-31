@@ -175,12 +175,12 @@ summary_pacfin_data_JulSep$month_name <- factor(summary_pacfin_data_JulSep$month
 ##REVENUE
 sum_JulSep_rev_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=2) +
+  geom_dotplot(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_revenue/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Revenue ($ x10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -243,12 +243,12 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
 ##LANDINGS
 sum_JulSep_lbs_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=2) +
+  geom_dotplot(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_pacfin_data_JulSep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Landings (lbs x 10^5)") +
   #xlab("Season") +
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -326,12 +326,12 @@ summary_pacfin_data_MaySep$month_name <- factor(summary_pacfin_data_MaySep$month
 ##REVENUE
 sum_MaySep_rev_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), lwd=2) +
+  geom_dotplot(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_revenue/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Revenue ($ x10^5)") +
   ylab("") +
   #xlab("Season") +
@@ -397,12 +397,12 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
 ##LANDINGS
 sum_MaySep_lbs_box <- ggplot() +
   geom_violin(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), lwd=2) +
+  geom_dotplot(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_pacfin_data_MaySep, aes(x = pre_post_reg, y = sum_weight_lbs/100000), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Landings (lbs x 10^5)") +
   ylab("") +
   #xlab("Season") +
@@ -695,19 +695,19 @@ summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>%
 
 CPUE_ts_lbs_MaySep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Mean lbs/pot") +
   ylab("") +
   xlab("") + 
@@ -742,19 +742,19 @@ invisible(dev.off())
 
 CPUE_ts_dollar_MaySep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   #ylab("Mean $/pot") +
   ylab("") +
   xlab("") + 
@@ -843,19 +843,19 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
 
 CPUE_ts_dollar_JulSep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Mean $/pot") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
@@ -889,19 +889,19 @@ invisible(dev.off())
 
 CPUE_ts_lbs_JulSep <- ggplot()+
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
   ylab("Mean lbs/pot") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
