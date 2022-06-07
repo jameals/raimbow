@@ -182,32 +182,32 @@ study_area_whale_fishing <- left_join(study_area_whale, x.fish_WA_MaySep, by=c("
   filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020'))
 
 
-#calculate risk  metric
-risk_whales_WA_MaySep <- study_area_whale_fishing %>%
-  mutate(
-    hump_risk = Humpback_dens_mean * mean_M2_trapdens,
-    blue_risk = Blue_occurrence_mean * mean_M2_trapdens
-  ) %>% 
-  #if there is no fishing data in grid, then risk is 0, as there is no fishing
-  mutate(hump_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
-         blue_risk = 
-           ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
-  ) %>%
-  #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
-  mutate(hump_risk = 
-           ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
-         blue_risk = 
-           ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
-  ) %>%
-  mutate(is_May_Sep = 
-           ifelse(month %in% c('05', '06', '07', '08', '09')
-                  ,'Y', 'N')) %>% 
-  mutate(
-    pre_post_reg = case_when(
-      season == '2018-2019' & month %in% c('07', '08', '09') ~ "post-reg",  #add 'x' to name so that pre-reg comes first
-      season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "post-reg")) %>% 
-  mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
+# #calculate risk  metric
+# risk_whales_WA_MaySep <- study_area_whale_fishing %>%
+#   mutate(
+#     hump_risk = Humpback_dens_mean * mean_M2_trapdens,
+#     blue_risk = Blue_occurrence_mean * mean_M2_trapdens
+#   ) %>% 
+#   #if there is no fishing data in grid, then risk is 0, as there is no fishing
+#   mutate(hump_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(mean_M2_trapdens), 0, blue_risk)
+#   ) %>%
+#   #if there is no whale data in grid, then risk is NA, as out of bounds of whale model
+#   mutate(hump_risk = 
+#            ifelse(is.na(Humpback_dens_mean), NA, hump_risk),
+#          blue_risk = 
+#            ifelse(is.na(Blue_occurrence_mean), NA, blue_risk)
+#   ) %>%
+#   mutate(is_May_Sep = 
+#            ifelse(month %in% c('05', '06', '07', '08', '09')
+#                   ,'Y', 'N')) %>% 
+#   mutate(
+#     pre_post_reg = case_when(
+#       season == '2018-2019' & month %in% c('07', '08', '09') ~ "post-reg",  #add 'x' to name so that pre-reg comes first
+#       season == '2019-2020' & month %in% c('05', '06', '07', '08', '09') ~ "post-reg")) %>% 
+#   mutate(pre_post_reg = ifelse(is.na(pre_post_reg), 'pre-reg', pre_post_reg))
 
 
 
@@ -219,6 +219,11 @@ risk_whales_WA_MaySep_normalized <- study_area_whale_fishing %>%
   mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
          Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
          mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (0.0001220106*10^-1), Humpback_dens_mean_norm),
+         Blue_occurrence_mean_norm = ifelse(Blue_occurrence_mean_norm == 0, (0.001287732*10^-1), Blue_occurrence_mean_norm),
+         mean_M2_trapdens_norm = ifelse(mean_M2_trapdens_norm == 0, (3.058840e-05*10^-1), mean_M2_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
