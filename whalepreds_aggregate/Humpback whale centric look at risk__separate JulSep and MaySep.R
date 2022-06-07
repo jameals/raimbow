@@ -208,6 +208,10 @@ library("scales")
 x.whale.2013_2020_JulSep_good_habitats_fishing_risk <- x.whale.2013_2020_JulSep_good_habitats_fishing %>% 
   mutate(Humpback_dens_mean_norm = rescale(Mean_Humpback_dens),
          mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (6.610709e-05*10^-1), Humpback_dens_mean_norm),
+         mean_trapdens_norm = ifelse(mean_trapdens_norm == 0, (0.0003266012*10^-1), mean_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk = Humpback_dens_mean_norm * mean_trapdens_norm
@@ -484,6 +488,10 @@ library("scales")
 x.whale.2013_2020_MaySep_good_habitats_fishing_risk <- x.whale.2013_2020_MaySep_good_habitats_fishing %>% 
   mutate(Humpback_dens_mean_norm = rescale(Mean_Humpback_dens),
          mean_trapdens_norm = rescale(mean_trapdens)) %>% 
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (0.0002306744*10^-1), Humpback_dens_mean_norm),
+         mean_trapdens_norm = ifelse(mean_trapdens_norm == 0, (3.984860e-05*10^-1), mean_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk = Humpback_dens_mean_norm * mean_trapdens_norm
