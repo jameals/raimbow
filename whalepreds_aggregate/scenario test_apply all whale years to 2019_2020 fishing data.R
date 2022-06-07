@@ -230,6 +230,11 @@ risk_whales_WA_MaySep_study_area_with_regs_normalized <- study_area_whale_fishin
   mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
          Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
          mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (0.0001220106*10^-1), Humpback_dens_mean_norm),
+         Blue_occurrence_mean_norm = ifelse(Blue_occurrence_mean_norm == 0, (0.001287732*10^-1), Blue_occurrence_mean_norm),
+         mean_M2_trapdens_norm = ifelse(mean_M2_trapdens_norm == 0, (0.0005200258*10^-1), mean_M2_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
@@ -253,6 +258,11 @@ risk_whales_WA_MaySep_study_area_with_regs_2018_2019_normalized <- study_area_wh
   mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
          Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
          mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (0.0001220106*10^-1), Humpback_dens_mean_norm),
+         Blue_occurrence_mean_norm = ifelse(Blue_occurrence_mean_norm == 0, (0.001287732*10^-1), Blue_occurrence_mean_norm),
+         mean_M2_trapdens_norm = ifelse(mean_M2_trapdens_norm == 0, (3.393868e-05*10^-1), mean_M2_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
@@ -406,7 +416,7 @@ violin_hump_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_JulSep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_JulSep_whale_counterfactual_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -443,7 +453,7 @@ violin_hump_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_hump_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_HW_MaySep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_HW_MaySep_whale_counterfactual_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_hump_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -502,7 +512,7 @@ violin_blue_risk_JulSep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_JulSep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_JulSep_whale_counterfactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_JulSep_whale_counterfactual_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_JulSep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -540,7 +550,7 @@ violin_blue_risk_MaySep_constant_fishing <- ggplot() +
   )
 violin_blue_risk_MaySep_constant_fishing
 
-png(paste0(path_figures, "/risk_BW_MaySep_whale_countefactual_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/risk_BW_MaySep_whale_countefactual_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(violin_blue_risk_MaySep_constant_fishing,
           ncol=1,
           nrow=1,
@@ -644,6 +654,7 @@ percent_change_in_risk_JulSep
 (1.04-3.48 )/3.48 *100 #-70.11
 #BW:how much lower is pre-reg to 2019
 (4.54-4.08)/4.08*100 #11.27
+#--> no change after fixing normalization 0s
 
 percent_change_in_risk_MaySep <- plot_subset_with_regs_2019_2020 %>% 
   group_by(pre_post_reg) %>% 
@@ -665,7 +676,7 @@ percent_change_in_risk_MaySep
 (3.34-3.71)/3.71*100 #-9.97
 #BW:
 (3.96-3.20)/3.20*100 #23.75
-
+#--> no change after fixing normalization 0s
 
 
 
