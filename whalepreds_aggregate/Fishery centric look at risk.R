@@ -209,7 +209,12 @@ risk_whales_WA_MaySep_normalized <- study_area_whale_fishing %>%
   filter(study_area=='Y') %>%
   mutate(Humpback_dens_mean_norm = rescale(Humpback_dens_mean),
          Blue_occurrence_mean_norm = rescale(Blue_occurrence_mean),
-         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>% 
+         mean_M2_trapdens_norm = rescale(mean_M2_trapdens)) %>%
+  #normalized 0-1: but 0 here is not a true 0 risk
+  #--> change normalized 0 to a small non-zero value (using the smallest non-zero of the variable)
+  mutate(Humpback_dens_mean_norm = ifelse(Humpback_dens_mean_norm == 0, (0.0001220106*10^-1), Humpback_dens_mean_norm),
+         Blue_occurrence_mean_norm = ifelse(Blue_occurrence_mean_norm == 0, (0.001287732*10^-1), Blue_occurrence_mean_norm),
+         mean_M2_trapdens_norm = ifelse(mean_M2_trapdens_norm == 0, (3.058840e-05*10^-1), mean_M2_trapdens_norm)) %>%
   #calculate risk  metric
   mutate(
     hump_risk_norm = Humpback_dens_mean_norm * mean_M2_trapdens_norm,
@@ -1034,7 +1039,7 @@ box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2019_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2019_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019,
   ncol=1,
   nrow=1
@@ -1124,7 +1129,7 @@ box_hump_risk_MaySep_pre_reg_vs_2019_2020
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_risk_prePreg_vs_2020_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/HW_risk_prePreg_vs_2020_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_hump_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
@@ -1361,7 +1366,7 @@ box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
 box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2019_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2019_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_Jul_Sep_pre_reg_vs_2018_2019,
           ncol=1,
           nrow=1
@@ -1402,7 +1407,7 @@ box_blue_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
 box_blue_risk_MaySep_pre_reg_vs_2019_2020
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_risk_prePreg_vs_2020_NORM_dots_and_mean.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/BW_risk_prePreg_vs_2020_NORM_dots_and_mean_0s_fixed.png"), width = 22, height = 14, units = "in", res = 400)
 ggarrange(box_blue_risk_MaySep_pre_reg_vs_2019_2020,
           ncol=1,
           nrow=1
@@ -1539,7 +1544,7 @@ percent_change_in_risk_JulSep
 (0.866-4.00)/4.00*100 #-78.35
 #BW:
 (3.78-4.29)/4.29*100 #-11.88811
-
+#--> no change after fixing normalization 0s
 
 percent_change_in_risk_MaySep <- MaySep_plot_subset_2019_2020_box %>% 
   group_by(pre_post_reg) %>% 
@@ -1561,6 +1566,7 @@ percent_change_in_risk_MaySep
 (2.19-4.51)/4.51*100 #-51.44124
 #BW:
 (2.60-3.27)/3.27*100 #-20.4893
+#--> no change after fixing normalization 0s
 
 
 
