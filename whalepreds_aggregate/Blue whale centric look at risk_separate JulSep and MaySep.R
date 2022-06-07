@@ -247,6 +247,7 @@ JulSep_good_bw_hab_fishing_risk <- JulSep_good_bw_hab_fishing %>%
   #do the scaling 'manually'
   mutate(Mean_Blue_occurrence_norm = (Mean_Blue_occurrence - 0.3573179) / (0.8055918 - 0.3573179),
          mean_trapdens_norm = (mean_trapdens - 0.01785714) / (58.429451 - 0.01785714)) %>% 
+  #in this case no need to alter normalized 0s
   #calculate risk  metric
   mutate(
     blue_risk = Mean_Blue_occurrence_norm * mean_trapdens_norm
