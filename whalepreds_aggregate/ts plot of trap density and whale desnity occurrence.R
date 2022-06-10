@@ -261,6 +261,7 @@ glimpse(x.blue_2014_2020_crab_season_v2)
 
 #ordered.ids <- factor(x.blue_2014_2020_crab_season_v2$season_month, levels=x.blue_2014_2020_crab_season_v2$season_month)
 
+
 ts_blue_dens <- ggplot() +
   geom_rect(data=rects,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill="red",alpha=0.3)+
   
