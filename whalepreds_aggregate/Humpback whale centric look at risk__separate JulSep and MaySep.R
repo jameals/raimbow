@@ -1117,7 +1117,7 @@ bbox = c(-126.5,45.5,-122,49)
 
 hw_subset_MaySep <- x.whale.2013_2020_MaySep_good_habitats_fishing_risk %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% 
+  filter(season == "2013-2014") %>% 
   filter(!is.na(HW_is_75th_or_higher)) %>% 
   filter(HW_is_75th_or_higher == 'Y')
 
@@ -1150,7 +1150,7 @@ map_hump_MaySep_75th <- ggplot() +
 map_hump_MaySep_75th
 
 # SAVE FIGURE -- Supplementary Figure S2.3
-# png(paste0(path_figures, "/good_hw_habitat_75th_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# png(paste0(path_figures, "/good_hw_habitat_75th_MaySep_2013_2014_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
 # ggarrange(map_hump_MaySep_75th,
 #           ncol=1,
 #           nrow=1,
