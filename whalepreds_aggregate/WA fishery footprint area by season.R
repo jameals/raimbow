@@ -1001,3 +1001,56 @@ nrow(full_join_grids_summer_all_seasons %>%  filter(!is.na(conf_nonconf.y))) #17
 #62% of of confidential grids overlap/exist in the non-confidential version
 
 
+
+
+## FOR JUL-SEP
+
+#this is the  way of figuring if more than 3 unique vessels were in a grid cell in a given period
+#bring in data as points, not summarised by grid cell
+traps_g_all_logs_WA_waters <- read_rds(here::here('wdfw', 'data','traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds'))
+
+#count number of unique vessels that used a given grid cell within a given time step
+logs_all_nvessels <- traps_g_all_logs_WA_waters %>% 
+  filter(month_name %in% c("July", "August","September")) %>% 
+  group_by(GRID5KM_ID,grd_x,grd_y) %>% #here do not group by seasons
+  summarise(
+    nvessels=n_distinct(Vessel,na.rm=T)) 
+#counts unique vessels in a grid across Jul-Sep of ALL seasons only
+
+#join the new, correct, number of unique vessels in a grid in an interval into gridded df
+#that is filtered to Jul-Sep but all seasons grouped
+x.fish_WA_JulSep <- x.fish_WA %>% 
+  select(-nvessels) %>% 
+  left_join(logs_all_nvessels,by=c("GRID5KM_ID", "grd_x", "grd_y"))
+
+
+#If fewer than 3 unique vessels in a grid, that should be removed
+non_conf_x.fish_JulSep <- x.fish_WA_JulSep %>%
+  mutate(is_confidential=ifelse(nvessels<3,T,F)) %>%
+  filter(is_confidential == FALSE)
+
+non_conf_grids_all_JulSep <- sort(unique(non_conf_x.fish_JulSep$GRID5KM_ID))
+non_conf_grids_5km_all_JulSep <- grid.5km %>% filter(GRID5KM_ID %in% non_conf_grids_all_JulSep)
+non_conf_dissolved_all_JulSep <- st_union(non_conf_grids_5km_all_JulSep)
+#plot(non_conf_dissolved_all_JulSep)
+#write_rds(non_conf_dissolved_all_JulSep,here::here('wdfw','data',"dissolved_2014_2020_JulSep_WA_fishery_footprint_NONCONF.rds"))
+
+
+bbox = c(-126,46,-122,49) 
+
+map_outline_2014_2020_JulSep <- ggplot() + 
+  geom_sf(data = non_conf_dissolved_all_JulSep, color = 'red', fill = 'red', size=1, alpha=0.1) +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  #ggtitle("All seasons Jul-Sep pooled, non-confidential") +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=15,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        #strip.text = element_text(size=14),
+        title=element_text(size=20)
+  )
+map_outline_2014_2020_JulSep
