@@ -1072,7 +1072,7 @@ bbox = c(-126.5,45.5,-122,49)
 # map 
 bw_subset_MaySep <- MaySep_good_bw_hab %>% 
   #select season to map 
-  filter(season == "2019-2020") %>% 
+  filter(season == "2018-2019") %>% 
   filter(!is.na(good_bw_hab_0469)) %>% 
   filter(good_bw_hab_0469 == 'Y')
 
@@ -1103,7 +1103,7 @@ map_blue_MaySep_good_hab
 
 
 # SAVE FIGURE -- Supplementary Figure S1.4
-# png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2019_2020_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2018_2019_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
 # ggarrange(map_blue_MaySep_good_hab,
 #           ncol=1,
 #           nrow=1,
@@ -1114,3 +1114,91 @@ map_blue_MaySep_good_hab
 # )
 # invisible(dev.off())
 
+#----------------
+
+# Mapping Jul-Sep good habitat
+
+#re-do this step so that good bw habitat is not restricted to study area in the map:
+# calculate MEAN whale values for different grid in different seasons - for Jul-Sep period (2014-2020)
+x.blue.mean_JulSep <- x.blue_2014_2020_crab_season_May_Sep %>% 
+  left_join(grid.5km.lno %>% st_drop_geometry()) %>% 
+  #restrict to be Jul-Sep
+  filter(month %in% c('07','08', '09')) %>% 
+  group_by(season, GRID5KM_ID, area_km_lno) %>%
+  summarise(
+    Mean_Blue_occurrence = mean(Blue_occurrence_mean, na.rm=TRUE)
+  ) 
+glimpse(x.blue.mean_JulSep)
+
+
+JulSep_good_bw_hab <- x.blue.mean_JulSep %>% 
+  group_by(season) %>% 
+  mutate(good_bw_hab_0626 = ifelse(Mean_Blue_occurrence > 0.626, 'Y', 'N')) %>%
+  inner_join(grid.5km.lno) #join to have geometry column
+glimpse(JulSep_good_bw_hab)
+
+
+## MAPPING ##
+# map example of most likely bw habitat (of a chosen season) with NON-confidential summer fishery footprint (pooled 2014-2020)
+dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_JulSep_WA_fishery_footprint_20220227.rds'))
+
+# optional: add to map the outline of the 'study area'
+dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
+  st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
+
+# grab a base map
+rmap.base <- c(
+  st_geometry(ne_states(country = "United States of America", returnclass = "sf")),   ne_countries(scale = 10, continent = "North America", returnclass = "sf") %>%
+    filter(admin %in% c("Canada", "Mexico")) %>%
+    st_geometry() %>%
+    st_transform(st_crs(grid.5km.lno))
+)
+
+#bbox
+bbox = c(-126.5,45.5,-122,49) 
+
+
+# map 
+bw_subset_JulSep <- JulSep_good_bw_hab %>% 
+  #select season to map 
+  filter(season == "2013-2014") %>% 
+  filter(!is.na(good_bw_hab_0626)) %>% 
+  filter(good_bw_hab_0626 == 'Y')
+
+map_blue_JulSep_good_hab <- ggplot() + 
+  geom_sf(data=sf::st_as_sf(bw_subset_JulSep), 
+          aes(fill=good_bw_hab_0626,
+              col=good_bw_hab_0626
+          )
+  ) +
+  geom_sf(data=rmap.base,col='black',fill='gray50') +
+  scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
+  geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
+  coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
+  theme_minimal() + #theme_classic() +
+  theme(text=element_text(family="sans",size=10,color="black"),
+        legend.text = element_text(size=10),
+        axis.title=element_text(family="sans",size=15,color="black"),
+        axis.text=element_text(family="sans",size=15,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3),
+        axis.text.x.bottom = element_text(angle=45, vjust = 0.5),
+        #strip.text = element_text(size=14),
+        title=element_text(size=20),
+        legend.position = 'none'
+  )
+map_blue_JulSep_good_hab
+
+
+# SAVE FIGURE -- Supplementary Figure S1.4
+# png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2018_2019_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# ggarrange(map_blue_MaySep_good_hab,
+#           ncol=1,
+#           nrow=1,
+#           #legend="top",
+#           #labels="auto",
+#           vjust=8,
+#           hjust=0
+# )
+# invisible(dev.off())
