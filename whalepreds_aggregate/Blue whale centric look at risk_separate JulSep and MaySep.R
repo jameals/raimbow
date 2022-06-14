@@ -1140,11 +1140,11 @@ glimpse(JulSep_good_bw_hab)
 
 ## MAPPING ##
 # map example of most likely bw habitat (of a chosen season) with NON-confidential summer fishery footprint (pooled 2014-2020)
-dissolved_2014_2020_MaySep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_JulSep_WA_fishery_footprint_20220227.rds'))
+dissolved_2014_2020_JulSep_non_conf <- read_rds(here::here('wdfw','data','dissolved_2014_2020_JulSep_WA_fishery_footprint_NONCONF.rds'))
 
 # optional: add to map the outline of the 'study area'
 dissolved_study_area <- read_sf(here::here('wdfw','data','study_area_dissolved_boundary_only.shp')) %>% 
-  st_transform(st_crs(dissolved_2014_2020_MaySep_non_conf)) #make it have same projection 
+  st_transform(st_crs(dissolved_2014_2020_JulSep_non_conf)) #make it have same projection 
 
 # grab a base map
 rmap.base <- c(
@@ -1174,7 +1174,7 @@ map_blue_JulSep_good_hab <- ggplot() +
   geom_sf(data=rmap.base,col='black',fill='gray50') +
   scale_fill_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
   scale_color_manual(values = c("mediumspringgreen"), name = "Good whale habitat", labels = c("Yes")) +
-  geom_sf(data = dissolved_2014_2020_MaySep_non_conf, color = 'black',size=1, fill = NA) +
+  geom_sf(data = dissolved_2014_2020_JulSep_non_conf, color = 'black',size=1, fill = NA) +
   geom_sf(data = dissolved_study_area, color = 'black',linetype = "dotted",size=1, fill = NA) +
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
@@ -1191,9 +1191,9 @@ map_blue_JulSep_good_hab <- ggplot() +
 map_blue_JulSep_good_hab
 
 
-# SAVE FIGURE -- Supplementary Figure S1.4
-# png(paste0(path_figures, "/good_bw_habitat_0469_occur_MaySep_2018_2019_with_pooled_NONCONF_summer_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
-# ggarrange(map_blue_MaySep_good_hab,
+# SAVE FIGURE -- Supplementary Figure 
+# png(paste0(path_figures, "/good_bw_habitat_0626_occur_JulSep_2013_2014_with_pooled_NONCONF_JulSep_fishery_footprint.png"), width = 14, height = 10, units = "in", res = 400)
+# ggarrange(map_blue_JulSep_good_hab,
 #           ncol=1,
 #           nrow=1,
 #           #legend="top",
