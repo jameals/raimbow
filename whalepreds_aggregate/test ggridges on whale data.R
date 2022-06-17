@@ -256,7 +256,9 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 hw_density_ridges_quantiles_JulSep
 
@@ -294,21 +296,23 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 40),
-        legend.position = c(.75, .9),
+        legend.position = c(.85, .9),
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 hw_density_ridges_quantiles_MaySep
 
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020.png"), width = 20, height = 15, units = "in", res = 400)
+png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020_NEW LEGEND.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(hw_density_ridges_quantiles_MaySep,
           ncol=1,
           nrow=1
@@ -382,7 +386,9 @@ bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 bw_density_ridges_quantiles_JulSep
 
@@ -423,7 +429,9 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 bw_density_ridges_quantiles_MaySep
 

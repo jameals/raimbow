@@ -120,7 +120,7 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 0.95) +
-  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+  scale_fill_manual(name = "Quantile", values = c("#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"),
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
@@ -138,14 +138,16 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 pot_density_ridges_quantiles_JulSep
 
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(pot_density_ridges_quantiles_JulSep,
           ncol=1,
           nrow=1
@@ -176,7 +178,10 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 0.95) +
-  scale_fill_manual(name = "Quantile", values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"),
+  scale_fill_manual(name = "Quantile", values = c("#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"), #values = c("#E8DED2", "#A3D2CA", "#5EAAA8", "#056676"
+                    ##ebebd3", "#f4d35e", "#ee964b", "#f95738
+                    ##FEF857", "#FFBE7BFF", "#FFA351FF", "#8c4c04"
+                    #FFFFC2", "#FDD400", "#FF9205", "#CE5501"
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
@@ -186,20 +191,23 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 40),
-        legend.position = c(.75, .8),
+        #legend.position = c(.70, .85),
+        legend.position = "none",
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
         strip.text = element_text(size=40),
         strip.background = element_blank(),
         strip.placement = "left",
-        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
   )
 pot_density_ridges_quantiles_MaySep
 
 
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020.png"), width = 14, height = 10, units = "in", res = 300)
+png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020_NO LEGEND.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(pot_density_ridges_quantiles_MaySep,
           ncol=1,
           nrow=1
