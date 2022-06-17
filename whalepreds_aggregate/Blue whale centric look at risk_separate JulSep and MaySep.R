@@ -900,8 +900,8 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
         legend.text = element_text(size = 40),
         #legend.position = "none",
         legend.position = 'none',
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-        axis.text.y = element_text(size = 40),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0,color="black"),
+        axis.text.y = element_text(size = 40,color="black"),
         axis.title = element_text(size = 50),
         strip.text = element_text(size=40),
         strip.background = element_blank(),
@@ -909,7 +909,7 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   )
 ts_risk_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE -- Figure 5
+# SAVE FIGURE -- Figure 5 -- use width = 24, height = 4
 # png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_risk_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
@@ -948,8 +948,8 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
         legend.text = element_text(size = 22),
         #legend.position = c(.85, .8),
         legend.position = "none",
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-        axis.text.y = element_text(size = 40),
+        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
+        axis.text.y = element_text(size = 40, color='black'),
         axis.title = element_text(size = 50),
         strip.text = element_text(size=40),
         strip.background = element_blank(),
@@ -957,7 +957,7 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
   )
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE -- Figure 5
+# SAVE FIGURE -- Figure 5 -- width = 27, height = 4
 # png(paste0(path_figures, "/ts_overlap_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
 # ggarrange(ts_overlap_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
@@ -968,6 +968,7 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 #           hjust=0
 # )
 # invisible(dev.off())
+
 
 
 
