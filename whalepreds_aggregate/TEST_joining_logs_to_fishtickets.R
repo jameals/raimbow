@@ -821,6 +821,8 @@ pre_reg_mean_CPUE_dollar_MaySep <- efficiency_CPUE_v2 %>%
 (17.0-13.0)/13.0*100 ##30.76923
 #ADJUSTED FOR INFALTION
 (15.5-12.7)/12.7*100 ##22.05 --> same (22%) if do median
+#MEDIAN:
+(10.1-8.28)/8.28*100 #21.98%
 #LBS
 (3.33-2.76)/2.76*100 ##20.6 if do mean
 (1.98-1.75)/1.75*100 ##13.14 if do median
@@ -950,6 +952,25 @@ plot(mod1_CPUE_dollar_JulSep)
 
 
 
+#this way you won't be taking the mean of a mean
+pre_reg_mean_CPUE_dollar_JulSep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2019-2020')  %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
+            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) 
+
+#this would be taking mean of a mean
+# pre_reg_mean_CPUE_dollar_JulSep <- summary_efficiency_CPUE_v2_JulSep %>% 
+#   group_by(pre_post_reg) %>% 
+#   summarise(mean_mean_dollar_per_pot = mean(mean_dollar_per_pot))
+
+#% change in MEDIAN from pre-reg  to 2019
+#ADJUSTED FOR INFALTION
+(8.30-8.28)/8.28*100 #0.24%
+#LBS
+(1.65-1.75)/1.75*100 ##-5.71 if do median
 
 
 
