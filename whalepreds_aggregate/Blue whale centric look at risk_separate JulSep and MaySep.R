@@ -878,15 +878,16 @@ plot(mod1_blue_overlap_MaySep)
 #summary_good_bw_habitat_fishing_MaySep_0469
 
 ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_fishing_JulSep_0626, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=2) +
+  geom_line(size=2, linetype = "dashed") +
   geom_point(size=5) +
   geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
   geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
   #ylab("Summed blue whale risk") +
   ylab("Risk") +
-  xlab("Season") +
-  #xlab("") +
-  scale_color_manual(name="", values = c("#00bab5","#73377e")) +
+  #xlab("Season") +
+  xlab("") +
+  #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
+  scale_color_manual(name="", values = c("black","black")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -901,16 +902,16 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
         #legend.position = "none",
         legend.position = 'none',
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0,color="black"),
-        axis.text.y = element_text(size = 40,color="black"),
-        axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.text.y = element_text(size = 35,color="black"),
+        axis.title = element_text(size = 40),
+        strip.text = element_text(size=35),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_risk_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE -- Figure 5 -- use width = 24, height = 4
-# png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
+# SAVE FIGURE -- Figure 5 -- use width = 20, height = 5
+# png(paste0(path_figures, "/ts_risk_mean_good_BW_habitat_JulSep_MaySep_NORM.png"), width = 20, height = 5, units = "in", res = 400)
 # ggarrange(ts_risk_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
@@ -927,14 +928,15 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep
 #test_summary_MaySep_0469
 
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0626, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=2) +
+  geom_line(size=2, linetype = "dashed") +
   geom_point(size=5) +
   geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
   geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
   #ylab("Number of overlapping grids") +
   ylab("Overlap") +
-  xlab("Season") +
-  scale_color_manual(name="", values = c("#00bab5","#73377e")) +
+  xlab("") +
+  #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
+  scale_color_manual(name="", values = c("black","black")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -948,17 +950,17 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
         legend.text = element_text(size = 22),
         #legend.position = c(.85, .8),
         legend.position = "none",
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
-        axis.text.y = element_text(size = 40, color='black'),
-        axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.text.x = element_text(hjust = 0.5,size = 35, angle = 0, color='black'),
+        axis.text.y = element_text(size = 35, color='black'),
+        axis.title = element_text(size = 40),
+        strip.text = element_text(size=35),
         strip.background = element_blank(),
         strip.placement = "left"
   )
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep
 
-# SAVE FIGURE -- Figure 5 -- width = 27, height = 4
-# png(paste0(path_figures, "/ts_overlap_mean_good_BW_habitat_JulSep_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# SAVE FIGURE -- Figure 5 -- width = 20, height = 5
+# png(paste0(path_figures, "/ts_overlap_mean_good_BW_habitat_JulSep_MaySep.png"), width = 20, height = 5, units = "in", res = 400)
 # ggarrange(ts_overlap_in_mean_bw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
