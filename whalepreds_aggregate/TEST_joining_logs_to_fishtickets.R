@@ -691,6 +691,18 @@ summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>%
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
+summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2018-2019')  %>% 
+  #group_by(season, pre_post_reg) %>% 
+  group_by(season, month_name) %>% 
+  summarise(total_pots = sum(sum_pots_per_ticket, na.rm = T),
+            total_dollars = sum(EXVESSEL_REVENUE_adj, na.rm = T),
+            dollar_per_pot = total_dollars/total_pots,
+            
+            total_lbs = sum(LANDED_WEIGHT_LBS, na.rm = T),
+            lbs_per_pot = total_lbs/total_pots) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
 
 CPUE_ts_lbs_MaySep <- ggplot()+
@@ -839,6 +851,20 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
             median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
             mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
             median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+
+summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
+  filter(season != '2019-2020') %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  #group_by(season, pre_post_reg) %>% 
+  group_by(season, month_name) %>% 
+  summarise(total_pots = sum(sum_pots_per_ticket, na.rm = T),
+            total_dollars = sum(EXVESSEL_REVENUE_adj, na.rm = T),
+            dollar_per_pot = total_dollars/total_pots,
+            
+            total_lbs = sum(LANDED_WEIGHT_LBS, na.rm = T),
+            lbs_per_pot = total_lbs/total_pots) %>% 
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
