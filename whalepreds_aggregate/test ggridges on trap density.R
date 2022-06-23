@@ -222,8 +222,66 @@ pot_density_ridges_quantiles_MaySep
 
 
 
+######
+# Supplementary plot: trap densities by month
+#input df: x.fish_WA (pot density in grids on a monthly time step)
+
+x.fish_WA_month_dens <- x.fish_WA %>%
+  group_by(season_month) %>%  
+  summarise(
+    median_trapdens = median(M2_trapdens),
+    trap_dens_percentile_75th = quantile(M2_trapdens, probs=0.75, na.rm=TRUE),
+    trap_dens_percentile_25th = quantile(M2_trapdens, probs=0.25, na.rm=TRUE),
+  )
 
 
+summary_totarea <- x.fish_WA %>% 
+  group_by(season_month) %>% 
+  distinct(GRID5KM_ID, .keep_all = TRUE) %>% 
+  summarise(totarea = sum(AREA/1e6)) #in km2
+
+#join totarea calculation to rest of the df
+x.fish_WA_month_dens_area <- x.fish_WA_month_dens %>% 
+  left_join(summary_totarea,by=c("season_month"))
+
+glimpse(x.fish_WA_month_dens_area)
+
+x.fish_WA_month_dens_area <- x.fish_WA_month_dens_area %>%
+  separate(season_month, into = c("season", "month_name"), sep = "_") %>%
+  mutate(season_month = paste0(season,"_",month_name)) %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November'))) %>% 
+  filter(!is.na(month_name)) 
+
+
+ids <- unique(x.fish_WA_month_dens_area$season)
+plot_list = list()
+
+for (i in 1:length(ids)) {
+  p = ggplot(subset(x.fish_WA_month_dens_area, season == ids[i])) +
+    geom_line(aes(x=month_name, y=median_trapdens, size=totarea), group=1, lineend = "round", color='black') + 
+    scale_size(range = c(1, 6)) +
+    geom_line(aes(x=month_name, y=trap_dens_percentile_75th), group=1, color='black') +
+    geom_line(aes(x=month_name, y=trap_dens_percentile_25th), group=1, color='black') +
+    scale_y_continuous(breaks=seq(0, 38, 5),limits=c(0,38))+
+    ylab("Pot density") +
+    xlab("Month") + 
+    ggtitle((paste(ids[i]))) +
+    theme_minimal()+
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size=12),
+          axis.text.x = element_text(hjust = 1,size = 12, angle = 45), 
+          axis.text.y = element_text(size = 12),
+          axis.title = element_text(size = 12),
+          legend.position="none" #use "none" here to fully hide/remove legend
+    )
+  plot_list[[i]] = p
+}
+plot_list
+
+map_out <- cowplot::plot_grid(plotlist = plot_list,nrow = 2)
+# saving
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+#ggsave(paste0(path_figures,"/median pot dens, 25th and 75th percentiles by season_WA_waters_only_1m_input_file_20220623.png"),map_out,w=12,h=10)
 
 
 
@@ -268,7 +326,7 @@ pot_density_ridges_quantiles_MaySep
 
 
 ##############################################################
-
+# i think all of this can be deleted:
 ###########################################################################
 ## THIS IS PERHAPS THE BEST LOOKING ONE
 ggplot(x.fish_WA_MaySep, aes(x = M2_trapdens, y = season, height = ..density..)) + 
