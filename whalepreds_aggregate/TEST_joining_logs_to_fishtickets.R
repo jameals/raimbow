@@ -199,17 +199,17 @@ sum_JulSep_rev_box <- ggplot() +
   )
 sum_JulSep_rev_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(sum_JulSep_rev_box,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(sum_JulSep_rev_box,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
@@ -219,8 +219,7 @@ mod1_rev_JulSep <- glm(sum_revenue ~ pre_post_reg + month_name,
                  family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_rev_JulSep) #pre-post-reg not a significant predictor of revenue
 hist(mod1_rev_JulSep$residuals)
-
-plot(mod1_rev_JulSep)
+#plot(mod1_rev_JulSep)
 
 
 pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>% 
@@ -228,11 +227,6 @@ pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>%
   summarise(mean_revenue = mean(sum_revenue),
             median_revenue = median(sum_revenue))
 
-#% change from pre-reg mean to 2019
-(293462.5-413615.7)/413615.7*100
-#-29.05 --> but pre-reg mean high due to high year of 2014
-#% change from pre-reg MEDIAN to 2019
-(364576.5-264532.4)/264532.4*100 ##37.82
 ##ADJUSTED FOR INFLATION
 #% change from pre-reg mean to 2019
 (271656.5-407971.0)/407971.0*100
@@ -267,17 +261,17 @@ sum_JulSep_lbs_box <- ggplot() +
   )
 sum_JulSep_lbs_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_landings_prePreg_vs_2019_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(sum_JulSep_lbs_box,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_landings_prePreg_vs_2019_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(sum_JulSep_lbs_box,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
@@ -287,8 +281,7 @@ mod1_lbs_JulSep <- glm(sum_weight_lbs ~ pre_post_reg + month_name,
                        family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_lbs_JulSep) #pre-post-reg not a significant predictor of revenue
 hist(mod1_lbs_JulSep$residuals)
-
-plot(mod1_lbs_JulSep)
+#plot(mod1_lbs_JulSep)
 
 
 pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>% 
@@ -351,17 +344,17 @@ sum_MaySep_rev_box <- ggplot() +
   )
 sum_MaySep_rev_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_revenue_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(sum_MaySep_rev_box,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_revenue_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(sum_MaySep_rev_box,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
@@ -371,8 +364,7 @@ mod1_rev_MaySep <- glm(sum_revenue ~ pre_post_reg + month_name,
                        family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_rev_MaySep) #pre-post-reg not a significant predictor of revenue
 hist(mod1_rev_MaySep$residuals)
-
-plot(mod1_rev_MaySep)
+#plot(mod1_rev_MaySep)
 
 
 pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>% 
@@ -380,11 +372,6 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
   summarise(mean_revenue = mean(sum_revenue),
             median_revenue = median(sum_revenue))
 
-#% change from pre-reg mean to 2019
-(344945.4-397420.4)/397420.4*100
-#-13.20 --> but pre-reg mean high due to high year of 2014
-#% change from pre-reg MEDIAN to 2019
-(303595.9-257379.8)/257379.8*100 #17.95638
 ##ADJUSTED FOR INFLATION
 #% change from pre-reg mean to 2019
 (315489.1-389050.9)/389050.9*100
@@ -422,17 +409,17 @@ sum_MaySep_lbs_box <- ggplot() +
   )
 sum_MaySep_lbs_box
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/total_landings_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(sum_MaySep_lbs_box,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_landings_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(sum_MaySep_lbs_box,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
@@ -442,8 +429,7 @@ mod1_lbs_MaySep <- glm(sum_weight_lbs ~ pre_post_reg + month_name,
                        family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_lbs_MaySep) #pre-post-reg not a significant predictor of revenue
 hist(mod1_lbs_MaySep$residuals)
-
-plot(mod1_lbs_MaySep)
+#plot(mod1_lbs_MaySep)
 
 
 pre_reg_mean_landings_MaySep <- summary_pacfin_data_MaySep %>% 
@@ -560,17 +546,17 @@ ppp_in_JulSep <- ggplot()+
 ppp_in_JulSep
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2019_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
-ggarrange(ppp_in_JulSep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2019_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(ppp_in_JulSep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
@@ -601,17 +587,17 @@ ppp_in_MaySep <- ggplot()+
 ppp_in_MaySep
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2020_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
-ggarrange(ppp_in_MaySep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_price_per_pound_prePreg_vs_2020_ADJ_INFL.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(ppp_in_MaySep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
@@ -679,18 +665,19 @@ efficiency_CPUE_v2 <- efficiency_CPUE %>%
 
 efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
 
+#calculating CPUE this way takes 'mean of a mean'
+# summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
+#   filter(season != '2018-2019')  %>% 
+#   #group_by(season, pre_post_reg) %>% 
+#   group_by(season, month_name) %>% 
+#   summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
+#             median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
+#             mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
+#             median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
-summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
-  filter(season != '2018-2019')  %>% 
-  #group_by(season, pre_post_reg) %>% 
-  group_by(season, month_name) %>% 
-  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
-            median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
-            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
-            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
-
+#calculating CPUE a different way
 summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
   filter(season != '2018-2019')  %>% 
   #group_by(season, pre_post_reg) %>% 
@@ -706,16 +693,16 @@ summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>%
 
 
 CPUE_ts_lbs_MaySep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
@@ -738,31 +725,31 @@ CPUE_ts_lbs_MaySep <- ggplot()+
   )
 CPUE_ts_lbs_MaySep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2020_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(CPUE_ts_lbs_MaySep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2020_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_lbs_MaySep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
 CPUE_ts_dollar_MaySep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
@@ -785,79 +772,73 @@ CPUE_ts_dollar_MaySep <- ggplot()+
   )
 CPUE_ts_dollar_MaySep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(CPUE_ts_dollar_MaySep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2020_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_dollar_MaySep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
-hist(summary_efficiency_CPUE_v2_MaySep$mean_dollar_per_pot)
-hist(summary_efficiency_CPUE_v2_MaySep$mean_lbs_per_pot)
+hist(summary_efficiency_CPUE_v2_MaySep$dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_MaySep$lbs_per_pot)
 
-mod1_CPUE_lbs_MaySep <- glm(mean_lbs_per_pot ~ pre_post_reg + month_name,
+mod1_CPUE_lbs_MaySep <- glm(lbs_per_pot ~ pre_post_reg + month_name,
                             family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_CPUE_lbs_MaySep) #pre-post-reg not a significant predictor 
 hist(mod1_CPUE_lbs_MaySep$residuals)
-plot(mod1_CPUE_lbs_MaySep)
+#plot(mod1_CPUE_lbs_MaySep)
 
-mod1_CPUE_dollar_MaySep <- glm(mean_dollar_per_pot ~ pre_post_reg + month_name,
+mod1_CPUE_dollar_MaySep <- glm(dollar_per_pot ~ pre_post_reg + month_name,
                                family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_CPUE_dollar_MaySep) #pre-post-reg IS a significant predictor if don't adjust for infaltion, NOT significant if do adjust for infaltion
 hist(mod1_CPUE_dollar_MaySep$residuals)
-plot(mod1_CPUE_dollar_MaySep)
+#plot(mod1_CPUE_dollar_MaySep)
 
 
-#this way you won't be taking the mean of a mean
-pre_reg_mean_CPUE_dollar_MaySep <- efficiency_CPUE_v2 %>% 
-  filter(season != '2018-2019')  %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
-  group_by(pre_post_reg) %>% 
-  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
-            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T)) 
-
-#this would be taking mean of a mean
-# pre_reg_mean_CPUE_dollar_MaySep <- summary_efficiency_CPUE_v2_MaySep %>% 
-#   group_by(pre_post_reg) %>% 
-#   summarise(mean_mean_dollar_per_pot = mean(mean_dollar_per_pot))
+# % change
+ pre_reg_mean_CPUE_dollar_MaySep <- summary_efficiency_CPUE_v2_MaySep %>% 
+   group_by(pre_post_reg) %>% 
+   summarise(mean_dollar_per_pot = mean(dollar_per_pot),
+             median_dollar_per_pot = median(dollar_per_pot),
+             mean_lbs_per_pot = mean(lbs_per_pot),
+             median_lbs_per_pot = median(lbs_per_pot))
 
 #% change from pre-reg mean to 2020
-(17.0-13.0)/13.0*100 ##30.76923
 #ADJUSTED FOR INFALTION
-(15.5-12.7)/12.7*100 ##22.05 --> same (22%) if do median
+(10.4-8.92)/8.92*100 ##16.59%
 #MEDIAN:
-(10.1-8.28)/8.28*100 #21.98%
+(10.6-7.92)/7.92*100 #33.84%
 #LBS
-(3.33-2.76)/2.76*100 ##20.6 if do mean
-(1.98-1.75)/1.75*100 ##13.14 if do median
+(2.41-2.00)/2.00*100 ##20.5 if do mean
+(2.30-1.70)/1.70*100 ##35.29 if do median
 
 
 
 ##Jul-Sep
+ #calculating CPUE this way takes 'mean of a mean'
+# summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
+#   filter(season != '2019-2020') %>% 
+#   filter(month_name %in% c('July', 'August', 'September')) %>% 
+#   #group_by(season, pre_post_reg) %>% 
+#   group_by(season, month_name) %>% 
+#   summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
+#             median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
+#             mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
+#             median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
+#   mutate(pre_post_reg = 
+#            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+# 
+#calculating CPUE a different way
 summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
   filter(season != '2019-2020') %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
-  #group_by(season, pre_post_reg) %>% 
-  group_by(season, month_name) %>% 
-  summarise(mean_dollar_per_pot = mean(dollar_per_pot, na.rm = T),
-            median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
-            mean_lbs_per_pot = mean(lbs_per_pot, na.rm = T),
-            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
-
-summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
-  filter(season != '2019-2020') %>% 
-  filter(month_name %in% c('July', 'August', 'September')) %>% 
-  #group_by(season, pre_post_reg) %>% 
   group_by(season, month_name) %>% 
   summarise(total_pots = sum(sum_pots_per_ticket, na.rm = T),
             total_dollars = sum(EXVESSEL_REVENUE_adj, na.rm = T),
@@ -870,16 +851,16 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
 
 
 CPUE_ts_dollar_JulSep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_dollar_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_dollar_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=dollar_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = dollar_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
@@ -901,31 +882,31 @@ CPUE_ts_dollar_JulSep <- ggplot()+
   )
 CPUE_ts_dollar_JulSep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2019_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(CPUE_ts_dollar_JulSep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_dollars_per_pot_prePreg_vs_2019_ADJ_INFL_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_dollar_JulSep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
 CPUE_ts_lbs_JulSep <- ggplot()+
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
                colour = "red") +
-  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_lbs_per_pot), lwd=2) + #,size=2.5  group=season,
-  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
-  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = mean_lbs_per_pot),
+  geom_violin(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=lbs_per_pot), lwd=2) + #,size=2.5  group=season,
+  geom_dotplot(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot), binaxis='y', stackdir='center', dotsize=0.6) +
+  stat_summary(data = summary_efficiency_CPUE_v2_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x = pre_post_reg, y = lbs_per_pot),
                fun = "median",
                geom = "crossbar", 
                width = 0.25,
@@ -947,58 +928,54 @@ CPUE_ts_lbs_JulSep <- ggplot()+
   )
 CPUE_ts_lbs_JulSep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2019_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
-ggarrange(CPUE_ts_lbs_JulSep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_vs_2019_dots_and_median.png"), width = 16, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_lbs_JulSep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##GLM##
-hist(summary_efficiency_CPUE_v2_JulSep$mean_dollar_per_pot)
-hist(summary_efficiency_CPUE_v2_JulSep$mean_lbs_per_pot)
+hist(summary_efficiency_CPUE_v2_JulSep$dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_JulSep$lbs_per_pot)
 
-mod1_CPUE_lbs_JulSep <- glm(mean_lbs_per_pot ~ pre_post_reg + month_name,
+mod1_CPUE_lbs_JulSep <- glm(lbs_per_pot ~ pre_post_reg + month_name,
                        family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_CPUE_lbs_JulSep) #pre-post-reg not a significant predictor 
 hist(mod1_CPUE_lbs_JulSep$residuals)
-plot(mod1_CPUE_lbs_JulSep)
+#plot(mod1_CPUE_lbs_JulSep)
 
-mod1_CPUE_dollar_JulSep <- glm(mean_dollar_per_pot ~ pre_post_reg + month_name,
+mod1_CPUE_dollar_JulSep <- glm(dollar_per_pot ~ pre_post_reg + month_name,
                             family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
 summary(mod1_CPUE_dollar_JulSep) #pre-post-reg not a significant predictor 
 hist(mod1_CPUE_dollar_JulSep$residuals)
-plot(mod1_CPUE_dollar_JulSep)
+#plot(mod1_CPUE_dollar_JulSep)
 
 
 
-#this way you won't be taking the mean of a mean
-pre_reg_mean_CPUE_dollar_JulSep <- efficiency_CPUE_v2 %>% 
-  filter(season != '2019-2020')  %>% 
-  mutate(pre_post_reg = 
-           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
-  group_by(pre_post_reg) %>% 
-  summarise(median_dollar_per_pot = median(dollar_per_pot, na.rm = T),
-            median_lbs_per_pot = median(lbs_per_pot, na.rm = T)) 
-
-#this would be taking mean of a mean
-# pre_reg_mean_CPUE_dollar_JulSep <- summary_efficiency_CPUE_v2_JulSep %>% 
-#   group_by(pre_post_reg) %>% 
-#   summarise(mean_mean_dollar_per_pot = mean(mean_dollar_per_pot))
-
-#% change in MEDIAN from pre-reg  to 2019
+# % change
+ . <- summary_efficiency_CPUE_v2_JulSep %>% 
+   group_by(pre_post_reg) %>% 
+   summarise(mean_dollar_per_pot = mean(dollar_per_pot),
+             median_dollar_per_pot = median(dollar_per_pot),
+             mean_lbs_per_pot = mean(lbs_per_pot),
+             median_lbs_per_pot = median(lbs_per_pot))
+ 
+ #% change in mean from pre-reg  to 2019
 #ADJUSTED FOR INFALTION
-(8.30-8.28)/8.28*100 #0.24%
+(5.25-9.98)/9.98*100 #-47.39%
+#MEDIAN
+(5.18-8.45)/8.45*100 #-38.70%
 #LBS
-(1.65-1.75)/1.75*100 ##-5.71 if do median
-
-
+(1.25-2.33)/2.33*100 ##-46.35 
+#MEDIAN
+(1.26-1.90)/1.90*100 ##-33.68 
 
 
 
@@ -1056,17 +1033,17 @@ monthly_rev_JulSep <- ggplot()+
   )
 monthly_rev_JulSep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
-ggarrange(monthly_rev_JulSep,
-          ncol=1,
-          nrow=1
-          #legend="top",
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
+# ggarrange(monthly_rev_JulSep,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>% 
@@ -1100,17 +1077,17 @@ monthly_rev_MaySep <- ggplot()+
   )
 monthly_rev_MaySep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
-ggarrange(monthly_rev_MaySep,
-          ncol=1,
-          nrow=1
-          #legend="bottom"
-          #labels="auto",
-          #vjust=8,
-          #hjust=-0.2
-)
-invisible(dev.off())
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_ADJ_INFL.png"), width = 15, height = 14, units = "in", res = 400)
+# ggarrange(monthly_rev_MaySep,
+#           ncol=1,
+#           nrow=1
+#           #legend="bottom"
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ### GLM on mean monthly revenue/vessel
