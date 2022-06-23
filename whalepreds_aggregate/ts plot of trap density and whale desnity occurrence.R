@@ -644,4 +644,52 @@ invisible(dev.off())
 
 
 
+######
+#Supplementary figure - number of unique vessels by month
+
+active_vessels_by_month <- traps_g %>% 
+  group_by(season, month_name) %>% 
+  na.omit() %>% 
+  summarise(
+    n_unique_licenses=n_distinct(License), na.rm=TRUE)
+
+
+active_vessels_by_month <- active_vessels_by_month %>%
+  mutate(month_name = factor(month_name, levels = c('December','January','February','March','April','May','June','July','August','September','October','November')))  
+
+colors <- c("2013-2014" = "#040F57", 
+            "2014-2015" = "#1167b1", 
+            "2015-2016" = "#9043C3",
+            "2016-2017" = "#D75CA2",
+            "2017-2018" = "#BD2B48",
+            "2018-2019" = "#E79556",
+            "2019-2020" = "#964B00"
+            )
+
+
+
+vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n_unique_licenses, colour=season,  group=season))+
+  geom_line(size=1.5, lineend = "round") + 
+  scale_color_manual(values = colors) +
+  #scale_color_brewer(palette="BuPu") +
+  #scale_color_viridis_c() +
+  #scale_colour_brewer(palette = "PiYG") +
+  ylab("No. active vessels") +
+  xlab("Month") + 
+  scale_y_continuous(breaks=seq(0, 165, 20),limits=c(0,165))+
+  guides(color = guide_legend(override.aes = list(size = 2))) +
+  theme_minimal()+
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 32),
+        legend.text = element_text(size=15),
+        axis.text.x = element_text(hjust = 1,size = 15, angle = 45),
+        axis.text.y = element_text(size = 15),
+        axis.title = element_text(size = 15),
+        #legend.position = c(0.9, 0.8) +
+        legend.position="bottom"
+  )
+vessels_by_month_plot
+# saving
+#path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+#ggsave(paste0(path_figures,"/number unique vessels by month.png"),vessels_by_month_plot,w=12,h=10)
 
