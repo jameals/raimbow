@@ -939,7 +939,7 @@ summary(mod1_hump_overlap_MaySep)
 
 
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habitat_fishing_JulSep, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=2,  linetype = "dashed") +
+  geom_line(size=2) +
   geom_point(size=5) +
   geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
   geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
@@ -949,7 +949,7 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
   #xlab("Season") +
   xlab("") +
   #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  scale_color_manual(name="", values = c("black","black")) +
+  scale_color_manual(name="", values = c("black","gray")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -993,7 +993,7 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
 
 ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=2, linetype = "dashed") +
+  geom_line(size=2) +
   geom_point(size=5) +
   geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
   geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
@@ -1001,7 +1001,7 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, 
   ylab("Overlap") +
   xlab("") +
   #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  scale_color_manual(name="", values = c("black","black")) +
+  scale_color_manual(name="", values = c("black","gray")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
