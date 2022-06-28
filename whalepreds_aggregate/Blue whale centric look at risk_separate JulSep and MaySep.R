@@ -878,7 +878,7 @@ plot(mod1_blue_overlap_MaySep)
 #summary_good_bw_habitat_fishing_MaySep_0469
 
 ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_fishing_JulSep_0626, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=2, linetype = "dashed") +
+  geom_line(size=2) +
   geom_point(size=5) +
   geom_line(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
   geom_point(data=summary_good_bw_habitat_fishing_MaySep_0469, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
@@ -887,7 +887,7 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=summary_good_bw_habitat_
   #xlab("Season") +
   xlab("") +
   #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  scale_color_manual(name="", values = c("black","black")) +
+  scale_color_manual(name="", values = c("black","gray")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
@@ -928,7 +928,7 @@ ts_risk_in_mean_bw_habitat_JulSep_MaySep
 #test_summary_MaySep_0469
 
 ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0626, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=2, linetype = "dashed") +
+  geom_line(size=2) +
   geom_point(size=5) +
   geom_line(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
   geom_point(data=test_summary_MaySep_0469, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
@@ -936,7 +936,7 @@ ts_overlap_in_mean_bw_habitat_JulSep_MaySep <- ggplot(data=test_summary_JulSep_0
   ylab("Overlap") +
   xlab("") +
   #scale_color_manual(name="", values = c("#00bab5","#73377e")) +
-  scale_color_manual(name="", values = c("black","black")) +
+  scale_color_manual(name="", values = c("black","gray")) +
   scale_x_discrete(labels=c("2013-2014" = "2014",
                             "2014-2015" = "2015",
                             "2015-2016" = "2016",
