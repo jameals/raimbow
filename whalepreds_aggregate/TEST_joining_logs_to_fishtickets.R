@@ -678,7 +678,7 @@ efficiency_CPUE_v2$month_name <- factor(efficiency_CPUE_v2$month_name, levels = 
 #            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 
 #calculating CPUE a different way
-summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>% 
+summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE %>% 
   filter(season != '2018-2019')  %>% 
   #group_by(season, pre_post_reg) %>% 
   group_by(season, month_name) %>% 
@@ -690,6 +690,8 @@ summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE_v2 %>%
             lbs_per_pot = total_lbs/total_pots) %>% 
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+
+summary_efficiency_CPUE_v2_MaySep$month_name <- factor(summary_efficiency_CPUE_v2_MaySep$month_name, levels = c('May', 'June', 'July', 'August', 'September'))
 
 
 CPUE_ts_lbs_MaySep <- ggplot()+
@@ -836,7 +838,7 @@ hist(mod1_CPUE_dollar_MaySep$residuals)
 #            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
 # 
 #calculating CPUE a different way
-summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>% 
+summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE %>% 
   filter(season != '2019-2020') %>% 
   filter(month_name %in% c('July', 'August', 'September')) %>% 
   group_by(season, month_name) %>% 
@@ -848,6 +850,8 @@ summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE_v2 %>%
             lbs_per_pot = total_lbs/total_pots) %>% 
   mutate(pre_post_reg = 
            ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season))
+
+summary_efficiency_CPUE_v2_JulSep$month_name <- factor(summary_efficiency_CPUE_v2_JulSep$month_name, levels = c('July', 'August', 'September'))
 
 
 CPUE_ts_dollar_JulSep <- ggplot()+
@@ -960,7 +964,7 @@ hist(mod1_CPUE_dollar_JulSep$residuals)
 
 
 # % change
- . <- summary_efficiency_CPUE_v2_JulSep %>% 
+pre_reg_mean_CPUE_dollar_JulSep <- summary_efficiency_CPUE_v2_JulSep %>% 
    group_by(pre_post_reg) %>% 
    summarise(mean_dollar_per_pot = mean(dollar_per_pot),
              median_dollar_per_pot = median(dollar_per_pot),
@@ -1150,186 +1154,416 @@ plot(mod_monthly_rev_MaySep_500)
 
 
 #---------------------------------------------------------------------------------
-## OLD ###
+## instead of violin plots, do line plots for $, lbs and CPUE??
 #---------------------------------------------------------------------------------
 
-#initial test joining of logs and pacfin data with only 2014 data
+## plot both Jul-Sep and May-Sep lines on one plot
 
-path_WA_landed_WA_logs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_landed_WA_logs_2014_2020_clipped_to_WA_waters_20220126.rds"
-WA_landed_WA_logs_clipped_to_WA_waters <- readRDS(path_WA_landed_WA_logs)
+#Jul-Sep data
+summary_pacfin_data_JulSep <- test_join_uniques_adj_inf %>% 
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>%
+  filter(month_name %in% c('July','August','September')) %>%
+  filter(season != '2019-2020') %>%
+  #filter(LANDED_WEIGHT_LBS < 10000) %>% ##this doesn't make a difference in main conclusions
+  group_by(season) %>%
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE_adj, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T)
+  ) %>% 
+  mutate(
+    pre_post_reg = ifelse(season == '2018-2019', '2018-2019', 'pre-reg')) %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_1", "season_2"), sep = "-") %>% 
+  add_row(season_2 = '2020', sum_revenue = NA, sum_weight_lbs = NA)
 
-WA_landed_WA_logs_clipped_to_WA_waters <- WA_landed_WA_logs_clipped_to_WA_waters %>% 
-  select(-path, -layer) %>%  #columns that have been added in QGIS step, when joining files
-  #because the data was used in QGIS, ESRI abbreviates column names. change names back to original form
-  #new_name = old_name
-  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
-  rename(
-    PotsFished = PtsFshd,
-    line_length_m = ln_lng_,
-    GRID5KM_ID = GRID5KM,
-    NGDC_GRID = NGDC_GR,
-    is_port_or_bay = is_pr__,
-    Landing_logbook_state = Lndng__,
-    month_name = mnth_nm,
-    season_month = ssn_mnt,
-    month_interval = mnth_nt, 
-    season_month_interval = ssn_mn_, 
-    is_May_Sep = is_My_S
-  ) 
+summary_pacfin_data_JulSep$season_2 <- as.numeric(summary_pacfin_data_JulSep$season_2)
 
 
-#for now test with 2014 fishtix, so filter to that season
-#also interested only in May-Sep period
-WA_landed_WA_logs_clipped_to_WA_waters_2013_2014 <- WA_landed_WA_logs_clipped_to_WA_waters %>% 
-  filter(season=='2013-2014') %>% 
-  filter(is_May_Sep == 'Y')
+#May-Sep data
+summary_pacfin_data_MaySep <- test_join_uniques_adj_inf %>%
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>%
+  filter(season != '2018-2019') %>%
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>% #doesn't make a difference
+  #filter(LANDED_WEIGHT_LBS < 10000) %>% #doesn't make a difference
+  group_by(season) %>%
+  summarise(sum_revenue = sum(EXVESSEL_REVENUE_adj, na.rm=T),
+            sum_weight_lbs = sum(LANDED_WEIGHT_LBS, na.rm=T)
+  ) %>% 
+  mutate(
+    pre_post_reg = ifelse(season == '2019-2020', '2019-2020', 'pre-reg')) %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_1", "season_2"), sep = "-")  
 
-#each row is a single pot, only need one record per SetID
-#length(unique(WA_landed_WA_logs_clipped_to_WA_waters_2013_2014$SetID)) #3792
-WA_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques <- WA_landed_WA_logs_clipped_to_WA_waters_2013_2014 %>% 
-  group_by(SetID) %>% 
-  filter(row_number()==1)
-#nrow(WA_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques)   #3792
-
-
-#an earlier version of raw data still had Fishticket column 
-logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
-#SetID should still be the same between teh two files
-logs_selected_columns <- logs %>% 
-  select(SetID, FishTicket1, FishTicket2, FishTicket3, FishTicket4, Vessel, License, FederalID, LandingDate ) #Vessel, License, FederalID, 
+summary_pacfin_data_MaySep$season_2 <- as.numeric(summary_pacfin_data_MaySep$season_2)
 
 
 
-#try joining Fihsticket columns to more processed logbooks
-#getting a duplication of data: "This is because there were two y1=1 values in your d2 dataset 
-  #so the join will merge these on twice." #nrow(joined_df) #7584 
-joined_df <- WA_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques %>% 
-  left_join(logs_selected_columns,by="SetID") %>%
-  distinct #add a distinct command to remove duplicaiton
-#nrow(joined_df) #3792 - when add distinct command
-# cases where found fishticket
-nrow(joined_df %>% filter(!is.na(FishTicket1)))
-#3768 --> 99.37%
-#cases where no Fishticket found
-nrow(joined_df %>% filter(is.na(FishTicket1)))
-#24 --> 0.006%
-#manually checked and all were cases where raw logs didn't have a fishticket
+##REVENUE
+sum_JulSep_and_MaySep_rev_line <- ggplot() +
+  #Jul-Sep
+  geom_line(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_revenue/100000,group = 1), lwd=1.8) +
+  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=5) +
+  geom_segment(data = summary_pacfin_data_JulSep,aes(x = 2018.7, y = 7.548584, xend = 2019.3, yend = 7.548584), linetype='dashed', lwd=1.8) +
+  #May-Sep
+  geom_line(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_revenue/100000,group = 1), lwd=1.8, color='gray') +
+  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=5, color='gray') +
+  geom_segment(data = summary_pacfin_data_MaySep,aes(x = 2019.7, y = 16.05907, xend = 2020.3, yend = 16.05907), linetype='dashed', color='gray', lwd=1.8) +
+  scale_y_continuous(limits=c(NA, 42), breaks=c(10,20,30,40)) +
+  scale_x_continuous(breaks=seq(2014, 2020, 1))+
+  ylab("Revenue ($ x10^5)") +
+  #xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 40, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_JulSep_and_MaySep_rev_line
+
+
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_2020_LINE.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(sum_JulSep_and_MaySep_rev_line,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
-#read in the actual fishticket file
-fishtix_2014 <- read_csv(here('wdfw', 'data','fish tickets 2014.csv'),col_types = 'ddccccccccccccdd') 
-
-#the FishTicket1 column in logs, and the FISH_TICKET_ID column in pacfin data don't match
-#test_join <- joined_df %>% 
-#  left_join(fishtix_2014, by = c("FishTicket1" = "FISH_TICKET_ID"))
-
-#but it might be possible to join using landing date and Federal ID in logs with VESSEL_NUM in fishtix
-
-library(stringr)
-test_df <- joined_df %>% 
-  select(SetID, FederalID)
-test_df_new <-as.data.frame(apply(test_df,2, str_remove_all, " ")) 
-test_df_2 <- joined_df %>% 
-  left_join(test_df_new,by="SetID") %>% 
-  rename(FederalID = FederalID.y)
-
-#landing date needs to be date, not character
-fishtix_2014_v2 <- fishtix_2014 %>% 
-  mutate(LANDING_DATE=as.Date(LANDING_DATE,"%d-%b-%y"))
-
-test_join <- test_df_2 %>% 
-  left_join(fishtix_2014_v2, 
-            by = c("FederalID" = "VESSEL_NUM",
-                   "LandingDate" = "LANDING_DATE"))
-####NOTE HERE THAT EACH ROW IS ONE STRINGLINE, BUT MULTIPLE STRINGLINES MAY HAVE BEEN ON ONE FISHTICKET ON ONE LANDING DATE
-###SO HERE WOULD WANT TO KEEP ONLY ONE RECORD PER FISHTICKET
-#nrow(test_join) #5102 
-# cases where found fishticket info
-nrow(test_join %>% filter(!is.na(EXVESSEL_REVENUE)))
-#5038 --> 98.75%
-#cases where no Fishticket info found
-nrow(test_join %>% filter(is.na(EXVESSEL_REVENUE)))
-#64 --> 0.013% #this is 9 fishtickets that didn't match to Fishtix2014 file, 
-#some seem to be cases where set date and landing date don't match
-#plus 21 strings with no Fishticket number
+#GLM
+#Jul-Sep
+hist(summary_pacfin_data_JulSep$sum_revenue)
+mod1_rev_JulSep <- glm(sum_revenue ~ pre_post_reg,
+                       family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_rev_JulSep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_rev_JulSep$residuals)
 
 
+pre_reg_mean_revenue_JulSep <- summary_pacfin_data_JulSep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_revenue = median(sum_revenue))
+
+##ADJUSTED FOR INFLATION
+#% change from pre-reg MEDIAN to 2019
+(814969-754858)/754858*100 ##7.96
+
+
+##GLM##
+#May-Sep
+hist(summary_pacfin_data_MaySep$sum_revenue)
+mod1_rev_MaySep <- glm(sum_revenue ~ pre_post_reg ,
+                       family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_rev_MaySep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_rev_MaySep$residuals)
+#plot(mod1_rev_MaySep)
+
+
+pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_revenue = median(sum_revenue))
+
+##ADJUSTED FOR INFLATION
+#% change from pre-reg MEDIAN to 2019
+(1577445-1605907)/1605907*100 ##-1.77
+
+#---------------
+
+##LANDINGS
+sum_JulSep_and_MaySep_lbs_line <- ggplot() +
+  #Jul-Sep
+  geom_line(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), lwd=1.8) +
+  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_weight_lbs/100000, group = 1), size=5) +
+  geom_segment(data = summary_pacfin_data_JulSep,aes(x = 2018.7, y = 1.74557, xend = 2019.3, yend = 1.74557), linetype='dashed', lwd=1.8) +
+  #May-Sep
+  geom_line(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), lwd=1.8,color='gray') +
+  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), size=5,color='gray') +
+  geom_segment(data = summary_pacfin_data_JulSep,aes(x = 2019.7, y = 3.31685, xend = 2020.3, yend = 3.31685), linetype='dashed', lwd=1.8,color='gray') +
+  scale_y_continuous(limits=c(NA, 9.4), breaks=c(3,6,9)) +
+  scale_x_continuous(breaks=seq(2014, 2020, 1))+
+  ylab("Landings (lbs x 10^5)") +
+  #xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 40, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+sum_JulSep_and_MaySep_lbs_line
+
+
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_landings_prePreg_vs_2019_2020_LINE.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(sum_JulSep_and_MaySep_lbs_line,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
+
+
+##GLM##
+#Jul-Sep
+hist(summary_pacfin_data_JulSep$sum_weight_lbs)
+mod1_lbs_JulSep <- glm(sum_weight_lbs ~ pre_post_reg,
+                       family=gaussian, data=summary_pacfin_data_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_lbs_JulSep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_lbs_JulSep$residuals)
+#plot(mod1_lbs_JulSep)
+
+
+pre_reg_mean_landings_JulSep <- summary_pacfin_data_JulSep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_landings = median(sum_weight_lbs))
+
+#% change from pre-reg MEDIAN to 2019
+(192761-174557)/174557*100 ##10.42
 
 
 
-#try with OR landed WA logs (Q999999), clipped to WA waters
+##GLM##
+#May-Sep
+hist(summary_pacfin_data_MaySep$sum_weight_lbs)
 
-path_OR_landed_WA_logs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_OR_landed_WA_logs_Q999999_2014_2020_clipped_to_WA_waters_20220119.rds"
-OR_landed_WA_logs_clipped_to_WA_waters <- readRDS(path_OR_landed_WA_logs)
-
-OR_landed_WA_logs_clipped_to_WA_waters <- OR_landed_WA_logs_clipped_to_WA_waters %>% 
-  #because the data was used in QGIS, ESRI abbreviates column names. change names back to original form
-  #new_name = old_name
-  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
-  rename(
-    PotsFished = PtsFshd,
-    line_length_m = ln_lng_,
-    GRID5KM_ID = GRID5KM,
-    NGDC_GRID = NGDC_GR,
-    is_port_or_bay = is_pr__,
-    Landing_logbook_state = Lndng__,
-    month_name = mnth_nm,
-    season_month = ssn_mnt,
-    month_interval = mnth_nt, 
-    season_month_interval = ssn_mn_, 
-    is_May_Sep = is_My_S
-  ) 
-
-#for now test with 2014 fishtix, so filter to that season
-#also interested only in May-Sep period
-OR_landed_WA_logs_clipped_to_WA_waters_2013_2014 <- OR_landed_WA_logs_clipped_to_WA_waters %>% 
-  filter(season=='2013-2014') %>% 
-  filter(is_May_Sep == 'Y')
-
-#each row is a single pot, only need one record per SetID
-#length(unique(WA_landed_WA_logs_clipped_to_WA_waters_2013_2014$SetID)) #3792
-OR_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques <- OR_landed_WA_logs_clipped_to_WA_waters_2013_2014 %>% 
-  group_by(SetID) %>% 
-  filter(row_number()==1)
-#nrow(OR_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques)   #6
+mod1_lbs_MaySep <- glm(sum_weight_lbs ~ pre_post_reg,
+                       family=gaussian, data=summary_pacfin_data_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_lbs_MaySep) #pre-post-reg not a significant predictor of revenue
+hist(mod1_lbs_MaySep$residuals)
+#plot(mod1_lbs_MaySep)
 
 
-#logs_selected_columns 
-#try joining Fihsticket columns to more processed logbooks
-#getting a duplication of data: "This is because there were two y1=1 values in your d2 dataset 
-#so the join will merge these on twice." #nrow(joined_df) #7584 
-joined_df_Q999999 <- OR_landed_WA_logs_clipped_to_WA_waters_2013_2014_uniques %>% 
-  left_join(logs_selected_columns,by="SetID") %>%
-  distinct #add a distinct command to remove duplicaiton
-#nrow(joined_df_Q999999) #6 - when add distinct command
-# cases where found fishticket
-nrow(joined_df_Q999999 %>% filter(!is.na(FishTicket1)))
-#6
+pre_reg_mean_landings_MaySep <- summary_pacfin_data_MaySep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_landings = median(sum_weight_lbs))
+
+#% change from pre-reg MEDIAN to 2019
+(345760-331685)/331685*100 ##4.24
 
 
-#read in the actual fishticket file
-glimpse(fishtix_2014) 
 
-#join using landing date and Federal ID in logs with VESSEL_NUM in fishtix
-library(stringr)
-test_df_Q999999 <- joined_df_Q999999 %>% 
-  select(SetID, FederalID)
-test_df_Q999999_new <-as.data.frame(apply(test_df_Q999999,2, str_remove_all, " ")) 
-test_df_Q999999_2 <- joined_df_Q999999 %>% 
-  left_join(test_df_Q999999_new,by="SetID") %>% 
-  rename(FederalID = FederalID.y)
 
-#landing date needs to be date, not character
-glimpse(fishtix_2014_v2)
+#---------
 
-test_join_Q999999 <- test_df_Q999999_2 %>% 
-  left_join(fishtix_2014_v2, 
-            by = c("FederalID" = "VESSEL_NUM",
-                   "LandingDate" = "LANDING_DATE"))
-#nrow(test_join_Q999999) #6 --> it was 6 stringlines, all Q99999 so were they all landed on same fishticket??
-#might need to make an assumption that there would be only one fishticket per vessel per day
+efficiency_CPUE <-  test_join %>% 
+  #exclude personal use catch
+  filter(REMOVAL_TYPE_NAME == "COMMERCIAL (NON-EFP)") %>% 
+  #each row is a string line, multiple string lines in a FISHTICKET
+  group_by(FISH_TICKET_ID) %>% 
+  summarise(sum_pots_per_ticket = sum(PotsFished, na.rm = T))
 
-##WHAT IF STRINGLINES WERE PART IN WA WATERS AND PART IN OR WATERS?? 
-#--> only seems to have happened in 2013-2014 season. 35% of pots were on WA side (stringlines continue to OR)
-#so could make the assumption that 35% of catch came from that side
+efficiency_CPUE <- left_join(efficiency_CPUE,
+                             test_join_uniques_adj_inf %>% select(LANDED_WEIGHT_LBS, EXVESSEL_REVENUE_adj, season, month_name),
+                             by = "FISH_TICKET_ID"
+)
+
+
+##Jul-Sep
+summary_efficiency_CPUE_v2_JulSep <- efficiency_CPUE %>% 
+  filter(season != '2019-2020') %>% 
+  filter(month_name %in% c('July', 'August', 'September')) %>% 
+  group_by(season) %>% 
+  summarise(total_pots = sum(sum_pots_per_ticket, na.rm = T),
+            total_dollars = sum(EXVESSEL_REVENUE_adj, na.rm = T),
+            dollar_per_pot = total_dollars/total_pots,
+            
+            total_lbs = sum(LANDED_WEIGHT_LBS, na.rm = T),
+            lbs_per_pot = total_lbs/total_pots) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_1", "season_2"), sep = "-")
+
+summary_efficiency_CPUE_v2_JulSep$season_2 <- as.numeric(summary_efficiency_CPUE_v2_JulSep$season_2)
+
+
+#May-Sep
+summary_efficiency_CPUE_v2_MaySep <- efficiency_CPUE %>% 
+  filter(season != '2018-2019')  %>% 
+  #group_by(season, pre_post_reg) %>% 
+  group_by(season) %>% 
+  summarise(total_pots = sum(sum_pots_per_ticket, na.rm = T),
+            total_dollars = sum(EXVESSEL_REVENUE_adj, na.rm = T),
+            dollar_per_pot = total_dollars/total_pots,
+            
+            total_lbs = sum(LANDED_WEIGHT_LBS, na.rm = T),
+            lbs_per_pot = total_lbs/total_pots) %>% 
+  mutate(pre_post_reg = 
+           ifelse(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018'), "pre-reg", season)) %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_1", "season_2"), sep = "-")
+
+summary_efficiency_CPUE_v2_MaySep$season_2 <- as.numeric(summary_efficiency_CPUE_v2_MaySep$season_2)
+
+
+
+#CPUE: lbs/pot
+CPUE_ts_lbs_JulSep_MaySep_line <- ggplot() +
+  #Jul-Sep
+  geom_line(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = lbs_per_pot,group = 1), lwd=1.8) +
+  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = lbs_per_pot, group = 1), size=5) +
+  geom_segment(data = summary_efficiency_CPUE_v2_JulSep,aes(x = 2018.7, y = 1.783325, xend = 2019.3, yend = 1.783325), linetype='dashed', lwd=1.8) +
+  #May-Sep
+  geom_line(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = lbs_per_pot,group = 1), lwd=1.8, color='gray') +
+  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = lbs_per_pot, group = 1), size=5, color='gray') +
+  geom_segment(data = summary_efficiency_CPUE_v2_MaySep,aes(x = 2019.7, y = 1.783700, xend = 2020.3, yend = 1.783700), linetype='dashed', lwd=1.8, color='gray') +
+  scale_x_continuous(breaks=seq(2014, 2020, 1))+
+  ylab("Mean lbs/pot") +
+  #xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 40, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts_lbs_JulSep_MaySep_line
+
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_2019_2020_LINE.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_lbs_JulSep_MaySep_line,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
+
+
+#CPUE: $/pot
+CPUE_ts_dollar_JulSep_MaySep_line <- ggplot() +
+  #Jul-Sep
+  geom_line(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = dollar_per_pot,group = 1), lwd=1.8) +
+  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = dollar_per_pot, group = 1), size=5) +
+  geom_segment(data = summary_efficiency_CPUE_v2_JulSep,aes(x = 2018.7, y = 7.702034, xend = 2019.3, yend = 7.702034), linetype='dashed', lwd=1.8) +
+  #May-Sep
+  geom_line(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = dollar_per_pot,group = 1), lwd=1.8, color='gray') +
+  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = dollar_per_pot, group = 1), size=5, color='gray') +
+  geom_segment(data = summary_efficiency_CPUE_v2_MaySep,aes(x = 2019.7, y = 8.699417, xend = 2020.3, yend = 8.699417), linetype='dashed', lwd=1.8, color='gray') +
+  scale_x_continuous(breaks=seq(2014, 2020, 1))+
+  ylab("Mean $/pot") +
+  #xlab("Season") +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 20),
+        legend.position = c(.15, .85),
+        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 40, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.x=element_blank(),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left"
+  )
+CPUE_ts_dollar_JulSep_MaySep_line
+
+# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_dollar_per_pot_prePreg_2019_2020_LINE.png"), width = 22, height = 14, units = "in", res = 400)
+# ggarrange(CPUE_ts_dollar_JulSep_MaySep_line,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
+
+
+
+##GLM##
+#May-Sep
+hist(summary_efficiency_CPUE_v2_MaySep$dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_MaySep$lbs_per_pot)
+
+mod1_CPUE_lbs_MaySep <- glm(lbs_per_pot ~ pre_post_reg,
+                            family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_lbs_MaySep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_lbs_MaySep$residuals)
+#plot(mod1_CPUE_lbs_MaySep)
+
+mod1_CPUE_dollar_MaySep <- glm(dollar_per_pot ~ pre_post_reg,
+                               family=gaussian, data=summary_efficiency_CPUE_v2_MaySep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_dollar_MaySep) #pre-post-reg IS a significant predictor if don't adjust for infaltion, NOT significant if do adjust for infaltion
+hist(mod1_CPUE_dollar_MaySep$residuals)
+#plot(mod1_CPUE_dollar_MaySep)
+
+
+# % change
+pre_reg_mean_CPUE_dollar_MaySep <- summary_efficiency_CPUE_v2_MaySep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_dollar_per_pot = median(dollar_per_pot),
+            median_lbs_per_pot = median(lbs_per_pot))
+
+#% change from pre-reg mean to 2020
+#ADJUSTED FOR INFALTION
+#MEDIAN:
+(10.6-8.70)/8.70*100 #21.84%
+#LBS
+(2.32-1.78)/1.78*100 ##30.34 if do median
+
+
+
+
+##GLM##
+#Jul-Sep
+hist(summary_efficiency_CPUE_v2_JulSep$dollar_per_pot)
+hist(summary_efficiency_CPUE_v2_JulSep$lbs_per_pot)
+
+mod1_CPUE_lbs_JulSep <- glm(lbs_per_pot ~ pre_post_reg,
+                            family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_lbs_JulSep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_lbs_JulSep$residuals)
+#plot(mod1_CPUE_lbs_JulSep)
+
+mod1_CPUE_dollar_JulSep <- glm(dollar_per_pot ~ pre_post_reg,
+                               family=gaussian, data=summary_efficiency_CPUE_v2_JulSep, na.action = na.omit) #family = gaussian(link = "log")
+summary(mod1_CPUE_dollar_JulSep) #pre-post-reg not a significant predictor 
+hist(mod1_CPUE_dollar_JulSep$residuals)
+#plot(mod1_CPUE_dollar_JulSep)
+
+
+# % change
+pre_reg_mean_CPUE_dollar_JulSep <- summary_efficiency_CPUE_v2_JulSep %>% 
+  group_by(pre_post_reg) %>% 
+  summarise(median_dollar_per_pot = median(dollar_per_pot),
+            median_lbs_per_pot = median(lbs_per_pot))
+
+#% change in mean from pre-reg  to 2019
+#ADJUSTED FOR INFALTION
+#MEDIAN
+(5.24-7.70)/7.70*100 #-31.95%
+#LBS
+#MEDIAN
+(1.24-1.78)/1.78*100 ##-30.34
+
+
