@@ -38,7 +38,8 @@ plot_percent_change_HW <- ggplot(df_percent_change_in_risk_HW, aes(x=Scenario, y
   scale_fill_manual(name="Comparison", 
                     labels = c("Pre-regulations vs 2019", "Pre-regulations vs 2020"), 
                     values = c("Pre-regulations vs 2019"="white", "Pre-regulations vs 2020"="grey")) + 
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+
+  #scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
   ylim(-80, 10) + 
   ylab("% change in risk") + 
   xlab("") + 
@@ -71,7 +72,7 @@ plot_percent_change_BW <- ggplot(df_percent_change_in_risk_BW, aes(x=Scenario, y
   scale_fill_manual(name="Comparison", 
                     labels = c("Pre-regulations vs 2019", "Pre-regulations vs 2020"), 
                     values = c("Pre-regulations vs 2019"="white", "Pre-regulations vs 2020"="grey")) + 
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  #scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
   ylim(-40, 30) + 
   ylab("% change in risk") + 
   xlab("") + 
@@ -98,7 +99,7 @@ plot_percent_change_BW
 
 # save plots
 path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_percent_change_in_risk.png"), width = 22, height = 18, units = "in", res = 400)
+png(paste0(path_figures, "/BW_percent_change_in_risk_v2.png"), width = 22, height = 18, units = "in", res = 400)
 ggarrange(plot_percent_change_BW,
           ncol=1,
           nrow=1
@@ -109,6 +110,18 @@ ggarrange(plot_percent_change_BW,
 )
 invisible(dev.off())
 
+
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/HW_percent_change_in_risk_v2.png"), width = 22, height = 18, units = "in", res = 400)
+ggarrange(plot_percent_change_HW,
+          ncol=1,
+          nrow=1
+          #legend="top",
+          #labels="auto",
+          #vjust=8,
+          #hjust=-0.2
+)
+invisible(dev.off())
 
 
 
