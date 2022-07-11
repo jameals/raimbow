@@ -377,20 +377,20 @@ bbox = c(-126,45.5,-121,49)
 
 subset_data <- risk_whales_WA_MaySep_normalized %>% 
   filter(study_area=='Y') %>% #restrict map to study area/check that all grids in study area show up
-  filter(season == "2014-2015") %>% 
-  filter(month == "08") %>% 
+  filter(season == "2019-2020") %>% 
+  filter(month == "06") %>% 
   left_join(grid.5km, by = "GRID5KM_ID")
 
 map_test <- ggplot() + 
   geom_sf(data=sf::st_as_sf(subset_data), 
-          aes(fill=hump_risk_norm,
-              col=hump_risk_norm
+          aes(fill=blue_risk_norm,
+              col=blue_risk_norm
           )
   ) +
   geom_sf(data=rmap.base,col=NA,fill='gray50') +
-  scale_fill_viridis(na.value=NA,option="D",name="",trans="sqrt",limits=c(0,0.71)) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  scale_color_viridis(na.value=NA,option="D",name="",trans="sqrt",limits=c(0,0.71)) + # ,breaks=seq(0,1,by=0.25),limits=c(0,1)
-  ggtitle("Humpback Whale Risk_2014-2015_08") +
+  scale_fill_viridis(na.value=NA,option="D",name="",trans="sqrt",limits=c(0,0.79)) + # limits=c(0,0.71)) for HW
+  scale_color_viridis(na.value=NA,option="D",name="",trans="sqrt",limits=c(0,0.79)) + # limits=c(0,0.71)) for HW
+  ggtitle("BLue Whale Risk_2019-2020_06") +
   #coord_sf(xlim=c(grid5km_bbox[1],grid5km_bbox[3]),ylim=c(grid5km_bbox[2],grid5km_bbox[4])) + 
   coord_sf(xlim=c(bbox[1],bbox[3]),ylim=c(bbox[2],bbox[4])) +
   theme_minimal() + #theme_classic() +
@@ -405,16 +405,16 @@ map_test <- ggplot() +
   )
 map_test
 
-# png(paste0(path_figures, "/HW_risk_2014-2015_08.png"), width = 14, height = 10, units = "in", res = 400)
-# ggarrange(map_test,
-#           ncol=1,
-#           nrow=1,
-#           #legend="top",
-#           #labels="auto",
-#           vjust=8,
-#           hjust=0
-# )
-# invisible(dev.off())
+png(paste0(path_figures, "/BW_risk_2019-2020_06.png"), width = 14, height = 10, units = "in", res = 400)
+ggarrange(map_test,
+          ncol=1,
+          nrow=1,
+          #legend="top",
+          #labels="auto",
+          vjust=8,
+          hjust=0
+)
+invisible(dev.off())
 #-----------------------------------------------------------------------------------
 # 
 # # ts plot: summed May-Sep risk to whales in study area
