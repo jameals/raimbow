@@ -1,6 +1,5 @@
 #Fishery centric look at risk (simple risk metric)
 
-########## RISK IS SUMMED #################
 #-----------------------------------------------------------------------------------
 
 library(tidyverse)
@@ -27,8 +26,7 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" 
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
