@@ -263,7 +263,9 @@ revenue_per_string_for_mapping <-  WA_landed_logs_2010_2020_start_end_locs_only 
   left_join(reduced_columns, by = "SetID") %>% 
   # joining to df 'WA_landed_logs_2010_2020_start_end_locs_only'
   #creates cases of no FISH_TICKET_ID --> remove them
-  filter(!is.na(FISH_TICKET_ID))
+  filter(!is.na(FISH_TICKET_ID)) %>% 
+  #remove couple columns to tidy the df
+  select(-Vessel.y,-License.y)
 
 ##about 6.6% of data are personal use, research or 'other'
 #might want to filter out personal catch cases here
@@ -275,4 +277,12 @@ revenue_per_string_for_mapping <-  WA_landed_logs_2010_2020_start_end_locs_only 
 #View(fishtix_raw %>% filter(FISH_TICKET_ID==533568475)) 
 #--> lots of logbook strings linked to ticket, but ticket says only 20lbs landed
 #looking at 'raw' logbook, each string had anywhere between 3 and 32 crabs on it
+
+
+
+#save csv -- saved the version where personal catch was removed earlier in the code
+#write_csv(revenue_per_string_for_mapping,here::here('wdfw', 'data', "revenue_per_WA_DCRB_string_for_mapping_Blake_wind_energy_project.csv"))
+
+
+
 
