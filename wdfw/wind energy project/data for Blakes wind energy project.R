@@ -1,4 +1,4 @@
-## data for Blake's wind energy project
+## WA DCRB data for Blake's wind energy project
 
 #-----------------------------------------------------------------------------------
 
@@ -13,41 +13,23 @@ library(ggpubr)
 #-----------------------------------------------------------------------------------
 
 #read in WA logbook data -- note that Q99999 fish tickets have been removed
-#i.e. data includes logbooks landed in WA, regardless if fished in WA or OR waters
-#data not summarised to grid level yet - retains individual stringline IDs
+#i.e. data includes logbooks landed in WA, regardless of if pots were fished in WA or OR waters
+#data not summarised to grid level yet --> retains individual stringline IDs
 
 
-#original data was for Riekkola et al paper, covering 2013/14 to 2019/20 season
-#additional data processed for 2010/11 to 2012/13 seasons
-# read in both
-# path_WA_landed_2011_2013 <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_logs_2011_2013.rds"
-# WA_landed_logs_2011_2013 <- readRDS(path_WA_landed_2011_2013) %>%
-#   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
-#                 lat = sf::st_coordinates(.)[,2]) %>% 
-#   st_set_geometry(NULL)
-# 
-# path_WA_landed_2014_2020 <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_logs_2014_2020_20220119.rds"
-# WA_landed_logs_2014_2020 <- readRDS(path_WA_landed_2014_2020) %>%
-#   dplyr::mutate(lon = sf::st_coordinates(.)[,1],
-#                 lat = sf::st_coordinates(.)[,2]) %>% 
-#   st_set_geometry(NULL)
-# 
-# #join the dfs
-# WA_landed_logs_2011_2020 <- rbind(WA_landed_logs_2011_2013,WA_landed_logs_2014_2020)
-
-
-#alternatively, ran 2009/10 to 2019/20 seasons in one go
+# ran 2009/10 to 2019/20 seasons in one go through the logbook processing data pipeline described in  
+# Riekkola et al paper ("Retrospective analysis of cons measures to reduce  risk of large wh entl in a highly lucrative fishery")
 path_WA_landed_2010_2020 <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_logs_2010_2020_20220906.rds"
 WA_landed_logs_2010_2020 <- readRDS(path_WA_landed_2010_2020) %>%
-  #x and y are point locations
+  #x and y are point locations, northing and easting
+  #crs was CA_Curr_Lamb_Azi_Equal_Area
   dplyr::mutate(x = sf::st_coordinates(.)[,1],
                 y = sf::st_coordinates(.)[,2]) %>% 
-  st_set_geometry(NULL) %>% #crs was CA_Curr_Lamb_Azi_Equal_Area
+  st_set_geometry(NULL) %>% 
   #remove unnecessary columns
   select(-NGDC_GRID,-AREA,-is_port_or_bay)
 
 #--------------------------------------------
-
 
 # create columns for season, month etc
 WA_landed_logs_2010_2020 <- WA_landed_logs_2010_2020 %>% 
@@ -56,15 +38,12 @@ WA_landed_logs_2010_2020 <- WA_landed_logs_2010_2020 %>%
     month_name = month(SetDate, label=TRUE, abbr = FALSE)
   )
 
-
-
 #each row is a single simulated pot, we want to keep first and last pot per SetID (stringline)
-#to denote start and end location of stringlines
+#to denote start and end locations for each stringline
 WA_landed_logs_2010_2020_start_end_locs_only <- WA_landed_logs_2010_2020 %>% 
   group_by(SetID) %>% 
   slice(c(1, n())) %>%
   ungroup()
-# the above df will have the start and end locations for each stringline
 #but we also want a df that only has 1 row per stringline (makes some of the below steps easier)
 WA_landed_logs_2010_2020_one_loc_only <- WA_landed_logs_2010_2020_start_end_locs_only %>% 
   group_by(SetID) %>% 
@@ -96,6 +75,7 @@ nrow(joined_df %>% filter(is.na(FishTicket1)))
 
 #read in updated PacFin fishticket data
 fishtix_raw <- read_rds(here('wdfw', 'data','pacfin_compiled_2004thru2021.rds')) 
+
 # df is large so subset to years of interest, cut out all california records
 fishtix_2010_2020 <- fishtix_raw %>% 
   filter(AGENCY_CODE != 'C') %>% 
@@ -103,11 +83,11 @@ fishtix_2010_2020 <- fishtix_raw %>%
   #we can also choose some columns as there are so many in the pacfin data
   select(FISH_TICKET_ID, LANDING_DATE, VESSEL_NUM, FTID, AGENCY_CODE, PACFIN_SPECIES_CODE, 
          NOMINAL_TO_ACTUAL_PACFIN_SPECIES_CODE, AFI_EXVESSEL_REVENUE,LANDED_WEIGHT_LBS,REMOVAL_TYPE_NAME) %>% 
-  #we'll also restrict data here to be only DCRB records
-  filter(PACFIN_SPECIES_CODE == "DCRB")
-  # %>% filter(REMOVAL_TYPE_NAME=="COMMERCIAL (NON-EFP)")
-#you could also consider filtering for commercial catch only here, 
-#in which case 98.85% of data will find a match to pacfin fish tickets later on 
+  #we'll also restrict data here to be only DCRB records, even though skipping this will not make a difference
+  #the number of matches that end up being other species represent <0.1% of data
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>% 
+  #we will also filter out personal catch and research catch here, which has negligible impact to the results
+  filter(REMOVAL_TYPE_NAME=="COMMERCIAL (NON-EFP)")
 
 
 #-------------
@@ -155,16 +135,15 @@ fishtix_2010_2020 <- fishtix_raw %>%
 # use this for matching logs and fishtix
 
 #FTID in pacfin looks to match Fishticket1 (and Fishticket2/Fishticket3, if that column also exists)...
-#just join to Fishticket1 (98.03% of data matches), slighty better match if don't also match by landing date
+#just join to Fishticket1, slighty better match if don't also match by landing date
 join_by_FTID_and_Fishticket1 <- joined_df %>% 
   left_join(fishtix_2010_2020, 
             by = c("FishTicket1" = "FTID"))
 
 nrow(join_by_FTID_and_Fishticket1 %>%  filter(!is.na(FISH_TICKET_ID))) / nrow(join_by_FTID_and_Fishticket1) *100
-#2010-2020 data: 99.01% of logbook data found a FISHTICKET ID from pacfin data, if only match by FTID & FishTicket1
-#note that some of the ticketed data is labelled as 'personal use', 'research' or 'other' 
-#personal use and research won't have $ value associated with them
-#about 12% of Fish_TICKET_IDs have multiple REMOVAL_TYPE_NAME
+#2010-2020 data: 98.85 of logbook data found a FISHTICKET ID from pacfin data, if only match by FTID & FishTicket1 
+#and if earlier restricted to commercial catch only
+
 
 
 #here is a breakdown of the number of string per season that DID NOT find a match from Fishticket data
@@ -183,19 +162,18 @@ nrow(join_by_FTID_and_Fishticket1 %>%  filter(!is.na(FISH_TICKET_ID))) / nrow(jo
 # summary_no_tix_match <- summary_no_tix_match %>% 
 #   mutate(percent_strings_no_tix_match = n_strings_no_tix_match/n_strings*100)
 # 
-# season    n_strings_no_tix_match  n_strings percent_strings_no_tix_match
-# 2009-2010                    512     17411                       2.94  
-# 2010-2011                    205     19999                       1.03  
-# 2011-2012                    105     18220                       0.576 
-# 2012-2013                   1068     24918                       4.29  
-# 2013-2014                    170     26213                       0.649 
-# 2014-2015                    140     25123                       0.557 
-# 2015-2016                    149     24880                       0.599 
-# 2016-2017                     63     27715                       0.227 
-# 2017-2018                     78     26107                       0.299 
-# 2018-2019                     35     27025                       0.130 
-# 2019-2020                      6     18271                       0.0328
-
+#season    n_strings_no_tix_match n_strings percent_strings_no_tix_match
+# 2009-2010                    534     14795                       3.61  
+# 2010-2011                    206     17559                       1.17  
+# 2011-2012                    105     15850                       0.662 
+# 2012-2013                   1092     22745                       4.80  
+# 2013-2014                    170     22951                       0.741 
+# 2014-2015                    145     22280                       0.651 
+# 2015-2016                    160     21112                       0.758 
+# 2016-2017                     63     23937                       0.263 
+# 2017-2018                     79     23560                       0.335 
+# 2018-2019                     35     25195                       0.139 
+# 2019-2020                     10     16968                       0.0589
 
 
 
@@ -208,7 +186,7 @@ join_by_FTID_and_Fishticket1_noNA <- join_by_FTID_and_Fishticket1 %>%
 
 #sometimes the same PacFin FISH_TICKET_ID has multiple rows in the original data
 #this can be e.g. when catch is from 2 different catch areas, but only recorded as 1 fishticket
-#also part of a ticket may have been personal use
+#also possible part of a ticket may have been personal use (unless these have already been removed)
 
 #how many PacFin Fisticket IDs have multiple rows?
 tix_summary <- fishtix_2010_2020 %>% 
@@ -216,19 +194,19 @@ tix_summary <- fishtix_2010_2020 %>%
   summarise(n_rows_per_ticket=n())
 
 nrow(tix_summary %>% filter(n_rows_per_ticket > 1)) / nrow(tix_summary) *100
-#2010-2020 data: 6.11% // 3.19% if have already removed non-commercial catch
+#2010-2020 data: 3.19% have multiple rows per fishticket ID, if have already removed non-commercial catch
 
 
 #it would be hard to try to figure which string specifically matches which part (row) of the fishticket
-#so just sum up everything for a ticket. but work on non-joined to logbooks - we don't want to sum
-#revenue for stringlines that are all linked to the same ticket
+#so just sum up everything for a ticket. but work on df where tix not yet joined to logbooks - we don't want to sum
+#revenue across several stringlines that are all linked to the same ticket
 #in cases that were personal catch, or spoiled catch, the revenue is listed as 0
 duplicated_tickets_fixed <- fishtix_2010_2020 %>% 
   group_by(FISH_TICKET_ID) %>% 
   summarise(total_AFI_EXVESSEL_REVENUE_in_dollars = sum(AFI_EXVESSEL_REVENUE))
 
 
-#no join that to the df that has logs and strings joined to Fichticket ID
+#now join that to the df that has logs and strings joined to Fichticket ID
 joined_logs_and_tix <- join_by_FTID_and_Fishticket1_noNA %>%
   select(-AFI_EXVESSEL_REVENUE, -LANDED_WEIGHT_LBS) %>% 
   #just keep one record, as there will be a row for each ticket ID, catch area and commercial/personal case
@@ -244,7 +222,7 @@ revenue_per_string_per_ticket <- joined_logs_and_tix %>%
   mutate(total_pots_per_ticket = sum(PotsFished)) %>% 
   ungroup() %>% 
   mutate(prop_of_pots_in_string = PotsFished / total_pots_per_ticket,
-         prop_of_rev_for_string_in_dollars = total_AFI_EXVESSEL_REVENUE * prop_of_pots_in_string)
+         prop_of_rev_for_string_in_dollars = total_AFI_EXVESSEL_REVENUE_in_dollars * prop_of_pots_in_string)
 
 
 
@@ -254,7 +232,7 @@ revenue_per_string_per_ticket <- joined_logs_and_tix %>%
 #one denoting start, the other end
 
 reduced_columns <- revenue_per_string_per_ticket %>% 
-  select(SetID, FishTicket1:prop_of_rev_for_string)
+  select(SetID, FishTicket1:prop_of_rev_for_string_in_dollars)
   
 #use the df we had earlier, where we want kept first and last pot per SetID (stringline)
 #to denote start and end location of stringlines
@@ -265,12 +243,39 @@ revenue_per_string_for_mapping <-  WA_landed_logs_2010_2020_start_end_locs_only 
   #creates cases of no FISH_TICKET_ID --> remove them
   filter(!is.na(FISH_TICKET_ID)) %>% 
   #remove couple columns to tidy the df
-  select(-Vessel.y,-License.y)
+  select(-Vessel.y,-License.y, -line_length_m, -depth, -GRID5KM_ID, -grd_x, -grd_y)
 
-##about 6.6% of data are personal use, research or 'other'
-#might want to filter out personal catch cases here
-#If filtered personal catch out earlier, there are 2 fish tickets that are commercial catch
-#but still had $0 recorded. One was recorded as 'discard', other as 'unspecified'
+# at this point 0.03% of data have a $0 AFI value - some of these are 'PERSONAL USE' catches,
+# and the 2 'COMMERCIAL' catch fishtickets that are recorded as $0 are also labelled as 'discard', other as 'unspecified'
+# cases where the catch type is "PERSONAL USE" or "RESEARCH" but have a $ value is because there was also
+# "COMMERCIAL" catch recorded on that fishticket, but the first row was either personal/research
+# therefore remove $0 data, and the column denoting catch type to avoid confusions later on 
+revenue_per_string_for_mapping <- revenue_per_string_for_mapping %>% 
+  filter(total_AFI_EXVESSEL_REVENUE_in_dollars > 0) %>% 
+  select(-REMOVAL_TYPE_NAME)
+  
+
+#order the df so that each line is 1 stringline, and start and end x and y coord make up 4 columns
+first_row_per_SetID <- revenue_per_string_for_mapping %>% 
+  group_by(SetID) %>%
+  slice(seq(1, n(), by = 2)) %>% 
+  rename(x_start = x,
+         y_start = y)
+
+second_row_per_SetID <- revenue_per_string_for_mapping %>% 
+  group_by(SetID) %>%
+  slice(seq(2, n(), by = 2))
+
+second_row_per_SetID_xy_only <- second_row_per_SetID %>% 
+  select(SetID,x,y) %>% 
+  rename(x_end = x,
+         y_end = y)
+
+dat_out <- first_row_per_SetID %>% 
+  left_join(second_row_per_SetID_xy_only, by = 'SetID') %>% 
+  #order columns
+  select(Vessel:y_start,x_end, y_end, season:prop_of_rev_for_string_in_dollars)
+
 
 
 #some other strange cases:
@@ -280,8 +285,8 @@ revenue_per_string_for_mapping <-  WA_landed_logs_2010_2020_start_end_locs_only 
 
 
 
-#save csv -- saved the version where personal catch was removed earlier in the code
-#write_csv(revenue_per_string_for_mapping,here::here('wdfw', 'data', "revenue_per_WA_DCRB_string_for_mapping_Blake_wind_energy_project.csv"))
+#save csv 
+#write_csv(dat_out,here::here('wdfw', 'wind energy project', 'data', "revenue_per_WA_DCRB_string_for_mapping_Blake_wind_energy_project.csv"))
 
 
 

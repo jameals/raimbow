@@ -46,8 +46,9 @@ maps_tmp*
 *.pptx
 *.pdf
 
-# large spatial files
+# large spatial files, or data files not to be shared publicly 
 wdfw/data/
 .DS_Store
 wdfw/maps/
 wdfw/WDFW-NWFSC logbook analysis handover/
+wdfw/wind energy project/data
