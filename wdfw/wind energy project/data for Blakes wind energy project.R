@@ -245,10 +245,8 @@ revenue_per_string_for_mapping <-  WA_landed_logs_2010_2020_start_end_locs_only 
   #remove couple columns to tidy the df
   select(-Vessel.y,-License.y, -line_length_m, -depth, -GRID5KM_ID, -grd_x, -grd_y)
 
-# at this point 0.03% of data have a $0 AFI value - some of these are 'PERSONAL USE' catches,
+# at this point 0.03% of data have a $0 AFI value - if 'PERSONAL USE' catches have not been filtered out earlier,
 # and the 2 'COMMERCIAL' catch fishtickets that are recorded as $0 are also labelled as 'discard', other as 'unspecified'
-# cases where the catch type is "PERSONAL USE" or "RESEARCH" but have a $ value is because there was also
-# "COMMERCIAL" catch recorded on that fishticket, but the first row was either personal/research
 # therefore remove $0 data, and the column denoting catch type to avoid confusions later on 
 revenue_per_string_for_mapping <- revenue_per_string_for_mapping %>% 
   filter(total_AFI_EXVESSEL_REVENUE_in_dollars > 0) %>% 
@@ -275,13 +273,6 @@ dat_out <- first_row_per_SetID %>%
   left_join(second_row_per_SetID_xy_only, by = 'SetID') %>% 
   #order columns
   select(Vessel:y_start,x_end, y_end, season:prop_of_rev_for_string_in_dollars)
-
-
-
-#some other strange cases:
-#View(fishtix_raw %>% filter(FISH_TICKET_ID==533568475)) 
-#--> lots of logbook strings linked to ticket, but ticket says only 20lbs landed
-#looking at 'raw' logbook, each string had anywhere between 3 and 32 crabs on it
 
 
 
