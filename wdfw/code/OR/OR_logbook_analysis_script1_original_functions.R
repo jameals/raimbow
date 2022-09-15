@@ -117,6 +117,7 @@ df <- df %>%
   filter(SpatialFlag == FALSE)
 #nrow(df) #at this point 292468 --> spatial filter removed 2.58% of rows
 #length(unique(df$SetID)) #at this point 147525 --> spatial filter removed 2.61% of stringlines
+#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 151480
 
 df %<>% 
   # make sure each set has a beginning and end
@@ -135,6 +136,7 @@ df %<>%
 #length(unique(df$SetID)) #at this point 141940 (if did spatial filter earlier) 
 #--> filtering out PotsFished = NA, and cases where start or end loc missing removed 3.79% of of stringlines
 
+#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 145686 --> 3.82% loss so far, similar to if had filtered SpatialFlag
 
 #---------
 #additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
@@ -163,17 +165,20 @@ df_v4 <- df_v3 %>%
 #mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
 
 #what percentage was excluded?
-# 0.084% [wrong, had distance set to 80km] of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
-#1.57% if already did spatial filter earlier
 #nrow(df_v3 %>% filter(line_length_m > 25000))/nrow(df_v3)*100 
+# 1.94% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
+#1.57% if already did spatial filter earlier
 
+# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
 # 0.018% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines 
 # that were 0m and had more than 50 pots reported on them
 # 0.01% if already did spatial filter earlier
-# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
+
 
 #length(unique(df_v4$SetID)) #at this point 139702 (if did spatial filter earlier) 
 # stringline length filtering removed 1.58% of stringlines even if already filtered for SpatialFlag
+
+#if didn't yet filter for SpatialFlag, then length(unique(df_v4$SetID)) is 142827 --> 1.96% loss from previous 
 #---------
 
 #traps <- df %>% 
@@ -206,6 +211,8 @@ traps_sf %<>%
 #length(unique(traps_sf$SetID)) #at this point, when point created, 139702 (if did spatial filter earlier) 
 #same as before creating pots as points
 
+#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142827, same as before creating pots as points
+
 
 # DEPTH FILTER
 # current code:
@@ -215,6 +222,9 @@ traps_sf %<>%
   filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
 #length(unique(traps_sf$SetID)) #at this point 139656 (if did spatial filter earlier) 
 # depth filtering removed 0.03% of stringlines even if already filtered for SpatialFlag
+
+#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142419, 0.29% loss during depth filter
+
 
 # ALTERNATIVE DEPTH FILTER OPTION
 # find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
@@ -242,6 +252,10 @@ traps_g <- traps_sf %>%
 #final number of unique stringlines
 #length(unique(traps_g$SetID)) # 139656  --> total 7.81% of data/stringlines lost across 10 seasons
 
+# final number of unique stringlines if didn't yet filter for SpatialFlag, length(unique(traps_g$SetID)) is 142419, total 5.98% loss during code so far
+
+
+
 #running everything on OR 2013-2018 logs subset took about 8min
 #running everything on OR 2007-2010 + 2013-2018 logs subset took about 35min
 #running everything on OR 2007-2018 logs  took about 40min
@@ -249,7 +263,12 @@ traps_g <- traps_sf %>%
 
 traps_g_SpatialFlag_filtered <- traps_g %>% 
   filter(SpatialFlag == FALSE)
+#now length(unique(traps_g_SpatialFlag_filtered$SetID)) is 139656, 1.94% loss from previous point
+#if filter for SpatialFlag now, total loss of 7.81% from the start of code
+#same as if filtered for SpatailFlag right at the start
+
 #write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds"))
+
 
 #if filtered for SpatialFlag right at the start
 #write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered_20220915.rds"))
