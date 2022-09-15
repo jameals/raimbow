@@ -42,18 +42,9 @@ logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackco
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 
 
-##FORMAT SETDATE COLUMN
-# logs  <-  logs_raw %>% 
-#   mutate(SetDate=as.Date(SetDate,"%d/%m/%Y"))
-
-
-## IS THERE AN OR EQUIVALENT FOR THIS:
-# QC: FishTicket1 of format Q999999 are landings into OR and have been entered into WA database because the vessel sent logbook copies. 
-# These tickets should not be used in the data set because they would be part of the OR Dungeness crab fishery.
-#logs %<>% filter(is.na(FishTicket1) | FishTicket1 != "Q999999") #use this to retain NAs until the next step
-
-# QC: for each variable/column in the logs, count how many NA values there are
-# numNA <- logs %>% summarise(across(everything(),~sum(is.na(.x))))
+#In WA logs, we had the case of FishTicket1 of format Q999999, which are landings into OR 
+#and have been entered into WA database because the vessel sent logbook copies. These are removed in WA data
+# OR does not have similar instance of copies of logs that were landed in WA
 
 
 #### READ IN BATHYMETRY DATA ####
@@ -95,16 +86,181 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
   st_transform(st_crs(grd))
 
 
-## ARE THERE OR EQUIVALENTS FOR THESE:
-#borders for 'static' WA management areas (MA), shapefile available on Kiteworks folder
-#MA_shp <- read_sf(here::here('wdfw','data','WA_static_MA_borders.shp')) %>% 
-#  st_transform(st_crs(grd)) #set same projection as the grid
-#Note that Quinault SMA borders can move within seasons 
-#borders for a 'default' borders, from:https://wdfw.wa.gov/fishing/commercial/crab/coastal/maps#quinault, + extra line for Joe Creek 
-#shapefile available on Kiteworks folder
-#QSMA_shp <- read_sf(here::here('wdfw','data','Quinault_SMA_border_default_LINE.shp')) %>% 
-#  st_transform(st_crs(grd)) #set same projection as the grid
+#in WA code, also read in shapefiles for 'static' WA management areas and Quinault SMA
+
 #---------------------------------- 
+#---------------------------------------------------------------
+
+#Running above functions on 'full' logbook data sets 
+#(i.e. not actually specifying the functions, or crab-year/month/period choices)
+
+#Note that currently OR data only up to 2017-2018 season
+#Note that we run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column)
+
+#if needed, filter for selected seasons
+#logs2013_2018 <- logs %>% 
+#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
+#df <- logs2013_2018
+
+df <- logs #no filtering, has early seasons when 100% logs where entered
+#nrow(df) #at this point 300201
+#length(unique(df$SetID)) #at this point 151480. Stringlines/SetIDs should havev 2 rows, unless data was missing start or end loc
+
+# For now retain SpatialFlag column - can filter for that later 
+# Note that OR logs had permit data joined in pre-processing stage
+df %<>%
+  dplyr::select(season,Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type, PermitNumber, Potlimit, SpatialFlag) %>%  
+  distinct() 
+
+## as a bit of a test, how much do things change if filter out the spatial flags here
+df <- df %>% 
+  filter(SpatialFlag == FALSE)
+#nrow(df) #at this point 292468 --> spatial filter removed 2.58% of rows
+#length(unique(df$SetID)) #at this point 147525 --> spatial filter removed 2.61% of stringlines
+
+df %<>% 
+  # make sure each set has a beginning and end
+  group_by(SetID) %>% 
+  mutate(n=n()) %>% 
+  filter(n==2,!is.na(PotsFished)) %>%
+  # convert to sf points
+  st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
+  st_transform(32610) %>% 
+  # create linestrings
+  group_by(Vessel,SetID,PotsFished,SetDate, PermitNumber, Potlimit, SpatialFlag) %>% #OR permit and potlimit done in pre-processing
+  summarise(do_union = FALSE) %>% 
+  st_cast("LINESTRING")
+
+#nrow(df) #at this point 141940 (if did spatial filter earlier) - but note that now only ONE line per string
+#length(unique(df$SetID)) #at this point 141940 (if did spatial filter earlier) 
+#--> filtering out PotsFished = NA, and cases where start or end loc missing removed 3.79% of of stringlines
+
+
+#---------
+#additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
+#were the same), or that were very long
+
+# exclude stringlines that are 0m long and have more than 50 pots reported on them
+#See email from Kelly Corbett ODFW about this: "We have included an additional filter for 
+#realistic max pot spacing (distance between pots) to exclude most of the outliers (99th percentile cutoff)
+#and contained normal distribution. We will likely do the same outlier removal process now for string 
+#length and looking at the data by season will likely end up excluding strings over around 15000 m 
+#in length (but again haven’t completed the final outlier cutoff analysis to-date)."
+#--> looking at string line length dist in OR logs, 15km seems bit too conservative. 
+#--> 99th percentile of all data was 25km, or 16.1km for 200 pot tier, 24.5 for 300 pot tier and 26km for 500 pot tier
+#--> for now use 25
+
+df$length = st_length(df)
+line_length_m <-  as.vector(df$length)
+df_v2 <-  cbind(df,line_length_m) 
+df_v3 <- df_v2 %>%  select(-length)
+
+df_v4 <- df_v3 %>% 
+  filter(line_length_m < 25000) %>% 
+  filter(!(line_length_m == 0 & PotsFished > 50)) 
+#creating a new version of df where too short/long not filtered out but just flagged
+#mutate(too_long = ifelse(line_length_m > 25000, 'too_long','ok')) %>% 
+#mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
+
+#what percentage was excluded?
+# 0.084% [wrong, had distance set to 80km] of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
+#1.57% if already did spatial filter earlier
+#nrow(df_v3 %>% filter(line_length_m > 25000))/nrow(df_v3)*100 
+
+# 0.018% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines 
+# that were 0m and had more than 50 pots reported on them
+# 0.01% if already did spatial filter earlier
+# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
+
+#length(unique(df_v4$SetID)) #at this point 139702 (if did spatial filter earlier) 
+# stringline length filtering removed 1.58% of stringlines even if already filtered for SpatialFlag
+#---------
+
+#traps <- df %>% 
+traps <- df_v4 %>%
+  ungroup() %>% 
+  # now use those linestrings to place pots using sf::st_line_sample
+  mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
+                              .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
+  # pull out the x/y coordinates of the traps
+  mutate(trapcoords=purrr::map(traplocs,
+                               function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
+  select(Vessel, SetID,PotsFished,SetDate, PermitNumber, Potlimit,line_length_m, SpatialFlag, trapcoords) %>% #Note that OR logs don't have License column
+  # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
+  st_set_geometry(NULL) %>% 
+  unnest(cols=c(trapcoords))
+
+# find depth of traps
+traps_sf <- traps %>%
+  st_as_sf(coords=c('x','y'),crs=32610) %>% 
+  st_transform(4326) %>%
+  select(-id)
+
+# do the raster extract with the bathymetry grid
+bathy.points <- raster::extract(bathy,traps_sf)
+
+# add depth as a column variable
+# divide by 10 to go from decimeters to meters
+traps_sf %<>%
+  mutate(depth=bathy.points/10)
+#length(unique(traps_sf$SetID)) #at this point, when point created, 139702 (if did spatial filter earlier) 
+#same as before creating pots as points
+
+
+# DEPTH FILTER
+# current code:
+# only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
+traps_sf %<>% 
+  filter(depth <= 0) %>% #keep points in water
+  filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
+#length(unique(traps_sf$SetID)) #at this point 139656 (if did spatial filter earlier) 
+# depth filtering removed 0.03% of stringlines even if already filtered for SpatialFlag
+
+# ALTERNATIVE DEPTH FILTER OPTION
+# find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
+#traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
+#unique_SetIDs_on_land <- unique(traps_on_land$SetID)
+# Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
+#traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
+
+#write_rds(traps_sf,here::here('wdfw', 'data','OR', "OR_traps_sf_license_all_logs_2013_2018.rds"))
+
+
+gkey <- grd_area_key
+
+traps_sf %<>%
+  # convert to planar projection to match the grid
+  st_transform(st_crs(gkey))
+
+# Spatially join traps to 5k grid, with grid/area matching key
+traps_g <- traps_sf %>%
+  st_join(gkey) %>% 
+  left_join(grd_xy,by="GRID5KM_ID")
+
+#the number of unique stringlines at the start
+#length(unique(logs$SetID)) #before spatial filter or other filters: 151480
+#final number of unique stringlines
+#length(unique(traps_g$SetID)) # 139656  --> total 7.81% of data/stringlines lost across 10 seasons
+
+#running everything on OR 2013-2018 logs subset took about 8min
+#running everything on OR 2007-2010 + 2013-2018 logs subset took about 35min
+#running everything on OR 2007-2018 logs  took about 40min
+#write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018.rds"))
+
+traps_g_SpatialFlag_filtered <- traps_g %>% 
+  filter(SpatialFlag == FALSE)
+#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds"))
+
+#if filtered for SpatialFlag right at the start
+#write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered_20220915.rds"))
+
+
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#running the functions on 2-weekly loops
+#this was the original approach, but it is infact better to run the code on the 'full' dataset
+
 
 #####################
 #Here is where user can decide whether they want 'confidential' maps or not
@@ -126,7 +282,7 @@ make_confidential_maps <- FALSE
 # bathy is a raster representation of bathymetry
 
 
-
+#note that in OR data we should retain License column as license info linked in earlier step
 place_traps <- function(df,bathy,crab_year_choice,month_choice,period_choice){
   
   # labels for season, month, and period of choice
@@ -369,133 +525,3 @@ proc.time()-tm
 
 
 #---------------------------------------------------------------
-#Running above functions on 'full' logbook data sets 
-#(i.e. not actually specifying the functions, or crab-year/month/period choices)
-
-#Note that currently OR data only up to 2017-2018 season
-#run adjusted version of place_traps() to retain 'License' (original place_traps() did not retain this column), but only on 2013-2018 data due to memory limits
-#logs2013_2018 <- logs %>% 
-#  filter(season %in% c('2013-2014','2014-2015','2015-2016','2016-2017','2017-2018')) 
-
-#df <- logs2013_2018
-df <- logs #no filtering, has early seasons when 100% logs where entered
-
-# For now retain SpatialFlag column - can filter for that later 
-# Note that OR logs had permit data joined in pre-processing stage
-df %<>%
-  dplyr::select(season,Vessel,SetID,lat,lon,PotsFished,SetDate,coord_type, PermitNumber, Potlimit, SpatialFlag) %>%  
-  distinct() 
-
-df %<>% 
-  # make sure each set has a beginning and end
-  group_by(SetID) %>% 
-  mutate(n=n()) %>% 
-  filter(n==2,!is.na(PotsFished)) %>%
-  # convert to sf points
-  st_as_sf(coords=c('lon','lat'),crs=4326) %>% 
-  st_transform(32610) %>% 
-  # create linestrings
-  group_by(Vessel,SetID,PotsFished,SetDate, PermitNumber, Potlimit, SpatialFlag) %>% #OR permit and potlimit done in pre-processing
-  summarise(do_union = FALSE) %>% 
-  st_cast("LINESTRING")
-
-#---------
-#additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
-#were the same), or that were very long
-
-# exclude stringlines that are 0m long and have more than 50 pots reported on them
-#See email from Kelly Corbett ODFW about this: "We have included an additional filter for 
-#realistic max pot spacing (distance between pots) to exclude most of the outliers (99th percentile cutoff)
-#and contained normal distribution. We will likely do the same outlier removal process now for string 
-#length and looking at the data by season will likely end up excluding strings over around 15000 m 
-#in length (but again haven’t completed the final outlier cutoff analysis to-date)."
-#--> looking at string line length dist in OR logs, 15km seems bit too conservative. 
-#--> 99th percentile of all data was 25km, or 16.1km for 200 pot tier, 24.5 for 300 pot tier and 26km for 500 pot tier
-#--> for now use 25
-
-df$length = st_length(df)
-line_length_m <-  as.vector(df$length)
-df_v2 <-  cbind(df,line_length_m) 
-df_v3 <- df_v2 %>%  select(-length)
-
-df_v4 <- df_v3 %>% 
-  filter(line_length_m < 25000) %>% 
-  filter(!(line_length_m == 0 & PotsFished > 50)) 
-#creating a new version of df where too short/long not filtered out but just flagged
-#mutate(too_long = ifelse(line_length_m > 25000, 'too_long','ok')) %>% 
-#mutate(too_short = ifelse(line_length_m == 0 & PotsFished > 50, 'too_short','ok'))
-
-#what percentage was excluded?
-# 0.084% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
-#nrow(df_v3 %>% filter(line_length_m > 80000))/nrow(df_v3)*100 
-# 0.018% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines 
-# that were 0m and had more than 50 pots reported on them
-# nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
-#---------
-
-#traps <- df %>% 
-traps <- df_v4 %>%
-  ungroup() %>% 
-  # now use those linestrings to place pots using sf::st_line_sample
-  mutate(traplocs=purrr::pmap(list(PotsFished,geometry),
-                              .f=function(pots,line) st_line_sample(line,n=pots))) %>% 
-  # pull out the x/y coordinates of the traps
-  mutate(trapcoords=purrr::map(traplocs,
-                               function(x)st_coordinates(x) %>% set_colnames(c('x','y','id')) %>% as_tibble())) %>% 
-  select(Vessel, SetID,PotsFished,SetDate, PermitNumber, Potlimit,line_length_m, SpatialFlag, trapcoords) %>% #Note that OR logs don't have License column
-  # reorganize and unlist (i.e., make a dataframe where each row is an individual trap location)
-  st_set_geometry(NULL) %>% 
-  unnest(cols=c(trapcoords))
-
-# find depth of traps
-traps_sf <- traps %>%
-  st_as_sf(coords=c('x','y'),crs=32610) %>% 
-  st_transform(4326) %>%
-  select(-id)
-
-# do the raster extract with the bathymetry grid
-bathy.points <- raster::extract(bathy,traps_sf)
-
-# add depth as a column variable
-# divide by 10 to go from decimeters to meters
-traps_sf %<>%
-  mutate(depth=bathy.points/10)
-
-# DEPTH FILTER
-# current code:
-# only remove those simulated pots that are on land or deeper than 200m, but also need to still retain the embayment data (highly negative values)
-traps_sf %<>% 
-  filter(depth <= 0) %>% #keep points in water
-  filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
-# ALTERNATIVE DEPTH FILTER OPTION
-# find points on land and deeper than 200m (while retaining very low values for ports/embayments) and collect their SetIDs to a list
-#traps_on_land <- traps_sf %>% filter(depth < -200 & depth > -5000 | depth > 0)
-#unique_SetIDs_on_land <- unique(traps_on_land$SetID)
-# Remove ALL points whose Set_ID appears on that list - assumption here is that if some points are on land/too deep the data is not trustworthy
-#traps_sf %<>% dplyr::filter(!SetID %in% unique_SetIDs_on_land)
-
-#write_rds(traps_sf,here::here('wdfw', 'data','OR', "OR_traps_sf_license_all_logs_2013_2018.rds"))
-
-
-gkey <- grd_area_key
-
-traps_sf %<>%
-  # convert to planar projection to match the grid
-  st_transform(st_crs(gkey))
-
-# Spatially join traps to 5k grid, with grid/area matching key
-traps_g <- traps_sf %>%
-  st_join(gkey) %>% 
-  left_join(grd_xy,by="GRID5KM_ID")
-
-#running everything on OR 2013-2018 logs subset took about 8min
-#running everything on OR 2007-2010 + 2013-2018 logs subset took about 35min
-#running everything on OR 2007-2018 logs  took about 40min
-#write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2013_2018.rds"))
-#write_rds(traps_g,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018.rds"))
-
-traps_g_SpatialFlag_filtered <- traps_g %>% 
-  filter(SpatialFlag == FALSE)
-#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds"))
-
-#--------------------------------------------------------------------------------
