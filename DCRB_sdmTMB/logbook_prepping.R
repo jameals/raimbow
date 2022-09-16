@@ -137,9 +137,24 @@ traps_g_OR_landed_OR_logs <- traps_g_OR_landed_OR_logs %>%
 #export as shapefile
 #the logs are too big to export as one shapefile. 
 #split and export one season at a time
-traps_g_WA_landed_WA_logs_2019_2020 <- traps_g_WA_landed_WA_logs %>% 
-  filter(season == '2019-2020') 
-st_write(traps_g_WA_landed_WA_logs_2019_2020, "traps_g_WA_logs_2019_2020_20220915.shp") 
+traps_g_OR_landed_OR_logs_2017_2018 <- traps_g_OR_landed_OR_logs %>% 
+  filter(season == '2017-2018') 
+st_write(traps_g_OR_landed_OR_logs_2017_2018, "traps_g_OR_logs_2017_2018_20220915.shp") 
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+### work in QGIS to clip data correctly to WA and OR waters
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+#read in clipped data, see if can match license info across states and logs
+#back up option might be to try to link via fishtickets -- first link to pacfin tix,
+#from that get vessel info, and then join to license info?? might not work for WA as need license number....?
+
+
+
+
 
 
 
