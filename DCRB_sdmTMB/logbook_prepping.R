@@ -177,7 +177,7 @@ grd <- read_sf(here::here('wdfw','data', 'fivekm_grid_polys_shore_lamb.shp'))
 names(grd)
 
 
-# read in version of traps_g, point data, that is clipped to WA waters - WA logs landed in WA
+# read in version of traps_g, point data, that is clipped to OR waters - WA logs landed in OR waters
 # reading this shapefile in takes a long time
 # traps_g_WA_logs_in_OR_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to OR waters.shp')) %>% 
 #   st_transform(st_crs(grd)) #make it have same projection as the grid
@@ -200,9 +200,112 @@ traps_g_OR_logs_in_WA_waters_2008_2018raw <- read_rds(here::here('DCRB_sdmTMB', 
 
 #OR license data file has column for 'docnum' which could match with something in WA logs
 # (also 'number' which should match OR license number) 
-#if we bring back federal ID to WA logs, tha shoudl match docnum in OR license data --> not every time
+#if we bring back federal ID to WA logs, that should match docnum in OR license data --> not every time
 traps_g_WA_logs_in_OR_waters_2010_2020 <- traps_g_WA_logs_in_OR_waters_2010_2020raw %>% 
   st_set_geometry(NULL)
+
+#if we bring back federal ID to WA logs, that should match docnum in OR license data --> not every time
+raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#SetID is the same between the two files
+raw_WA_logs_selected_columns <- raw_WA_logs %>% 
+  select(SetID, FederalID) %>% 
+  distinct()
+
+raw_WA_logs_selected_columns <-as.data.frame(apply(raw_WA_logs_selected_columns,2, str_remove_all, " ")) 
+
+traps_g_WA_logs_in_OR_waters_2010_2020_FederalID <- traps_g_WA_logs_in_OR_waters_2010_2020 %>% 
+  left_join(raw_WA_logs_selected_columns, by="SetID")
+#all SetIDs have a Federal ID
+
+#unique vessels in WA logs that had pots in OR waters
+unique_vessels <- as.list(unique(traps_g_WA_logs_in_OR_waters_2010_2020_FederalID$FederalID))
+
+
+
+
+# Read in and join license & pot limit info
+OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
+
+OR_pot_limit_info <- OR_pot_limit_info_raw %>% 
+  rename(Vessel = Docnum,
+         PermitNumber = Number)
+
+OR_pot_limit_info %<>%
+  mutate(Begindate=as.Date(Begindate,"%m/%d/%Y"),
+         Enddate=as.Date(Enddate,"%m/%d/%Y"))
+
+
+OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
+# OR permits - a permit can change from vessel to vessel sometimes 
+# but does the pot limit for a given permit number stay the same?
+test <- OR_pot_limit_info %>%                              
+  group_by(PermitNumber) %>%
+  summarise(count = n_distinct(Potlimit))
+# Yes, except for 2 instances: Permit Numbers 96125 and 96262 have 2 unique pot limit values
+cases <- OR_pot_limit_info %>% 
+  filter(PermitNumber == 96125 | PermitNumber == 96262)
+# 96125: for 12 years pot limit is 300, but in 2014 it is 500 - assume mistake for now
+# 96262: for 12 years pot limit is 300, but in 2008 it is 200 - assume mistake for now, also possibly outside years of interest anyway
+OR_pot_limit_info %<>%
+  mutate(Potlimit = ifelse(PermitNumber == 96125 | PermitNumber == 96262, 300, Potlimit))
+
+
+OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
+  select(PermitNumber, Vessel, Begindate, Enddate, Potlimit) %>% 
+  filter(Vessel %in% unique_vessels) 
+
+
+library(fuzzyjoin)
+
+#2009-2010 season - 7 mins to run with permit data filtered to unique_vessels
+ODFW_Dcrab_logbooks_20092010 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2009-2010')
+tm <- proc.time()
+ODFW_Dcrab_logbooks_20092010_joined <- fuzzy_left_join(
+  ODFW_Dcrab_logbooks_20092010, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+#not all find a match, likely to do with early years of WA data
+length(unique(ODFW_Dcrab_logbooks_20092010_joined$Vessel.x)) #28 unique vessels in 2009/10 that fished in OR but landed in WA
+
+no_license_info <- ODFW_Dcrab_logbooks_20092010_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #19 = 68% didn't find OR PotLimit info
+
+
+
+
+#2013-2014 season -  12mins to run with permit data filtered to unique_vessels
+ODFW_Dcrab_logbooks_20132014 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2013-2014')
+tm <- proc.time()
+ODFW_Dcrab_logbooks_20132014_joined <- fuzzy_left_join(
+  ODFW_Dcrab_logbooks_20132014, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(ODFW_Dcrab_logbooks_20132014_joined$Vessel.x)) #23 unique vessels in 2013/14 that fished in OR but landed in WA
+
+no_license_info <- ODFW_Dcrab_logbooks_20132014_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #4 = 17% didn't find OR PotLimit info
+
+
+
+
+
+
 
 
 
@@ -251,4 +354,14 @@ summary_by_season <- summary_by_season %>%
   left_join(unique_vessels, by="season") %>% 
   mutate(prop_no_match = n_row/n_row_all)
 
-
+#season    n_row n_row_all prop_no_match
+# 2007-2008     1         3         0.333 33%
+# 2008-2009     3         5         0.6   60%
+# 2009-2010     2        11         0.182 18%
+# 2010-2011     6        11         0.545 55%
+# 2011-2012     1         5         0.2   20%
+# 2013-2014     2         8         0.25  25%
+# 2014-2015     1         7         0.143 14%
+# 2015-2016     1        10         0.1   10%
+# 2016-2017     3        12         0.25  25%
+# 2017-2018     3        11         0.273 27%
