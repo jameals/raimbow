@@ -258,11 +258,11 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 library(fuzzyjoin)
 
 #2009-2010 season - 7 mins to run with permit data filtered to unique_vessels
-ODFW_Dcrab_logbooks_20092010 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+subset_traps_g_WA_logs_in_OR_waters_20092010 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2009-2010')
 tm <- proc.time()
-ODFW_Dcrab_logbooks_20092010_joined <- fuzzy_left_join(
-  ODFW_Dcrab_logbooks_20092010, OR_pot_limit_info_v2,
+subset_traps_g_WA_logs_in_OR_waters_20092010_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20092010, OR_pot_limit_info_v2,
   by = c(
     "FederalID" = "Vessel",
     "SetDate" = "Begindate",
@@ -273,20 +273,21 @@ ODFW_Dcrab_logbooks_20092010_joined <- fuzzy_left_join(
 proc.time()-tm
 
 #not all find a match, likely to do with early years of WA data
-length(unique(ODFW_Dcrab_logbooks_20092010_joined$Vessel.x)) #28 unique vessels in 2009/10 that fished in OR but landed in WA
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20092010_joined$Vessel.x)) #28 unique vessels in 2009/10 that fished in OR but landed in WA
 
-no_license_info <- ODFW_Dcrab_logbooks_20092010_joined %>% filter(is.na(Potlimit))
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20092010_joined %>% filter(is.na(Potlimit))
 length(unique(no_license_info$Vessel.x)) #19 = 68% didn't find OR PotLimit info
 
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20092010_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20092010_joined_license.csv"))
 
 
 
-#2013-2014 season -  12mins to run with permit data filtered to unique_vessels
-ODFW_Dcrab_logbooks_20132014 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
-  filter(season=='2013-2014')
+#2010-2011 season - 8 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20102011 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2010-2011')
 tm <- proc.time()
-ODFW_Dcrab_logbooks_20132014_joined <- fuzzy_left_join(
-  ODFW_Dcrab_logbooks_20132014, OR_pot_limit_info_v2,
+subset_traps_g_WA_logs_in_OR_waters_20102011_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20102011, OR_pot_limit_info_v2,
   by = c(
     "FederalID" = "Vessel",
     "SetDate" = "Begindate",
@@ -296,11 +297,236 @@ ODFW_Dcrab_logbooks_20132014_joined <- fuzzy_left_join(
 )
 proc.time()-tm
 
-length(unique(ODFW_Dcrab_logbooks_20132014_joined$Vessel.x)) #23 unique vessels in 2013/14 that fished in OR but landed in WA
+#not all find a match, likely to do with early years of WA data
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20102011_joined$Vessel.x)) #24 unique vessels in 2010/11 that fished in OR but landed in WA
 
-no_license_info <- ODFW_Dcrab_logbooks_20132014_joined %>% filter(is.na(Potlimit))
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20102011_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #13 = 54% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20102011_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20102011_joined_license.csv"))
+
+
+
+#2011-2012 season - 7 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20112012 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2011-2012')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20112012_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20112012, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+#not all find a match, likely to do with early years of WA data
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20112012_joined$Vessel.x)) #27 unique vessels in 2011/12 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20112012_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #22 = 81% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20112012_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20112012_joined_license.csv"))
+
+
+
+#2012-2013 season - 9 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20122013 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2012-2013')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20122013_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20122013, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+#not all find a match, likely to do with early years of WA data
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20122013_joined$Vessel.x)) #21 unique vessels in 2012/13 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20122013_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #4 = 19% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20122013_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20122013_joined_license.csv"))
+
+
+
+#2013-2014 season -  15 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20132014 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2013-2014')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20132014_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20132014, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20132014_joined$Vessel.x)) #23 unique vessels in 2013/14 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20132014_joined %>% filter(is.na(Potlimit))
 length(unique(no_license_info$Vessel.x)) #4 = 17% didn't find OR PotLimit info
 
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20132014_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20132014_joined_license.csv"))
+
+
+
+#2014-2015 season - 11 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20142015 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2014-2015')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20142015_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20142015, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20142015_joined$Vessel.x)) #23 unique vessels in 2014/15 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20142015_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #0 = 0% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20142015_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20142015_joined_license.csv"))
+
+
+
+#2015-2016 season - 17 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20152016 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2015-2016')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20152016_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20152016, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20152016_joined$Vessel.x)) #29 unique vessels in 2015/16 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20152016_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #1 = 3% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20152016_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20152016_joined_license.csv"))
+
+
+
+#2016-2017 season - 20 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20162017 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2016-2017')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20162017_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20162017, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20162017_joined$Vessel.x)) #37 unique vessels in 2016/17 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20162017_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #3 = 8% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20162017_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20162017_joined_license.csv"))
+
+
+
+#2017-2018 season - 18 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20172018 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2017-2018')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20172018_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20172018, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20172018_joined$Vessel.x)) #33 unique vessels in 2017/18 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20172018_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20172018_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20172018_joined_license.csv"))
+
+
+#2018-2019 season - 21 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20182019 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2018-2019')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20182019_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20182019, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
+
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20182019_joined$Vessel.x)) #29 unique vessels in 2018/19 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20182019_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #2 = 7% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20182019_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20182019_joined_license.csv"))
+
+
+
+### we currently don't have OR license data for 2019-2020 season (to match to WA logs that cover 2019-20)
+
+
+
+
+#summary of WA landed logs that were from OR waters
+#that didn't match to OR license and pot limit info
+#season       prop_no_match
+# 2009-2010     68%
+# 2010-2011     54%
+# 2011-2012     81%
+# 2012-2013     19%
+# 2013-2014     17%
+# 2014-2015     0%
+# 2015-2016     3%
+# 2016-2017     8%
+# 2017-2018     6%
+# 2018-2019     7%
+
+
+
+
+logs_all_raw <- list.files(path = "C:/Users/Leena.Riekkola/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
+  lapply(read_csv,col_types = 'cccddcdddddddcccccccccccd') %>% 
+  # Combine data sets into one
+  bind_rows                                                        
+#glimpse(logs_all_raw)
 
 
 
@@ -308,38 +534,64 @@ length(unique(no_license_info$Vessel.x)) #4 = 17% didn't find OR PotLimit info
 
 
 
+
+
+#-----------------------
 
 #WA license data only has license number, not vessel name.
-#the vessel name in OR logs in WA waters, might match docnum in OR license, which matches Federal ID in WA logs, from which can get WA license
+#the vessel name in OR logs in WA waters, might match docnum in OR license, which matches Federal ID in WA logs, 
+#from logs and Federal ID we can get WA license, from which can get WA Pot Limit
 #but this won't always match
 traps_g_OR_logs_in_WA_waters_2008_2018 <- traps_g_OR_logs_in_WA_waters_2008_2018raw %>% 
   st_set_geometry(NULL) #%>% 
   #select(Vessel, OR_Lcns,SetID, SetID2,SetDate)
-  
-  
-OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
 
-OR_pot_limit_info_selected_columns <- OR_pot_limit_info_raw %>% 
-  select(Number, Docnum)
+#unique vessels in OR logs that had pots in WA waters
+#unique_vessels_OR_logs_in_WA_waters <- as.list(unique(traps_g_OR_logs_in_WA_waters_2008_2018$Vessel)) #45
+unique_vessels_OR_logs_in_WA_waters <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
+  select(Vessel) %>% 
+  distinct()
 
-OR_logs_in_WA_waters_plus_docnum <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
-  left_join(OR_pot_limit_info_selected_columns, by=c("Vessel" = "Docnum")) 
 
 raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 #SetID is the same between the two files
 raw_WA_logs_selected_columns <- raw_WA_logs %>% 
   select(License, FederalID) %>% 
-  distinct()
+  distinct() %>% 
+  rename(WA_License = License)
 
-#FederalID column in logs has a space between the first 3 and last 3 digits, while pacfin ticket don't have this gap
+#FederalID column in WA logs has a space between the first 3 and last 3 digits, while pacfin ticket don't have this gap
 raw_WA_logs_selected_columns_new <-as.data.frame(apply(raw_WA_logs_selected_columns,2, str_remove_all, " ")) 
-test_df_2 <- OR_logs_in_WA_waters_plus_docnum %>% 
+#then can match Federal ID from WA logs to OR logs
+unique_vessels_OR_logs_in_WA_waters_joined_WA_license <- unique_vessels_OR_logs_in_WA_waters %>% 
   left_join(raw_WA_logs_selected_columns_new,by=c("Vessel" = "FederalID")) 
 
-length(unique(test_df_2$Vessel)) #45
+length(unique(traps_g_OR_logs_in_WA_waters_joined_WA_license$Vessel)) #45
+#but sometimes OR vessel name, therefore OR docnum, so WA Federal ID is linked to different WA license numbers in different years
 
-test_df_NA <- test_df_2 %>% filter(is.na(License))
-length(unique(test_df_NA$Vessel)) #16 --> 36% of vessels of OR logs in WA waters don't find a WA license number (to provide WA PotLimit)
+#will just manuall create a df using OR Vessel, and if multiple WA licenses, use the ones that actually exists
+#e.g. vessel 528154 is linked (thorugh WA logs) to WA license 160, 410, 59 and 59935, but only 59935 exists in WA pot limit - license data
+#vessel 615728 has two proper WA licenses: 59945 and 58039, both were 500 pots
+#vessel 695550 has two proper WA licenses: 58106 and 58119, both were 500 pots
+#vessel 1198334 has two proper WA licenses: 60180 and 58209, both were 500 pots
+#vessel OR908AEZ has three proper WA licenses: 60180, 59945 and 58169, all were 500 pots
+
+Vessel <- c("528154", "591368", "612155", "OR921ABG", "544609", "555388", "610349", "615728", "695550", "537773", "590537", 
+            "519132", "941807", "1198334", "1230071", "240319", "261974", "694038", "1075750", "594790", "OR908AEZ", "522674", "697860", 
+            "1193066", "512179", "515580", "557686")
+
+WA_License <- c("59935", "59974", "60000", "58048", "58078", "58176", "58038", "58039", "58119", "58089", "61522", 
+                "58174", "58181", "58209", "58051", "58208", "58099", "59994", "58167", "58110", "59945", "58198", "58183", 
+                "58094", "58115", "58039", "58036")
+
+lookup_table_OR_vessel_WA_license <- data.frame(Vessel, WA_License) #27 cases
+
+OR_logs_in_WA_waters_joined_WA_license <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
+  left_join(lookup_table_OR_vessel_WA_license,by=c("Vessel" = "Vessel")) 
+(unique(OR_logs_in_WA_waters_joined_WA_license$Vessel)) #45 vessels
+
+test_df_NA <- OR_logs_in_WA_waters_joined_WA_license %>% filter(is.na(WA_License))
+length(unique(test_df_NA$Vessel)) #18 --> 40% of vessels of OR logs in WA waters don't find a WA license number (to provide WA PotLimit)
 summary_by_season <- test_df_NA %>% 
   distinct(Vessel,season) %>% 
   group_by(season) %>% 
@@ -357,11 +609,33 @@ summary_by_season <- summary_by_season %>%
 #season    n_row n_row_all prop_no_match
 # 2007-2008     1         3         0.333 33%
 # 2008-2009     3         5         0.6   60%
-# 2009-2010     2        11         0.182 18%
-# 2010-2011     6        11         0.545 55%
+# 2009-2010     4        11         0.364 36%
+# 2010-2011     7        11         0.636 64%
 # 2011-2012     1         5         0.2   20%
+# 2012-2013               5         0     0% --> 100% match
 # 2013-2014     2         8         0.25  25%
 # 2014-2015     1         7         0.143 14%
 # 2015-2016     1        10         0.1   10%
 # 2016-2017     3        12         0.25  25%
 # 2017-2018     3        11         0.273 27%
+
+#these are cases where no matching license, now join with WDFW license-potlimit table
+
+
+
+
+
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
+WA_pot_limit_info$License <- as.character(WA_pot_limit_info$License)
+
+# join Pot_Limit to traps_g 
+OR_logs_in_WA_waters_joined_WA_license_WA_PotLim <- OR_logs_in_WA_waters_joined_WA_license %>% 
+  left_join(WA_pot_limit_info,by=c("WA_License" = "License")) %>% 
+  rename(WA_Pot_Limit = Pot_Limit)
+
+#the summary will still be the same as above 
+
+
