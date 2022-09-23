@@ -26,11 +26,11 @@ library(stringr)
 #------------------------------------------------------------------------------
 
 #Both WA and OR landed logs have been run through logbook processing, to the point that
-#each pot is a point (line in df), and they have been linked to 5km grid
+#each pot is a point (row in df), and they have been linked to 5km grid (column dentoes 5km grid ID)
 
-#do we need to split the WA landed and OR landed logbooks based on whether the pot
-#occurred in WA or OR waters, and link to that states license? Will we be able to link to
-#other States license, will the vessel number be the same?
+#next we split the WA landed and OR landed logbooks based on whether the pot
+#occurred in WA or OR waters, and link to that states license and pot limit info 
+#howver the matching to other state's license data is imperfect
 
 #------------------------------------------------------------------------------
 
@@ -53,11 +53,10 @@ traps_g_WA_landed_WA_logs <- traps_g_WA_landed_WA_logs_raw %>%
   ) %>% 
   #also rename license column to denote that info came from WA
   rename(WA_License = License)
-
 glimpse(traps_g_WA_landed_WA_logs)
 
 
-# Read in and join license & pot limit info
+# Read in and join WA license & pot limit info
 WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
 WA_pot_limit_info %<>%
@@ -87,8 +86,9 @@ summary_missing_license_info <- traps_g_WA_landed_WA_logs %>%
 # 2015-2016                               1
 # 2016-2017                               1
 # --> we have a lot of missing pot limit info for the early seasons
-#the License number for all is a small value
-#When did WA introduce the 300 and 500 licecnse categories? --> 2000
+#the License number for all is a small value (as in  1, 2 or 3-digit value)
+#whereas all license numbers in WA_pot_limit_info_May2021.csv are 5-digit values
+#will iether need to get some other license data from WA, or ignore the first 3 seasons
 
 # View(traps_g_WA_landed_WA_logs %>% 
 #        st_set_geometry(NULL) %>% 
@@ -114,17 +114,15 @@ traps_g_OR_landed_OR_logs <- traps_g_OR_landed_OR_logs_raw %>%
     month_name = month(SetDate, label=TRUE, abbr = FALSE),
     season_month = paste0(season,"_",month_name)
   ) %>% 
-  #also rename license column to denote that info came from WA
+  #also rename license column to denote that info came from OR
   rename(OR_License = PermitNumber)
 #note that there are some cases of NAs for OR_License, but no NAs in PotLimit info, only PotLimit needed if weighting pots
-
 glimpse(traps_g_OR_landed_OR_logs)
 
 
 
 
 #-------------------------
-##NEED TO EDIT THIS TO MATCH THE ABOVE DF NAMES ETC
 
 #create another SetID column just to be sure that same SetID wouldn't appear in both datasets
 traps_g_WA_landed_WA_logs <- traps_g_WA_landed_WA_logs %>% 
@@ -151,12 +149,12 @@ nrow(grids_WA_OR_logs) #1243
 
 #------------------------------------------------------------------------------
 
-#export as shapefile
-#the logs are too big to export as one shapefile. 
-#split and export one season at a time
-traps_g_OR_landed_OR_logs_2017_2018 <- traps_g_OR_landed_OR_logs %>% 
-  filter(season == '2017-2018') 
-st_write(traps_g_OR_landed_OR_logs_2017_2018, "traps_g_OR_logs_2017_2018_20220915.shp") 
+#export as shapefiles
+#the logs for both states are too big to export as one shapefile. 
+#split and export one season per state at a time
+#traps_g_OR_landed_OR_logs_2017_2018 <- traps_g_OR_landed_OR_logs %>% 
+#  filter(season == '2017-2018') 
+#st_write(traps_g_OR_landed_OR_logs_2017_2018, "traps_g_OR_logs_2017_2018_20220915.shp") 
 
 
 #------------------------------------------------------------------------------
@@ -166,7 +164,7 @@ st_write(traps_g_OR_landed_OR_logs_2017_2018, "traps_g_OR_logs_2017_2018_2022091
 #------------------------------------------------------------------------------
 
 #read in clipped data, see if can match license info across states and logs
-#back up option might be to try to link via fishtickets -- first link to pacfin tix,
+#back up option might be to try to link via fishtickets -- i.e. first link to pacfin tix,
 #from that get vessel info, and then join to license info?? might not work for WA as need license number....?
 
 
@@ -180,7 +178,9 @@ names(grd)
 # read in version of traps_g, point data, that is clipped to OR waters - WA logs landed in OR waters
 # reading this shapefile in takes a long time
 # traps_g_WA_logs_in_OR_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to OR waters.shp')) %>% 
-#   st_transform(st_crs(grd)) #make it have same projection as the grid
+#   st_transform(st_crs(grd)) %>%  #make it have same projection as the grid
+#    dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
+#              point_y = sf::st_coordinates(.)[,2])
 # #save a rds version and read that in in the future:
 # write_rds(traps_g_WA_logs_in_OR_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to OR waters.rds"))
 traps_g_WA_logs_in_OR_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to OR waters.rds')) %>% 
@@ -198,19 +198,19 @@ traps_g_OR_logs_in_WA_waters_2008_2018raw <- read_rds(here::here('DCRB_sdmTMB', 
 ##next bring in license files and see if can match across states
 
 
-#OR license data file has column for 'docnum' which could match with something in WA logs
-# (also 'number' which should match OR license number) 
-#if we bring back federal ID to WA logs, that should match docnum in OR license data --> not every time
-traps_g_WA_logs_in_OR_waters_2010_2020 <- traps_g_WA_logs_in_OR_waters_2010_2020raw %>% 
-  st_set_geometry(NULL)
 
 #if we bring back federal ID to WA logs, that should match docnum in OR license data --> not every time
+traps_g_WA_logs_in_OR_waters_2010_2020 <- traps_g_WA_logs_in_OR_waters_2010_2020raw %>%
+  st_set_geometry(NULL)
+
+#bring back federal ID to WA logs
 raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 #SetID is the same between the two files
 raw_WA_logs_selected_columns <- raw_WA_logs %>% 
   select(SetID, FederalID) %>% 
   distinct()
 
+#note that Federal ID in raw logs has a gap between the first 3 and last 3 digits
 raw_WA_logs_selected_columns <-as.data.frame(apply(raw_WA_logs_selected_columns,2, str_remove_all, " ")) 
 
 traps_g_WA_logs_in_OR_waters_2010_2020_FederalID <- traps_g_WA_logs_in_OR_waters_2010_2020 %>% 
@@ -218,7 +218,7 @@ traps_g_WA_logs_in_OR_waters_2010_2020_FederalID <- traps_g_WA_logs_in_OR_waters
 #all SetIDs have a Federal ID
 
 #unique vessels in WA logs that had pots in OR waters
-unique_vessels <- as.list(unique(traps_g_WA_logs_in_OR_waters_2010_2020_FederalID$FederalID))
+unique_vessels <- as.list(unique(traps_g_WA_logs_in_OR_waters_2010_2020_FederalID$FederalID)) #127
 
 
 
@@ -257,7 +257,7 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 
 library(fuzzyjoin)
 
-#2009-2010 season - 7 mins to run with permit data filtered to unique_vessels
+#2009-2010 season - 9 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20092010 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2009-2010')
 tm <- proc.time()
@@ -282,7 +282,7 @@ length(unique(no_license_info$Vessel.x)) #19 = 68% didn't find OR PotLimit info
 
 
 
-#2010-2011 season - 8 mins to run with permit data filtered to unique_vessels
+#2010-2011 season - 10 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20102011 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2010-2011')
 tm <- proc.time()
@@ -307,7 +307,7 @@ length(unique(no_license_info$Vessel.x)) #13 = 54% didn't find OR PotLimit info
 
 
 
-#2011-2012 season - 7 mins to run with permit data filtered to unique_vessels
+#2011-2012 season - 8 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20112012 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2011-2012')
 tm <- proc.time()
@@ -332,7 +332,7 @@ length(unique(no_license_info$Vessel.x)) #22 = 81% didn't find OR PotLimit info
 
 
 
-#2012-2013 season - 9 mins to run with permit data filtered to unique_vessels
+#2012-2013 season - 10 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20122013 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2012-2013')
 tm <- proc.time()
@@ -357,7 +357,7 @@ length(unique(no_license_info$Vessel.x)) #4 = 19% didn't find OR PotLimit info
 
 
 
-#2013-2014 season -  15 mins to run with permit data filtered to unique_vessels
+#2013-2014 season -  20 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20132014 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2013-2014')
 tm <- proc.time()
@@ -381,7 +381,7 @@ length(unique(no_license_info$Vessel.x)) #4 = 17% didn't find OR PotLimit info
 
 
 
-#2014-2015 season - 11 mins to run with permit data filtered to unique_vessels
+#2014-2015 season - 12 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20142015 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2014-2015')
 tm <- proc.time()
@@ -405,7 +405,7 @@ length(unique(no_license_info$Vessel.x)) #0 = 0% didn't find OR PotLimit info
 
 
 
-#2015-2016 season - 17 mins to run with permit data filtered to unique_vessels
+#2015-2016 season - 13 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20152016 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2015-2016')
 tm <- proc.time()
@@ -429,7 +429,7 @@ length(unique(no_license_info$Vessel.x)) #1 = 3% didn't find OR PotLimit info
 
 
 
-#2016-2017 season - 20 mins to run with permit data filtered to unique_vessels
+#2016-2017 season - 18 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20162017 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2016-2017')
 tm <- proc.time()
@@ -453,7 +453,7 @@ length(unique(no_license_info$Vessel.x)) #3 = 8% didn't find OR PotLimit info
 
 
 
-#2017-2018 season - 18 mins to run with permit data filtered to unique_vessels
+#2017-2018 season - 13 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20172018 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2017-2018')
 tm <- proc.time()
@@ -476,7 +476,7 @@ length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
 #write_csv(subset_traps_g_WA_logs_in_OR_waters_20172018_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20172018_joined_license.csv"))
 
 
-#2018-2019 season - 21 mins to run with permit data filtered to unique_vessels
+#2018-2019 season - 16 mins to run with permit data filtered to unique_vessels
 subset_traps_g_WA_logs_in_OR_waters_20182019 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
   filter(season=='2018-2019')
 tm <- proc.time()
@@ -522,11 +522,11 @@ length(unique(no_license_info$Vessel.x)) #2 = 7% didn't find OR PotLimit info
 
 
 
-logs_all_raw <- list.files(path = "C:/Users/Leena.Riekkola/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
+traps_g_WA_logs_in_OR_waters_all_joined <- list.files(path = "C:/Users/Leena.Riekkola/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
   lapply(read_csv,col_types = 'cccddcdddddddcccccccccccd') %>% 
   # Combine data sets into one
   bind_rows                                                        
-#glimpse(logs_all_raw)
+#glimpse(traps_g_WA_logs_in_OR_waters_all_joined)
 
 
 
@@ -547,7 +547,6 @@ traps_g_OR_logs_in_WA_waters_2008_2018 <- traps_g_OR_logs_in_WA_waters_2008_2018
   #select(Vessel, OR_Lcns,SetID, SetID2,SetDate)
 
 #unique vessels in OR logs that had pots in WA waters
-#unique_vessels_OR_logs_in_WA_waters <- as.list(unique(traps_g_OR_logs_in_WA_waters_2008_2018$Vessel)) #45
 unique_vessels_OR_logs_in_WA_waters <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
   select(Vessel) %>% 
   distinct()
@@ -566,11 +565,11 @@ raw_WA_logs_selected_columns_new <-as.data.frame(apply(raw_WA_logs_selected_colu
 unique_vessels_OR_logs_in_WA_waters_joined_WA_license <- unique_vessels_OR_logs_in_WA_waters %>% 
   left_join(raw_WA_logs_selected_columns_new,by=c("Vessel" = "FederalID")) 
 
-length(unique(traps_g_OR_logs_in_WA_waters_joined_WA_license$Vessel)) #45
+length(unique(unique_vessels_OR_logs_in_WA_waters_joined_WA_license$Vessel)) #45
 #but sometimes OR vessel name, therefore OR docnum, so WA Federal ID is linked to different WA license numbers in different years
 
-#will just manuall create a df using OR Vessel, and if multiple WA licenses, use the ones that actually exists
-#e.g. vessel 528154 is linked (thorugh WA logs) to WA license 160, 410, 59 and 59935, but only 59935 exists in WA pot limit - license data
+#will just manually create a df using OR Vessel, and if multiple WA licenses, use the ones that actually exists
+#e.g. vessel 528154 is linked (through WA logs) to WA license 160, 410, 59 and 59935, but only 59935 exists in WA pot limit - license data
 #vessel 615728 has two proper WA licenses: 59945 and 58039, both were 500 pots
 #vessel 695550 has two proper WA licenses: 58106 and 58119, both were 500 pots
 #vessel 1198334 has two proper WA licenses: 60180 and 58209, both were 500 pots
@@ -584,7 +583,7 @@ WA_License <- c("59935", "59974", "60000", "58048", "58078", "58176", "58038", "
                 "58174", "58181", "58209", "58051", "58208", "58099", "59994", "58167", "58110", "59945", "58198", "58183", 
                 "58094", "58115", "58039", "58036")
 
-lookup_table_OR_vessel_WA_license <- data.frame(Vessel, WA_License) #27 cases
+lookup_table_OR_vessel_WA_license <- data.frame(Vessel, WA_License) #27 cases where OR vessel name linked to >1 WA license
 
 OR_logs_in_WA_waters_joined_WA_license <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
   left_join(lookup_table_OR_vessel_WA_license,by=c("Vessel" = "Vessel")) 
@@ -597,7 +596,7 @@ summary_by_season <- test_df_NA %>%
   group_by(season) %>% 
   summarise(n_row = n())
 
-unique_vessels <- test_df_2 %>% 
+unique_vessels <- OR_logs_in_WA_waters_joined_WA_license %>% 
   distinct(Vessel,season) %>% 
   group_by(season) %>% 
   summarise(n_row_all = n())
@@ -637,5 +636,92 @@ OR_logs_in_WA_waters_joined_WA_license_WA_PotLim <- OR_logs_in_WA_waters_joined_
   rename(WA_Pot_Limit = Pot_Limit)
 
 #the summary will still be the same as above 
+
+
+#---------------------------------------------------------------------------------------------------
+
+#WA landed and logged pots that were in OR water
+traps_g_WA_logs_in_OR_waters_all_joined
+
+
+
+#OR landed and logged pots that were in WA water
+OR_logs_in_WA_waters_joined_WA_license
+
+
+
+#read in WA logs in WA waters
+#read in OR logs in OR waters
+
+# Read in spatial grid data 
+# example spatial grid - 5x5 grid shapefile
+#grd <- read_sf(here::here('wdfw','data', 'fivekm_grid_polys_shore_lamb.shp'))
+#names(grd)
+
+# read in WA logs in WA waters
+# reading this shapefile in takes a long time
+# traps_g_WA_logs_in_WA_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to WA waters.shp')) %>% 
+#   st_transform(st_crs(grd)) #make it have same projection as the grid
+# #save a rds version and read that in in the future:
+# write_rds(traps_g_WA_logs_in_WA_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to WA waters.rds"))
+traps_g_WA_logs_in_WA_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to WA waters.rds')) %>% 
+  select(-path, -layer) %>% #columns that have been added in QGIS step, when joining files 
+  #x and y are point locations, northing and easting
+  #crs was CA_Curr_Lamb_Azi_Equal_Area
+  dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
+              point_y = sf::st_coordinates(.)[,2]) 
+
+traps_g_WA_logs_in_WA_waters_2010_2020 <- traps_g_WA_logs_in_WA_waters_2010_2020raw %>% 
+  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
+  #drop couple useless columns
+  select(-NGDC_GR,-is_pr__) %>% 
+  #rename some columns, plus those that got shortened by QGIS
+  rename(
+    WA_License = WA_Lcns,
+    PotsFished = PtsFshd,
+    line_length_m = ln_lng_,
+    GRID5KM_ID = GRID5KM,
+    Landing_logbook_state = Lndng__,
+    month_name = mnth_nm,
+    season_month = ssn_mnt,
+    WA_Pot_Limit = Pot_Lmt
+  ) %>% 
+  #add column
+  mutate(Pot_State = 'WA', #Pot_State = in what state did the pot occur, according to logbook
+         OR_License = NA)  #as these are WA landed data, and pots were in WA waters, there is no OR license info that is relevant
+
+
+#read in OR logs in OR waters
+# traps_g_OR_logs_in_OR_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','OR logs shapefiles' ,'traps_g_OR_logs_2008_2018_20220915_clipped to OR waters_noCA.shp')) %>% 
+#   st_transform(st_crs(grd)) #make it have same projection as the grid
+# #save a rds version and read that in in the future:
+# write_rds(traps_g_OR_logs_in_OR_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_OR_logs_2008_2018_20220915_clipped to OR waters.rds"))
+traps_g_OR_logs_in_OR_waters_2008_2018raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_OR_logs_2008_2018_20220915_clipped to OR waters.rds')) %>% 
+  select(-path, -layer) %>% #columns that have been added in QGIS step, when joining files
+  #x and y are point locations, northing and easting
+  #crs was CA_Curr_Lamb_Azi_Equal_Area
+  dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
+                point_y = sf::st_coordinates(.)[,2]) 
+#these are OR logs (pots) in OR waters, i.e. exclude any pots that were in CA waters but landed in OR
+
+
+traps_g_OR_logs_in_OR_waters_2008_2018 <- traps_g_OR_logs_in_OR_waters_2008_2018raw %>% 
+  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
+  #drop couple useless columns
+  select(-NGDC_GR,-is_pr__,-SptlFlg) %>% #remove spatial flag column, doesn't exist in WA data, already filtered
+  #rename some columns, plus those that got shortened by QGIS
+  rename(
+    PotsFished = PtsFshd,
+    OR_License = OR_Lcns,
+    OR_Pot_Limit = Potlimt,
+    line_length_m = ln_lng_,
+    GRID5KM_ID = GRID5KM,
+    Landing_logbook_state = Lndng__,
+    month_name = mnth_nm,
+    season_month = ssn_mnt
+  ) %>% 
+  #add column
+  mutate(Pot_State = 'OR', #Pot_State = in what state did the pot occur, according to logbook
+         WA_License = NA)  #as these are OR landed data, and pots were in OR waters, there is no WA license info that is relevant
 
 
