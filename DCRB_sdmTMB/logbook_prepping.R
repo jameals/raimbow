@@ -507,23 +507,23 @@ length(unique(no_license_info$Vessel.x)) #2 = 7% didn't find OR PotLimit info
 
 #summary of WA landed logs that were from OR waters
 #that didn't match to OR license and pot limit info
-#season       prop_no_match
-# 2009-2010     68%
-# 2010-2011     54%
-# 2011-2012     81%
-# 2012-2013     19%
-# 2013-2014     17%
-# 2014-2015     0%
-# 2015-2016     3%
-# 2016-2017     8%
-# 2017-2018     6%
-# 2018-2019     7%
-
+#season       n_unique_vessel prop_no_match                 n_unique_vessels_in_all_WA_landed_logs (WA license cap is 223)
+# 2009-2010         28            68%                                        123 
+# 2010-2011         24            54%                                        137
+# 2011-2012         27            81%                                        144   
+# 2012-2013         21            19%                                        140   
+# 2013-2014         23            17%                                        157   
+# 2014-2015         23            0%                                         159   
+# 2015-2016         29            3%                                         155   
+# 2016-2017         37            8%                                         162       
+# 2017-2018         33            6%                                         152   
+# 2018-2019         29            7%                                         158         
+# 2019-2020         31            no license data yet                        138       
 
 
 
 traps_g_WA_logs_in_OR_waters_all_joined <- list.files(path = "C:/Users/Leena.Riekkola/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
-  lapply(read_csv,col_types = 'cccddcdddddddcccccccccccd') %>% 
+  lapply(read_csv,col_types = 'cccddcdccdcddccccdcddcccccd') %>% 
   # Combine data sets into one
   bind_rows                                                        
 #glimpse(traps_g_WA_logs_in_OR_waters_all_joined)
