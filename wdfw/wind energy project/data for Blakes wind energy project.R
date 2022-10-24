@@ -19,7 +19,8 @@ library(ggpubr)
 
 # ran 2009/10 to 2019/20 seasons in one go through the logbook processing data pipeline described in  
 # Riekkola et al paper ("Retrospective analysis of cons measures to reduce  risk of large wh entl in a highly lucrative fishery")
-path_WA_landed_2010_2020 <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_WA_logs_2010_2020_20220906.rds"
+#change the path to wherever the data is held
+path_WA_landed_2010_2020 <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/traps_g_WA_logs_2010_2020_20220906.rds"
 WA_landed_logs_2010_2020 <- readRDS(path_WA_landed_2010_2020) %>%
   #x and y are point locations, northing and easting
   #crs was CA_Curr_Lamb_Azi_Equal_Area
