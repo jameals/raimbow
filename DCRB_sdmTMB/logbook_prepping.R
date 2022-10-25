@@ -224,15 +224,15 @@ unique_vessels <- as.list(unique(traps_g_WA_logs_in_OR_waters_2010_2020_FederalI
 
 
 # Read in and join license & pot limit info
-OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2019.csv'))
+OR_pot_limit_info_raw <- read_csv(here::here('wdfw', 'data', 'OR', 'OregonCrabPermitData2007-2020.csv'))
 
 OR_pot_limit_info <- OR_pot_limit_info_raw %>% 
   rename(Vessel = Docnum,
          PermitNumber = Number)
 
 OR_pot_limit_info %<>%
-  mutate(Begindate=as.Date(Begindate,"%m/%d/%Y"),
-         Enddate=as.Date(Enddate,"%m/%d/%Y"))
+  mutate(Begindate=as.Date(Begindate,"%d/%m/%Y"),#these are different in the 2007-2019 license data file
+         Enddate=as.Date(Enddate,"%d/%m/%Y"))
 
 
 OR_pot_limit_info %>% distinct(Potlimit) # 500, 300, 200
@@ -501,24 +501,44 @@ length(unique(no_license_info$Vessel.x)) #2 = 7% didn't find OR PotLimit info
 
 
 ### we currently don't have OR license data for 2019-2020 season (to match to WA logs that cover 2019-20)
+#2019-2020 season - 13 mins to run with permit data filtered to unique_vessels
+subset_traps_g_WA_logs_in_OR_waters_20192020 <- traps_g_WA_logs_in_OR_waters_2010_2020_FederalID %>% 
+  filter(season=='2019-2020')
+tm <- proc.time()
+subset_traps_g_WA_logs_in_OR_waters_20192020_joined <- fuzzy_left_join(
+  subset_traps_g_WA_logs_in_OR_waters_20192020, OR_pot_limit_info_v2,
+  by = c(
+    "FederalID" = "Vessel",
+    "SetDate" = "Begindate",
+    "SetDate" = "Enddate"
+  ),
+  match_fun = list(`==`, `>=`, `<=`)
+)
+proc.time()-tm
 
+length(unique(subset_traps_g_WA_logs_in_OR_waters_20192020_joined$Vessel.x)) #31 unique vessels in 2019/20 that fished in OR but landed in WA
+
+no_license_info <- subset_traps_g_WA_logs_in_OR_waters_20192020_joined %>% filter(is.na(Potlimit))
+length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
+
+#write_csv(subset_traps_g_WA_logs_in_OR_waters_20192020_joined,here::here('DCRB_sdmTMB', 'data', "subset_traps_g_WA_logs_in_OR_waters_20192020_joined_license.csv"))
 
 
 
 #summary of WA landed logs that were from OR waters
 #that didn't match to OR license and pot limit info
-#season       n_unique_vessel prop_no_match                 n_unique_vessels_in_all_WA_landed_logs (WA license cap is 223)
-# 2009-2010         28            68%                                        123 
-# 2010-2011         24            54%                                        137
-# 2011-2012         27            81%                                        144   
-# 2012-2013         21            19%                                        140   
-# 2013-2014         23            17%                                        157   
-# 2014-2015         23            0%                                         159   
-# 2015-2016         29            3%                                         155   
-# 2016-2017         37            8%                                         162       
-# 2017-2018         33            6%                                         152   
-# 2018-2019         29            7%                                         158         
-# 2019-2020         31            no license data yet                        138       
+#season       n_no_match  n_unique_vessel prop_no_match                 n_unique_vessels_in_all_WA_landed_logs (WA license cap is 223)
+# 2009-2010       19            28            68%                                        123 
+# 2010-2011       13            24            54%                                        137
+# 2011-2012       22            27            81%                                        144   
+# 2012-2013       4             21            19%                                        140   
+# 2013-2014       4             23            17%                                        157   
+# 2014-2015       0             23            0%                                         159   
+# 2015-2016       1             29            3%                                         155   
+# 2016-2017       3             37            8%                                         162       
+# 2017-2018       2             33            6%                                         152   
+# 2018-2019       2             29            7%                                         158         
+# 2019-2020       2             31            6%                                         138       
 
 
 
@@ -567,6 +587,7 @@ unique_vessels_OR_logs_in_WA_waters_joined_WA_license <- unique_vessels_OR_logs_
 
 length(unique(unique_vessels_OR_logs_in_WA_waters_joined_WA_license$Vessel)) #45
 #but sometimes OR vessel name, therefore OR docnum, so WA Federal ID is linked to different WA license numbers in different years
+#some of the lo numbers in Federal ID might be fixed with new data for the first few years in WA
 
 #will just manually create a df using OR Vessel, and if multiple WA licenses, use the ones that actually exists
 #e.g. vessel 528154 is linked (through WA logs) to WA license 160, 410, 59 and 59935, but only 59935 exists in WA pot limit - license data
@@ -605,7 +626,7 @@ summary_by_season <- summary_by_season %>%
   left_join(unique_vessels, by="season") %>% 
   mutate(prop_no_match = n_row/n_row_all)
 
-#season    n_row n_row_all prop_no_match
+#season      n_row  n_row_all     prop_no_match
 # 2007-2008     1         3         0.333 33%
 # 2008-2009     3         5         0.6   60%
 # 2009-2010     4        11         0.364 36%
