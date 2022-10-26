@@ -107,7 +107,7 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 df <- logs #no filtering, has early seasons when 100% logs where entered
 #nrow(df) #at this point 300201
-#length(unique(df$SetID)) #at this point 151480. Stringlines/SetIDs should havev 2 rows, unless data was missing start or end loc
+#length(unique(df$SetID)) #at this point 151480 (for 2007-2018). Stringlines/SetIDs should havev 2 rows, unless data was missing start or end loc
 
 # For now retain SpatialFlag column - can filter for that later 
 # Note that OR logs had permit data joined in pre-processing stage
@@ -118,9 +118,9 @@ df %<>%
 ## as a bit of a test, how much do things change if filter out the spatial flags here
 df <- df %>% 
   filter(SpatialFlag == FALSE)
-#nrow(df) #at this point 292468 --> spatial filter removed 2.58% of rows
-#length(unique(df$SetID)) #at this point 147525 --> spatial filter removed 2.61% of stringlines
-#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 151480
+#nrow(df) #at this point 292468 (for 2007-2018) --> spatial filter removed 2.58% of rows
+#length(unique(df$SetID)) #at this point 147525 (for 2007-2018) --> spatial filter removed 2.61% of stringlines
+#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 151480 (for 2007-2018)
 
 df %<>% 
   # make sure each set has a beginning and end
@@ -135,11 +135,11 @@ df %<>%
   summarise(do_union = FALSE) %>% 
   st_cast("LINESTRING")
 
-#nrow(df) #at this point 141940 (if did spatial filter earlier) - but note that now only ONE line per string
-#length(unique(df$SetID)) #at this point 141940 (if did spatial filter earlier) 
-#--> filtering out PotsFished = NA, and cases where start or end loc missing removed 3.79% of of stringlines
+#nrow(df) #at this point 141940 (if did spatial filter earlier) (for 2007-2018) - but note that now only ONE line per string
+#length(unique(df$SetID)) #at this point 141940 (if did spatial filter earlier) (for 2007-2018)
+#--> filtering out PotsFished = NA, and cases where start or end loc missing removed 3.79% of of stringlines (for 2007-2018)
 
-#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 145686 --> 3.82% loss so far, similar to if had filtered SpatialFlag
+#if didn't yet filter for SpatialFlag, then length(unique(df$SetID)) is 145686 (for 2007-2018) --> 3.82% loss so far, similar to if had filtered SpatialFlag
 
 #---------
 #additional step - remove those stringlines that have a lenght of 0 (i.e. start and end locs
@@ -170,18 +170,20 @@ df_v4 <- df_v3 %>%
 #what percentage was excluded?
 #nrow(df_v3 %>% filter(line_length_m > 25000))/nrow(df_v3)*100 
 # 1.94% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines longer than 25km
+# 1.97% for 2007-2020 data
 #1.57% if already did spatial filter earlier
 
 # nrow(df_v3 %>%  filter(line_length_m == 0 & PotsFished > 50))/nrow(df_v3)*100
 # 0.018% of data (logbook records/strings reported in logbooks) excluded (between 2007-2018) when remove stringlines 
 # that were 0m and had more than 50 pots reported on them
+# 0.14% for 2007-2020
 # 0.01% if already did spatial filter earlier
 
 
-#length(unique(df_v4$SetID)) #at this point 139702 (if did spatial filter earlier) 
+#length(unique(df_v4$SetID)) #at this point 139702 (if did spatial filter earlier) (between 2007-2018)
 # stringline length filtering removed 1.58% of stringlines even if already filtered for SpatialFlag
 
-#if didn't yet filter for SpatialFlag, then length(unique(df_v4$SetID)) is 142827 --> 1.96% loss from previous 
+#if didn't yet filter for SpatialFlag, then length(unique(df_v4$SetID)) is 142827 (between 2007-2018) --> 1.96% loss from previous 
 #---------
 
 #traps <- df %>% 
@@ -211,10 +213,10 @@ bathy.points <- raster::extract(bathy,traps_sf)
 # divide by 10 to go from decimeters to meters
 traps_sf %<>%
   mutate(depth=bathy.points/10)
-#length(unique(traps_sf$SetID)) #at this point, when point created, 139702 (if did spatial filter earlier) 
+#length(unique(traps_sf$SetID)) #at this point, when point created, 139702 (between 2007-2018) (if did spatial filter earlier) 
 #same as before creating pots as points
 
-#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142827, same as before creating pots as points
+#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142827 (between 2007-2018), same as before creating pots as points
 
 
 # DEPTH FILTER
@@ -223,10 +225,10 @@ traps_sf %<>%
 traps_sf %<>% 
   filter(depth <= 0) %>% #keep points in water
   filter(depth > -200 | depth < -5000) #keep points shallower than 200m, but also those deeper than 5000m (ports/embayments)
-#length(unique(traps_sf$SetID)) #at this point 139656 (if did spatial filter earlier) 
-# depth filtering removed 0.03% of stringlines even if already filtered for SpatialFlag
+#length(unique(traps_sf$SetID)) #at this point 139656 (between 2007-2018) (if did spatial filter earlier) 
+# depth filtering removed 0.03% of stringlines even if already filtered for SpatialFlag (between 2007-2018)
 
-#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142419, 0.29% loss during depth filter
+#if didn't yet filter for SpatialFlag, then length(unique(traps_sf$SetID)) is 142419, 0.29% loss during depth filter (between 2007-2018)
 
 
 # ALTERNATIVE DEPTH FILTER OPTION
