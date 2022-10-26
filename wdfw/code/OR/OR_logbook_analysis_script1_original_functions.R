@@ -9,7 +9,7 @@ library(sf)
 library(raster)
 library(fasterize)
 select <- dplyr::select
-library(rnaturalearth)
+library(rnaturalearth) #devtools::install_github("ropensci/rnaturalearthhires")
 library(viridis)
 library(magrittr)
 library(gridExtra)
