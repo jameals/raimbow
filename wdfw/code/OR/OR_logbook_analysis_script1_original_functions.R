@@ -36,7 +36,7 @@ options(dplyr.summarise.inform = FALSE)
 #logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2013-2018_2021-08-17.csv')) 
 # fine to let R set col_types automatically
 #dataset with all seasons - includes early seasons that were 100% entered
-logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv')) 
+logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2020_20221025.csv')) 
 
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
