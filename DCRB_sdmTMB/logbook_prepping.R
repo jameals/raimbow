@@ -542,7 +542,7 @@ length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
 
 
 
-traps_g_WA_logs_in_OR_waters_all_joined <- list.files(path = "C:/Users/Leena.Riekkola/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
+traps_g_WA_logs_in_OR_waters_all_joined <- list.files(path = "C:/Users/lrie0/Documents/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
   lapply(read_csv,col_types = 'cccddcdccdcddccccdcddcccccd') %>% 
   # Combine data sets into one
   bind_rows                                                        
