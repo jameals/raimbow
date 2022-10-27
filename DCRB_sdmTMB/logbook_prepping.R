@@ -88,7 +88,7 @@ summary_missing_license_info <- traps_g_WA_landed_WA_logs %>%
 # --> we have a lot of missing pot limit info for the early seasons
 #the License number for all is a small value (as in  1, 2 or 3-digit value)
 #whereas all license numbers in WA_pot_limit_info_May2021.csv are 5-digit values
-#will iether need to get some other license data from WA, or ignore the first 3 seasons
+#got updated logbooks from WDFW for the early yaers, will find actual license info from that later on
 
 # View(traps_g_WA_landed_WA_logs %>% 
 #        st_set_geometry(NULL) %>% 
@@ -100,8 +100,15 @@ summary_missing_license_info <- traps_g_WA_landed_WA_logs %>%
 
 #-----
 
-#OR - use the data run of 2001/08 to 2017/18 data
-traps_g_OR_landed_OR_logs_raw <- read_rds(here::here('wdfw', 'data','OR','OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered_20220915.rds')) %>% 
+#OR - use the data run of 2007/08 to 2017/18 data
+#traps_g_OR_landed_OR_logs_raw <- read_rds(here::here('wdfw', 'data','OR','OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered_20220915.rds')) %>% 
+#  mutate(Landing_logbook_state = 'OR')
+#note that this is an sf object
+#st_crs(traps_g_OR_landed_OR_logs_raw) #CA_Curr_Lamb_Azi_Equal_Area 
+
+#OR - ran data to include 2018/19 and 2019/20 seasons as well
+#comparison of overlapping years with summary() indicates that it matches with the previous version
+traps_g_OR_landed_OR_logs_raw <- read_rds(here::here('wdfw', 'data','OR','OR_traps_g_all_logs_2007_2020_SpatialFlag_filtered_20221027.rds')) %>% 
   mutate(Landing_logbook_state = 'OR')
 #note that this is an sf object
 #st_crs(traps_g_OR_landed_OR_logs_raw) #CA_Curr_Lamb_Azi_Equal_Area 
@@ -152,9 +159,9 @@ nrow(grids_WA_OR_logs) #1243
 #export as shapefiles
 #the logs for both states are too big to export as one shapefile. 
 #split and export one season per state at a time
-#traps_g_OR_landed_OR_logs_2017_2018 <- traps_g_OR_landed_OR_logs %>% 
-#  filter(season == '2017-2018') 
-#st_write(traps_g_OR_landed_OR_logs_2017_2018, "traps_g_OR_logs_2017_2018_20220915.shp") 
+#traps_g_OR_landed_OR_logs_2019_2020 <- traps_g_OR_landed_OR_logs %>% 
+#  filter(season == '2019-2020') 
+#st_write(traps_g_OR_landed_OR_logs_2019_2020, "traps_g_OR_logs_2019_2020_20221028.shp") 
 
 
 #------------------------------------------------------------------------------
