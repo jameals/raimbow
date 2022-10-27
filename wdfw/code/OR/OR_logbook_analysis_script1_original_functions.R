@@ -37,7 +37,8 @@ options(dplyr.summarise.inform = FALSE)
 # fine to let R set col_types automatically
 #dataset with all seasons - includes early seasons that were 100% entered
 logs <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2020_20221025.csv')) 
-#logs_v2 <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv')) 
+#need the previous dataset to be used for bathy extent
+logs_v2 <- read_csv(here('wdfw', 'data','OR', 'ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2018_20210830.csv')) 
 
 # jameal
 #logs <- read_csv("/Users/jameal.samhouri/Documents/RAIMBOW/Processed Data/Logbook-VMS/WA logbooks - mapping for CP/WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2019.csv",col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
@@ -58,7 +59,7 @@ bathy <- raster(here::here('wdfw','data','vms_composite_bath.txt'))
 ex <- logs_v2 %>% select(lat,lon) %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% extent()
 bathy <- bathy %>% crop(ex)
 ##2018/19 and 2019/20 dataset seems to have strange data, as extent xmax and ymin are 0
-#for 2007-2018 data thei are -122 and 40.5
+#for 2007-2018 data they are -122 and 40.5
 #the cropping takes unknown amount of tiem with the 0s. so run cropping on the 2007-2018 logs (logs_v2)
 
 #### READ IN SPATIAL GRID DATA ####
