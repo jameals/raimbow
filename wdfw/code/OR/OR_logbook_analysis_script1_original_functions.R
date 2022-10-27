@@ -273,7 +273,7 @@ traps_g_SpatialFlag_filtered <- traps_g %>%
 #if filter for SpatialFlag now, total loss of 7.81% from the start of code
 #same as if filtered for SpatailFlag right at the start
 
-#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2018_SpatialFlag_filtered.rds"))
+#write_rds(traps_g_SpatialFlag_filtered,here::here('wdfw', 'data','OR', "OR_traps_g_all_logs_2007_2020_SpatialFlag_filtered_20221028_ran_on_new_computer.rds"))
 
 
 #if filtered for SpatialFlag right at the start
