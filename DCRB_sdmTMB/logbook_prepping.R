@@ -184,44 +184,51 @@ names(grd)
 
 
 ############### WA #################
+###### all this has been run once, now just read in the final produt ######
+# # read in version of traps_g, point data, that is clipped to OR waters - WA logs landed in OR waters
+# # reading this shapefile in takes a long time
+# # traps_g_WA_logs_in_OR_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.shp')) %>% 
+# #   st_transform(st_crs(grd)) %>%  #make it have same projection as the grid
+# #    dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
+# #              point_y = sf::st_coordinates(.)[,2])
+# #x and y are point locations, northing and easting
+# #crs was CA_Curr_Lamb_Azi_Equal_Area
+# # #save a rds version and read that in in the future:
+# # write_rds(traps_g_WA_logs_in_OR_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.rds"))
+# traps_g_WA_logs_in_OR_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.rds')) %>% 
+#   select(-path, -layer) %>%  #columns that have been added in QGIS step, when joining files
+#   mutate(Pot_State = 'OR') %>%  #Pot_State = in what state did the pot occur, according to logbook
+# #updated file is multipoint, but should be point
+#   st_cast("POINT")
+# 
+# # read in WA logs in WA waters
+# # reading this shapefile in takes a long time
+# # traps_g_WA_logs_in_WA_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.shp')) %>% 
+# #   st_transform(st_crs(grd))  #make it have same projection as the grid
+# # #save a rds version and read that in in the future:
+# # write_rds(traps_g_WA_logs_in_WA_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.rds"))
+# traps_g_WA_logs_in_WA_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.rds')) %>% 
+#   select(-path, -layer) %>% #columns that have been added in QGIS step, when joining files 
+#   #Issue when trying to separate coordinates as file was multipoint
+#   st_cast("POINT") %>% 
+#   #x and y are point locations, northing and easting
+#   #crs was CA_Curr_Lamb_Azi_Equal_Area
+#   dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
+#                 point_y = sf::st_coordinates(.)[,2]) %>% 
+#   mutate(Pot_State = 'WA') #Pot_State = in what state did the pot occur, according to logbook
+# # #save a rds version and read that in in the future:
+# # write_rds(traps_g_WA_logs_in_WA_waters_2010_2020raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_in_WA_waters_2010_2020raw.rds"))
+# 
+# traps_g_WA_logs_in_WA_waters_2010_2020raw_no_geometry <- traps_g_WA_logs_in_WA_waters_2010_2020raw %>% st_set_geometry(NULL)
+# traps_g_WA_logs_in_OR_waters_2010_2020raw_no_geometry <- traps_g_WA_logs_in_OR_waters_2010_2020raw %>% st_set_geometry(NULL)
+# traps_g_WA_logs_all <- rbind(traps_g_WA_logs_in_WA_waters_2010_2020raw_no_geometry,traps_g_WA_logs_in_OR_waters_2010_2020raw_no_geometry)
+# # write_rds(traps_g_WA_logs_all,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_ALL_2010_2020.rds"))
 
-# read in version of traps_g, point data, that is clipped to OR waters - WA logs landed in OR waters
-# reading this shapefile in takes a long time
-# traps_g_WA_logs_in_OR_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.shp')) %>% 
-#   st_transform(st_crs(grd)) %>%  #make it have same projection as the grid
-#    dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
-#              point_y = sf::st_coordinates(.)[,2])
-#x and y are point locations, northing and easting
-#crs was CA_Curr_Lamb_Azi_Equal_Area
-# #save a rds version and read that in in the future:
-# write_rds(traps_g_WA_logs_in_OR_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.rds"))
-traps_g_WA_logs_in_OR_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to OR waters_updated.rds')) %>% 
-  select(-path, -layer) %>%  #columns that have been added in QGIS step, when joining files
-  mutate(Pot_State = 'OR')
-  
 
-# read in WA logs in WA waters
-# reading this shapefile in takes a long time
-# traps_g_WA_logs_in_WA_waters_raw <- read_sf(here::here('DCRB_sdmTMB','data','WA logs shapefiles' ,'traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.shp')) %>% 
-#   st_transform(st_crs(grd))  #make it have same projection as the grid
-# #save a rds version and read that in in the future:
-# write_rds(traps_g_WA_logs_in_WA_waters_raw,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.rds"))
-traps_g_WA_logs_in_WA_waters_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_2010_2020_20220915_clipped to WA waters_updated.rds')) %>% 
-  select(-path, -layer) %>% #columns that have been added in QGIS step, when joining files 
-  #x and y are point locations, northing and easting
-  #crs was CA_Curr_Lamb_Azi_Equal_Area
-  #dplyr::mutate(point_x = sf::st_coordinates(.)[,1],
-  #              point_y = sf::st_coordinates(.)[,2]) %>% 
-  transmute(point_x = list(st_coordinates(.)[, 1]),
-            point_y = list(st_coordinates(.)[, 2])) %>% 
-  unnest(c(point_x, point_y)) %>% 
-  st_drop_geometry() %>% 
-  mutate(Pot_State = 'WA')
+traps_g_WA_logs_ALL_2010_2020raw <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_ALL_2010_2020.rds')) 
 
 
-traps_g_WA_logs_in_WA_waters_2010_2020 <- traps_g_WA_logs_in_WA_waters_2010_2020raw %>% 
-  st_set_geometry(NULL) %>% #remove geometry as it is slowing everything down
-  #drop couple useless columns
+traps_g_WA_logs_ALL_2010_2020 <- traps_g_WA_logs_ALL_2010_2020raw %>% 
   select(-NGDC_GR,-is_pr__) %>% 
   #rename some columns, plus those that got shortened by QGIS
   rename(
@@ -233,23 +240,62 @@ traps_g_WA_logs_in_WA_waters_2010_2020 <- traps_g_WA_logs_in_WA_waters_2010_2020
     month_name = mnth_nm,
     season_month = ssn_mnt,
     WA_Pot_Limit = Pot_Lmt
-  ) %>% 
+  ) #%>% 
   #add column
-  mutate(Pot_State = 'WA', #Pot_State = in what state did the pot occur, according to logbook
-         OR_License = NA)  #as these are WA landed data, and pots were in WA waters, there is no OR license info that is relevant
+  #mutate( OR_License = NA)  #as these are WA landed data, and pots were in WA waters, there is no OR license info that is relevant
 
 
+## Fix first 3 years of washington licenses ##
+#split data
 
+WA_license_OK <- traps_g_WA_logs_ALL_2010_2020 %>% 
+  filter(!season %in% c('2009-2010', '2010-2011', '2011-2012'))
 
+WA_license_NOT_OK <- traps_g_WA_logs_ALL_2010_2020 %>% 
+  filter(season %in% c('2009-2010', '2010-2011', '2011-2012'))
 
+#bring in raw logbooks, and using SetID, join in info t=from 'Fishticket1' column
+raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#SetID is the same between the two files
+raw_WA_logs_selected_columns <- raw_WA_logs %>% 
+  select(SetID, FishTicket1) %>% 
+  distinct()
 
+#join Fisticket1 into data
+WA_license_NOT_OK_fishticket1 <- WA_license_NOT_OK %>% 
+  left_join(raw_WA_logs_selected_columns, by="SetID")
+#length(unique(WA_license_NOT_OK$SetID)) #41255
+#WA_license_NOT_OK_fishticket1 %>% filter(is.na(FishTicket1)) %>% select(SetID) %>% n_distinct() #215
+# 215/41255*100 = 0.5% of cases didn't have Fishticket1 column filled to be able to join
+#note that if these are cases that are in OR waters, WA license won't even matter
 
+#read in file from WDFW that has real license info for first 3 seasons
+WA_license_fix_data <- read_csv(here('wdfw', 'data','2009-2012 logbook data_fixed_license.csv'),col_types = 'cdcccccddddddddddddddd')
+WA_license_fix_data_selected_columns <- WA_license_fix_data %>% 
+  select(License, `Fish Ticket 1`) %>% 
+  rename(FishTicket1 = `Fish Ticket 1`)
 
+#join correct license info to data
+WA_license_NOT_OK_fixed <- WA_license_NOT_OK_fishticket1 %>% 
+  left_join(WA_license_fix_data_selected_columns, by="FishTicket1")
 
+#brin gin WA license and pot limit table
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
 
+WA_pot_limit_info %<>%
+  rename(License = License_ID)
 
+# join Pot_Limit to WA_license_NOT_OK_fixed 
+WA_license_NOT_OK_fixed_pot_limit <- WA_license_NOT_OK_fixed %>% 
+  left_join(WA_pot_limit_info,by="License") 
+WA_license_NOT_OK_fixed_pot_limit$WA_License <- WA_license_NOT_OK_fixed_pot_limit$License
+WA_license_NOT_OK_fixed_pot_limit$WA_Pot_Limit <- WA_license_NOT_OK_fixed_pot_limit$Pot_Limit
+WA_license_NOT_OK_fixed_pot_limit <- WA_license_NOT_OK_fixed_pot_limit %>% 
+  select(-FishTicket1, -License, -Pot_Limit)
 
+##join WA data back together
 
+traps_g_WA_logs_ALL_2010_2020 <- rbind( WA_license_NOT_OK_fixed_pot_limit, WA_license_OK)
 
 
 
