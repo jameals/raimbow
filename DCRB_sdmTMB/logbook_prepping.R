@@ -813,29 +813,42 @@ summary <- removed_pots %>% group_by(season) %>% summarise(n_pots =)
 
 
 
-
+#######################################################################################
 #-----------------------
+#OR logs: traps_g_OR_logs_ALL_2008_2020
+
 
 #WA license data only has license number, not vessel name.
 #the vessel name in OR logs in WA waters, might match docnum in OR license, which matches Federal ID in WA logs, 
 #from logs and Federal ID we can get WA license, from which can get WA Pot Limit
 #but this won't always match
-traps_g_OR_logs_in_WA_waters_2008_2018 <- traps_g_OR_logs_in_WA_waters_2008_2018raw %>% 
-  st_set_geometry(NULL) #%>% 
-  #select(Vessel, OR_Lcns,SetID, SetID2,SetDate)
+
+#split out pots in WA waters
+traps_g_OR_logs_ALL_2008_2020_WA_waters <- traps_g_OR_logs_ALL_2008_2020 %>% 
+  filter(Pot_State == 'WA')
+traps_g_OR_logs_ALL_2008_2020_OR_waters <- traps_g_OR_logs_ALL_2008_2020 %>% 
+  filter(Pot_State == 'OR')
+
 
 #unique vessels in OR logs that had pots in WA waters
-unique_vessels_OR_logs_in_WA_waters <- traps_g_OR_logs_in_WA_waters_2008_2018 %>% 
+unique_vessels_OR_logs_in_WA_waters <- traps_g_OR_logs_ALL_2008_2020_WA_waters %>% 
   select(Vessel) %>% 
   distinct()
+#55
 
-
+##but note here the early WA seasons in the original file have wrong info 
 raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
 #SetID is the same between the two files
 raw_WA_logs_selected_columns <- raw_WA_logs %>% 
-  select(License, FederalID) %>% 
+  select(License, FederalID, FishTicket1) %>% #use FishTicket1 to fix wrong Federal IDs
   distinct() %>% 
   rename(WA_License = License)
+
+#select from new WDFW file FIshticket1, Federal ID etc for the first 3 seasons, and join to the above from original logs
+
+
+
+
 
 #FederalID column in WA logs has a space between the first 3 and last 3 digits, while pacfin ticket don't have this gap
 raw_WA_logs_selected_columns_new <-as.data.frame(apply(raw_WA_logs_selected_columns,2, str_remove_all, " ")) 
