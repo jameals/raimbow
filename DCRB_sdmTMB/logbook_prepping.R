@@ -770,9 +770,9 @@ length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
 #summary of WA landed logs that were from OR waters
 #that didn't match to OR license and pot limit info
 #season       n_no_match  n_unique_vessel prop_no_match                 n_unique_vessels_in_all_WA_landed_logs (WA license cap is 223)
-# 2009-2010        
-# 2010-2011       
-# 2011-2012          
+# 2009-2010       6             28            21%
+# 2010-2011       6             24            25%
+# 2011-2012       9             27            33%
 # 2012-2013       4             21            19%                                        140   
 # 2013-2014       4             23            17%                                        157   
 # 2014-2015       0             23            0%                                         159   
@@ -785,14 +785,30 @@ length(unique(no_license_info$Vessel.x)) #2 = 6% didn't find OR PotLimit info
 
 
 traps_g_WA_logs_in_OR_waters_all_joined <- list.files(path = "C:/Users/lrie0/Documents/Projects/raimbow/DCRB_sdmTMB/data/WA logs in OR waters joined to OR license info", pattern = "*.csv", full.names = TRUE) %>% 
-  lapply(read_csv,col_types = 'cccddcdccdcddccccdcddcccccd') %>% 
+  lapply(read_csv,col_types = 'cccddcdddddccccdcddcccdccccd') %>% 
   # Combine data sets into one
   bind_rows                                                        
 #glimpse(traps_g_WA_logs_in_OR_waters_all_joined)
 
+traps_g_WA_logs_in_OR_waters_all_joined_v2 <- traps_g_WA_logs_in_OR_waters_all_joined %>% 
+  select( -FederalID, -FishTicket1, -FederalID_length, -Vessel.y, -Begindate, -Enddate) %>% 
+  rename(Vessel = Vessel.x, OR_PermitNumber = PermitNumber, OR_Potlimit = Potlimit)
+
 #--> then join back with WA logs in WA waters
+glimpse(traps_g_WA_logs_ALL_2010_2020_WA_waters)
+traps_g_WA_logs_ALL_2010_2020_WA_waters_v2 <- traps_g_WA_logs_ALL_2010_2020_WA_waters %>% 
+  mutate(OR_PermitNumber = 'NA',
+         OR_Potlimit = 'NA')
 
+###ALL WA LOGS, WHETHER IN WA OR OREGON WATERS - THOSE IN OR WATERS BUT NO OR POT LIMIT ARE STILL IN THE DF
+traps_g_WA_logs_ALL_2010_2020_fixed <- rbind(traps_g_WA_logs_ALL_2010_2020_WA_waters_v2, traps_g_WA_logs_in_OR_waters_all_joined_v2)
+# # write_rds(traps_g_WA_logs_ALL_2010_2020_fixed,here::here('DCRB_sdmTMB','data',"traps_g_WA_logs_ALL_2010_2020_fixed.rds"))
+# note that those pots in OR waters without OR license have not yet been deleter
 
+#how many pots get deleted if remove pots in OR waters if no OR license?
+removed_pots <- traps_g_WA_logs_ALL_2010_2020_fixed %>% 
+  filter(Pot_State == 'OR' & is.na(OR_Potlimit))
+summary <- removed_pots %>% group_by(season) %>% summarise(n_pots =)
 
 
 
