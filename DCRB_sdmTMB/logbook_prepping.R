@@ -810,7 +810,9 @@ removed_pots <- traps_g_WA_logs_ALL_2010_2020_fixed %>%
   filter(Pot_State == 'OR' & is.na(OR_Potlimit))
 summary <- removed_pots %>% group_by(season) %>% summarise(n_pots =)
 
-
+all_WA_potsin_OR_waters <- traps_g_WA_logs_ALL_2010_2020_fixed %>% 
+  filter(Pot_State == 'OR' )
+summary_v2 <- all_WA_potsin_OR_waters %>% group_by(season) %>% summarise(n_pots = n())
 
 
 #######################################################################################
