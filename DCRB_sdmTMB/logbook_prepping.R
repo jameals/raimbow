@@ -2,6 +2,7 @@
 
 #getting DCRB fishing effort data ready for sdmTMB work
 
+#some of the early dfs have been moved to \raimbow\DCRB_sdmTMB\data\dfs for early parts of logbook_prepping R code
 
 #------------------------------------------------------------------------------
 library(tidyverse)
@@ -998,4 +999,44 @@ sringlines_to_be_deleted_v3 %>% group_by(season) %>% summarise(n = n())
 #---------------------------------------------------------------------------------------------------
 
 #next step is to join both full WA logs and full OR logs to a final df
+
+traps_g_WA_logs_ALL_2010_2020_fixed <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_WA_logs_ALL_2010_2020_fixed.rds'))
+traps_g_OR_logs_ALL_2008_2020_fixed <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_OR_logs_ALL_2008_2020_fixed.rds'))
+
+glimpse(traps_g_WA_logs_ALL_2010_2020_fixed)
+glimpse(traps_g_OR_logs_ALL_2008_2020_fixed)
+
+#change some columns so that can join the two
+
+traps_g_OR_logs_ALL_2008_2020_fixed_v2 <- traps_g_WA_logs_ALL_2010_2020_fixed %>% 
+  #reorder columns
+  select(Vessel, SetID, PotsFished, SetDate, line_length_m, depth, GRID5KM_ID, AREA, grd_x, grd_y,
+         season, month_name, season_month, point_x, point_y,
+         Landing_logbook_state, SetID2, Pot_State, OR_PermitNumber, OR_Potlimit, WA_License, WA_Pot_Limit) %>% 
+  rename(OR_Pot_Limit = OR_Potlimit) %>% 
+  #remove those pots that were in OR waters but didn't find a OR license
+  mutate(keep_remove = ifelse(Pot_State == 'OR' & is.na(OR_Pot_Limit), 'remove','keep')) %>% 
+  filter(keep_remove == 'keep')
+traps_g_WA_logs_ALL_2010_2020_fixed_v2$OR_PermitNumber <- as.numeric(traps_g_WA_logs_ALL_2010_2020_fixed_v2$OR_PermitNumber)
+traps_g_WA_logs_ALL_2010_2020_fixed_v2$OR_Pot_Limit <- as.numeric(traps_g_WA_logs_ALL_2010_2020_fixed_v2$OR_Pot_Limit)
+
+traps_g_OR_logs_ALL_2008_2020_fixed_v2 <- traps_g_OR_logs_ALL_2008_2020_fixed %>% 
+  #remove ODFW Spatial Flag column, false = no error identified, all our false as filtered earlier
+  select(-SptlFlg) %>% 
+  #reorder columns
+  select(Vessel, SetID, PotsFished, SetDate, line_length_m, depth, GRID5KM_ID, AREA, grd_x, grd_y,
+         season, month_name, season_month, point_x, point_y,
+         Landing_logbook_state, SetID2, Pot_State, OR_License, OR_Pot_Limit, WA_License, WA_Pot_Limit) %>%
+  rename(OR_PermitNumber = OR_License) %>% 
+  #remove those pots that were in WA waters but didn't find a WA license
+  mutate(keep_remove = ifelse(Pot_State == 'WA' & is.na(WA_Pot_Limit), 'remove','keep')) %>% 
+  filter(keep_remove == 'keep')
+traps_g_OR_logs_ALL_2008_2020_fixed_v2$WA_Pot_Limit <- as.numeric(traps_g_OR_logs_ALL_2008_2020_fixed_v2$WA_Pot_Limit)
+
+
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020 <- rbind(traps_g_WA_logs_ALL_2010_2020_fixed_v2, traps_g_OR_logs_ALL_2008_2020_fixed_v2)
+
+# # write_rds(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020,here::here('DCRB_sdmTMB','data',"traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020.rds"))
+
+
 
