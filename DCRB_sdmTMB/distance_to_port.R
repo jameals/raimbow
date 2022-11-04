@@ -52,6 +52,15 @@ raw_WA_logs_selected_columns <- raw_WA_logs %>%
 WA_logs_fishticket1 <- WA_logs %>%
   left_join(raw_WA_logs_selected_columns, by="SetID")
 
+#not all data find a Fishticket1
+has_NAs <- WA_logs_fishticket1 %>% filter(is.na(FishTicket1))
+unique(has_NAs$SetID) #1450 SetIDs
+summary_table <- has_NAs %>% group_by(Pot_State) %>% summarise(n_distinct_SetID = n_distinct(SetID))
+#Pot_State    n_distinct_SetID
+#OR                 35
+#WA               1436
+nrow(has_NAs)/nrow(WA_logs)*100 ##0.9% of pots/of WA logs didn't have a Fishticket number recorded in logbooks to be matched to PacFin tickets
+
 
 #-------------------------------------------------------------------------
 
