@@ -61,6 +61,10 @@ summary_table <- has_NAs %>% group_by(Pot_State) %>% summarise(n_distinct_SetID 
 #WA               1436
 nrow(has_NAs)/nrow(WA_logs)*100 ##0.9% of pots/of WA logs didn't have a Fishticket number recorded in logbooks to be matched to PacFin tickets
 
+## OR
+
+
+
 
 #-------------------------------------------------------------------------
 
