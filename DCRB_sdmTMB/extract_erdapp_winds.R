@@ -93,3 +93,124 @@ erdapp_grids_id <- sort(unique(test_join$GRID5KM_ID))
 identical(study_area_grids_id, erdapp_grids_id) #TRUE
 #and unique grid IDs are the same as in the study area
 
+
+#summarise wind and SST for each grid in each half month time step
+sumamrised_wind_SST <- test_join %>% 
+  #drop useless columns
+  select(-time, -lat, -lon) %>% 
+  rename(grd_x = X, grd_y = Y, SST = sea_surface_temperature) %>% 
+  #specify which rows (dates) fall into each of half monthly time steps
+  mutate(month = lubridate::month(utcdate, label = TRUE, abbr = FALSE)) %>% 
+  mutate(day = lubridate::day(utcdate)) %>% 
+  mutate(month_interval = ifelse(day <= 15, 1, 2)) %>% 
+  mutate(half_month = paste0(month,"_",month_interval)) %>% 
+  #also need to specify crab season
+  mutate(year = lubridate::year(utcdate)) %>% 
+  mutate(season_start = ifelse(month == "December", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "December", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  #drop useless columns
+  select(-month, -day, -month_interval, -year, -season_start, -season_end, -utcdate) %>% 
+  group_by(GRID5KM_ID, grd_x, grd_y, season, half_month) %>% #keep centroid x and y coords
+  summarise(SST_avg = mean(SST, na.rm = TRUE),
+            wind_avg = mean(wind_speed, na.rm = TRUE))
+glimpse(sumamrised_wind_SST)
+#there are some extra time steps in this df (e.g., oct-nov months)
+
+
+
+study_area_grids_with_all_season_halfmonth_combos <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_sf.rds"))
+
+study_area_grids_with_all_season_halfmonth_combos <- study_area_grids_with_all_season_halfmonth_combos %>% 
+  st_set_geometry(NULL) %>% 
+  #some grids are in multiple pieces as broken up by land
+  #we'll just use one value for each predictor for all
+  distinct(GRID5KM_ID, season, half_month)
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST <- study_area_grids_with_all_season_halfmonth_combos %>% 
+  left_join(sumamrised_wind_SST, by=c("GRID5KM_ID", "season", "half_month"))
+#no NAs for wind
+#some NAs for SST
+nrow(study_area_grids_with_all_season_halfmonth_combos_wind_SST)
+
+
+#---------------------
+#Fix NAs in SST
+
+has_NAs <- study_area_grids_with_all_season_halfmonth_combos_wind_SST %>% 
+  filter(is.na(SST_avg))
+unique(has_NAs$GRID5KM_ID)
+#75 grids
+#NA for SST as grid centroid likely on land
+#although sometimes missing for only one time step 
+#we could fill these in by using SST value of next grid in that same time step
+#but because of grid numbering,
+
+df_has_NAs_SST <-  study_area_grids_with_all_season_halfmonth_combos_wind_SST %>% 
+  filter(is.na(SST_avg))
+#nrow(df_has_NAs_SST) #6459
+df_no_NAs_SST <-  study_area_grids_with_all_season_halfmonth_combos_wind_SST %>% 
+  filter(!is.na(SST_avg))
+#nrow(df_no_NAs_SST) #371945
+
+
+df_has_NAs_SST_fix <- df_has_NAs_SST %>% 
+  #create a secondary GridID to use for mathcing
+  mutate(GRID5KM_ID_v2 = GRID5KM_ID+1) %>% 
+  #now join SST using the next grids SST
+  left_join(sumamrised_wind_SST, by=c("GRID5KM_ID_v2"= "GRID5KM_ID", "season", "half_month")) %>% 
+  select(GRID5KM_ID:wind_avg.x,SST_avg.y) %>% 
+  rename(grd_x = grd_x.x, grd_y = grd_y.x, wind_avg = wind_avg.x)
+#some SST vlaues were found
+df_has_NAs_SST_fix_v2 <- df_has_NAs_SST_fix %>% 
+  #create a different secondary GridID to use for mathcing
+  mutate(GRID5KM_ID_v3 = GRID5KM_ID-1) %>% 
+  #now join SST using the next grids SST
+  left_join(sumamrised_wind_SST, by=c("GRID5KM_ID_v3"= "GRID5KM_ID", "season", "half_month")) %>% 
+  select(GRID5KM_ID:wind_avg.x,SST_avg.y,SST_avg) %>% 
+  rename(grd_x = grd_x.x, grd_y = grd_y.x, wind_avg = wind_avg.x)
+#some more SST values were found
+
+df_has_NAs_SST_fix_v3 <- df_has_NAs_SST_fix_v2 %>% 
+  mutate(SST_avg = ifelse(is.na(SST_avg), SST_avg.y, SST_avg)) %>% 
+  mutate(SST_avg = ifelse(is.na(SST_avg), SST_avg.x, SST_avg)) %>% #this didn't actually help
+  select(-SST_avg.x, -SST_avg.y)
+
+still_has_Nas <- df_has_NAs_SST_fix_v3 %>% filter(is.na(SST_avg))
+unique(still_has_Nas$GRID5KM_ID)
+#13 grids left
+#some of them up far up estuaries and don't have neighbouring grids (+/- 1)
+
+
+df_has_NAs_SST_fix_v4 <- df_has_NAs_SST_fix_v3 %>% 
+  mutate(
+    GRID5KM_ID_v4 = case_when(
+      GRID5KM_ID == 118633 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 116988 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 95854 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 95855 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 96185 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 97177 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 89583 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 88593 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 91233 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 91563 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 104440 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 124898 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 129513 & is.na(SST_avg) ~ 118962
+      
+    )
+  ) %>% 
+  #now join SST using the next grids SST
+  left_join(sumamrised_wind_SST, by=c("GRID5KM_ID_v4"= "GRID5KM_ID", "season", "half_month")) %>% 
+  select(GRID5KM_ID:SST_avg.x, ,SST_avg.y) %>% 
+  rename(grd_x = grd_x.x, grd_y = grd_y.x, wind_avg = wind_avg.x, SST_avg = SST_avg.x)
+
+df_has_NAs_SST_fix_v5 <- df_has_NAs_SST_fix_v4 %>% 
+  mutate(SST_avg = ifelse(is.na(SST_avg), SST_avg.y, SST_avg)) %>% 
+  select( -SST_avg.y)
+nrow(df_has_NAs_SST_fix_v5) #6459
+
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- rbind(df_no_NAs_SST, df_has_NAs_SST_fix_v5)
+
