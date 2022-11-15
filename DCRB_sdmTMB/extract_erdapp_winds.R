@@ -70,8 +70,10 @@ write_rds(winds_all,here('DCRB_sdmTMB','data','erdapp_winds_SST.rds'))
 # and the lat/lon matching key
 write_rds(latlons, here('DCRB_sdmTMB','data','grd_erdapp_winds_latlon_match.rds'))
 
+
 #-------------------------------------------------------------------
 
+#summarise wind and SST data for each gridn in each time step
 #read files
 
 erdapp_winds_SST <- read_rds(here('DCRB_sdmTMB','data','erdapp_winds_SST.rds'))
@@ -193,7 +195,7 @@ df_has_NAs_SST_fix_v4 <- df_has_NAs_SST_fix_v3 %>%
       GRID5KM_ID == 97177 & is.na(SST_avg) ~ 118962,
       GRID5KM_ID == 89583 & is.na(SST_avg) ~ 118962,
       GRID5KM_ID == 88593 & is.na(SST_avg) ~ 118962,
-      GRID5KM_ID == 91233 & is.na(SST_avg) ~ 118962,
+      GRID5KM_ID == 91233 & is.na(SST_avg) ~ 118962,s
       GRID5KM_ID == 91563 & is.na(SST_avg) ~ 118962,
       GRID5KM_ID == 104440 & is.na(SST_avg) ~ 118962,
       GRID5KM_ID == 124898 & is.na(SST_avg) ~ 118962,
@@ -212,5 +214,6 @@ df_has_NAs_SST_fix_v5 <- df_has_NAs_SST_fix_v4 %>%
 nrow(df_has_NAs_SST_fix_v5) #6459
 
 
-study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- rbind(df_no_NAs_SST, df_has_NAs_SST_fix_v5)
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- rbind(df_no_NAs_SST, df_has_NAs_SST_fix_v5) 
 
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed, here('DCRB_sdmTMB','data','study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed.rds'))
