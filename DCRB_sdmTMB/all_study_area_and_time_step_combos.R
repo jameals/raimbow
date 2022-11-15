@@ -25,6 +25,38 @@ study_area_grids_id <- sort(unique(study_area$GRID5KM_ID))
 #1532 unique grid IDs, but some grids that overlap with land have been split into smaller pieces
 #1570 polygons
 
+#### OWEN EDITS 11/15/2022
+# with merged polys
+study_area_unique_grid_id <- study_area %>% 
+  group_by(GRID5KM_ID) %>% 
+  summarise() %>% 
+  ungroup()
+# lets put the attributes back in: sum of area and mean NGDC_GRID
+## NOTE: not sure if this is how you want to define depth (mean value across sliced up grid pieces). 
+# It seems like a fine decision but there are other options
+extra_atts <- study_area %>% 
+  st_set_geometry(NULL) %>% 
+  group_by(GRID5KM_ID) %>% 
+  summarise(AREA=sum(AREA),
+            NGDC_GRID=mean(NGDC_GRID)) %>% 
+  ungroup()
+study_area_unique_grid_id %<>%
+  left_join(extra_atts,by=c("GRID5KM_ID"))
+glimpse(study_area_unique_grid_id)
+# get grid centroids for newly summarized grid
+study_area_centroids <- study_area_unique_grid_id %>% 
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as_tibble() %>% 
+  mutate(GRID5KM_ID=unique(study_area_unique_grid_id$GRID5KM_ID))
+study_area_centroids %>% 
+  ggplot(aes(X,Y,color=GRID5KM_ID))+
+  geom_point()
+write_rds(study_area_centroids,here('DCRB_sdmTMB','data','study_grid_centroids.rds'))
+
+#### END OWEN EDITS ####
+
+
 study_area_df <- as.data.frame(study_area_grids_id) %>% 
   rename(GRID5KM_ID = study_area_grids_id)
 
