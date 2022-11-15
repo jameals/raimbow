@@ -20,16 +20,18 @@ library(stringr)
 
 #-------------------------------------------------------------------------------------------------
 
-# bathymetry extracted using zonal statistics. gebco bathymetry - blake dpth layer missing port/embayment depths
+# bathymetry extracted in QGIS using zonal statistics, from gebco bathymetry - blake depth layer missing port/embayment depths
 path_bathy_lamb <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/data files/study_area_depth_lamb_azi.shp"
 bathy_lamb <- st_read(path_bathy_lamb, quiet = TRUE) 
 #file has some >0m values, all really close to coast/bays
+# --> I think make call that if the value used, e.g. median >0m, make it -1
 
+
+#all processed logbook data as points
 all_logs_points <- read_rds(here::here('DCRB_sdmTMB', 'data','traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020.rds'))
 
 
 #extract gebco depth to points
-
 bathy <- raster(here::here('DCRB_sdmTMB','data', 'gebco bathy','gebco_2022_n49.5703_s35.2617_w-126.29_e-119.6104.tif'))
 
 all_logs_points_sf <- all_logs_points %>%
@@ -47,6 +49,7 @@ all_logs_points_sf_GEBCObathy <- all_logs_points_sf %>%
 
 #save the sf version
 #write_rds(all_logs_points_sf_GEBCObathy,here::here('DCRB_sdmTMB', 'data', "all_logs_points_GEBCObathy_sf.rds"))
+
 
 #first need to drop geometry if want to eg plot the two depth values against each other
 all_logs_points_sf_GEBCObathy_NOgeom <- all_logs_points_sf_GEBCObathy %>% 
@@ -69,12 +72,11 @@ summary(all_logs_points_sf_GEBCObathy_NOgeom$depth)
 summary(all_logs_points_sf_GEBCObathy_NOgeom$depth_gebco)
 
 # when depth is assigned to pots, i.e. points:
-#even GEBCO has some weird deep points, -2106m, there seems to be a slight glitch in the GEBCO layer?
-#also GEBCO gives some 'on land' values --> I think make call that if the value used, e.g. median >0m, make it -1
-#8 grid cells have deeper depth rasters than -500m 
-#18 grids have raster values deeper tan -300m
-
-#vms depth has high depth values for ports and embayments
+# even GEBCO has some weird deep points, -2106m, there seems to be a slight glitch in the GEBCO layer in some pixels...?
+# 8 grid cells have deeper depth rasters than -500m 
+# 18 grids have raster values deeper than -300m
+# also GEBCO gives some 'on land' values --> I think make call that if the value used, e.g. median >0m, make it -1
+#Blake vms depth has high depth values for ports and embayments
 
 subset <- all_logs_points_sf_GEBCObathy_NOgeom %>% 
   filter(depth > -200) %>% 
@@ -84,7 +86,7 @@ subset <- all_logs_points_sf_GEBCObathy_NOgeom %>%
 plot_of_depths <- ggplot(subset, aes(x=depth, y=depth_gebco)) +
   geom_scattermore()
 
-#if limit data to 0 to -200m range, then pretty 1-to-1 relationship between BLake vms bathy layer and GEBCO
+#if limit data to 0 to -200m range, then pretty 1-to-1 relationship between Blake vms bathy layer and GEBCO
 
 
 #-------------------------------------------------------------
@@ -96,7 +98,7 @@ summary(bathy_lamb_NOgeom$X_median)
 #the mean and median zonal statistic from GEBCO are pretty similar
 
 summary_from_points <- all_logs_points_sf_GEBCObathy_NOgeom %>% 
-  #need to filter out port and embayments
+  #need to filter out port and embayments, large negative values
   filter(depth > -1000) %>% 
   group_by(GRID5KM_ID) %>% 
   summarise(mean_depth_vms = mean(depth),
@@ -110,12 +112,31 @@ depth_comparison <- summary_from_points %>%
   select(-NGDC_GRID, -ORIG_AREA, -US_EEZ, -AREA, -layer, -path)
 
 
-#compare median depth from point to median depth from grid (vms bathy grid)
+#compare e.g., median depth from points to median depth from grids (vms bathy grid)
 plot(depth_comparison$median_depth_vms, depth_comparison$X_median)
 plot(depth_comparison$median_depth_gebco, depth_comparison$X_median)
 #overall there is a good relationship between median depth from pots, and median depth from zonal statistics
-#but tis breaks donwn in about 20-30 grid cells that are on the continental slope edge
+#but this breaks down in about 20-30 grid cells that are on the continental slope edge
+#have one column for depth values for grids averaged from points in that grid, and a second column for depth
+#in each grid from GEBCO and zonal statistics
 
+#----------------------------------------------------------
+
+# all study area grids with all time step combos
+study_area_grids_with_all_season_halfmonth_combos_sf <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_sf.rds'))
+#grids in multiple pieces have repeating grid ID. 
+#fix this similarly to wind/SST, just keep one grid ID of each
+
+# bathymetry extracted in QGIS using zonal statistics, from gebco bathymetry - blake depth layer missing port/embayment depths
+path_bathy_lamb <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/data files/study_area_depth_lamb_azi.shp"
+bathy_lamb <- st_read(path_bathy_lamb, quiet = TRUE) 
+#grids in multiple pieces have repeating grid ID. 
+#fix this similarly to wind/SST, just keep one grid ID of each
+#also fix depth >0 just to be 0. maybe also fix some weird cases of low depth values (slight glitches in GeBCO maybe)
+
+# logbook points with GEBCO bathymetry
+all_logs_points_sf_GEBCObathy_NOgeom <- read_rds(here::here('DCRB_sdmTMB', 'data', "all_logs_points_GEBCObathy_df.rds"))
+#due to original joining to grid, some NAs. in these cases default to using grid based depth  
 
 
 
