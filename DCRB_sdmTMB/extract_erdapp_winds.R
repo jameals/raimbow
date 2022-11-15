@@ -87,5 +87,9 @@ joined_df <- erdapp_winds_SST %>%
 #there are lots of NAs for Grid ID
 test_join <- joined_df %>% filter(!is.na(GRID5KM_ID))
 unique(test_join$GRID5KM_ID)
-
+#now have same number of unique grid IDs as before
+study_area_grids_id <- sort(unique(study_area$GRID5KM_ID)) 
+erdapp_grids_id <- sort(unique(test_join$GRID5KM_ID))
+identical(study_area_grids_id, erdapp_grids_id) #TRUE
+#and unique grid IDs are the same as in the study area
 
