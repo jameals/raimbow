@@ -69,3 +69,23 @@ toc()
 write_rds(winds_all,here('DCRB_sdmTMB','data','erdapp_winds_SST.rds'))
 # and the lat/lon matching key
 write_rds(latlons, here('DCRB_sdmTMB','data','grd_erdapp_winds_latlon_match.rds'))
+
+#-------------------------------------------------------------------
+
+#read files
+
+erdapp_winds_SST <- read_rds(here('DCRB_sdmTMB','data','erdapp_winds_SST.rds'))
+glimpse(erdapp_winds_SST)
+grd_erdapp_winds_latlon_match <- read_rds(here('DCRB_sdmTMB','data','grd_erdapp_winds_latlon_match.rds'))
+glimpse(grd_erdapp_winds_latlon_match)
+
+#matchlat and matchlon should match the erddap data exactly
+
+joined_df <- erdapp_winds_SST %>% 
+  left_join(grd_erdapp_winds_latlon_match, by = c("lat" = "matchlat", "lon" = "matchlon"))
+
+#there are lots of NAs for Grid ID
+test_join <- joined_df %>% filter(!is.na(GRID5KM_ID))
+unique(test_join$GRID5KM_ID)
+
+
