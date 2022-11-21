@@ -15,9 +15,9 @@ library(ggbeeswarm)
 #-----------------------------------------------------------------------------------
 
 #bring in some grids
-path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
-path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+path.grid.5km <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km.lno <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.depth <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
@@ -26,7 +26,7 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" 
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" 
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
@@ -36,11 +36,11 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 #whale data
 
 #New hw data pull 2009 to 2020
-path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
+path.hump_2009_2020 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 #bw 2009-Jul 2019
-path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+path.blue <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
 #New bw data pull Aug 2019 to Sep 2021
-path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
+path.blue_2019_2021 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
 
 
 #hw output 2009-2020
@@ -89,7 +89,7 @@ x.whale_crab_season_May_Sep <-  x.whale_crab_season %>%
 
 #fishing effort
 
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA)
 #Grid ID 122919 end up having very high trap densities in few months 
