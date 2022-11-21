@@ -15,7 +15,7 @@ library(ggpubr)
 
 #read in all logs fished in WA waters (landed in either WA or in OR)
 #data not summarised to grid level yet - retains individual stringline IDs
-path_WA_landed_all_logs <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds"
+path_WA_landed_all_logs <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/traps_g_all_logs_2014_2020_clipped_to_WA_waters_20220126.rds"
 WA_landed_all_logs_clipped_to_WA_waters <- readRDS(path_WA_landed_all_logs)
 
 # interested only in May-Sep period
@@ -185,29 +185,34 @@ monthly_rev_by_vessel_JulSep <- monthly_rev_by_vessel %>%
 
 
 monthly_rev_JulSep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2.2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_JulSep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2.2) + #,size=2.5  group=season,
   scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
   ylab("Mean monthly revenue/vessel ($x10^4)") +
   xlab("") + 
   scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019")) +
   theme_classic()+
   theme(legend.title = element_blank(),
-        #title = element_text(size = 26),
-        #legend.text = element_text(size = 20),
+        #title = element_text(size = 30),
+        #legend.text = element_text(size = 40),
         #legend.position = c(.85, .85),
         legend.position = 'none',
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 monthly_rev_JulSep
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019_ADJ_INFL_and_repeating_fishtix.png"), width = 15, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2019_ADJ_INFL_and_repeating_fishtix_UPDATED.png"), width = 14, height = 14, units = "in", res = 500)
 # ggarrange(monthly_rev_JulSep,
 #           ncol=1,
 #           nrow=1
@@ -228,8 +233,8 @@ monthly_rev_by_vessel_MaySep <- monthly_rev_by_vessel %>%
 
 
 monthly_rev_MaySep <- ggplot()+
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
-  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg =="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2.2) + #,size=2.5  group=season,
+  geom_violin(data = monthly_rev_by_vessel_MaySep %>%  filter(pre_post_reg !="pre-reg"), aes(x=pre_post_reg, y=mean_monthly_rev/10000, group=as.factor(Pot_Limit), color=as.factor(Pot_Limit)), lwd=2.2) + #,size=2.5  group=season,
   scale_color_manual(name="", values = c("#8bd8bd","#243665")) +
   #ylab("Mean monthly revenue/vessel (x10^4)") +
   ylab("") +
@@ -238,20 +243,25 @@ monthly_rev_MaySep <- ggplot()+
   theme_classic()+
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 50),
+        #legend.text = element_text(size = 50),
         #legend.position = c(.85, .85),
         legend.position="none",
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0, color='black'),
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 monthly_rev_MaySep
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_ADJ_INFL_and_repeating_fishtix.png"), width = 15, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/mean_monthly_revenue_by_vessel_prePreg_vs_2020_ADJ_INFL_and_repeating_fishtix_UPDATED.png"), width = 14, height = 14, units = "in", res = 500)
 # ggarrange(monthly_rev_MaySep,
 #           ncol=1,
 #           nrow=1
@@ -305,8 +315,8 @@ summary(mod_monthly_rev_MaySep_500)
 #---------------------------------------------------------------------------------
 ## instead of violin plots, do line plots for $, lbs and CPUE  
 
-group_by(FISH_TICKET_ID) %>% 
-  filter(row_number()==1) %>%
+#group_by(FISH_TICKET_ID) %>% 
+#  filter(row_number()==1) %>%
   
   
 ## plot both Jul-Sep and May-Sep lines on one plot
@@ -358,11 +368,11 @@ summary_pacfin_data_MaySep$season_2 <- as.numeric(summary_pacfin_data_MaySep$sea
 sum_JulSep_and_MaySep_rev_line <- ggplot() +
   #Jul-Sep
   geom_line(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_revenue/100000,group = 1), lwd=1.8) +
-  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=5) +
+  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=6) +
   geom_segment(data = summary_pacfin_data_JulSep,aes(x = 2018.7, y = 7.908069, xend = 2019.3, yend = 7.908069), linetype='dashed', lwd=1.8) +
   #May-Sep
   geom_line(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_revenue/100000,group = 1), lwd=1.8, color='gray') +
-  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=5, color='gray') +
+  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_revenue/100000, group = 1), size=6, color='gray') +
   geom_segment(data = summary_pacfin_data_MaySep,aes(x = 2019.7, y = 17.2023, xend = 2020.3, yend = 17.2023), linetype='dashed', color='gray', lwd=1.8) +
   scale_y_continuous(limits=c(NA, 44), breaks=c(10,20,30,40)) +
   scale_x_continuous(breaks=seq(2014, 2020, 1))+
@@ -373,19 +383,24 @@ sum_JulSep_and_MaySep_rev_line <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=40),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 sum_JulSep_and_MaySep_rev_line
 
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_2020_LINE_and_repeating_fishtix.png"), width = 22, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_revenue_prePreg_vs_2019_2020_LINE_and_repeating_fishtix_UPDATED.png"), width = 22, height = 14, units = "in", res = 400)
 # ggarrange(sum_JulSep_and_MaySep_rev_line,
 #           ncol=1,
 #           nrow=1
@@ -440,11 +455,11 @@ pre_reg_mean_revenue_MaySep <- summary_pacfin_data_MaySep %>%
 sum_JulSep_and_MaySep_lbs_line <- ggplot() +
   #Jul-Sep
   geom_line(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), lwd=1.8) +
-  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_weight_lbs/100000, group = 1), size=5) +
+  geom_point(data = summary_pacfin_data_JulSep, aes(x = season_2, y = sum_weight_lbs/100000, group = 1), size=6) +
   geom_segment(data = summary_pacfin_data_JulSep,aes(x = 2018.7, y = 1.85442, xend = 2019.3, yend = 1.85442), linetype='dashed', lwd=1.8) +
   #May-Sep
   geom_line(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), lwd=1.8,color='gray') +
-  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), size=5,color='gray') +
+  geom_point(data = summary_pacfin_data_MaySep, aes(x = season_2, y = sum_weight_lbs/100000,group = 1), size=6,color='gray') +
   geom_segment(data = summary_pacfin_data_MaySep,aes(x = 2019.7, y = 3.56729, xend = 2020.3, yend = 3.56729), linetype='dashed', lwd=1.8,color='gray') +
   scale_y_continuous(limits=c(NA, 10), breaks=c(3,6,9)) +
   scale_x_continuous(breaks=seq(2014, 2020, 1))+
@@ -455,19 +470,24 @@ sum_JulSep_and_MaySep_lbs_line <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=40),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 sum_JulSep_and_MaySep_lbs_line
 
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/total_landings_prePreg_vs_2019_2020_LINE_adj_for_repeating_fishtix.png"), width = 22, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/total_landings_prePreg_vs_2019_2020_LINE_adj_for_repeating_fishtix_UPDATED.png"), width = 22, height = 14, units = "in", res = 400)
 # ggarrange(sum_JulSep_and_MaySep_lbs_line,
 #           ncol=1,
 #           nrow=1
@@ -581,11 +601,11 @@ summary_efficiency_CPUE_v2_MaySep$season_2 <- as.numeric(summary_efficiency_CPUE
 CPUE_ts_lbs_JulSep_MaySep_line <- ggplot() +
   #Jul-Sep
   geom_line(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = lbs_per_pot,group = 1), lwd=1.8) +
-  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = lbs_per_pot, group = 1), size=5) +
+  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = lbs_per_pot, group = 1), size=6) +
   geom_segment(data = summary_efficiency_CPUE_v2_JulSep,aes(x = 2018.7, y = 2.252429, xend = 2019.3, yend = 2.252429), linetype='dashed', lwd=1.8) +
   #May-Sep
   geom_line(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = lbs_per_pot,group = 1), lwd=1.8, color='gray') +
-  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = lbs_per_pot, group = 1), size=5, color='gray') +
+  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = lbs_per_pot, group = 1), size=6, color='gray') +
   geom_segment(data = summary_efficiency_CPUE_v2_MaySep,aes(x = 2019.7, y = 2.182817, xend = 2020.3, yend = 2.182817), linetype='dashed', lwd=1.8, color='gray') +
   scale_x_continuous(breaks=seq(2014, 2020, 1))+
   ylab("Mean lbs/pot") +
@@ -595,18 +615,23 @@ CPUE_ts_lbs_JulSep_MaySep_line <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=40),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 CPUE_ts_lbs_JulSep_MaySep_line
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_2019_2020_LINE_adj_for_repeating_fishtix.png"), width = 22, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_pounds_per_pot_prePreg_2019_2020_LINE_adj_for_repeating_fishtix_UPDATED.png"), width = 22, height = 14, units = "in", res = 400)
 # ggarrange(CPUE_ts_lbs_JulSep_MaySep_line,
 #           ncol=1,
 #           nrow=1
@@ -622,11 +647,11 @@ CPUE_ts_lbs_JulSep_MaySep_line
 CPUE_ts_dollar_JulSep_MaySep_line <- ggplot() +
   #Jul-Sep
   geom_line(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = dollar_per_pot,group = 1), lwd=1.8) +
-  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = dollar_per_pot, group = 1), size=5) +
+  geom_point(data = summary_efficiency_CPUE_v2_JulSep, aes(x = season_2, y = dollar_per_pot, group = 1), size=6) +
   geom_segment(data = summary_efficiency_CPUE_v2_JulSep,aes(x = 2018.7, y = 10.542249, xend = 2019.3, yend = 10.542249), linetype='dashed', lwd=1.8) +
   #May-Sep
   geom_line(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = dollar_per_pot,group = 1), lwd=1.8, color='gray') +
-  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = dollar_per_pot, group = 1), size=5, color='gray') +
+  geom_point(data = summary_efficiency_CPUE_v2_MaySep, aes(x = season_2, y = dollar_per_pot, group = 1), size=6, color='gray') +
   geom_segment(data = summary_efficiency_CPUE_v2_MaySep,aes(x = 2019.7, y = 10.52605, xend = 2020.3, yend = 10.52605), linetype='dashed', lwd=1.8, color='gray') +
   scale_x_continuous(breaks=seq(2014, 2020, 1))+
   ylab("Mean $/pot") +
@@ -636,18 +661,23 @@ CPUE_ts_dollar_JulSep_MaySep_line <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
-        axis.text.x = element_text(hjust = 0.5,size = 40, color='black'), #, angle = 60
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, color='black'), #, angle = 60
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
         axis.title.x=element_blank(),
-        strip.text = element_text(size=40),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 CPUE_ts_dollar_JulSep_MaySep_line
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/CPUE_dollar_per_pot_prePreg_2019_2020_LINE_adj_for_infl_and_repeating_fishtix.png"), width = 22, height = 14, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/CPUE_dollar_per_pot_prePreg_2019_2020_LINE_adj_for_infl_and_repeating_fishtix_UPDATED.png"), width = 22, height = 14, units = "in", res = 400)
 # ggarrange(CPUE_ts_dollar_JulSep_MaySep_line,
 #           ncol=1,
 #           nrow=1
