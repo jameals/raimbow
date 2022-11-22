@@ -565,10 +565,10 @@ active_vessels_in_MaySep_by_season_v2$Pot_Limit_or_M2 <- as.factor(active_vessel
 active_vessels_in_MaySep_by_season_v2$pre_post_reg <- factor(active_vessels_in_MaySep_by_season_v2$pre_post_reg, levels = c("pre-regulation", "2019", "2020"))
 
 vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
-  geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-regulation'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=2) + 
+  geom_violin(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg=='pre-regulation'), aes(x= month_name, y= n_unique_licenses, fill=pre_post_reg), lwd=2.2) + 
   scale_fill_manual(values=c("white"), guide = guide_legend(order = 1)) +
   
-  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-regulation'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=8) + 
+  geom_point(data = active_vessels_in_MaySep_by_season_v2 %>%  filter(pre_post_reg!='pre-regulation'), aes(x= month_name, y= n_unique_licenses, color=pre_post_reg, shape=pre_post_reg), size=9) + 
   scale_color_manual(values=c("black", "black")) +
   scale_x_discrete(labels=c("May"="May","June"="Jun","July"="Jul","August"="Aug","September"="Sep")) +
   facet_wrap(~Pot_Limit_or_M2)+
@@ -580,25 +580,30 @@ vessels_in_MaySep_by_season_plot_v2 <- ggplot()+
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
-        axis.line = element_line(colour = "black"),
-    
+        axis.line = element_line(colour = "black", size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        
         legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=40),
-        axis.text.x = element_text(hjust = 0.5,size = 40),
-        axis.text.y = element_text(size = 40),
+        legend.text = element_text(size=50),
+        axis.text.x = element_text(hjust = 0.5,size = 50, color='black'),
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
-        #legend.position = c(0.9, 0.8),
-        legend.position="right",
+        legend.position = c(0.9, 0.8),
+        #legend.position="right",
         strip.text.x = element_text(
-            size = 40, color = "black", face = "bold"),
+            size = 50, color = "black", face = "bold"),
         strip.background = element_rect(
-          color="black", fill="white", size=1.5, linetype="solid")
+          color="black", fill="white", size=1.5, linetype="solid"),
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+        
   )
 vessels_in_MaySep_by_season_plot_v2
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/number_of_unique_vessels_prePreg_vs_2019_2020_byt_license_category.png"), width = 30, height = 14, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/number_of_unique_vessels_prePreg_vs_2019_2020_byt_license_category_UPDATED.png"), width = 30, height = 14, units = "in", res = 500)
 ggarrange(vessels_in_MaySep_by_season_plot_v2,
           ncol=1,
           nrow=1
