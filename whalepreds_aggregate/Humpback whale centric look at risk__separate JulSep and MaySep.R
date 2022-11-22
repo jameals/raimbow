@@ -19,20 +19,20 @@ library(ggridges)
 # set some paths
 
 # Leena:
-path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
-path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+path.grid.5km <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km.lno <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.depth <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 
 # Leena:
 #HW data 2009-July 2019
 #path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
 #New hw data pull 2009 to 2020
-path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
+path.hump_2009_2020 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 
 
 # Leena:
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
 #path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 
 #-----------------------------------------------------------------------------------
@@ -159,8 +159,8 @@ glimpse(x.whale.all2013_2020_JulSep_good_habitats)
 
 #Then look at what trap density was like in the good hw habitat 
 #bring in fishing data 
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
   #Grid ID 122919 end up having very high trap densities in few months 
@@ -670,8 +670,9 @@ summary_overlap_MaySep <- rbind(
 
 ##sensitivity testing - risk in good HW habitat Jul-Sep
 ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x=season)) +
-  geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=1.8) +
-  geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=3.5) +
+  geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=2) +
+  geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=4) +
+  scale_color_brewer(palette="PRGn")+
   ylab("Risk") +
   xlab("Season") +
   guides(color=guide_legend(nrow = 1, title="Percentile")) +
@@ -686,21 +687,24 @@ ts_fishing_in_good_hw_habitat_JulSep <- ggplot(summary_percentiles_JulSep, aes(x
   theme(#legend.title = element_blank(),
     legend.title = element_text(size=50),
     #title = element_text(size = 15),
-    legend.text = element_text(size=40),
-    #legend.position = c(.93, .85),
-    legend.position = 'none',
-    #legend.position = 'bottom',
-    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-    axis.text.y = element_text(size = 40),
+    legend.text = element_text(size=50),
+    #legend.position = 'none',
+    legend.position = 'bottom',
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+    axis.text.y = element_text(size = 50, color='black'),
     axis.title = element_text(size = 50),
-    strip.text = element_text(size=40),
+    strip.text = element_text(size=50),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_fishing_in_good_hw_habitat_JulSep
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_JulSep_NORM_UPDATED.png"), width = 17, height = 10, units = "in", res = 500)
 # ggarrange(ts_fishing_in_good_hw_habitat_JulSep,
 #           ncol=1,
 #           nrow=1,
@@ -737,8 +741,9 @@ summary(mod1_hump_JulSep)
 #May-Sep#
 
 ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season)) +
-  geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=1.8) +
-  geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=3.5) +
+  geom_line(aes(y = risk_sum, group = percentile, color=percentile), size=2) +
+  geom_point(aes(y = risk_sum, group = percentile, color=percentile), size=4) +
+  scale_color_brewer(palette="PRGn")+
   ylab("Risk") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
@@ -751,22 +756,26 @@ ts_fishing_in_good_hw_habitat <- ggplot(summary_percentiles_MaySep, aes(x=season
   guides(color=guide_legend(title="Percentile")) +
   theme_classic() +
   theme(#legend.title = element_blank(),
-    legend.title = element_text(size=20),
+    legend.title = element_text(size=50),
     #title = element_text(size = 15),
-    legend.text = element_text(size=20),
+    legend.text = element_text(size=50),
     #legend.position = c(.93, .85),
     legend.position = 'none',
-    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-    axis.text.y = element_text(size = 40),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+    axis.text.y = element_text(size = 50, color='black'),
     axis.title = element_text(size = 50),
-    strip.text = element_text(size=40),
+    strip.text = element_text(size=50),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_fishing_in_good_hw_habitat
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep_NORM.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/ts_risk_sum_in_different_HW_habitat_MaySep_NORM_UPDATED.png"), width = 17, height = 10, units = "in", res = 500)
 # ggarrange(ts_fishing_in_good_hw_habitat,
 #           ncol=1,
 #           nrow=1,
@@ -806,8 +815,9 @@ summary(mod1_hump_MaySep)
 
 #plot count of overlapping grids -- Jul-Sep
 ts_overlapping_grids_count_all_JulSep <- ggplot(summary_overlap_JulSep, aes(x=season)) +
-  geom_line(aes(y = n_grids, group = percentile, color=percentile), size=1.8) +
-  geom_point(aes(y = n_grids, group = percentile, color=percentile), size=3.5) +
+  geom_line(aes(y = n_grids, group = percentile, color=percentile), size=2) +
+  geom_point(aes(y = n_grids, group = percentile, color=percentile), size=4) +
+  scale_color_brewer(palette="PRGn")+
   ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
@@ -819,22 +829,26 @@ ts_overlapping_grids_count_all_JulSep <- ggplot(summary_overlap_JulSep, aes(x=se
                             "2019-2020" = "2020")) +
   theme_classic() +  theme_classic() +
   theme(#legend.title = element_blank(),
-    legend.title = element_text(size=20),
+    legend.title = element_text(size=50),
     #title = element_text(size = 15),
-    legend.text = element_text(size=20),
+    legend.text = element_text(size=50),
     #legend.position = c(.1, .3),
     legend.position = 'none',
-    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-    axis.text.y = element_text(size = 40),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+    axis.text.y = element_text(size = 50, color='black'),
     axis.title = element_text(size = 50),
-    strip.text = element_text(size=40),
+    strip.text = element_text(size=50),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_overlapping_grids_count_all_JulSep
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_JulSep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_JulSep_UPDATED.png"), width = 17, height = 10, units = "in", res = 500)
 # ggarrange(ts_overlapping_grids_count_all_JulSep,
 #           ncol=1,
 #           nrow=1,
@@ -867,8 +881,9 @@ summary(mod2_hump_JulSep)
 
 #plot count of overlapping grids -- May-Sep
 ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) +
-  geom_line(aes(y = n_grids, group = percentile, color=percentile), size=1.8) +
-  geom_point(aes(y = n_grids, group = percentile, color=percentile), size=3.5) +
+  geom_line(aes(y = n_grids, group = percentile, color=percentile), size=2) +
+  geom_point(aes(y = n_grids, group = percentile, color=percentile), size=4) +
+  scale_color_brewer(palette="PRGn")+
   ylab("Overlap") +
   xlab("Season") +
   scale_x_discrete(labels=c("2013-2014" = "2014",
@@ -879,22 +894,26 @@ ts_overlapping_grids_count_all <- ggplot(summary_overlap_MaySep, aes(x=season)) 
                             "2018-2019" = "2019",
                             "2019-2020" = "2020")) +  theme_classic() +
   theme(#legend.title = element_blank(),
-    legend.title = element_text(size=20),
+    legend.title = element_text(size=50),
     #title = element_text(size = 15),
-    legend.text = element_text(size=20),
+    legend.text = element_text(size=50),
     #legend.position = c(.1, .7),
     legend.position = 'none',
-    axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
-    axis.text.y = element_text(size = 40),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+    axis.text.y = element_text(size = 50, color='black'),
     axis.title = element_text(size = 50),
-    strip.text = element_text(size=40),
+    strip.text = element_text(size=50),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_overlapping_grids_count_all
 
 #SAVE FIGURE -- Supplementary Figure S2.2
-# png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_MaySep.png"), width = 17, height = 10, units = "in", res = 360)
+# png(paste0(path_figures, "/count_overlap_fishery_and_good_HW_habitat_MaySep_UPDATED.png"), width = 17, height = 10, units = "in", res = 500)
 # ggarrange(ts_overlapping_grids_count_all,
 #           ncol=1,
 #           nrow=1,
@@ -939,10 +958,10 @@ summary(mod1_hump_overlap_MaySep)
 
 
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habitat_fishing_JulSep, aes(x=season, y = risk_sum, group = 1, color='Jul-Sep')) +
-  geom_line(size=2) +
-  geom_point(size=5) +
-  geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2) +
-  geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=5) +
+  geom_line(size=2.5) +
+  geom_point(size=7) +
+  geom_line(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=2.5) +
+  geom_point(data=summary_75th_HW_habitat_fishing_MaySep, aes(x=season, y = risk_sum, group = 1, color='May-Sep'), size=7) +
   ylim(0, 13) + 
   #ylab("Summed humpback whale risk") +
   ylab("Risk") +
@@ -963,17 +982,21 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep <- ggplot(data=summary_75th_HW_habit
         legend.text = element_text(size = 40),
         legend.position = "none",
         #legend.position = c(.89, .92),
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0,color="black"),
-        axis.text.y = element_text(size = 35,color="black"),
-        axis.title = element_text(size = 40),
-        strip.text = element_text(size=35),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0,color="black"),
+        axis.text.y = element_text(size = 50,color="black"),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
 # SAVE FIGURE -- Figure 5
-# png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep_NORM.png"), width = 20, height = 5, units = "in", res = 400)
+# png(paste0(path_figures, "/risk_75th_HW_habitat_JulSep_MaySep_NORM_UPDATED.png"), width = 20, height = 5, units = "in", res = 500)
 # ggarrange(ts_fishing_in_75th_hw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
@@ -993,10 +1016,10 @@ ts_fishing_in_75th_hw_habitat_JulSep_MaySep
 
 
 ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, aes(x=season, y = n_grids, group = 1, color='Jul-Sep')) +
-  geom_line(size=2) +
-  geom_point(size=5) +
-  geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2) +
-  geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=5) +
+  geom_line(size=2.5) +
+  geom_point(size=7) +
+  geom_line(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=2.5) +
+  geom_point(data=test_summary_75_MaySep, aes(x=season, y = n_grids, group = 1, color='May-Sep'), size=7) +
   #ylab("Number of overlapping grids") +
   ylab("Overlap") +
   xlab("") +
@@ -1015,17 +1038,21 @@ ts_overlap_75th_hw_habitat_JulSep_MaySep <- ggplot(data=test_summary_75_JulSep, 
         legend.text = element_text(size = 22),
         #legend.position = c(.9, .85),
         legend.position = "none",
-        axis.text.x = element_text(hjust = 0.5,size = 35, angle = 0,color="black"),
-        axis.text.y = element_text(size = 35,color="black"),
-        axis.title = element_text(size = 40),
-        strip.text = element_text(size=35),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0,color="black"),
+        axis.text.y = element_text(size = 50,color="black"),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_overlap_75th_hw_habitat_JulSep_MaySep
 
 # SAVE FIGURE -- Figure 5
-# png(paste0(path_figures, "/overlap_75th_HW_habitat_JulSep_MaySep.png"), width = 20, height = 5, units = "in", res = 400)
+# png(paste0(path_figures, "/overlap_75th_HW_habitat_JulSep_MaySep_UPDATED.png"), width = 20, height = 5, units = "in", res = 500)
 # ggarrange(ts_overlap_75th_hw_habitat_JulSep_MaySep,
 #           ncol=1,
 #           nrow=1,
