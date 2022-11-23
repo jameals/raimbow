@@ -16,10 +16,10 @@ library(ggridges)
 #-----------------------------------------------------------------------------------
 
 # bring in gridded WA logbook data, with trap density calculated per grid per 2-week step or 1-month step
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
-path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
+#path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step.rds"
+path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_1mon_step.rds"
 
-#path.fish_WA <- "C:/Users/Leena.Riekkola/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
+#path.fish_WA <- "C:/Users/lrie0/Documents/Projects/raimbow/wdfw/data/adj_summtraps_2014_2020_all_logs_WA_waters_2wk_step_REGS_IN_EVERY_SEASON.rds"
 
 
 x.fish_WA <- readRDS(path.fish_WA) %>% 
@@ -120,7 +120,7 @@ pot_density_ridges_quantiles_JulSep <- ggplot(x.fish_WA_JulSep, aes(x = M2_trapd
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 0.95) +
-  scale_fill_manual(name = "Quantile", values = c("#F7D7DC", "#F7B4BB", "#F46D75", "#BA0001"),#"#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"
+  scale_fill_manual(name = "Quantile", values = c("#EBCDFF", "#D291FF", "#AE37FF", "#7700C8"),#"#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"
                     labels = c("0-25%", "25-50%","50-75%", "75-100%")) + 
   #xlim(0,72)+
   scale_x_continuous(limits = c(0, 68), expand = c(0, 0))+
@@ -146,8 +146,8 @@ pot_density_ridges_quantiles_JulSep
 
 
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/pot_density_ridges_quantiles_JulSep_prereg_vs_2019_UPDATED.png"), width = 20, height = 15, units = "in", res = 400)
 # ggarrange(pot_density_ridges_quantiles_JulSep,
 #           ncol=1,
 #           nrow=1
@@ -178,7 +178,7 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
                       quantiles = c(0.25, 0.5, 0.75),
                       rel_min_height = 0.005,
                       scale = 0.95) +
-  scale_fill_manual(name = "Quantile", values = c("#F7D7DC", "#F7B4BB", "#F46D75", "#BA0001"),#"#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"
+  scale_fill_manual(name = "Quantile", values = c("#EBCDFF", "#D291FF", "#AE37FF", "#7700C8"),#"#FFFFC2", "#FFE87C", "#FF9205", "#8c4c04"
                     #old colors tested:
                     ##ebebd3", "#f4d35e", "#ee964b", "#f95738
                     ##FEF857", "#FFBE7BFF", "#FFA351FF", "#8c4c04"
@@ -191,9 +191,9 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 40),
-        #legend.position = c(.70, .85),
-        legend.position = "none",
+        legend.text = element_text(size = 50),
+        legend.position = c(.70, .85),
+        #legend.position = "none",
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
@@ -207,8 +207,8 @@ pot_density_ridges_quantiles_MaySep <- ggplot(x.fish_WA_MaySep, aes(x = M2_trapd
 pot_density_ridges_quantiles_MaySep
 
 
-# path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-# png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020_NO LEGEND.png"), width = 20, height = 15, units = "in", res = 400)
+# path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+# png(paste0(path_figures, "/pot_density_ridges_quantiles_MaySep_prereg_vs_2020_UPDATED_LEGEND.png"), width = 20, height = 15, units = "in", res = 400)
 # ggarrange(pot_density_ridges_quantiles_MaySep,
 #           ncol=1,
 #           nrow=1
