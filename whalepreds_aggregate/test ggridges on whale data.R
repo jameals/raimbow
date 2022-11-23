@@ -17,9 +17,9 @@ library(ggridges)
 #-----------------------------------------------------------------------------------
 
 #bring in some grids
-path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
-path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
-path.grid.depth <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
+path.grid.5km <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km.lno <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.depth <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/weighted_mean_NGDC_depths_for_5km_gridcells.csv"
 
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
@@ -28,8 +28,8 @@ grid.depth <- read.csv(path.grid.depth) %>%
   rename(GRID5KM_ID = Gridcell_ID, depth = AWM_depth_m)
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-#path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#path_figures <- "C:/Users/lrie0/Documents/Projects/raimbow/whalepreds_aggregate/figures" #or use this if do want to upload to GitHub
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
@@ -40,13 +40,13 @@ path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figur
 #whale data
 
 #HW data 2009-July 2019
-#path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
+#path.hump <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
 #New hw data pull 2009 to 2020
-path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
+path.hump_2009_2020 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 #bw 2009-Jul 2019
-path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+path.blue <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
 #New bw data pull Aug 2019 to Sep 2021
-path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
+path.blue_2019_2021 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
 
 
 #hw output 2009-2020
@@ -263,7 +263,7 @@ hw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
 hw_density_ridges_quantiles_JulSep
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
 png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__JulSep_pre_reg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(hw_density_ridges_quantiles_JulSep,
           ncol=1,
@@ -295,8 +295,8 @@ hw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 40),
-        legend.position = c(.85, .9),
+        legend.text = element_text(size = 50),
+        legend.position = c(.75, .85),
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
@@ -311,8 +311,8 @@ hw_density_ridges_quantiles_MaySep
 
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020_NEW LEGEND.png"), width = 20, height = 15, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/hump_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020_NEW LEGEND_v2.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(hw_density_ridges_quantiles_MaySep,
           ncol=1,
           nrow=1
@@ -392,7 +392,7 @@ bw_density_ridges_quantiles_JulSep <- ggplot(study_area_hw_pre_reg_vs_2018_2019,
   )
 bw_density_ridges_quantiles_JulSep
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
 png(paste0(path_figures, "/blue_whale_occurrence_in_study_area__JulSep_pre_reg_vs_2019.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(bw_density_ridges_quantiles_JulSep,
           ncol=1,
@@ -421,8 +421,8 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
   theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
-        legend.text = element_text(size = 40),
-        legend.position = c(.85, .9),
+        legend.text = element_text(size = 50),
+        legend.position = c(.80, .85),
         axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0),
         axis.text.y = element_text(size = 40),
         axis.title = element_text(size = 50),
@@ -436,8 +436,8 @@ bw_density_ridges_quantiles_MaySep <- ggplot(study_area_hw_pre_reg_vs_2019_2020,
 bw_density_ridges_quantiles_MaySep
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
-png(paste0(path_figures, "/blue_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020.png"), width = 20, height = 15, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+png(paste0(path_figures, "/blue_whale_occurrence_in_study_area__MaySep_pre_reg_vs_2020_LEGEND_v2.png"), width = 20, height = 15, units = "in", res = 400)
 ggarrange(bw_density_ridges_quantiles_MaySep,
           ncol=1,
           nrow=1
