@@ -77,7 +77,7 @@ summary_cumulative_bw_hw_2005_2020_by_month <- whale_entl_bw_hw_2005_2020_Summer
    ))
 
 other_bar_plot <- ggplot(data=summary_cumulative_bw_hw_2005_2020_by_month, aes(SummerWinter, entl_per_month, fill =Common_Name)) + 
-  geom_col(width = 0.9, position = position_dodge2(width = 1, preserve = "single")) +
+  geom_col(width = 0.9, position = position_dodge2(width = 1, preserve = "single"),color="black", size=2) +
   #geom_col(width = 0.95, position = position_dodge(1, preserve = "single")) +
   scale_fill_manual(values=c("blue", "gray"))+
   facet_wrap(~ TimePeriod) + 
@@ -90,19 +90,25 @@ other_bar_plot <- ggplot(data=summary_cumulative_bw_hw_2005_2020_by_month, aes(S
         legend.text = element_text(size = 50),
         legend.key.size = unit(2, units = "cm"),
         legend.position = c(.2, .75),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
         axis.text.x = element_text(vjust = 0.5,size = 50, angle = 0, color='black'),
         #axis.text.x=element_blank(),
-        axis.text.y = element_text(size = 40, color='black'),
+        axis.title.y = element_text(vjust = +2),
+        axis.text.y = element_text(size = 50, color='black'),
         axis.title = element_text(size = 50),
         strip.text = element_text(size=55),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+
   ) 
 other_bar_plot
 
 #save figure - panel for Figure 1
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/confirmed_bw_hw_entl_1998-2020_by month.png"), width = 22, height = 18, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/confirmed_bw_hw_entl_1998-2020_by month_UPDATED.png"), width = 22, height = 18, units = "in", res = 500)
 ggarrange(other_bar_plot,
           ncol=1,
           nrow=1
