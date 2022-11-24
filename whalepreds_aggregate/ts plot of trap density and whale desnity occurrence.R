@@ -13,10 +13,10 @@ library(ggpubr)
 library(scales)
 library(magrittr)
 
-path.grid.5km.lno <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
+path.grid.5km.lno <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Grid_5km_landerased.rds"
 grid.5km.lno <- readRDS(path.grid.5km.lno) # 5km grid, land erased
 
-path.grid.5km <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
+path.grid.5km <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/five_km_grid_polys_geo.shp"
 grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 
 #-----------------------------------------------------------------------------------
@@ -26,13 +26,13 @@ grid.5km <- st_read(path.grid.5km, quiet = TRUE) # 5km grid
 #whale data
 
 #HW data 2009-July 2019
-#path.hump <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
+#path.hump <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_monthly.rds"
 #New hw data pull 2009 to 2020
-path.hump_2009_2020 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
+path.hump_2009_2020 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/Humpback_5km_long_MONTHLY2009_2020_20211028.rds"
 #bw 2009-Jul 2019
-path.blue <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
+path.blue <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly.rds"
 #New bw data pull Aug 2019 to Sep 2021
-path.blue_2019_2021 <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
+path.blue_2019_2021 <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/data/BlueWhale_5km_long_monthly_2019Aug_2021Sep.rds"
 
 
 #hw output 2009-2020
@@ -109,10 +109,10 @@ ts_hump_dens <- ggplot() +
   
   geom_point(data = x.hump_2014_2020_crab_season_v2, 
              aes(x = factor(Season_month, levels=ordered.ids), y = Humpback_dens_sum,
-               group = 1) , size=4) +
+               group = 1) , size=5) +
   geom_line(data = x.hump_2014_2020_crab_season_v2, 
             aes(x = factor(Season_month, levels=ordered.ids), y = Humpback_dens_sum,
-                group = 1)) +
+                group = 1), size=1.25) +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   #scale_x_continuous(breaks = seq(2010, 2021, 1),
   #                   limits = c(2013-2014_12,2019-2020_09)) +
@@ -124,13 +124,18 @@ ts_hump_dens <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         #legend.position = c(.15, .85),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
         #axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
         axis.text.x=element_blank(),
-        axis.text.y = element_text(size = 15),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=15),
+        axis.text.y = element_text(size = 40, colour = 'black'),
+        axis.title = element_text(size = 40),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_hump_dens
 #ts of mean (when 0s included) and sum looks the same (shape is same, y-axis is different)
@@ -267,10 +272,10 @@ ts_blue_dens <- ggplot() +
   
   geom_point(data = x.blue_2014_2020_crab_season_v2, 
              aes(x = factor(Season_month, levels=ordered.ids), y = Blue_dens_sum,
-                 group = 1) , size=4) +
+                 group = 1) , size=5) +
   geom_line(data = x.blue_2014_2020_crab_season_v2, 
             aes(x = factor(Season_month, levels=ordered.ids), y = Blue_dens_sum,
-                group = 1)) +
+                group = 1), size=1.25) +
   
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   ylab("Blue whale occurrence") + 
@@ -280,12 +285,17 @@ ts_blue_dens <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
         axis.text.x = element_text(hjust = 1,size = 18, angle = 60),
-        axis.text.y = element_text(size = 15),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=15),
+        axis.text.y = element_text(size = 40, colour = 'black'),
+        axis.title = element_text(size = 40),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_blue_dens
 
@@ -584,10 +594,10 @@ ts_lines_in_water <- ggplot() +
   
   geom_point(data = check_lines_in_water_with_all_season_month_combos, 
              aes(x = factor(Season_month, levels=ordered.ids), y = lines_in_water/1000,
-                 group = 1) , size=4) +
+                 group = 1) , size=5) +
   geom_line(data = check_lines_in_water_with_all_season_month_combos, 
             aes(x = factor(Season_month, levels=ordered.ids), y = lines_in_water/1000,
-                group = 1)) +
+                group = 1), size=1.25) +
   scale_x_discrete(limits=ordered.ids,breaks=ordered.ids[seq(1,length(ordered.ids),by=3)])+
   ylab("Lines in water (thousands)") + 
   #xlab("Season_month") +
@@ -597,13 +607,18 @@ ts_lines_in_water <- ggplot() +
         #title = element_text(size = 26),
         legend.text = element_text(size = 20),
         legend.position = c(.15, .85),
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
         #axis.text.x = element_text(hjust = 1,size = 15, angle = 60),
         axis.text.x=element_blank(),
-        axis.text.y = element_text(size = 15),
-        axis.title = element_text(size = 20),
-        strip.text = element_text(size=15),
+        axis.text.y = element_text(size = 40, colour = 'black'),
+        axis.title = element_text(size = 40),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   )
 ts_lines_in_water
 
@@ -619,12 +634,12 @@ ts_lines_in_water
 #ts_hump_dens
 #ts_blue_dens
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/raimbow/whalepreds_aggregate/figures"
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
+path_figures <- "C:/Users/lrie0/Documents/Projects/raimbow/whalepreds_aggregate/figures"
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
 
 # ts_sum_lines_in_water_v2 calculated as number of unique license multiplied by their pot limit
 
-png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data_xaxis_labels.png"), width = 22, height = 14, units = "in", res = 400)
+png(paste0(path_figures, "/ts_max_lines_in_water_and_whales_2014_2020_by crab season_study_area_or_fishing_grids_using_1month_gridded_data_xaxis_labels_UPDATED.png"), width = 22, height = 14, units = "in", res = 500)
 ggarrange(#ts_trap_dens,
           ts_lines_in_water,
           ts_hump_dens,
@@ -669,7 +684,7 @@ colors <- c("2013-2014" = "#040F57",
 
 
 vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n_unique_licenses, colour=season,  group=season))+
-  geom_line(size=1.5, lineend = "round") + 
+  geom_line(size=2, lineend = "round") + 
   scale_color_manual(values = colors) +
   #scale_color_brewer(palette="BuPu") +
   #scale_color_viridis_c() +
@@ -679,17 +694,28 @@ vessels_by_month_plot <- ggplot(active_vessels_by_month, aes(x= month_name, y= n
   scale_y_continuous(breaks=seq(0, 165, 20),limits=c(0,165))+
   guides(color = guide_legend(override.aes = list(size = 2))) +
   theme_minimal()+
-  theme(legend.title = element_blank(),
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.title = element_blank(),
         #title = element_text(size = 32),
-        legend.text = element_text(size=15),
-        axis.text.x = element_text(hjust = 1,size = 15, angle = 45),
-        axis.text.y = element_text(size = 15),
-        axis.title = element_text(size = 15),
+        legend.text = element_text(size=40),
+        axis.text.x = element_text(hjust = 1,size = 40, angle = 45, colour = 'black'),
+        axis.text.y = element_text(size = 50, colour = 'black'),
+        axis.title = element_text(size = 50, colour = 'black'),
         #legend.position = c(0.9, 0.8) +
-        legend.position="bottom"
+        legend.position="bottom",
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+        
   )
 vessels_by_month_plot
 # saving
-#path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-#ggsave(paste0(path_figures,"/number unique vessels by month.png"),vessels_by_month_plot,w=12,h=10)
+#path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+#ggsave(paste0(path_figures,"/number unique vessels by month_UPDATED.png"),vessels_by_month_plot,w=22,h=12)
 
