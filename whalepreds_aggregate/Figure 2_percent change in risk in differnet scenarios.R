@@ -34,7 +34,7 @@ df_percent_change_in_risk_HW <- df_percent_change_in_risk %>%
   filter(Species == "Humpback whale")
 
 plot_percent_change_HW <- ggplot(df_percent_change_in_risk_HW, aes(x=Scenario, y=Percent_change, fill=Comparison)) + 
-  geom_bar(stat='identity',color="black", position=position_dodge())  +
+  geom_bar(stat='identity',color="black",size=2, position=position_dodge())  +
   scale_fill_manual(name="Comparison", 
                     labels = c("Pre-regulations vs 2019", "Pre-regulations vs 2020"), 
                     values = c("Pre-regulations vs 2019"="white", "Pre-regulations vs 2020"="grey")) + 
@@ -43,22 +43,27 @@ plot_percent_change_HW <- ggplot(df_percent_change_in_risk_HW, aes(x=Scenario, y
   ylim(-80, 10) + 
   ylab("% change in risk") + 
   xlab("") + 
-  geom_hline(yintercept=0)+
+  geom_hline(yintercept=0, size = 2)+
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 25),
         #legend.position = c(.85, .25),
         legend.position = "none",
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0,color="black"),
+        axis.line.y = element_line(colour = 'black', size = 2),
+        axis.line.x = element_line(color="white"),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 45, angle = 0,color="black"),
         #axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-        axis.line.x = element_line(color="white"),
-        axis.text.y = element_text(size = 40,color="black"),
-        axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.text.y = element_text(size = 50,color="black"),
+        axis.title.y = element_text(size = 55),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+
   ) 
 plot_percent_change_HW
 
@@ -68,7 +73,7 @@ df_percent_change_in_risk_BW <- df_percent_change_in_risk %>%
   filter(Species == "Blue whale")
 
 plot_percent_change_BW <- ggplot(df_percent_change_in_risk_BW, aes(x=Scenario, y=Percent_change, fill=Comparison)) + 
-  geom_bar(stat='identity',color="black", position=position_dodge())  +
+  geom_bar(stat='identity',color="black", size=2, position=position_dodge())  +
   scale_fill_manual(name="Comparison", 
                     labels = c("Pre-regulations vs 2019", "Pre-regulations vs 2020"), 
                     values = c("Pre-regulations vs 2019"="white", "Pre-regulations vs 2020"="grey")) + 
@@ -76,30 +81,34 @@ plot_percent_change_BW <- ggplot(df_percent_change_in_risk_BW, aes(x=Scenario, y
   ylim(-40, 30) + 
   ylab("% change in risk") + 
   xlab("") + 
-  geom_hline(yintercept=0)+
+  geom_hline(yintercept=0, size = 2)+
   theme_classic() +
   theme(legend.title = element_blank(),
         #title = element_text(size = 26),
         legend.text = element_text(size = 25),
         #legend.position = c(.8, .85),
         legend.position = "none",
-        axis.text.x = element_text(hjust = 0.5,size = 40, angle = 0,color="black"),
+        axis.line.y = element_line(colour = 'black', size = 2),
+        axis.line.x = element_line(color="white"),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 45, angle = 0,color="black"),
         #axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-        axis.line.x = element_line(color="white"),
-        axis.text.y = element_text(size = 40,color="black"),
-        axis.title = element_text(size = 50),
-        strip.text = element_text(size=40),
+        axis.text.y = element_text(size = 50,color="black"),
+        axis.title.y = element_text(size = 55),
+        strip.text = element_text(size=50),
         strip.background = element_blank(),
-        strip.placement = "left"
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
   ) 
 plot_percent_change_BW
 
 
 
 # save plots
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/BW_percent_change_in_risk_v2.png"), width = 22, height = 18, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/BW_percent_change_in_risk_UPDATED_v2.png"), width = 22, height = 18, units = "in", res = 500)
 ggarrange(plot_percent_change_BW,
           ncol=1,
           nrow=1
@@ -111,8 +120,8 @@ ggarrange(plot_percent_change_BW,
 invisible(dev.off())
 
 
-path_figures <- "C:/Users/Leena.Riekkola/Projects/NOAA data/maps_ts_whales/figures"
-png(paste0(path_figures, "/HW_percent_change_in_risk_v2.png"), width = 22, height = 18, units = "in", res = 400)
+path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures"
+png(paste0(path_figures, "/HW_percent_change_in_risk_UPDATED_v2.png"), width = 22, height = 18, units = "in", res = 500)
 ggarrange(plot_percent_change_HW,
           ncol=1,
           nrow=1
