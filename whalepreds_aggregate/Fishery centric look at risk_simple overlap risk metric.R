@@ -610,3 +610,156 @@ abline(h = 0, col="blue")
 plot(mod2_blue)
 qqPlot(mod2_blue$residuals)
 
+
+######################################
+#extra plot test due to reviewer comment
+
+##Jul-Sep
+##NORMALIZED
+plot_subset_2018_2019_box <- risk_whales_WA_MaySep_normalized %>% 
+  filter(month %in% c('07', '08', '09')) %>% 
+  filter(season != '2019-2020') %>% 
+  filter(study_area=='Y') %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2018-2019', "2018-2019", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
+
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019 <- ggplot() +
+  geom_violin(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
+  stat_summary(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_2018_2019_box, aes(x = pre_post_reg, y = hump_risk, fill=month), binaxis='y', stackdir='center', dotsize=0.8) +
+  scale_fill_manual(values = c("#2A788EFF", "#414487FF", "#440154FF"))+
+  ylab("Risk") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2018-2019" = "2019"), expand = c(0,0)) +
+  theme_classic() +
+  theme(#legend.title = element_blank(),
+        #title = element_text(size = 26),
+        #legend.text = element_text(size = 40),
+        legend.position = "none",
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+        axis.text.y = element_text(size = 50, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+  )
+box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019
+
+#path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#png(paste0(path_figures, "/extra_plot_risk_HW_Jul_Sep_prereg_vs_2019_BY_MONTH.png"), width = 22, height = 14, units = "in", res = 500)
+#ggarrange(box_hump_risk_Jul_Sep_pre_reg_vs_2018_2019,
+#          ncol=1,
+#          nrow=1
+#)
+#invisible(dev.off())
+
+
+percent_change_in_risk_JulSep_by_month <- plot_subset_2018_2019_box %>% 
+  group_by(pre_post_reg, month) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+percent_change_in_risk_JulSep_by_month
+#% change n risk from pre-reg to 2019 by month:
+#HW
+#Jul: (0.996-2.88)/2.88*100 #-65.4
+#Aug: (0.676-4.46)/4.46*100 #-84.8
+#Sep: (0.925-4.65)/4.65*100 #-80.1
+#BW
+#Jul: (4.33-4.39)/4.39*100 #-1.4
+#Aug: (3.85-4.41)/4.41*100 #-12.7
+#Sep: (3.15-4.06)/4.06*100 #-22.4
+
+##############
+##May-Sep
+##NORMALIZED
+plot_subset_2019_2020_box <- risk_whales_WA_MaySep_normalized %>% 
+  filter(month %in% c('05', '06', '07', '08', '09')) %>% 
+  filter(season != '2018-2019') %>% 
+  filter(study_area=='Y') %>% 
+  #filter(!is.na(mean_M2_trapdens)) %>%  #this will effectively mean that only fishing footprint is considered
+  mutate(pre_post_reg = 
+           ifelse(season == '2019-2020', "2019-2020", "pre-reg")) %>% 
+  mutate(pre_post_reg = as.factor(pre_post_reg)) %>% 
+  group_by(season, month, pre_post_reg) %>% 
+  summarise(hump_risk = sum(hump_risk_norm, na.rm=TRUE),
+            blue_risk = sum(blue_risk_norm, na.rm=TRUE)) 
+
+
+box_hump_risk_MaySep_pre_reg_vs_2019_2020 <- ggplot() +
+  geom_violin(data = plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk), lwd=2) +
+  stat_summary(data = plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk),
+               fun = "mean",
+               geom = "crossbar", 
+               width = 0.25,
+               colour = "red") +
+  geom_dotplot(data = plot_subset_2019_2020_box, aes(x = pre_post_reg, y = hump_risk, fill=month), binaxis='y', stackdir='center', dotsize=0.8) +
+  scale_fill_manual(values = c("#FDE725FF", "#7AD151FF", "#2A788EFF", "#414487FF", "#440154FF"))+
+  ylab("") + 
+  xlab("") +
+  scale_x_discrete(limits = rev, labels=c("pre-reg" = "pre-regulations", "2019-2020" = "2020"), expand = c(0,0)) +
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        #legend.position = c(.15, .85),
+        legend.position = "none",
+        axis.line = element_line(colour = 'black', size = 2),
+        axis.ticks.length=unit(.25, "cm"),
+        axis.ticks=element_line(size=2, colour = 'black'),
+        axis.text.x = element_text(hjust = 0.5,size = 50, angle = 0, color='black'),
+        axis.text.y = element_text(size = 50, color='black'),
+        axis.title = element_text(size = 50),
+        axis.title.y = element_text(vjust = +2),
+        strip.text = element_text(size=50),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        plot.margin = unit(c(0,0,0,30), "pt")
+  )
+box_hump_risk_MaySep_pre_reg_vs_2019_2020
+
+#path_figures <- "C:/Users/lrie0/Documents/Projects/NOAA data/maps_ts_whales/figures" #not uploading to GitHub
+#png(paste0(path_figures, "/extra_plot_risk_HW_Jul_Sep_prereg_vs_2020_BY_MONTH.png"), width = 22, height = 14, units = "in", res = 500)
+#ggarrange(box_hump_risk_MaySep_pre_reg_vs_2019_2020,
+#          ncol=1,
+#          nrow=1
+#)
+#invisible(dev.off())
+
+percent_change_in_risk_MaySep_by_month <- plot_subset_2019_2020_box %>% 
+  group_by(pre_post_reg, month) %>% 
+  summarise(mean_hw_risk = mean(hump_risk), 
+            mean_bw_risk = mean(blue_risk))
+percent_change_in_risk_MaySep_by_month
+#% change n risk from pre-reg to 2019 by month:
+#HW
+#May: (4.02-6.25)/6.25*100 #-35.7
+#Jun: (2.69-4.31)/4.31*100 #-37.6
+#Jul: (1.73-2.88)/2.88*100 #-39.9
+#Aug: (1.29-4.46)/4.46*100 #-71.1
+#Sep: (1.25-4.65)/4.65*100 #-73.1
+#BW
+#May: (1.01-0.676)/0.676*100 #+49.4
+#Jun: (3.98-2.82)/2.82*100 #+41.1
+#Jul: (3.39-4.39)/4.39*100 #-22.8
+#Aug: (2.71-4.41)/4.41*100 #-38.5
+#Sep: (1.93-4.06)/4.06*100 #-52.5
+
+
+
+
+
