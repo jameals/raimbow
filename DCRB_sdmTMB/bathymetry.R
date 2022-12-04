@@ -194,6 +194,7 @@ summary_from_points <- all_logs_points_sf_GEBCObathy_NOgeom2 %>%
             median_depth_vms = median(depth),
             mean_depth_gebco = mean(depth_gebco),
             median_depth_gebco = median(depth_gebco),
+            stdev_depth_gebco = sd(depth_gebco)
             )
 #join to study ara grids - do this way as some study area grids may not have had points
 depth_comparison <- bathy_lamb_NOgeom %>% 
@@ -211,48 +212,66 @@ plot(depth_comparison$median_depth_gebco, depth_comparison$X_median) #mdian dept
 
 #----------------------------------------------------------
 
-# just use the depth_comparison? work on the median extracted depth
-#if point extracted gebco is > 0 (7 grids), make it -1
-#then, if zonal gebco is >0 (73 grids), use point gebco, if no point gebco, then make it -1
+# just use the depth_comparison df, work on the median extracted depth
+study_area_grids_with_bathy <- depth_comparison %>% 
+  select(-mean_depth_vms, -median_depth_vms) %>% 
+  rename(depth_zonal_mean = X_mean,
+         depth_zonal_median = X_median,
+         depth_zonal_sd = X_stdev,
+         depth_point_mean = mean_depth_gebco,
+         depth_point_median = median_depth_gebco,
+         depth_point_sd = stdev_depth_gebco
+         ) %>% 
+  #if point extracted mean/median depth is > 0 (8 unique grids), make it -1
+  mutate(depth_point_median = ifelse(depth_point_median > 0, -1, depth_point_median)) %>% 
+  mutate(depth_point_mean = ifelse(depth_point_mean > 0, -1, depth_point_mean)) 
+
+median_depth_positive <- study_area_grids_with_bathy %>% 
+  filter(depth_zonal_median > 0)
+median_depth_negative <- study_area_grids_with_bathy %>% 
+  filter(depth_zonal_median <= 0)
+  #then, if zonal median depth is >0 (73 unique grids), use median point depth, if no point depth, then make it -1
+median_depth_positive <- median_depth_positive %>%  
+  mutate(depth_zonal_median = ifelse(is.na(depth_point_median), -1, depth_point_median))
+
+study_area_grids_with_bathy <- rbind(median_depth_positive, median_depth_negative)
+
+
+mean_depth_positive <- study_area_grids_with_bathy %>% 
+  filter(depth_zonal_mean > 0)
+mean_depth_negative <- study_area_grids_with_bathy %>% 
+  filter(depth_zonal_mean <= 0)
+#if zonal mean depth is >0, use mean point depth, if no point depth, then make it -1
+mean_depth_positive <- mean_depth_positive %>%  
+  mutate(depth_zonal_mean = ifelse(is.na(depth_point_mean), -1, depth_point_mean))
+
+study_area_grids_with_bathy <- rbind(mean_depth_positive, mean_depth_negative)
+
+#grids that didn't have point data to get bathymetry, use zonal statistic value
+study_area_grids_with_bathy <- study_area_grids_with_bathy %>% 
+  mutate(depth_point_mean = ifelse(is.na(depth_point_mean), depth_zonal_mean, depth_point_mean),
+         depth_point_median = ifelse(is.na(depth_point_median), depth_zonal_median, depth_point_median),
+         depth_point_sd = ifelse(is.na(depth_point_sd), depth_zonal_sd, depth_point_sd)
+         )
 
 #grab the file with wind etc and join depth to that?
 
 
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed.rds"))
+#grids that were in pieces and had repeating gridID have been fixed
+
+#just join based on GRID5KM_ID as depth is always the same (no effect by season on half_month time steps)
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed %>% 
+  left_join(study_area_grids_with_bathy, by="GRID5KM_ID")
+
+#save df
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth.rds"))
 
 
 
+#maybe also fix some weird cases of low depth values (slight glitches in GeBCO?)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#------------
-# all study area grids with all time step combos
-study_area_grids_with_all_season_halfmonth_combos_sf <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_sf.rds'))
-#grids in multiple pieces have repeating grid ID. 
-#fix this similarly to wind/SST, just keep one grid ID of each
-
-# bathymetry extracted in QGIS using zonal statistics, from gebco bathymetry - blake depth layer missing port/embayment depths
-path_bathy_lamb <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/data files/study_area_depth_lamb_azi.shp"
-bathy_lamb <- st_read(path_bathy_lamb, quiet = TRUE) 
-#grids in multiple pieces have repeating grid ID. 
-#fix this similarly to wind/SST, just keep one grid ID of each
-#also fix depth >0 just to be 0. maybe also fix some weird cases of low depth values (slight glitches in GeBCO maybe)
-
-# logbook points with GEBCO bathymetry
-all_logs_points_sf_GEBCObathy_NOgeom <- read_rds(here::here('DCRB_sdmTMB', 'data', "all_logs_points_GEBCObathy_df.rds"))
-#due to original joining to grid, some NAs. in these cases default to using grid based depth  
 
 
 
