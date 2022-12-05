@@ -196,10 +196,18 @@ summary_from_points <- all_logs_points_sf_GEBCObathy_NOgeom2 %>%
             median_depth_gebco = median(depth_gebco),
             stdev_depth_gebco = sd(depth_gebco)
             )
-#join to study ara grids - do this way as some study area grids may not have had points
-depth_comparison <- bathy_lamb_NOgeom %>% 
-  left_join(summary_from_points, by="GRID5KM_ID") %>% 
-  select(-NGDC_GRID, -ORIG_AREA, -US_EEZ, -AREA, -layer, -path)
+
+#fix repeating gridIDs
+bathy_lamb_NOgeom_fix <- bathy_lamb_NOgeom %>% 
+  group_by(GRID5KM_ID) %>% 
+  summarise(X_mean = mean(X_mean),
+            X_median = mean(X_median),
+            X_stdev = mean(X_stdev)
+         )
+
+#join to study area grids - do this way as some study area grids may not have had points
+depth_comparison <- bathy_lamb_NOgeom_fix %>% 
+  left_join(summary_from_points, by="GRID5KM_ID") 
 
 
 #compare e.g., median depth from points to median depth from grids (vms bathy grid)
