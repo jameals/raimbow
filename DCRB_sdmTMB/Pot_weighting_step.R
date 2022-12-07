@@ -260,8 +260,8 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 library(fuzzyjoin)
 
 tm <- proc.time()
-test_OR_fishtix_2018_joined <- fuzzy_left_join(
-  test_OR_fishtix_2018, OR_pot_limit_info_v2,
+fishtix_OR_2007_2020_joined <- fuzzy_left_join(
+  fishtix_OR_2007_2020, OR_pot_limit_info_v2,
   by = c(
     "VESSEL_NUM" = "Vessel",
     "LANDING_DATE" = "Begindate",
@@ -306,20 +306,26 @@ fishtix_OR_2007_2020 <- fishtix_raw %>%
   mutate(season_end = ifelse(LANDING_MONTH == 12, LANDING_YEAR+1, LANDING_YEAR)) %>% 
   mutate(season = paste0(season_start,"-",season_end)) %>% 
   select(-season_start, -season_end) %>% 
-  filter(season != '2006-2007') %>% #don't need this one, no logs anyways
-  filter(season != '2020-2021')
+  #don't need seasons we don't have logs for, or that are 100% entered
+  filter(season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013',
+                       '2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
+
 
 #maybe a simple left join is enough
 OR_pot_limit_info_v2 <- OR_pot_limit_info %>% 
   select(PermitNumber, Vessel, Potlimit)
 
 test_OR_fishtix_2008_2020_joined_test <- fishtix_OR_2007_2020 %>% 
-  distinct(season, VESSEL_NUM) %>% 
-  left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel"))
+  left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel")) %>%
+  filter(!is.na(VESSEL_NUM)) %>% 
+  filter(VESSEL_NUM != "") #%>% 
+  #distinct(season, VESSEL_NUM, Potlimit) # season,
 
 summary_of_Pot_Limits <- test_OR_fishtix_2008_2020_joined_test %>% 
-  group_by(VESSEL_NUM,season) %>% 
-  summarise(distint_pot_lims = n_distinct(Potlimit))
+  filter(!is.na(Potlimit)) %>% 
+  group_by(VESSEL_NUM) %>% #,season
+  mutate(distint_pot_lims = n_distinct(Potlimit))
+#write_csv(summary_of_Pot_Limits,here::here('DCRB_sdmTMB', 'data', "summary_of_OR_Pot_Limits_from_FishTix.csv"))
 
 
 
