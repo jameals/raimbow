@@ -53,7 +53,7 @@ fishtix_2007_2020 <- fishtix_raw %>%
 distinct_area_blocks_and_agency <- fishtix_2007_2020 %>% distinct(CDFW_AREA_BLOCK, AGENCY_CODE)
 #maybe we need to only keep cases where CDFW_AREA_BLOCK is NA, or 0 (those are the only cases where agency is O or W)
 #although also couple cases where CDFW_AREA_BLOCK is NA, or 0 but agency is C - keep those?
-#looks like all logbooked landings were to OR or WA ports
+#looks like all logbooked landings were to OR or WA ports (distance_to_ports step)
 #but there could be landings to OR ports that were in CA waters?
 
 #so maybe fine to filter to W and O data, and just make sure that CDFW_AREA_BLOCK is NA 
@@ -202,7 +202,7 @@ traps_summ_expanded <- proportional_dist_of_pots_in_grids %>%
 
 
 
-
+#could we match a OR license to all OR landed fishtix?
 test_OR_fishtix_2018 <- fishtix_raw %>% 
   filter(AGENCY_CODE == 'O') %>% 
   filter(LANDING_YEAR %in% c(2018)) %>% #2017-2018 season in OR did not include December 
@@ -282,7 +282,7 @@ test_OR_fishtix_2018_joined_test2 <- test_OR_fishtix_2018 %>%
   left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel"))
 
 
-#what if make atable
+#what if make a stable
 #filter fishtix for OR
 #and selected years, DCRB etc
 #create column for season based on landing date - remove months 9, 10, 11
@@ -318,31 +318,286 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 test_OR_fishtix_2008_2020_joined_test <- fishtix_OR_2007_2020 %>% 
   left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel")) %>%
   filter(!is.na(VESSEL_NUM)) %>% 
-  filter(VESSEL_NUM != "") #%>% 
-  #distinct(season, VESSEL_NUM, Potlimit) # season,
+  filter(VESSEL_NUM != "") %>% 
+  distinct(VESSEL_NUM, Potlimit) # season,
 
 summary_of_Pot_Limits <- test_OR_fishtix_2008_2020_joined_test %>% 
   filter(!is.na(Potlimit)) %>% 
   group_by(VESSEL_NUM) %>% #,season
   mutate(distint_pot_lims = n_distinct(Potlimit))
 #write_csv(summary_of_Pot_Limits,here::here('DCRB_sdmTMB', 'data', "summary_of_OR_Pot_Limits_from_FishTix.csv"))
+#manually figure out cases where same vessel ID has multiple license numbers
+
+
+##investigate what % of fishtix in each season didn't find a License and PotLimit
+test <- fishtix_OR_2007_2020 %>% 
+  distinct(season, FISH_TICKET_ID, VESSEL_NUM)
+
+test_v2 <- test %>% 
+  left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel"))
+
+summary_test <- test_v2 %>% 
+  distinct(season, FISH_TICKET_ID, VESSEL_NUM, PermitNumber, Potlimit) %>% 
+  filter(!is.na(VESSEL_NUM)) %>% 
+  filter(VESSEL_NUM != "") %>% 
+  group_by(season) %>% 
+  summarise(n_unique_fishtix = n_distinct(FISH_TICKET_ID))
+  
+summary_test_NAs <- test_v2 %>% 
+  distinct(season, FISH_TICKET_ID, VESSEL_NUM, PermitNumber, Potlimit) %>% 
+  filter(is.na(Potlimit)) %>% 
+  filter(!is.na(VESSEL_NUM)) %>% 
+  filter(VESSEL_NUM != "") %>% 
+  group_by(season) %>% 
+  summarise(n_unique_fishtix_NA = n_distinct(FISH_TICKET_ID))
+
+summary_test_v2 <- summary_test %>% 
+  left_join(summary_test_NAs, by=c("season")) %>% 
+  mutate(percent_NAs = n_unique_fishtix_NA/n_unique_fishtix*100)
+#0.02% - 1.5% of Fishtix didn't find a License/PotLimit in different seasons 
+#but note that some of these have missing vessel number so can't be matched anyways
+#so few NA vessels taht no real difference
 
 
 
-  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
-  mutate(half_month = paste0(LANDING_MONTH,"_",period)) %>% 
-  select(-d, -period)
+
+#take fishtix, filter into 2 groups based on vessel ids that only ever have 1 pot limit, or more
+#make a list of vessel num that are in group 2 (filter based on is, or is not in list)
+
+#list of Vessel_num that have multiple PotLimits
+list_multiple_PotLims <- c("239090","240574","241783","242041","245645","249430","252676","253269","254696", "259524",
+                           "260045","260390","274604","280688","281914","290648","295021","296325","503045","507255",
+                           "513937","514104","519132","530276","534685","535690","536838","538936","541256","544607",
+                           "545806","548600","549776","550191","553717","554987","555742","558619","562157","563679",
+                           "563894","567048","572345","574591","578844","580135","581686","589114","590281","593575",
+                           "599982","602145","609463","610349","610786","614651","623983","624681","626289","626614",
+                           "630351","630696","632162","640718","640904","642576","646009","903821","909150","929612",
+                           "976374","978135","988264","995548","1027755","1034163","1187928","AK1114AM","OR348ZC","OR701ZY",
+                           "OR908AEZ","OR969YC","605598","977171","OR849YP") 
+
+fishtix_OR_2007_2020_single_PotLim <- fishtix_OR_2007_2020 %>% 
+  filter(!VESSEL_NUM %in% list_multiple_PotLims)
+
+fishtix_OR_2007_2020_multi_PotLim <- fishtix_OR_2007_2020 %>% 
+  filter(VESSEL_NUM %in% list_multiple_PotLims)
+
+#read in manually created file of OR PotLims for vessels in FishTix (note that not all vessel nums in fishticket mateched to raw OR permit data)
+lookup_table_OR_PotLimits <- read_csv(here::here('DCRB_sdmTMB', 'data', 'lookup_table_OR_vessels_in_FishTix_with_PotLimits.csv')) 
 
 
-#take one year of OR fishtix at a time
-#use fuzzyjoin to get pot limit for each unique vessel num in a year
-#join pot limit to fishtix
-#then break into half_months in each year
-#
+#group 1 - just left join pot limit to fishtix
+fishtix_OR_2007_2020_single_PotLim_v2 <- fishtix_OR_2007_2020_single_PotLim %>% 
+  left_join(lookup_table_OR_PotLimits, by=c("VESSEL_NUM")) %>% 
+  select(-distint_pot_lims, -season.y) %>% 
+  rename(season = season.x)
+#only this group has Fishtix that didn't find an OR permit and PotLim
+
+#group 2 - look at all seasons for each vessel, manually join pot limit to fish tix based on season
+fishtix_OR_2007_2020_multi_PotLim_v2 <- fishtix_OR_2007_2020_multi_PotLim %>% 
+  group_by(VESSEL_NUM, season) %>% 
+  summarise(n_rows = n())
+
+fishtix_OR_2007_2020_multi_PotLim_v3 <- fishtix_OR_2007_2020_multi_PotLim %>% 
+  mutate(
+    Potlimit = case_when(
+      VESSEL_NUM == "1027755" & season %in% c('2010-2011','2011-2012') ~ 200,
+      VESSEL_NUM == "1027755" & !season %in% c('2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "1034163" & season %in% c('2013-2014','2017-2018') ~ 300,
+      VESSEL_NUM == "1034163" & !season %in% c('2013-2014','2017-2018') ~ 500,
+      VESSEL_NUM == "1187928" & season %in% c('2009-2010','2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "1187928" & !season %in% c('2009-2010','2010-2011','2011-2012') ~ 500,
+      VESSEL_NUM == "239090" & season %in% c('2013-2014','2014-2015') ~ 300,
+      VESSEL_NUM == "239090" & !season %in% c('2013-2014','2014-2015') ~ 200,
+      VESSEL_NUM == "240574" & season %in% c('2007-2008','2008-2009') ~ 200,
+      VESSEL_NUM == "240574" & !season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "241783" & season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "241783" & !season %in% c('2007-2008','2008-2009') ~ 200,
+      VESSEL_NUM == "242041" & season %in% c('2011-2012','2012-2013') ~ 200,
+      VESSEL_NUM == "242041" & !season %in% c('2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "245645" & season %in% c('2015-2016','2016-2017','2017-2018','2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "245645" & !season %in% c('2015-2016','2016-2017','2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "249430" & season %in% c('2010-2011') ~ 300,
+      VESSEL_NUM == "249430" & !season %in% c('2010-2011') ~ 500,
+      VESSEL_NUM == "252676" & season %in% c('2015-2016','2016-2017') ~ 300,
+      VESSEL_NUM == "252676" & !season %in% c('2015-2016','2016-2017') ~ 500,
+      VESSEL_NUM == "253269" & season %in% c('2008-2009','2009-2010','2010-2011') ~ 500,
+      VESSEL_NUM == "253269" & !season %in% c('2008-2009','2009-2010','2010-2011') ~ 200,
+      VESSEL_NUM == "254696" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "254696" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "259524" & season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "259524" & !season %in% c('2007-2008','2008-2009') ~ 200,
+      VESSEL_NUM == "260045" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "260045" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "260390" & season %in% c('2013-2014','2014-2015') ~ 200,
+      VESSEL_NUM == "260390" & !season %in% c('2013-2014','2014-2015') ~ 300,
+      VESSEL_NUM == "274604" & season %in% c('2017-2018','2018-2019') ~ 300,
+      VESSEL_NUM == "274604" & !season %in% c('2017-2018','2018-2019') ~ 200,
+      VESSEL_NUM == "280688" & season %in% c('2007-2008','2008-2009') ~ 200,
+      VESSEL_NUM == "280688" & !season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "281914" & season %in% c('2010-2011','2011-2012') ~ 500,
+      VESSEL_NUM == "281914" & !season %in% c('2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "290648" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 500,
+      VESSEL_NUM == "290648" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "295021" & season %in% c('2007-2008') ~ 500,
+      VESSEL_NUM == "295021" & !season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "296325" & season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "296325" & !season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "503045" & season %in% c('2010-2011','2011-2012','2012-2013','2013-2014') ~ 200,
+      VESSEL_NUM == "503045" & !season %in% c('2010-2011','2011-2012','2012-2013','2013-2014') ~ 300,
+      VESSEL_NUM == "507255" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "507255" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "513937" & season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "513937" & !season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "514104" & season %in% c('2016-2017') ~ 300,
+      VESSEL_NUM == "514104" & !season %in% c('2016-2017') ~ 200,
+      VESSEL_NUM == "519132" & season %in% c('2016-2017','2017-2018','2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "519132" & !season %in% c('2016-2017','2017-2018','2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "530276" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "530276" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 200,
+      VESSEL_NUM == "534685" & season %in% c('2014-2015','2015-2016') ~ 300,
+      VESSEL_NUM == "534685" & !season %in% c('2014-2015','2015-2016') ~ 500,
+      VESSEL_NUM == "535690" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "535690" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "536838" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "536838" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "538936" & season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "538936" & !season %in% c('2007-2008') ~ 500,
+      VESSEL_NUM == "541256" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 500,
+      VESSEL_NUM == "541256" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "544607" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "544607" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "545806" & season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "545806" & !season %in% c('2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "548600" & season %in% c('2019-2020') ~ 200,
+      VESSEL_NUM == "548600" & !season %in% c('2019-2020') ~ 300,
+      VESSEL_NUM == "549776" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "549776" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "550191" & season %in% c('2009-2010') ~ 500,
+      VESSEL_NUM == "550191" & !season %in% c('2009-2010') ~ 300,
+      VESSEL_NUM == "553717" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "553717" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "554987" & season %in% c('2015-2016','2016-2017','2017-2018','2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "554987" & !season %in% c('2015-2016','2016-2017','2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "555742" & season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "555742" & !season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "558619" & season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "558619" & !season %in% c('2007-2008') ~ 200,
+      VESSEL_NUM == "562157" & season %in% c('2013-2014','2014-2015') ~ 500,
+      VESSEL_NUM == "562157" & !season %in% c('2013-2014','2014-2015') ~ 200,
+      VESSEL_NUM == "563679" & season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "563679" & !season %in% c('2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "563894" & season %in% c('2008-2009','2009-2010','2010-2011','2011-2012') ~ 200,
+      VESSEL_NUM == "563894" & !season %in% c('2008-2009','2009-2010','2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "567048" & season %in% c('2013-2014','2014-2015') ~ 500,
+      VESSEL_NUM == "567048" & !season %in% c('2013-2014','2014-2015') ~ 300,
+      VESSEL_NUM == "572345" & season %in% c('2015-2016','2016-2017','2017-2018') ~ 300,
+      VESSEL_NUM == "572345" & !season %in% c('2015-2016','2016-2017','2017-2018') ~ 200,
+      VESSEL_NUM == "574591" & season %in% c('2012-2013','2013-2014') ~ 300,
+      VESSEL_NUM == "574591" & !season %in% c('2012-2013','2013-2014') ~ 500,
+      VESSEL_NUM == "578844" & season %in% c('2007-2008') ~ 500,
+      VESSEL_NUM == "578844" & !season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "580135" & season %in% c('2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "580135" & !season %in% c('2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "581686" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011') ~ 300,
+      VESSEL_NUM == "581686" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011') ~ 500,
+      VESSEL_NUM == "589114" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "589114" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "590281" & season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "590281" & !season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "593575" & season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "593575" & !season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "599982" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "599982" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "602145" & season %in% c('2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "602145" & !season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "605598" & season %in% c('2012-2013','2013-2014','2014-2015') ~ 200,
+      VESSEL_NUM == "605598" & season %in% c('2015-2016','2016-2017') ~ 300,
+      VESSEL_NUM == "605598" & season %in% c('2019-2020') ~ 500,
+      VESSEL_NUM == "609463" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 200,
+      VESSEL_NUM == "609463" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "610349" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "610349" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "610786" & season %in% c('2015-2016','2016-2017') ~ 200,
+      VESSEL_NUM == "610786" & !season %in% c('2015-2016','2016-2017') ~ 300,
+      VESSEL_NUM == "614651" & season %in% c('2012-2013','2013-2014','2014-2015','2015-2016','2016-2017','2017-2018') ~ 300,
+      VESSEL_NUM == "614651" & !season %in% c('2012-2013','2013-2014','2014-2015','2015-2016','2016-2017','2017-2018') ~ 500,
+      VESSEL_NUM == "623983" & season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "623983" & !season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "624681" & season %in% c('2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "624681" & !season %in% c('2011-2012','2012-2013') ~ 500,
+      VESSEL_NUM == "626289" & season %in% c('2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "626289" & !season %in% c('2010-2011','2011-2012') ~ 500,
+      VESSEL_NUM == "626614" & season %in% c('2019-2020') ~ 300,
+      VESSEL_NUM == "626614" & !season %in% c('2019-2020') ~ 200,
+      VESSEL_NUM == "630351" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "630351" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "630696" & season %in% c('2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "630696" & !season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "632162" & season %in% c('2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "632162" & !season %in% c('2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "640718" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "640718" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "640904" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "640904" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "642576" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 200,
+      VESSEL_NUM == "642576" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 300,
+      VESSEL_NUM == "646009" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013','2013-2014') ~ 500,
+      VESSEL_NUM == "646009" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013','2013-2014') ~ 300,
+      VESSEL_NUM == "903821" & season %in% c('2010-2011','2011-2012','2012-2013','2013-2014','2014-2015','2015-2016','2016-2017','2017-2018') ~ 300,
+      VESSEL_NUM == "903821" & !season %in% c('2010-2011','2011-2012','2012-2013','2013-2014','2014-2015','2015-2016','2016-2017','2017-2018') ~ 500,
+      VESSEL_NUM == "909150" & season %in% c('2007-2008','2008-2009') ~ 200,
+      VESSEL_NUM == "909150" & !season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "929612" & season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "929612" & !season %in% c('2007-2008') ~ 500,
+      VESSEL_NUM == "976374" & season %in% c('2007-2008','2008-2009') ~ 300,
+      VESSEL_NUM == "976374" & !season %in% c('2007-2008','2008-2009') ~ 500,
+      VESSEL_NUM == "977171" & season %in% c('2007-2008') ~ 200,
+      VESSEL_NUM == "977171" & season %in% c('2008-2009','2009-2010','2010-2011') ~ 300,
+      VESSEL_NUM == "977171" & season %in% c('2011-2012','2012-2013','2013-2014','2014-2015','2015-2016','2016-2017') ~ 500,
+      VESSEL_NUM == "978135" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 200,
+      VESSEL_NUM == "978135" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "988264" & season %in% c('2013-2014','2014-2015','2015-2016','2016-2017') ~ 300,
+      VESSEL_NUM == "988264" & !season %in% c('2013-2014','2014-2015','2015-2016','2016-2017') ~ 200,
+      VESSEL_NUM == "995548" & season %in% c('2010-2011','2011-2012','2012-2013') ~ 300,
+      VESSEL_NUM == "995548" & !season %in% c('2010-2011','2011-2012','2012-2013') ~ 500,
+      VESSEL_NUM == "AK1114AM" & season %in% c('2015-2016','2016-2017') ~ 300,
+      VESSEL_NUM == "AK1114AM" & !season %in% c('2015-2016','2016-2017') ~ 500,
+      VESSEL_NUM == "OR348ZC" & season %in% c('2007-2008') ~ 200,
+      VESSEL_NUM == "OR348ZC" & !season %in% c('2007-2008') ~ 300,
+      VESSEL_NUM == "OR701ZY" & season %in% c('2017-2018','2018-2019','2019-2020') ~ 500,
+      VESSEL_NUM == "OR701ZY" & !season %in% c('2017-2018','2018-2019','2019-2020') ~ 300,
+      VESSEL_NUM == "OR849YP" & season %in% c('2007-2008','2008-2009','2009-2010') ~ 500,
+      VESSEL_NUM == "OR849YP" & !season %in% c('2007-2008','2008-2009','2009-2010') ~ 200,
+      VESSEL_NUM == "OR908AEZ" & season %in% c('2019-2020') ~ 500,
+      VESSEL_NUM == "OR908AEZ" & !season %in% c('2019-2020') ~ 300,
+      VESSEL_NUM == "OR969YC" & season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012') ~ 300,
+      VESSEL_NUM == "OR969YC" & !season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012') ~ 200,
+  ))
+#check for NAs, and duplication etc -- no NAs, no row duplication 
+
+fishtix_OR_2007_2020_with_PotLim <- rbind(fishtix_OR_2007_2020_single_PotLim_v2,fishtix_OR_2007_2020_multi_PotLim_v3)
+
+
+#calculate the max number of lines in water in half-month steps
+#based on unique vessels that participated in that time step and their pot limits
 
 
 
 
-#need to find and fix Grids with ID = NA. also if PotLim is NA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#logbooks: need to find and fix Grids with ID = NA. also if PotLim is NA
 
 
