@@ -50,6 +50,11 @@ fishtix_2007_2020 <- fishtix_raw %>%
   filter(REMOVAL_TYPE_NAME=="COMMERCIAL (NON-EFP)" | REMOVAL_TYPE_NAME == "COMMERCIAL(DIRECT SALES)")
 
 
+
+#------------------------------------
+#I think this stuff is bit unnecessary, it was just a check to see if catch landed in OR
+#came form CA (labelle as having a CA block area)
+
 distinct_area_blocks_and_agency <- fishtix_2007_2020 %>% distinct(CDFW_AREA_BLOCK, AGENCY_CODE)
 #maybe we need to only keep cases where CDFW_AREA_BLOCK is NA, or 0 (those are the only cases where agency is O or W)
 #although also couple cases where CDFW_AREA_BLOCK is NA, or 0 but agency is C - keep those?
@@ -73,6 +78,7 @@ unique(fishtix_2007_2020_O_W$CDFW_AREA_BLOCK)
 unique(fishtix_2007_2020_O_W$PACFIN_CATCH_AREA_DESCRIPTION)
 #all these catches seem to have come from OR and WA waters (though also option like 'multiple areas')
 #so could look at unique vessel IDs in fishtix_2007_2020_O_W and try to find Pot Limits (note WA data doesn't cover all that)
+#------------------------------------
 
 
 
@@ -90,6 +96,10 @@ test_OR_2017_2018 <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>%
   mutate(half_month = paste0(month_name,"_",period)) %>% 
   select(-d, -period)
 glimpse(test_OR_2017_2018)
+
+
+#----------------------------------
+#this is about testing couple ways of doing 'my way'
 
 #how many unique vessels and pot limits were in each half-month time step -- I think this option 1
 #is the only one that doesn't work
@@ -199,8 +209,15 @@ traps_summ_expanded <- proportional_dist_of_pots_in_grids %>%
   mutate(tottraps_expanded = tottraps + (prop_of_pots*pots_70_percent))
 #this should now be the new pot count per grid per hal-month step, fixed for 30% data entry
 #but now I think that weighting by pot limt already account for some of the missing 70% data entry...
+#----------------------------------
 
 
+
+
+#-----------------------------------
+#this is probably code that will stay
+#try to find pot limit for all OR landed pacfin so that can pot weight with that info
+##ACTUALLY SOME OF THIS NEEDS TO BE REMOVED
 
 #could we match a OR license to all OR landed fishtix?
 test_OR_fishtix_2018 <- fishtix_raw %>% 
@@ -257,19 +274,19 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
   select(PermitNumber, Vessel, Begindate, Enddate, Potlimit)# %>% 
   #filter(Vessel %in% OR_2018_unique_vessels) 
 
-library(fuzzyjoin)
-
-tm <- proc.time()
-fishtix_OR_2007_2020_joined <- fuzzy_left_join(
-  fishtix_OR_2007_2020, OR_pot_limit_info_v2,
-  by = c(
-    "VESSEL_NUM" = "Vessel",
-    "LANDING_DATE" = "Begindate",
-    "LANDING_DATE" = "Enddate"
-  ),
-  match_fun = list(`==`, `>=`, `<=`)
-)
-proc.time()-tm
+# library(fuzzyjoin)
+# 
+# tm <- proc.time()
+# fishtix_OR_2007_2020_joined <- fuzzy_left_join(
+#   fishtix_OR_2007_2020, OR_pot_limit_info_v2,
+#   by = c(
+#     "VESSEL_NUM" = "Vessel",
+#     "LANDING_DATE" = "Begindate",
+#     "LANDING_DATE" = "Enddate"
+#   ),
+#   match_fun = list(`==`, `>=`, `<=`)
+# )
+# proc.time()-tm
 
 
 #maybe a simple left join is enough
@@ -281,8 +298,8 @@ test_OR_fishtix_2018_joined_test2 <- test_OR_fishtix_2018 %>%
   distinct(VESSEL_NUM) %>% 
   left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel"))
 
-
-#what if make a stable
+##THIS IS THE GOOD STUFF
+#what if make a table
 #filter fishtix for OR
 #and selected years, DCRB etc
 #create column for season based on landing date - remove months 9, 10, 11
@@ -317,8 +334,8 @@ OR_pot_limit_info_v2 <- OR_pot_limit_info %>%
 
 test_OR_fishtix_2008_2020_joined_test <- fishtix_OR_2007_2020 %>% 
   left_join(OR_pot_limit_info_v2, by=c("VESSEL_NUM" = "Vessel")) %>%
-  filter(!is.na(VESSEL_NUM)) %>% 
-  filter(VESSEL_NUM != "") %>% 
+  filter(!is.na(VESSEL_NUM)) %>% #no NA's
+  filter(VESSEL_NUM != "") %>%  #but 6 fishtickets with "" for vessel number
   distinct(VESSEL_NUM, Potlimit) # season,
 
 summary_of_Pot_Limits <- test_OR_fishtix_2008_2020_joined_test %>% 
@@ -581,14 +598,282 @@ fishtix_OR_2007_2020_with_PotLim <- rbind(fishtix_OR_2007_2020_single_PotLim_v2,
 #calculate the max number of lines in water in half-month steps
 #based on unique vessels that participated in that time step and their pot limits
 
+fishtix_OR_2007_2020_with_PotLim_v2 <- fishtix_OR_2007_2020_with_PotLim %>% 
+  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
+  mutate(month_name = month(LANDING_MONTH, label=TRUE, abbr=FALSE)) %>% 
+  mutate(half_month = paste0(month_name,"_",period)) %>%
+  select(-d, -period, -month_name) %>% 
+  group_by(season, half_month) %>% 
+  distinct(VESSEL_NUM, Potlimit) %>% 
+  filter(!is.na(Potlimit)) %>% 
+  summarise(total_pots = sum(Potlimit))
+
+#test things with 2017-2018 year and compare to 'my way'
+# test_OR_2017_2018_weighted_pots_new_XX <- test_OR_2017_2018 %>% 
+#   filter(!is.na(GRID5KM_ID)) %>% 
+#   # count up all traps in 2-week period (not by indv vessel)
+#   group_by(season, half_month) %>%  
+#   summarise(
+#     n_traps_all=n(), na.rm=TRUE
+#   ) %>% 
+#   #left join to get max pots ib that time step
+#   left_join(fishtix_OR_2007_2020_with_PotLim_v2, by=c("season", "half_month")) %>% 
+#   # create a column with weighting - proportion of max allowed traps
+#   mutate(trap_limit_weight = total_pots/n_traps_all) %>% #now weight for pot limit
+#   ungroup()
+# #here effectively find a scaler for each half-month step
+# #each pot in this hal-month step is worth x pots
+# 
+# # join the "weighting key" back to the simulated pots data
+# test_OR_2017_2018_with_weighting_new_XX <- test_OR_2017_2018 %>% 
+#   left_join(test_OR_2017_2018_weighted_pots_new_XX,by=c('season', 'half_month'))
+# 
+# #i think here we need to re-sum thing and then scale them by scaler??
+# traps_summ_new_XX <- test_OR_2017_2018_with_weighting_new_XX %>% 
+#   group_by(season, half_month, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+#   # this is the new/key step -- weighted_traps 
+#   summarise(tottraps=sum(trap_limit_weight)) #%>%  
+# #mutate(
+# #  M2_trapdens=M2_tottraps/(AREA/1e6)
+# #) %>% ungroup() %>% 
+# #filter(!is.na(M2_tottraps))
+# glimpse(traps_summ_new_XX) 
+
+
+
+##test with all data in OR side
+
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>%  
+  filter(Landing_logbook_state == 'OR') %>% 
+  mutate(d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(half_month = paste0(month_name,"_",period)) %>% 
+  select(-d, -period)
+glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2)
+
+
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count up all traps in 2-week period (not by indv vessel)
+  group_by(season, half_month) %>%  
+  summarise(
+    n_traps_all=n(), na.rm=TRUE
+  ) %>% 
+  #left join to get max pots ib that time step
+  left_join(fishtix_OR_2007_2020_with_PotLim_v2, by=c("season", "half_month")) %>% 
+  # create a column with weighting - proportion of max allowed traps
+  mutate(trap_limit_weight = total_pots/n_traps_all) %>% #now weight for pot limit
+  ungroup()
+#here effectively find a scaler for each half-month step
+#each pot in this hal-month step is worth x pots
+
+
+# join the "weighting key" back to the simulated pots data
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+  left_join(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX,by=c('season', 'half_month'))
+
+#i think here we need to re-sum thing and then scale them by scaler??
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX %>% 
+  group_by(season, half_month, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  # this is the new/key step -- weighted_traps 
+  summarise(tottraps=sum(trap_limit_weight)) 
+glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX) 
+
+
+#Now do the same with WA and sum weighted poit number in grids
 
 
 
 
+#---------------
+
+##THIS IS THE GOOD STUFF --> repeat that step on WA landings
+#what if make a table
+#filter fishtix for WA
+#and selected years, DCRB etc
+#create column for season based on landing date - remove months 10, 11
+#get distinct season and vessel_num combos
+#then join WA license info - will have repeating rows 
+#look for cases where pot limit for vessel number varies, and fix those
+
+fishtix_WA_2010_2020 <- fishtix_raw %>% 
+  filter(AGENCY_CODE == 'W') %>% 
+  filter(LANDING_YEAR %in% c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)) %>% 
+  filter(LANDING_MONTH %in% c(12,1,2,3,4,5,6,7,8,9)) %>% #WA fishery always closes in September
+  #we can also choose some columns as there are so many in the pacfin data
+  select(FISH_TICKET_ID, FTID, VESSEL_NUM, LANDING_DATE,  LANDING_YEAR, LANDING_MONTH, NUM_OF_DAYS_FISHED, AGENCY_CODE,
+         VESSEL_REGISTRATION_ID, VESSEL_ID, VESSEL_NUM, FISHER_LICENSE_NUM, 
+         PACFIN_SPECIES_CODE,  NOMINAL_TO_ACTUAL_PACFIN_SPECIES_CODE, CATCH_AREA_CODE, PACFIN_CATCH_AREA_DESCRIPTION, CDFW_AREA_BLOCK, PACFIN_PORT_CODE, PACFIN_PORT_NAME,
+         PRICE_PER_POUND, EXVESSEL_REVENUE, AFI_PRICE_PER_POUND, AFI_EXVESSEL_REVENUE, LANDED_WEIGHT_LBS, REMOVAL_TYPE_NAME) %>% 
+  filter(PACFIN_SPECIES_CODE == "DCRB") %>% 
+  #filter out personal catch and research catch here
+  filter(REMOVAL_TYPE_NAME=="COMMERCIAL (NON-EFP)" | REMOVAL_TYPE_NAME == "COMMERCIAL(DIRECT SALES)") %>% 
+  #filter out catch that is from Puget SOund as not part of WA coastal catchs
+  filter(PACFIN_CATCH_AREA_DESCRIPTION != 'PUGET SOUND') %>% 
+  mutate(season_start = ifelse(LANDING_MONTH == 12, LANDING_YEAR, LANDING_YEAR-1)) %>% 
+  mutate(season_end = ifelse(LANDING_MONTH == 12, LANDING_YEAR+1, LANDING_YEAR)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  select(-season_start, -season_end) %>% 
+  #don't need seasons we don't have logs for, or that are 100% entered
+  filter(season %in% c('2009-2010','2010-2011','2011-2012','2012-2013',
+                       '2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) 
+
+
+#we basically need a table from WA fishtix, of the different vessel identifier combos, then
+#try to match that to data we have in logbooks and license info...?
+#unique_WA_vessels <- fishtix_WA_2010_2020 %>% 
+#  distinct(VESSEL_NUM, VESSEL_ID, VESSEL_REGISTRATION_ID, FISHER_LICENSE_NUM)
+#FISHER_LICENSE_NUM column has values thta dont appear in WA permit info -- had some puget sound catches that's why
+
+
+#based on FISHER_LICENSE_NUM column try join WA pot limit, and if NAs then look into those
+
+WA_pot_limit_info <- read_csv(here::here('wdfw', 'data','WA_pot_limit_info_May2021.csv'))
+WA_pot_limit_info$License_ID <- as.character(WA_pot_limit_info$License_ID)
+
+
+fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM <- fishtix_WA_2010_2020 %>% 
+  left_join(WA_pot_limit_info, by = c("FISHER_LICENSE_NUM" = "License_ID"))
+
+#those fishtix that found a WA pot limit
+fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_OK <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  filter(!is.na(Pot_Limit))
+nrow(fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_OK) / nrow(fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM) *100
+#89.6% of rows
+
+# n_row_no_NAs <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_OK %>% 
+#   distinct(FISH_TICKET_ID, season) %>% 
+#   group_by(season) %>% 
+#   summarise(n_tix_no_NA = n())
+# 
+# n_row_NAs <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_NAs %>% 
+#   distinct(FISH_TICKET_ID, season) %>% 
+#   group_by(season) %>% 
+#   summarise(n_tix_NA = n())
+# 
+# summary_table <- n_row_no_NAs %>% 
+#   left_join(n_row_NAs, by=c("season")) %>% 
+#   mutate(percent_match = n_tix_no_NA/(n_tix_no_NA+n_tix_NA))
+
+# season    n_tix_no_NA n_tix_NA percent_match
+# 2009-2010        4890      684         0.877
+# 2010-2011        5371      744         0.878
+# 2011-2012        4690      524         0.900
+# 2012-2013        4919      650         0.883
+# 2013-2014        4315      553         0.886
+# 2014-2015        3830      397         0.906
+# 2015-2016        4044      353         0.920
+# 2016-2017        4594      510         0.900
+# 2017-2018        4220      647         0.867
+# 2018-2019        4363      566         0.885
+# 2019-2020        4077      545         0.882
+
+fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_NAs <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  filter(is.na(Pot_Limit))
+nrow(fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_NAs) / nrow(fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM) *100
+#10.4% of rows
+
+
+unique_WA_vessels_NAs <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_NAs %>% 
+  distinct(VESSEL_NUM, VESSEL_ID, VESSEL_REGISTRATION_ID, FISHER_LICENSE_NUM)
+#lot of there are cases with Vessel_num = 'unknown'
+#only 10 unique vessel_nums that didn't find potlimit
+
+
+##investigate what % of fishtix in each season didn't find a PotLimit
+xx_test <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  distinct(FISH_TICKET_ID, VESSEL_NUM)
+nrow(xx_test %>% filter(VESSEL_NUM == 'UNKNOWN' | VESSEL_NUM == 'MISSING')) / nrow(xx_test) *100
+#11.1% of FIshtickets don't have VESSEL_NUM
+
+test <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  distinct(season, FISH_TICKET_ID, VESSEL_NUM, FISHER_LICENSE_NUM, Pot_Limit) 
+
+test_v2 <- test %>% 
+  group_by(season) %>% 
+  summarise(n_unique_fishtix = n_distinct(FISH_TICKET_ID))
+
+summary_test_NAs <- test %>% 
+  distinct(season, FISH_TICKET_ID, VESSEL_NUM, FISHER_LICENSE_NUM, Pot_Limit) %>% 
+  filter(is.na(Pot_Limit)) %>% 
+  filter(!is.na(VESSEL_NUM)) %>% 
+  filter(!VESSEL_NUM %in% c("", "MISSING", "UNKNOWN")) %>% 
+  group_by(season) %>% 
+  summarise(n_unique_fishtix_NA = n_distinct(FISH_TICKET_ID))
+
+summary_test_v2 <- summary_test %>% 
+  left_join(summary_test_NAs, by=c("season")) %>% 
+  mutate(percent_NAs = n_unique_fishtix_NA/n_unique_fishtix*100)
+#0.11% - 2.29% of Fishtix didn't find a PotLimit in different seasons 
+#Also there is a large % of fishtix with no vessel-num recorded
 
 
 
+#calculate the max number of lines in water in half-month steps
+#based on unique vessels that participated in that time step and their pot limits
+fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_PotLim <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
+  mutate(month_name = month(LANDING_MONTH, label=TRUE, abbr=FALSE)) %>% 
+  mutate(half_month = paste0(month_name,"_",period)) %>%
+  select(-d, -period, -month_name) %>% 
+  group_by(season, half_month) %>% 
+  distinct(VESSEL_NUM, Pot_Limit) %>% 
+  filter(!is.na(Pot_Limit)) %>% 
+  summarise(total_pots = sum(Pot_Limit))
 
+
+
+##test with all data in WA side
+##DO we need to fix NA grids befreo this step?
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>%  
+  filter(Landing_logbook_state == 'WA') %>% 
+  mutate(d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(half_month = paste0(month_name,"_",period)) %>% 
+  select(-d, -period)
+glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA)
+
+
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v2_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA %>% 
+  filter(!is.na(GRID5KM_ID)) %>% 
+  # count up all traps in 2-week period (not by indv vessel)
+  group_by(season, half_month) %>%  
+  summarise(
+    n_traps_all=n(), na.rm=TRUE
+  ) %>% 
+  #left join to get max pots ib that time step
+  left_join(fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_PotLim, by=c("season", "half_month")) %>% 
+  # create a column with weighting - proportion of max allowed traps
+  mutate(trap_limit_weight = total_pots/n_traps_all) %>% #now weight for pot limit
+  ungroup()
+#here effectively find a scaler for each half-month step
+#each pot in this hal-month step is worth x pots
+
+
+# join the "weighting key" back to the simulated pots data
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v3_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA %>% 
+  left_join(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v2_XX,by=c('season', 'half_month'))
+
+#i think here we need to re-sum thing and then scale them by scaler??
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v4_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v3_XX %>% 
+  group_by(season, half_month, GRID5KM_ID, grd_x, grd_y, AREA) %>%  
+  # this is the new/key step -- weighted_traps 
+  summarise(tottraps=sum(trap_limit_weight)) 
+glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v4_XX) 
+
+
+#---------------------------------
+
+#now sum weighted pots across OR and WA data -- when need to fix grid IDs that are NA 
+#still have repeating grid IDs? group_by(season, half_month, GRID5KM_ID) and sum tottraps
+WA_data <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA_v4_XX %>% 
+  select(-grd_x, -grd_y, -AREA) %>% 
+  rename(tottraps_WA_data = tottraps)
+
+OR_data <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX
+
+
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed.rds"))
+#grids that were in pieces and had repeating gridID have been fixed
 
 
 
