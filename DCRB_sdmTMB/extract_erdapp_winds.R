@@ -146,7 +146,7 @@ unique(has_NAs$GRID5KM_ID)
 #NA for SST as grid centroid likely on land
 #although sometimes missing for only one time step 
 #we could fill these in by using SST value of next grid in that same time step
-#but because of grid numbering,
+#but because of grid numbering, the next or closest grid number might not actually be a physically adjacent grid
 
 df_has_NAs_SST <-  study_area_grids_with_all_season_halfmonth_combos_wind_SST %>% 
   filter(is.na(SST_avg))
