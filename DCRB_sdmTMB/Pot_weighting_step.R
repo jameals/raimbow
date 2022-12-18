@@ -517,31 +517,98 @@ traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 <- all_logs_points_v2 %>%
 glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2)
 
 
-traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+# traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+#   filter(!is.na(GRID5KM_ID)) %>% #this is actually already done
+#   # count up all traps in 2-week period (not by indv vessel)
+#   group_by(season, half_month) %>%  
+#   summarise(
+#     n_traps_all=n(), na.rm=TRUE
+#   ) %>% 
+#   #left join to get max pots in that time step
+#   left_join(fishtix_OR_2007_2020_with_PotLim_v2, by=c("season", "half_month")) %>% 
+#   # create a column with weighting - proportion of max allowed traps
+#   mutate(trap_limit_weight = total_pots/n_traps_all) %>% #now weight for pot limit
+#   ungroup()
+# #here effectively find a scaler for each half-month step
+# #each pot in this half-month step is worth x pots
+# 
+# 
+# # join the "weighting key" back to the simulated pots data
+# traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+#   left_join(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX,by=c('season', 'half_month'))
+# 
+# traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX %>% 
+#   group_by(season, half_month, GRID5KM_ID) %>%  
+#   # this is the new/key step -- weighted_traps 
+#   summarise(tottraps=sum(trap_limit_weight)) 
+# glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX) 
+
+
+
+
+###do Troy's 'double dip' of pot limits way
+
+#sum pot limits for all that logged in a given time step
+#max lines in water based on logbooks (and vessel pot limits)
+double_dipping <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+     group_by(season, half_month) %>% 
+     distinct(Vessel, OR_Pot_Limit) %>% 
+     filter(!is.na(OR_Pot_Limit)) %>% 
+     summarise(total_pots_logs = sum(OR_Pot_Limit))
+
+#join to what is the max lines in water based on Fish tickets
+double_dipping_v2 <- double_dipping %>% left_join(fishtix_OR_2007_2020_with_PotLim_v2)
+
+#what is the ration between sum of pot limits from FIsh tickets
+#and sum of pot limtis from logs
+double_dipping_v3 <- double_dipping_v2 %>% mutate(ratio = total_pots/total_pots_logs)
+
+
+#actually don't think this is the most correct way
+#join the ratio value to OR logs (each pot is a row/point)
+#traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+#     left_join(double_dipping_v3,by=c('season', 'half_month'))
+
+#double_dipping_final <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX %>% 
+#     group_by(season, half_month, GRID5KM_ID) %>%  
+#     # this is the new/key step -- weighted_traps 
+#     summarise(tottraps=sum(ratio)) 
+
+
+#instead do 'double dipping' weighting this way:
+#weight logged pots by each vessel's pot limit
+OR_weighted_pots_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>%
   filter(!is.na(GRID5KM_ID)) %>% #this is actually already done
-  # count up all traps in 2-week period (not by indv vessel)
-  group_by(season, half_month) %>%  
+  # count up all traps in 2-week period 
+  group_by(season, half_month, Vessel, OR_PermitNumber, OR_Pot_Limit) %>%
   summarise(
     n_traps_all=n(), na.rm=TRUE
-  ) %>% 
-  #left join to get max pots in that time step
-  left_join(fishtix_OR_2007_2020_with_PotLim_v2, by=c("season", "half_month")) %>% 
+  ) %>%
   # create a column with weighting - proportion of max allowed traps
-  mutate(trap_limit_weight = total_pots/n_traps_all) %>% #now weight for pot limit
+  mutate(trap_limit_weight = OR_Pot_Limit/n_traps_all) %>% #now weight for pot limit
   ungroup()
 #here effectively find a scaler for each half-month step
 #each pot in this half-month step is worth x pots
 
-
 # join the "weighting key" back to the simulated pots data
-traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
-  left_join(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX,by=c('season', 'half_month'))
+OR_weighted_pots_XX2 <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
+  left_join(OR_weighted_pots_XX,by=c('season', 'half_month','Vessel','OR_PermitNumber','OR_Pot_Limit'))
 
-traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v3_XX %>% 
+OR_weighted_pots_XX3 <- OR_weighted_pots_XX2 %>% 
   group_by(season, half_month, GRID5KM_ID) %>%  
-  # this is the new/key step -- weighted_traps 
-  summarise(tottraps=sum(trap_limit_weight)) 
-glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v4_XX) 
+  # sum weighted_traps in each grid and half-month
+  #so far weighted by pot limits based on who logged data
+  summarise(tottraps=sum(trap_limit_weight)) #%>%  
+glimpse(OR_weighted_pots_XX3) 
+
+#'double dip' - weight the weighted pots by the ratio of max lines in water 
+#between fishtickets and logbooks
+OR_weighted_pots_XX4 <- OR_weighted_pots_XX3 %>% 
+  left_join(double_dipping_v3,by=c('season', 'half_month')) %>% 
+  mutate(tottraps_FINAL = tottraps * ratio) 
+
+
+
 
 
 #Now do the same with WA and sum weighted pot number in grids
