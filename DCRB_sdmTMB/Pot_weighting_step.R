@@ -520,12 +520,72 @@ fishtix_OR_2007_2020_with_PotLim_v2 <- fishtix_OR_2007_2020_with_PotLim %>%
 ##test with all data in OR side
 ##use the pots data (all_logs_points_v2) where GridIDs have been fixed
 #############THIS IS WHERE NEED TO FIX LANDING DATE VS SET DATE
-traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 <- all_logs_points_v2 %>%  
+
+#need to specify half-month using landing date, not set date
+## OR
+#bring in raw logbooks, and using SetID, join in info from 'FishTicket' column
+raw_OR_logs <- read_csv(here('wdfw', 'data','OR','ODFW-Dcrab-logbooks-compiled_stackcoords_license_2007-2020_20221025.csv'),col_types = 'cdcTddddddddddcccccddccc')
+#SetID is the same between the two files
+raw_OR_logs_selected_columns <- raw_OR_logs %>%
+  select(SetID, FishTicket) %>% #add in DEP as rpobably need it later anyways to adjust for 30% vs 100% entry years
+  distinct() %>% 
+  rename(FishTicket1 = FishTicket) #to match WA
+#each set ID matches to 1 FIshTicket
+
+#but note that some FishTickets have multiple entries in the grid cell
+#also some have 2 fishtix but the numbers are not separated by a space or a character
+## THIS IS ALSO RELEVANT WHEN WANT TO JOIN WITH LBS OR $. FOR LANDING PORT JUST NEED ONE FISTIX TO LINK TO
+raw_OR_logs_selected_columns_v2 <- raw_OR_logs_selected_columns %>%
+  separate(col=FishTicket1, into=c('FishTicket1', 'FishTicket2'), sep=';')
+
+raw_OR_logs_selected_columns_v3 <- raw_OR_logs_selected_columns_v2 %>%
+  mutate(n_char_tix1 = nchar(FishTicket1),
+         n_char_tix2 = nchar(FishTicket2))
+
+raw_OR_logs_selected_columns_v4 <- raw_OR_logs_selected_columns_v3 %>%
+  separate(col=FishTicket1, into=c('FishTicket1', 'FishTicket3', 'FishTicket4', 'FishTicket5', 'FishTicket6'), sep=',')
+
+nchar_test <- raw_OR_logs_selected_columns_v4 %>%
+  mutate(n_char_tix1 = nchar(FishTicket1))
+#now Fishicket1 column has only 1 value
+
+
+#join Fisticket1 into data
+OR_logs_fishticket1 <- all_logs_points_v2 %>%
+  #filter just to be OR logs
   filter(Landing_logbook_state == 'OR') %>% 
+  left_join(raw_OR_logs_selected_columns_v4, by="SetID") %>% 
+  #drop columns not needed
+  select(-(FishTicket3:n_char_tix2))
+#ALL data find a Fishticket1 - noNAs
+#each SetID associated with only 1 FishTicket1
+
+fishtix_landing_date_only <- fishtix_OR_2007_2020_with_PotLim %>% 
+  select(FTID, LANDING_DATE) %>% 
+  distinct() #each FTID associated with only 1 landing date
+
+#join landing date via PacFIn FishTIx
+OR_logs_fishticket1_with_landing_date <- OR_logs_fishticket1 %>% 
+  left_join(fishtix_landing_date_only, by = c("FishTicket1" = "FTID")) %>% 
+  filter(!is.na(LANDING_DATE))
+#number of unique SetIDs and data rows are still the same
+#but some cases on NA landing date, 8 unique Fishtickets. Those don';'t seem to exists in PacFin - drop them
+
+#here note that half-month is calcualted based on landing date to match PacFIn half-months
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 <- OR_logs_fishticket1_with_landing_date %>%  
+  #filter(Landing_logbook_state == 'OR') %>% 
+  #create one half-month label based on SetID (this is to match other predictor variable dfs)
+  rename(month_name_SetID = month_name ) %>% 
   mutate(d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(half_month_SetID = paste0(month_name_SetID,"_",period)) %>% 
+  select(-d, -period) %>% 
+  #create another half-month to only be used to link with PacFIn max pot counts
+  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
+  mutate(month_name = month(LANDING_DATE, label=TRUE, abbr=FALSE)) %>% 
   mutate(half_month = paste0(month_name,"_",period)) %>% 
   select(-d, -period)
 glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2)
+
 
 
 # traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2_XX <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_v2 %>% 
@@ -624,7 +684,7 @@ OR_weighted_pots_XX4 <- OR_weighted_pots_XX3 %>%
   left_join(double_dipping_v3,by=c('season', 'half_month')) %>% 
   mutate(tottraps_FINAL = tottraps * ratio) %>% 
   select(-(tottraps:ratio))
-
+glimpse(OR_weighted_pots_XX4)
 
 
 
@@ -834,14 +894,67 @@ fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM_PotLim <- fishtix_WA_2010_2020_j
 ##test with all data in WA side
 ##use the pots data (all_logs_points_v2) where GridIDs have been fixed
 #############THIS IS WHERE NEED TO FIX LANDING DATE VS SET DATE
-traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA <- all_logs_points_v2 %>%  
+
+## WA
+#bring in raw logbooks, and using SetID, join in info from 'Fishticket1' column
+raw_WA_logs <- read_csv(here('wdfw', 'data','WDFW-Dcrab-logbooks-compiled_stackcoords_2009-2020.csv'),col_types = 'ccdcdccTcccccdTddddddddddddddddiddccddddcddc')
+#SetID is the same between the two files
+raw_WA_logs_selected_columns <- raw_WA_logs %>%
+  select(SetID, FishTicket1) %>%
+  distinct()
+#each set ID matches to 1 FIshticket1
+## WHEN WANT TO JOIN TO LBS AND $ NEED TO JOIN WITH ALL FISTICKETS LINKED TO THAT STRING
+
+#join Fisticket1 into data
+WA_logs_fishticket1 <-  all_logs_points_v2 %>%
+  #filter just to be WA logs
   filter(Landing_logbook_state == 'WA') %>% 
-  #there are some cases where SetDate is NA< which is not useful
-  filter(!is.na(SetDate)) %>% 
+  left_join(raw_WA_logs_selected_columns, by="SetID")
+#each SetID associated with only 1 FishTicket1
+
+#not all data find a Fishticket1
+has_NAs <- WA_logs_fishticket1 %>% filter(is.na(FishTicket1))
+unique(has_NAs$SetID) #1450 SetIDs
+summary_table <- has_NAs %>% group_by(Pot_State) %>% summarise(n_distinct_SetID = n_distinct(SetID))
+#Pot_State    n_distinct_SetID
+#OR                 35
+#WA               1436
+nrow(has_NAs)/nrow(WA_logs_fishticket1)*100 ##0.9% of pots/of WA logs didn't have a Fishticket number recorded in logbooks to be matched to PacFin tickets
+
+
+
+fishtix_landing_date_only <- fishtix_WA_2010_2020_join_by_FISHER_LICENSE_NUM %>% 
+  select(FTID, LANDING_DATE) %>% 
+  distinct() #each FTID associated with only 1 landing date
+
+#join landing date via PacFIn FishTIx
+WA_logs_fishticket1_with_landing_date <- WA_logs_fishticket1 %>% 
+  left_join(fishtix_landing_date_only, by = c("FishTicket1" = "FTID")) %>% 
+  filter(!is.na(LANDING_DATE))
+#quite a lot of NAs, sometimes they have Fishticket1 and sometimes they don't
+#do a mix of half-month created based on landing_date, or by set date if no landing date available
+
+
+#here note that half-month is calculated based on landing date to match PacFIn half-months
+traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA <- WA_logs_fishticket1_with_landing_date %>%  
+  #filter(Landing_logbook_state == 'WA') %>% 
+  #create one half-month label based on SetID (this is to match other predictor variable dfs)
+  #there are some cases where SetDate is NA< which is not useful - we'll drop these later
+  #filter(!is.na(SetDate)) %>% 
+  rename(month_name_SetID = month_name ) %>% 
   mutate(d=day(SetDate),period=ifelse(d<=15,1,2)) %>% 
+  mutate(half_month_SetID = paste0(month_name_SetID,"_",period)) %>% 
+  select(-d, -period) %>% 
+  #create another half-month to only be used to link with PacFIn max pot counts
+  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
+  mutate(month_name = month(LANDING_DATE, label=TRUE, abbr=FALSE)) %>% 
   mutate(half_month = paste0(month_name,"_",period)) %>% 
   select(-d, -period)
 glimpse(traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020_WA)
+
+
+
+
 
 
 #---------- old way before 'double dipping'------------
