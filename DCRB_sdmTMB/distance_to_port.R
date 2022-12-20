@@ -102,7 +102,22 @@ OR_logs_fishticket1 <- OR_logs %>%
 #each SetID associated with only 1 FishTicket1
 
 
+#-------------------------------------------------------------------------
 
+##NEW WAY
+# read in separate df for OR and WA pots as points
+#these have been weighted to correct for OR 30% data entry, and compliance
+#also missing GridIDs have been fixed
+
+OR_weighted_pots <- read_rds(here::here('DCRB_sdmTMB', 'data','OR_pots_points_but_weighted.rds'))
+
+#for WA forgot to delete some extra columns before saving
+WA_weighted_pots <- read_rds(here::here('DCRB_sdmTMB', 'data','WA_pots_points_but_weighted.rds')) %>% 
+  select(-(n_traps_all:ratio))
+
+WA_OR_weighted_pots <- rbind(WA_weighted_pots, OR_weighted_pots) %>% 
+  #the second half-month identifier is based on landing date
+  rename(half_month_landing_date = half_month)
 
 #-------------------------------------------------------------------------
 
@@ -115,14 +130,14 @@ fishtix_2007_2020 <- fishtix_raw %>%
   #we can also choose some columns as there are so many in the pacfin data
   select(FISH_TICKET_ID, FTID, VESSEL_NUM, LANDING_DATE,  LANDING_YEAR, NUM_OF_DAYS_FISHED, AGENCY_CODE,
   VESSEL_REGISTRATION_ID, VESSEL_ID, VESSEL_NUM, FISHER_LICENSE_NUM, 
-  PACFIN_SPECIES_CODE,  NOMINAL_TO_ACTUAL_PACFIN_SPECIES_CODE, CATCH_AREA_CODE, PACFIN_PORT_CODE, PACFIN_PORT_NAME,
+  PACFIN_SPECIES_CODE,  NOMINAL_TO_ACTUAL_PACFIN_SPECIES_CODE, CATCH_AREA_CODE, PACFIN_PORT_CODE, PACFIN_PORT_NAME, PACFIN_GROUP_PORT_CODE,
   PRICE_PER_POUND, EXVESSEL_REVENUE, AFI_PRICE_PER_POUND, AFI_EXVESSEL_REVENUE, LANDED_WEIGHT_LBS, REMOVAL_TYPE_NAME) %>% 
   filter(PACFIN_SPECIES_CODE == "DCRB") %>% 
   #filter out personal catch and research catch here
   filter(REMOVAL_TYPE_NAME=="COMMERCIAL (NON-EFP)" | REMOVAL_TYPE_NAME == "COMMERCIAL(DIRECT SALES)")
 
 fishtix_landing_port_only <- fishtix_2007_2020 %>% 
-  select(FTID, PACFIN_PORT_NAME, PACFIN_PORT_CODE) %>% 
+  select(FTID, PACFIN_PORT_NAME, PACFIN_PORT_CODE, PACFIN_GROUP_PORT_CODE) %>% 
   distinct() #requires distinct call here, otherwise some rows get repeated
 #First several instance of Fishticket being associated with multiple ports
 #because one FTID might be linked to multiple PacFIn FISH_TICKET_ID.
@@ -149,25 +164,47 @@ ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port <- ALL_WA_2010_2020_and_ALL_O
   left_join(fishtix_landing_port_only, by = c("FishTicket1" = "FTID"))
 #number of unique SetIDs and data rows are still the same
 
+##NEW 
+ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port <- WA_OR_weighted_pots %>% 
+  left_join(fishtix_landing_port_only, by = c("FishTicket1" = "FTID"))
+#number of unique SetIDs and data rows are still the same
 
 
 
 #what % of pots did not find Port
 no_port_match <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% filter(is.na(PACFIN_PORT_NAME))
-nrow(no_port_match) / nrow(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port) *100 #0.79%
-#some of this was due to small % of WA raw logs not having a Fishticket1 recorded. 
+nrow(no_port_match) / nrow(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port) *100 #0.79% -- 0% in the new way as issues have already been ropped out
+#some of this was due to small % of WA raw logs not having a Fishticket1 recorded. -- these are already dropped in new run
 #some (majority?) fishtix numbers from logs don't appear as FTID in PacFIn data
 unique(no_port_match$FishTicket1)
 
 
 ports_used <- unique(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port$PACFIN_PORT_NAME) 
+port_groups_used <- unique(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port$PACFIN_GROUP_PORT_CODE) 
+
 
 ##probably need to correct for 30%vs100% data entry in OR, and also for compliance as well (?) before can calc % of pots to ports:
+#this has now been done, pots are weighted
 summary_pots_to_ports <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
   filter(!is.na(PACFIN_PORT_NAME)) %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
   group_by(PACFIN_PORT_NAME, PACFIN_PORT_CODE) %>% 
-  summarise(n_pots = n()) %>% 
-  mutate(percent_pots = n_pots/nrow(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port)*100)
+  #summarise(n_pots = n()) %>% 
+  summarise(n_pots = sum(tottraps_FINAL)) %>% #now sum tottraps_FINAL column as that is weighted
+  #mutate(percent_pots = n_pots/nrow(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port)*100)
+  mutate(percent_pots = n_pots/sum(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port$tottraps_FINAL)*100)
+
+summary_pots_to_port_groups <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
+  filter(!is.na(PACFIN_GROUP_PORT_CODE)) %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  group_by(PACFIN_GROUP_PORT_CODE) %>% 
+  #summarise(n_pots = n()) %>% 
+  summarise(n_pots = sum(tottraps_FINAL)) %>% #now sum tottraps_FINAL column as that is weighted
+  #mutate(percent_pots = n_pots/nrow(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port)*100)
+  mutate(percent_pots = n_pots/sum(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port$tottraps_FINAL)*100)
+
 
 #those pots that don't have grid IDs might be in grids that were split into pieces due to land etc
 #or points that are on land in terms of grid, but not in terms of the depth rater used
@@ -194,11 +231,104 @@ summary_pots_to_ports <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
 ##NOT FINISHED WITH THIS
 
 summary_ports_to_grid <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
   group_by(GRID5KM_ID) %>%
-  summarise(N = n(), type = toString(unique(PACFIN_PORT_NAME)), .groups = 'drop') 
+  #summarise(N = n(), type = toString(unique(PACFIN_PORT_NAME)), .groups = 'drop') 
+  summarise(N = sum(tottraps_FINAL), type = toString(unique(PACFIN_PORT_NAME)), .groups = 'drop') #do this now that each row (or pot) is actually weighted
+
+summary_port_groups_to_grid <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  group_by(GRID5KM_ID) %>%
+  #summarise(N = n(), type = toString(unique(PACFIN_PORT_NAME)), .groups = 'drop') 
+  summarise(N = sum(tottraps_FINAL), type = toString(unique(PACFIN_GROUP_PORT_CODE)), .groups = 'drop') #do this now that each row (or pot) is actually weighted
+
+
+
+
+
+summary_ports_to_grid_v2 <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
+  filter(!is.na(PACFIN_PORT_NAME)) %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  group_by(GRID5KM_ID,PACFIN_GROUP_PORT_CODE, PACFIN_PORT_NAME) %>% 
+  summarise(n_pots = sum(tottraps_FINAL)) %>% #now sum tottraps_FINAL column as that is weighted
+  left_join(summary_ports_to_grid %>% dplyr::select(-type), by = c("GRID5KM_ID")) %>% 
+  mutate(percent_pots_from_this_grid = n_pots/N*100,
+         percent_all_pots = n_pots/sum(ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port$tottraps_FINAL)*100)
+
+##note that ports: O WA COAST, O COL WA, UNKN WA, O S PUGET and A N PUGET
+#arent ports with coordinates -- would need to be dropped, or use some proxy coordinates
+
+n_pots_in_grids <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID) %>%
+  summarise(no_pots_in_this_grid = sum(tottraps_FINAL))  
   
+n_pots_from_grid_to_port <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID, PACFIN_PORT_NAME) %>%
+  summarise(no_pots_from_this_grid_to_port = sum(tottraps_FINAL))
+
+n_pots_from_grid_to_port_group <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID, PACFIN_GROUP_PORT_CODE) %>%
+  summarise(no_pots_from_this_grid_to_port_group = sum(tottraps_FINAL))
+
+summary_table_port_group <- n_pots_in_grids %>% 
+  left_join(n_pots_from_grid_to_port_group, by = c("GRID5KM_ID")) %>% 
+  mutate(percent_pots_to_port_group = no_pots_from_this_grid_to_port_group/no_pots_in_this_grid*100) %>% 
+  select(-no_pots_in_this_grid, -no_pots_from_this_grid_to_port_group)
+  
+summary_table_port <- n_pots_in_grids %>% 
+  left_join(n_pots_from_grid_to_port, by = c("GRID5KM_ID")) %>% 
+  mutate(percent_pots_to_port = no_pots_from_this_grid_to_port/no_pots_in_this_grid*100) %>% 
+  select(-no_pots_in_this_grid, -no_pots_from_this_grid_to_port)
 
 
-#will need to check that fish tickets aren't repeating when join to logs, e.g. due to different catch area codes
+
 ##find lat and lon of all ports
+
+
+
+###BEFORE join to grid, maybe calc the weighted port distance, so that only have to find one valeu per empty grid
+#now it would have a lsit of possible ports
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_sf.rds"))
+#grids that were in pieces and had repeating gridID have been fixed
+#drop the exisitng predictors, so have one df with just the response variable
+study_area_grids <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed %>% 
+  select(-NGDC_GRID, -AREA, -season, -half_month) %>% 
+  distinct()
+
+study_area_grids_ports <- study_area_grids %>% 
+  left_join(summary_table_port)
+
+
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','study_area.shp')) %>% 
+  select(GRID5KM_ID,geometry)
+
+study_area_grids_ports <- study_area %>% 
+  left_join(summary_table_port)
+
+#st_write(study_area_grids_ports, "study_area_grids_ports.shp") 
+
+
+
+
+#join to grid to see if all study area grids have list of ports
+
+
+
+
 
