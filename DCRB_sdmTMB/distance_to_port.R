@@ -380,3 +380,33 @@ study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_ca
 
 #write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist.rds"))
 
+
+
+
+
+
+#----------------------------------------------------------
+#save a different version to be used with e.g. fuel prices
+
+n_pots_in_grids_by_halfmonth <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID, season, half_month_SetID) %>%
+  summarise(no_pots_in_this_grid = sum(tottraps_FINAL))  
+
+n_pots_from_grid_to_port_group_by_halfmonth <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID,  season, half_month_SetID, PACFIN_GROUP_PORT_CODE) %>%
+  summarise(no_pots_from_this_grid_to_port_group = sum(tottraps_FINAL))
+
+summary_table_port_group_by_halfmonth <- n_pots_in_grids_by_halfmonth %>% 
+  left_join(n_pots_from_grid_to_port_group_by_halfmonth, by = c("GRID5KM_ID",  "season", "half_month_SetID")) %>% 
+  mutate(prop_pots_to_port_group = no_pots_from_this_grid_to_port_group/no_pots_in_this_grid) %>% 
+  select(-no_pots_in_this_grid, -no_pots_from_this_grid_to_port_group)
+
+#write_rds(summary_table_port_group_by_halfmonth,here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds"))
