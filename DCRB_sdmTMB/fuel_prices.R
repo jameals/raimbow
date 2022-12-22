@@ -48,26 +48,127 @@ fuel_or_wa_v3 <- fuel_or_wa_v2 %>%
 fuel_or_wa_v4 <- fuel_or_wa_v3 %>% 
   mutate_at(c('pricettl','pricegal'), ~na_if(., 0))
   
+#for each ports where fuel price info collected, assign PacFIn port group code (see e.g. distance to port script)
+unique(fuel_or_wa_v4$portname)
+#port name                port group
+# "Astoria"               CLO
+# "Brookings"             BRA
+# "Florence"              CBA
+# "Gold Beach"            BRA
+# "Newport"               NPA
+# "Winchester Bay"        CBA
+# "Tillamook/Garabaldi"   TLA
+# "Anacortes"             NPS
+# "Bellingham Bay"        NPS
+# "Blaine"                NPS
+# "Everett"               SPS
+# "Ilwaco/Chinook"        CLW
+# "Neah Bay"              NPS
+# "Olympia"               SPS
+# "Port Angeles"          NPS
+# "Seattle"               SPS
+# "Shelton"               SPS
+# "Tacoma"                SPS
+# "Port Townsend"         NPS
+# "West Port"             CWA
 
-#find average fuel price within each month (step)as can't do half month step)
-#for each port (or could do port group? see por grouping e.g. herehttps://www.psmfc.org/efin/docs/2020FuelPriceReport.pdf) 
+fuel_or_wa_v5 <- fuel_or_wa_v4 %>% 
+  mutate(PACFIN_GROUP_PORT_CODE = case_when(
+    portname %in% c('Brookings','Gold Beach') ~ 'BRA',
+    portname %in% c('Florence','Winchester Bay') ~ 'CBA',
+    portname %in% c('Astoria') ~ 'CLO',
+    portname %in% c('Ilwaco/Chinook') ~ 'CLW',
+    portname %in% c('West Port') ~ 'CWA',
+    portname %in% c('Newport') ~ 'NPA',
+    portname %in% c('Anacortes','Bellingham Bay','Blaine', 'Neah Bay','Port Angeles','Port Townsend') ~ 'NPS',
+    portname %in% c('Everett','Olympia','Seattle','Shelton', 'Tacoma') ~ 'SPS',
+    portname %in% c('Tillamook/Garabaldi') ~ 'TLA'
+  ))
+
+
+
+#find average fuel price within each month as can't do half month step)
+#for each port group (see port grouping e.g. herehttps://www.psmfc.org/efin/docs/2020FuelPriceReport.pdf -- did it based on PacFin see dist to port code) 
 #that data is available
-fuel_price_month_step_port <- fuel_or_wa_v4 %>% 
-  group_by(season, month_name, STATE, port, portname) %>% #don't include dock code here
-  summarise(avg_pricettl = mean(pricettl, na.rm = TRUE),
+fuel_price_month_step_portgroup <- fuel_or_wa_v5 %>% 
+  group_by(season, month_name, PACFIN_GROUP_PORT_CODE) %>% #don't include dock code here ##STATE, port, portname
+  summarise(
+            #avg_pricettl = mean(pricettl, na.rm = TRUE),
             avg_pricegal = mean(pricegal, na.rm = TRUE)
             )
 
-#if wanted to group by PSMFC/EFIN port regions before getting monthly avg
-#Northern Washington: Blaine, Bellingham Bay, Anacortes, Port Townsend
-#Puget Sound: Everett, Tacoma, Olympia, Shelton, Seattle
-#Washington Coast: Neah Bay, Port Angeles, Westport, Ilwaco/Chinook
-#Oregon: Astoria, Newport, Florence, Winchester Bay
-#California: Crescent City, Eureka, Sausalito, San Francisco, Moss Landing, Morro Bay, Santa Barbara, Port Hueneme, San Pedro
+#25 cases (month and port combos)  where no fuel price available
+#TLA port group the one that mostly has NA - did they stop checking these...?
+#use state average? or nearby port group average? --> nearby portgroup as state can be very variables
+#there are more NAs in the avg_pricettl variable, so probably better to just stick to avg_pricegal
+
+
+fuel_price_month_step_portgroup_noNAs <- fuel_price_month_step_portgroup %>% 
+  filter(!is.na(avg_pricegal)) 
+
+fuel_price_month_step_portgroup_NAs <- fuel_price_month_step_portgroup %>% 
+  filter(is.na(avg_pricegal)) %>% 
+  select(-avg_pricegal) %>% 
+  mutate(PACFIN_GROUP_PORT_CODE2 = case_when(
+    PACFIN_GROUP_PORT_CODE == 'BRA' ~ 'CBA',
+    PACFIN_GROUP_PORT_CODE == 'CBA' ~ 'NPA',
+    PACFIN_GROUP_PORT_CODE == 'CLO' ~ 'CLW',
+    PACFIN_GROUP_PORT_CODE == 'CLW' ~ 'CLO',
+    PACFIN_GROUP_PORT_CODE == 'CWA' ~ 'CLW',
+    PACFIN_GROUP_PORT_CODE == 'NPA' ~ 'TLA',
+    PACFIN_GROUP_PORT_CODE == 'NPS' ~ 'SPS',
+    PACFIN_GROUP_PORT_CODE == 'SPS' ~ 'NPA',
+    PACFIN_GROUP_PORT_CODE == 'TLA' ~ 'CLO'
+  )) %>% inner_join(fuel_price_month_step_portgroup, by=c("PACFIN_GROUP_PORT_CODE2"= "PACFIN_GROUP_PORT_CODE", "season", "month_name")) %>% 
+  #one more case of NA as in the same month (May 2020) both CLO and CLW don't have fuel price
+  mutate(avg_pricegal = case_when(
+    is.na(avg_pricegal) & PACFIN_GROUP_PORT_CODE == 'CLO' ~ 1.49,
+    is.na(avg_pricegal) & PACFIN_GROUP_PORT_CODE == 'CLW' ~ 1.19,
+    !is.na(avg_pricegal) ~ avg_pricegal 
+  )) %>% 
+  select(-PACFIN_GROUP_PORT_CODE2)
+
+fuel_price_month_step_portgroup_fixed <- rbind(fuel_price_month_step_portgroup_noNAs,fuel_price_month_step_portgroup_NAs)
+
+
+
+
+#read in proportion of pots to port groups by half month
+proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
+  #this needs a column for month as fuel price is by month not half-month
+  mutate(half_month_dummy = half_month_SetID) %>% 
+  separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
+  select(-period)
+
+
+#join fuel price to df with proportion of pots from grid to port group
+
+
+
 
 
 
 #at some point need to adjust for inflation, all $ in dollars of that specific year etc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
