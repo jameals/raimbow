@@ -26,7 +26,7 @@ library(lubridate)
 #fuel prices only checked once month, so can't get separate values for each half month step
 #need to apply each month's price to both half month steps
 
-#for now downloaded OR and WA, but may also need CA? (Maybe jsut the northern ports of Crescent City and Eureka?)
+#for now downloaded OR and WA
 fuel_OR <- read_csv(here('DCRB_sdmTMB', 'data', 'fuel','fuelor.csv'))
 fuel_WA <- read_csv(here('DCRB_sdmTMB', 'data', 'fuel','fuelwa.csv'))
 
@@ -98,10 +98,9 @@ fuel_price_month_step_portgroup <- fuel_or_wa_v5 %>%
             )
 
 #25 cases (month and port combos)  where no fuel price available
-#TLA port group the one that mostly has NA - did they stop checking these...?
-#use state average? or nearby port group average? --> nearby portgroup as state can be very variables
+#TLA port group the one that mostly has NA - may have stopped collecting fuel data from there
+#use state average? or nearby port group average? --> nearby portgroup as state can be very variable
 #there are more NAs in the avg_pricettl variable, so probably better to just stick to avg_pricegal
-
 
 fuel_price_month_step_portgroup_noNAs <- fuel_price_month_step_portgroup %>% 
   filter(!is.na(avg_pricegal)) 
@@ -145,7 +144,7 @@ proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB',
 proportion_pots_to_port_group_by_halfmonth_fuel_price <- proportion_pots_to_port_group_by_halfmonth %>% 
   left_join(fuel_price_month_step_portgroup_fixed, by=c('season', 'month_name','PACFIN_GROUP_PORT_CODE'))
 #some NAs - e.g. BRA - Brooking dropped from fuel price survey in 2009  & Gold Beach stopped selling diesel in 2012
-#same as above, if NA, use price or that month from closes port
+#same as above, if NA, use price of that month from closest port group
 
 proportion_pots_to_port_group_by_halfmonth_fuel_price_noNAs <- proportion_pots_to_port_group_by_halfmonth_fuel_price %>% 
   filter(!is.na(avg_pricegal)) 
@@ -347,7 +346,7 @@ weighted_fuel_price_points_sf <- st_as_sf(weighted_fuel_price_points,
 
 ##This is where need to loop through all season and half-month combos
 subset <- weighted_fuel_price_points_sf %>% 
-  filter(season=="2019-2020", half_month=="January_1")
+  filter(season=="2019-2020", half_month=="September_1")
 plot(subset)
 
 
@@ -367,7 +366,7 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
   st_set_geometry(NULL) %>% 
   rename(weighted_fuel_pricegal = var1.pred) %>% 
   #but do need columns denoting season and half-month - these would need to be added here
-  mutate(season = "2019-2020", half_month="January_1") %>% 
+  mutate(season = "2019-2020", half_month="September_1") %>% 
   #reorder columns
   select(GRID5KM_ID, season, half_month, weighted_fuel_pricegal)
 
@@ -378,16 +377,69 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
 # dummy_df <- data.frame(matrix(nrow = 0, ncol = length(columns))) 
 # colnames(dummy_df) = columns
 
-# df_fuel_price <- dummy_df %>% 
-#   rbind(test_join)
+# df_fuel_price <- dummy_df 
+
 df_fuel_price <- df_fuel_price %>% 
   rbind(test_join)
 
-
-#-------------------------
-
+unique(df_fuel_price$half_month)
 
 
+#note that e.g. 2007-2008 is OR data only so ends in August_1; 2012-2013 starts late (December_2)
+#2014-2015 doesn't have August_2, but has August_1 and September_1
+#interpolated_fuel_price_2019_2020 <-  df_fuel_price
+#nrow(interpolated_fuel_price_2019_2020)
+#write_rds(interpolated_fuel_price_2019_2020,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2019_2020.rds"))
+
+
+#------------------------------
+#2014-2015 season had no pots in August_2, but as fishery (in WA) was open
+#we need fuel prices for grid cells in that month for the presence/absence model
+interpolated_fuel_price_2014_2015
+
+interpolated_fuel_price_2014_2015_august1_september1 <- interpolated_fuel_price_2014_2015 %>% 
+  filter(half_month=='August_1' | half_month=='September_1') %>% 
+  group_by(GRID5KM_ID) %>% 
+  summarise(weighted_fuel_pricegal = mean(weighted_fuel_pricegal)) %>% 
+  mutate(season = "2014-2015", half_month = "August_2") %>% 
+  select(GRID5KM_ID, season, half_month, weighted_fuel_pricegal)
+  
+interpolated_fuel_price_2014_2015 <- rbind(interpolated_fuel_price_2014_2015, interpolated_fuel_price_2014_2015_august1_september1)
+#write_rds(interpolated_fuel_price_2014_2015,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2014_2015.rds"))
+
+#------------------------------
+ 
+interpolated_fuel_price_all <- rbind(interpolated_fuel_price_2007_2008,
+                                     interpolated_fuel_price_2008_2009,
+                                     interpolated_fuel_price_2009_2010,
+                                     interpolated_fuel_price_2010_2011,
+                                     interpolated_fuel_price_2011_2012,
+                                     interpolated_fuel_price_2012_2013,
+                                     interpolated_fuel_price_2013_2014,
+                                     interpolated_fuel_price_2014_2015,
+                                     interpolated_fuel_price_2015_2016,
+                                     interpolated_fuel_price_2016_2017,
+                                     interpolated_fuel_price_2017_2018,
+                                     interpolated_fuel_price_2018_2019,
+                                     interpolated_fuel_price_2019_2020
+                                     )
+
+#write_rds(interpolated_fuel_price_all,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_all.rds"))
+
+#------------------------------
+
+
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist.rds"))
+
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist %>% 
+  left_join(interpolated_fuel_price_all, by=c('GRID5KM_ID', 'season', 'half_month'))
+#the cases where grid has NA for fuel price should be cases where grids were closed (season closures etc)
+#these should get removed when get around to dealing with open/closed areas (grids)
+
+
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel.rds"))
 
 
 
@@ -395,23 +447,34 @@ df_fuel_price <- df_fuel_price %>%
 
 
 
-#can also download and use monthly state prices
-fuel_state_averages_raw <- read_csv(here('DCRB_sdmTMB', 'data', 'fuel','state_averages.csv'))
 
-fuel_state_averages <- fuel_state_averages_raw %>% 
-  #drop out alaska
-  filter(STATE != 'AK') %>% 
-  #drop out some useless years
-  filter(YEAR %in% c(2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020))
 
-fuel_state_averages_v2 <- transform(fuel_state_averages, month_name = month.name[MONTH])
 
-fuel_state_averages_v3 <- fuel_state_averages_v2 %>% 
-  mutate(season_start = ifelse(MONTH == 12, YEAR, YEAR-1)) %>% 
-  mutate(season_end = ifelse(MONTH == 12, YEAR+1, YEAR)) %>% 
-  mutate(season = paste0(season_start,"-",season_end)) %>% 
-  select(-season_start, -season_end) 
 
+
+
+
+
+
+#------------------------------
+#------------------------------
+# #can also download and use monthly state fuel prices
+# fuel_state_averages_raw <- read_csv(here('DCRB_sdmTMB', 'data', 'fuel','state_averages.csv'))
+# 
+# fuel_state_averages <- fuel_state_averages_raw %>% 
+#   #drop out alaska
+#   filter(STATE != 'AK') %>% 
+#   #drop out some useless years
+#   filter(YEAR %in% c(2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020))
+# 
+# fuel_state_averages_v2 <- transform(fuel_state_averages, month_name = month.name[MONTH])
+# 
+# fuel_state_averages_v3 <- fuel_state_averages_v2 %>% 
+#   mutate(season_start = ifelse(MONTH == 12, YEAR, YEAR-1)) %>% 
+#   mutate(season_end = ifelse(MONTH == 12, YEAR+1, YEAR)) %>% 
+#   mutate(season = paste0(season_start,"-",season_end)) %>% 
+#   select(-season_start, -season_end) 
+# 
 
 
 
