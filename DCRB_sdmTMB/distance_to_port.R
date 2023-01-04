@@ -346,43 +346,99 @@ study_area_grids_ports <- study_area %>%
 
 
 ##USE THIS METHOD
-library(fasterize)
-
-test_raster <- fasterize(study_area_grids_ports,
-                         raster = raster(study_area_grids_ports,res=5000,
-                                         crs=crs(study_area_grids_ports)),
-                         field="weighted_dist")
-
-plot(test_raster)
-
-writeRaster(test_raster,'study_area_grids_ports.tif',options=c('TFW=YES'))
-
-#get dist to port into a raster
-#bring to GIS
-#use Raster --> Analysis --> fill nodata to interpolate
-#use the interpolated value in grids that were NA 9had no point data)
-
-
-#---------------------
-#after all study area grds have been assigned a weighted port dist in QGIS
-
-grid_centroids_port_dist <- read_csv(here::here('DCRB_sdmTMB', 'data', 'dist to ports', "grid_centroids_port_dist.csv")) %>% 
-  select(GRID5KM_ID, weighted_dist)
-
-
-study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp.rds"))
-
-
-study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp %>% 
-  select(-grd_x.y , -grd_y.y) %>% 
-  rename(grd_x = grd_x.x, grd_y = grd_y.x) %>% 
-  left_join(grid_centroids_port_dist, by=c('GRID5KM_ID'))
+# library(fasterize)
+# 
+# test_raster <- fasterize(study_area_grids_ports,
+#                          raster = raster(study_area_grids_ports,res=5000,
+#                                          crs=crs(study_area_grids_ports)),
+#                          field="weighted_dist")
+# 
+# plot(test_raster)
+# 
+# writeRaster(test_raster,'study_area_grids_ports.tif',options=c('TFW=YES'))
+# 
+# #get dist to port into a raster
+# #bring to GIS
+# #use Raster --> Analysis --> fill nodata to interpolate
+# #use the interpolated value in grids that were NA 9had no point data)
+# 
+# 
+# #---------------------
+# #after all study area grds have been assigned a weighted port dist in QGIS
+# 
+# grid_centroids_port_dist <- read_csv(here::here('DCRB_sdmTMB', 'data', 'dist to ports', "grid_centroids_port_dist.csv")) %>% 
+#   select(GRID5KM_ID, weighted_dist)
+# 
+# 
+# study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp.rds"))
+# 
+# 
+# study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp %>% 
+#   select(-grd_x.y , -grd_y.y) %>% 
+#   rename(grd_x = grd_x.x, grd_y = grd_y.x) %>% 
+#   left_join(grid_centroids_port_dist, by=c('GRID5KM_ID'))
 
 #write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist.rds"))
 
 
 
+#----------------------------------------------------------
+#or, use the R interpolation
+#weighted_pot_dist
 
+#https://www.youtube.com/watch?v=9whoSguh7Z4
+
+#specify points where want to estimate/interpolate the variable (the unknown points)
+# that would be the grid centroids
+grid_centroids <- read_csv(here::here('DCRB_sdmTMB','data','dist to ports','grid_centroids.csv'))
+grid_centroids_sf <- st_as_sf(grid_centroids, 
+                              coords = c("grd_x", "grd_y"),
+                              crs = 4326
+)
+plot(grid_centroids_sf)
+
+
+library(gstat)
+
+
+#data to be used for interpolation
+weighted_pot_dist_points <- weighted_pot_dist %>% 
+  left_join(grid_centroids) 
+
+weighted_pot_dist_points_sf <- st_as_sf(weighted_pot_dist_points, 
+                                          coords = c("grd_x", "grd_y"),
+                                          crs = 4326
+)
+
+
+#no looping as distnace to port group from grid centroid is static, doesnt change from year to year
+
+#locations specifies the dataset. idp = alpha, how important are we going to make distance
+test_idw <- gstat::idw(formula=weighted_dist~1, 
+                       locations = weighted_pot_dist_points_sf, 
+                       newdata=grid_centroids_sf, 
+                       idp =1) #idp default is 1
+#var1.pred = the interpolated value at the point
+#for those points that were the input, the interpolated var1.pred is exactly the same as the input value
+
+
+test_join <- st_join(test_idw, grid_centroids_sf) %>% 
+  #after this don't need geometry column, only grid ID
+  #and also don't need var1.var column
+  select(var1.pred, GRID5KM_ID) %>% 
+  st_set_geometry(NULL) %>% 
+  rename(weighted_dist = var1.pred) %>% 
+  
+#very similar but not identical to QGIS interpolation
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp.rds"))
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_IDWinR <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp %>% 
+  select(-grd_x.y , -grd_y.y) %>% 
+  rename(grd_x = grd_x.x, grd_y = grd_y.x) %>% 
+  left_join(test_join, by=c('GRID5KM_ID'))
+
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_IDWinR,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_IDWinR.rds"))
 
 
 #----------------------------------------------------------
