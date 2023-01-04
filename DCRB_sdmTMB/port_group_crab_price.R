@@ -22,82 +22,83 @@ library(lubridate)
 #-------------------------------------------------------------------------------------------------
 
 #port cpecific crab price data downloaded form here: https://reports.psmfc.org/pacfin/f?p=501:1000:
+## bunch of missing crab prices if do this way
 
-crab_price_by_port_raw <- read_csv(here('DCRB_sdmTMB', 'data', 'port group crab price','PacFin_CRAB002-W-O-2007_2020_price_by_port.csv'))
-
-
-crab_price_by_port_selected_columns <- crab_price_by_port_raw %>% 
-  select(CRAB_YEAR, AGENCY_CODE, PACFIN_GROUP_PORT_CODE, ends_with('PPP')) %>% 
-  select(-TOTAL_ROUND_WEIGHT_PPP)
-
-crab_price_by_port_long <- crab_price_by_port_selected_columns %>% 
-  pivot_longer(
-    cols = NOV_ROUND_WEIGHT_PPP:OCT_ROUND_WEIGHT_PPP,
-    names_to = "month",
-    values_to = "ppp"
-  ) %>% 
-  separate(col=month, into=c('month', 'extra'), sep='_') %>% 
-  select(-extra) %>% 
-  mutate(month_name = case_when(
-    month == 'NOV' ~ 'November',
-    month == 'DEC' ~ 'December',
-    month == 'JAN' ~ 'January',
-    month == 'FEB' ~ 'February',
-    month == 'MAR' ~ 'March',
-    month == 'APR' ~ 'April',
-    month == 'MAY' ~ 'May',
-    month == 'JUN' ~ 'June',
-    month == 'JUL' ~ 'July',
-    month == 'AUG' ~ 'August',
-    month == 'SEP' ~ 'September',
-    month == 'OCT' ~ 'October'
-  )) %>% 
-  select(-month) %>% 
-  mutate(season_start = ifelse(month_name == 'December', CRAB_YEAR, CRAB_YEAR-1)) %>% 
-  mutate(season_end = ifelse(month_name == 'December', CRAB_YEAR+1, CRAB_YEAR)) %>% 
-  mutate(season = paste0(season_start,"-",season_end)) %>% 
-  select(-season_start, -season_end, -CRAB_YEAR, -AGENCY_CODE)
-
-
-
-#read in proportion of pots to port groups by half month
-proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
-  #this needs a column for month as fuel price is by month not half-month
-  mutate(half_month_dummy = half_month_SetID) %>% 
-  separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
-  select(-period)
-
-
-#join crab price to df with proportion of pots from grid to port group
-proportion_pots_to_port_group_by_halfmonth_crab_price <- proportion_pots_to_port_group_by_halfmonth %>% 
-  left_join(crab_price_by_port_long, by=c('season', 'month_name','PACFIN_GROUP_PORT_CODE'))
-#some NAs - same as with fuel price, if NA, use price of that month from closest port group
-
-
-proportion_pots_to_port_group_by_halfmonth_crab_price_noNAs <- proportion_pots_to_port_group_by_halfmonth_crab_price %>% 
-  filter(!is.na(ppp)) 
-
-proportion_pots_to_port_group_by_halfmonth_crab_price_NAs <- proportion_pots_to_port_group_by_halfmonth_crab_price %>% 
-  filter(is.na(ppp)) %>% 
-  #drop couple columns to avoid repeating columns in left_join
-  select(-ppp) %>% 
-  mutate(PACFIN_GROUP_PORT_CODE2 = case_when(
-    PACFIN_GROUP_PORT_CODE == 'BRA' ~ 'CBA',
-    PACFIN_GROUP_PORT_CODE == 'CBA' ~ 'NPA',
-    PACFIN_GROUP_PORT_CODE == 'CLO' ~ 'CLW',
-    PACFIN_GROUP_PORT_CODE == 'CLW' ~ 'CLO',
-    PACFIN_GROUP_PORT_CODE == 'CWA' ~ 'CLW',
-    PACFIN_GROUP_PORT_CODE == 'NPA' ~ 'TLA',
-    PACFIN_GROUP_PORT_CODE == 'NPS' ~ 'SPS',
-    PACFIN_GROUP_PORT_CODE == 'SPS' ~ 'NPA',
-    PACFIN_GROUP_PORT_CODE == 'TLA' ~ 'CLO'
-  )) %>% 
-  inner_join(crab_price_by_port_long, by=c("PACFIN_GROUP_PORT_CODE2"= "PACFIN_GROUP_PORT_CODE", "season", "month_name")) %>% 
-  select(-PACFIN_GROUP_PORT_CODE2)
-
-
-proportion_pots_to_port_group_by_halfmonth_crab_price_fixed <- rbind(proportion_pots_to_port_group_by_halfmonth_crab_price_noNAs,proportion_pots_to_port_group_by_halfmonth_crab_price_NAs)
-#but still some NAs
+# crab_price_by_port_raw <- read_csv(here('DCRB_sdmTMB', 'data', 'port group crab price','PacFin_CRAB002-W-O-2007_2020_price_by_port.csv'))
+# 
+# 
+# crab_price_by_port_selected_columns <- crab_price_by_port_raw %>% 
+#   select(CRAB_YEAR, AGENCY_CODE, PACFIN_GROUP_PORT_CODE, ends_with('PPP')) %>% 
+#   select(-TOTAL_ROUND_WEIGHT_PPP)
+# 
+# crab_price_by_port_long <- crab_price_by_port_selected_columns %>% 
+#   pivot_longer(
+#     cols = NOV_ROUND_WEIGHT_PPP:OCT_ROUND_WEIGHT_PPP,
+#     names_to = "month",
+#     values_to = "ppp"
+#   ) %>% 
+#   separate(col=month, into=c('month', 'extra'), sep='_') %>% 
+#   select(-extra) %>% 
+#   mutate(month_name = case_when(
+#     month == 'NOV' ~ 'November',
+#     month == 'DEC' ~ 'December',
+#     month == 'JAN' ~ 'January',
+#     month == 'FEB' ~ 'February',
+#     month == 'MAR' ~ 'March',
+#     month == 'APR' ~ 'April',
+#     month == 'MAY' ~ 'May',
+#     month == 'JUN' ~ 'June',
+#     month == 'JUL' ~ 'July',
+#     month == 'AUG' ~ 'August',
+#     month == 'SEP' ~ 'September',
+#     month == 'OCT' ~ 'October'
+#   )) %>% 
+#   select(-month) %>% 
+#   mutate(season_start = ifelse(month_name == 'December', CRAB_YEAR, CRAB_YEAR-1)) %>% 
+#   mutate(season_end = ifelse(month_name == 'December', CRAB_YEAR+1, CRAB_YEAR)) %>% 
+#   mutate(season = paste0(season_start,"-",season_end)) %>% 
+#   select(-season_start, -season_end, -CRAB_YEAR, -AGENCY_CODE)
+# 
+# 
+# 
+# #read in proportion of pots to port groups by half month
+# proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
+#   #this needs a column for month as fuel price is by month not half-month
+#   mutate(half_month_dummy = half_month_SetID) %>% 
+#   separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
+#   select(-period)
+# 
+# 
+# #join crab price to df with proportion of pots from grid to port group
+# proportion_pots_to_port_group_by_halfmonth_crab_price <- proportion_pots_to_port_group_by_halfmonth %>% 
+#   left_join(crab_price_by_port_long, by=c('season', 'month_name','PACFIN_GROUP_PORT_CODE'))
+# #some NAs - same as with fuel price, if NA, use price of that month from closest port group
+# 
+# 
+# proportion_pots_to_port_group_by_halfmonth_crab_price_noNAs <- proportion_pots_to_port_group_by_halfmonth_crab_price %>% 
+#   filter(!is.na(ppp)) 
+# 
+# proportion_pots_to_port_group_by_halfmonth_crab_price_NAs <- proportion_pots_to_port_group_by_halfmonth_crab_price %>% 
+#   filter(is.na(ppp)) %>% 
+#   #drop couple columns to avoid repeating columns in left_join
+#   select(-ppp) %>% 
+#   mutate(PACFIN_GROUP_PORT_CODE2 = case_when(
+#     PACFIN_GROUP_PORT_CODE == 'BRA' ~ 'CBA',
+#     PACFIN_GROUP_PORT_CODE == 'CBA' ~ 'NPA',
+#     PACFIN_GROUP_PORT_CODE == 'CLO' ~ 'CLW',
+#     PACFIN_GROUP_PORT_CODE == 'CLW' ~ 'CLO',
+#     PACFIN_GROUP_PORT_CODE == 'CWA' ~ 'CLW',
+#     PACFIN_GROUP_PORT_CODE == 'NPA' ~ 'TLA',
+#     PACFIN_GROUP_PORT_CODE == 'NPS' ~ 'SPS',
+#     PACFIN_GROUP_PORT_CODE == 'SPS' ~ 'NPA',
+#     PACFIN_GROUP_PORT_CODE == 'TLA' ~ 'CLO'
+#   )) %>% 
+#   inner_join(crab_price_by_port_long, by=c("PACFIN_GROUP_PORT_CODE2"= "PACFIN_GROUP_PORT_CODE", "season", "month_name")) %>% 
+#   select(-PACFIN_GROUP_PORT_CODE2)
+# 
+# 
+# proportion_pots_to_port_group_by_halfmonth_crab_price_fixed <- rbind(proportion_pots_to_port_group_by_halfmonth_crab_price_noNAs,proportion_pots_to_port_group_by_halfmonth_crab_price_NAs)
+# #but still some NAs
 
 
 
@@ -133,19 +134,201 @@ fishtix_2007_2020 <- fishtix_raw %>%
   #but only 15 so drop those
   filter(EXVESSEL_REVENUE > 0) %>% 
   #we can also choose some columns as there are so many in the pacfin data
-  select(FISH_TICKET_ID, FTID, VESSEL_NUM, LANDING_DATE,  LANDING_YEAR, NUM_OF_DAYS_FISHED, AGENCY_CODE,
+  select(FISH_TICKET_ID, FTID, VESSEL_NUM, LANDING_DATE,  LANDING_MONTH, LANDING_YEAR, NUM_OF_DAYS_FISHED, AGENCY_CODE,
          VESSEL_REGISTRATION_ID, VESSEL_ID, VESSEL_NUM, FISHER_LICENSE_NUM, 
          PACFIN_SPECIES_CODE,  NOMINAL_TO_ACTUAL_PACFIN_SPECIES_CODE, CATCH_AREA_CODE, PACFIN_PORT_CODE, PACFIN_PORT_NAME, PACFIN_GROUP_PORT_CODE,
          PRICE_PER_POUND, EXVESSEL_REVENUE, AFI_PRICE_PER_POUND, AFI_EXVESSEL_REVENUE, LANDED_WEIGHT_LBS, REMOVAL_TYPE_NAME,
          PACFIN_CATCH_AREA_DESCRIPTION, GEAR_NAME, PARTICIPATION_GROUP_NAME) 
   
 
+#what was (avg) ppp in each port group in each half-month step?
+ppp_halfmonth_portgroup <- fishtix_2007_2020 %>% 
+  mutate(season_start = ifelse(LANDING_MONTH == 12, LANDING_YEAR, LANDING_YEAR-1)) %>% 
+  mutate(season_end = ifelse(LANDING_MONTH == 12, LANDING_YEAR+1, LANDING_YEAR)) %>% 
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  select(-season_start, -season_end) %>% 
+  #don't need seasons we don't have logs for
+  filter(season %in% c('2007-2008','2008-2009','2009-2010','2010-2011','2011-2012','2012-2013',
+                       '2013-2014','2014-2015','2015-2016','2016-2017','2017-2018','2018-2019','2019-2020')) %>% 
+  mutate(d=day(LANDING_DATE),period=ifelse(d<=15,1,2)) %>% 
+  mutate(month_name = month(LANDING_MONTH, label=TRUE, abbr=FALSE)) %>% 
+  mutate(half_month = paste0(month_name,"_",period)) %>%
+  select(-d, -period, -month_name) %>% 
+  #sometimes fishticket_ID repeats  
+  group_by(season, half_month, FISH_TICKET_ID, PACFIN_GROUP_PORT_CODE) %>% 
+  summarise(EXVESSEL_REVENUE = sum(EXVESSEL_REVENUE),
+            LANDED_WEIGHT_LBS = sum(LANDED_WEIGHT_LBS)) %>% 
+#nrow(ppp_halfmonth_portgroup)
+#length(unique(ppp_halfmonth_portgroup$FISH_TICKET_ID))
+#now there is only one record per unique fishticket ID
+  group_by(season, half_month, PACFIN_GROUP_PORT_CODE) %>% 
+  summarise(total_rev = sum(EXVESSEL_REVENUE),
+            total_lbs = sum(LANDED_WEIGHT_LBS)) %>% 
+  mutate(ppp = total_rev/total_lbs)
+
+
+#--------------------------------------------
+#adjust for inflation, all $ in dollars of that specific year etc
+
+cpi_raw <- read_csv(here('wdfw', 'data', 'cpi_2021.csv'),col_types='idc')
+
+# add a conversion factor to 2020 $$
+cpi <- cpi_raw %>% 
+  mutate(convert2020=1/(annual_average/258.8)) %>% 
+  filter(year>2006) %>% 
+  filter(year<2021) %>% 
+  dplyr::select(year,convert2020) 
+
+
+#this df needs a 'year' column so can join with cpi
+ppp_halfmonth_portgroup_v2 <- ppp_halfmonth_portgroup %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_start", "season_end"), sep = "-") %>% 
+  mutate(half_month2 = half_month) %>% 
+  separate(half_month2, into = c("month_name", "period"), sep = "_") %>% 
+  mutate(year = ifelse(month_name == "December", season_start, season_end)) %>% 
+  select(-season_start, -season_end, -period) 
+
+ppp_halfmonth_portgroup_v2$year <- as.numeric(ppp_halfmonth_portgroup_v2$year)
+
+
+ppp_halfmonth_portgroup_adj_inf <- ppp_halfmonth_portgroup_v2 %>% 
+  left_join(cpi, by = c('year')) %>% 
+  mutate(ppp_adj = ppp * convert2020) %>% 
+  #drop columns no longer needed
+  select(-(total_rev:convert2020))
+
+
+#--------------------------------------------------------
+#are we going to run into lot of NA cases if work on half-month instead of month?
+
+#read in proportion of pots to port groups by half month
+proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
+  rename(half_month = half_month_SetID) %>% 
+  #because some logs don't have a set_date, in earlier steps NAs created for half-month steps
+  filter(half_month != "NA_NA")
+
+
+#join crab price to df with proportion of pots from grid to port group
+proportion_pots_to_port_group_by_halfmonth_grab_price <- proportion_pots_to_port_group_by_halfmonth %>% 
+  left_join(ppp_halfmonth_portgroup_adj_inf, by=c('season', 'half_month','PACFIN_GROUP_PORT_CODE'))  
+#136 NAs - in some half months no landing to a given port group so no ppp 
+# - could be because area was closed, these will get fixed when deal with closed area
+#76 when remove half_month = NA_NA
+#all NAs are December or January so likely to do with area openings
+#drop these and let them be covered by interpolation?
+#or do what did with fuel, use price from closest port group?
+
+
+proportion_pots_to_port_group_by_halfmonth_grab_price_noNAs <- proportion_pots_to_port_group_by_halfmonth_grab_price %>% 
+  filter(!is.na(ppp_adj)) 
+
+proportion_pots_to_port_group_by_halfmonth_grab_price_NAs <- proportion_pots_to_port_group_by_halfmonth_grab_price %>% 
+  filter(is.na(ppp_adj)) %>% 
+  #drop couple columns to avoid repeating columns in left_join
+  select(-ppp_adj) %>% 
+  mutate(PACFIN_GROUP_PORT_CODE2 = case_when(
+    PACFIN_GROUP_PORT_CODE == 'BRA' ~ 'CBA',
+    PACFIN_GROUP_PORT_CODE == 'CBA' ~ 'NPA',
+    PACFIN_GROUP_PORT_CODE == 'CLO' ~ 'CLW',
+    PACFIN_GROUP_PORT_CODE == 'CLW' ~ 'CLO',
+    PACFIN_GROUP_PORT_CODE == 'CWA' ~ 'CLW',
+    PACFIN_GROUP_PORT_CODE == 'NPA' ~ 'TLA',
+    PACFIN_GROUP_PORT_CODE == 'NPS' ~ 'SPS',
+    PACFIN_GROUP_PORT_CODE == 'SPS' ~ 'NPA',
+    PACFIN_GROUP_PORT_CODE == 'TLA' ~ 'CLO'
+  )) %>% 
+  inner_join(ppp_halfmonth_portgroup_adj_inf, by=c("PACFIN_GROUP_PORT_CODE2"= "PACFIN_GROUP_PORT_CODE", "season", "half_month")) %>% 
+  select(-PACFIN_GROUP_PORT_CODE2)
+
+
+proportion_pots_to_port_group_by_halfmonth_grab_price_fixed <- rbind(proportion_pots_to_port_group_by_halfmonth_grab_price_noNAs,proportion_pots_to_port_group_by_halfmonth_grab_price_NAs)
+
+
+#--------------------------------------------------------
+#weight port group specific crab price by proportion of pots in grid
+
+weighted_crab_price <- proportion_pots_to_port_group_by_halfmonth_grab_price_fixed %>% 
+  mutate(price_multiply_prop = ppp_adj * prop_pots_to_port_group) %>% 
+  group_by(GRID5KM_ID, season, half_month) %>% 
+  summarise(weighted_crab_ppp = sum(price_multiply_prop)) 
+
+
+#------------------------------------------------
+
+#-------------------------
+#https://www.youtube.com/watch?v=9whoSguh7Z4
+
+#specify points where want to estimate/interpolate the variable (the unknown points)
+# that would be the grid centroids
+grid_centroids <- read_csv(here::here('DCRB_sdmTMB','data','dist to ports','grid_centroids.csv'))
+grid_centroids_sf <- st_as_sf(grid_centroids, 
+                              coords = c("grd_x", "grd_y"),
+                              crs = 4326
+)
+plot(grid_centroids_sf)
+
+
+library(gstat)
+
+
+#data to be used for interpolation
+weighted_crab_price_points <- weighted_crab_price %>% 
+  left_join(grid_centroids) 
+
+weighted_crab_price_points_sf <- st_as_sf(weighted_crab_price_points, 
+                                          coords = c("grd_x", "grd_y"),
+                                          crs = 4326
+)
 
 
 
+##This is where need to loop through all season and half-month combos
+subset <- weighted_crab_price_points_sf %>% 
+  filter(season=="2019-2020", half_month=="May_1")
+plot(subset)
 
 
+#locations specifies the dataset. idp = alpha, how important are we going to make distance
+test_idw <- gstat::idw(formula=weighted_crab_ppp~1, 
+                       locations = subset, 
+                       newdata=grid_centroids_sf, 
+                       idp =1) #idp default is 1
+#var1.pred = the interpolated value at the point
+#for those points that were the input, the interpolated var1.pred is exactly the same as the input value
 
+
+test_join <- st_join(test_idw, grid_centroids_sf) %>% 
+  #after this don't need geometry column, only grid ID
+  #and also don't need var1.var column
+  select(var1.pred, GRID5KM_ID) %>% 
+  st_set_geometry(NULL) %>% 
+  rename(weighted_crab_ppp = var1.pred) %>% 
+  #but do need columns denoting season and half-month - these would need to be added here
+  mutate(season = "2019-2020", half_month="May_1") %>% 
+  #reorder columns
+  select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
+
+#now would just need to loop this heaps of times....
+#start a dummy df into which rbind all idw data (at each season - half-month combo)?
+
+# columns <- c("GRID5KM_ID", "season", "half_month", "weighted_crab_ppp")
+# dummy_df <- data.frame(matrix(nrow = 0, ncol = length(columns))) 
+# colnames(dummy_df) = columns
+
+# df_crab_price <- dummy_df 
+
+df_crab_price <- df_crab_price %>% 
+  rbind(test_join)
+
+unique(df_crab_price$half_month)
+
+###THESE COMMENTS FROM FUEL CODE
+#note that e.g. 2007-2008 is OR data only so ends in August_1; 2012-2013 starts late (December_2)
+#2014-2015 doesn't have August_2, but has August_1 and September_1
+#interpolated_fuel_price_2019_2020 <-  df_fuel_price
+#nrow(interpolated_fuel_price_2019_2020)
+#write_rds(interpolated_fuel_price_2019_2020,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2019_2020.rds"))
 
 
 
