@@ -160,8 +160,8 @@ fishtix_landing_port_only <- fishtix_2007_2020 %>%
 
 #join landing port via PacFIn FishTIx
 ##OLD
-ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port <- ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>% 
-  left_join(fishtix_landing_port_only, by = c("FishTicket1" = "FTID"))
+#ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port <- ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>% 
+#  left_join(fishtix_landing_port_only, by = c("FishTicket1" = "FTID"))
 #number of unique SetIDs and data rows are still the same
 
 ##NEW 
@@ -302,11 +302,11 @@ weighted_pot_dist <- summary_table_port_group %>%
   group_by(GRID5KM_ID) %>% 
   summarise(weighted_dist = sum(dist_multiply_prop))
 #Or does the weighted dist need to be an average?
-weighted_pot_dist <- summary_table_port_group %>% 
-  left_join(dist_each_grid_to_port_group) %>% 
-  mutate(dist_multiply_prop = distance_km * prop_pots_to_port_group) %>% 
-  group_by(GRID5KM_ID) %>% 
-  summarise(weighted_dist = mean(dist_multiply_prop))
+#weighted_pot_dist <- summary_table_port_group %>% 
+#  left_join(dist_each_grid_to_port_group) %>% 
+#  mutate(dist_multiply_prop = distance_km * prop_pots_to_port_group) %>% 
+#  group_by(GRID5KM_ID) %>% 
+#  summarise(weighted_dist = mean(dist_multiply_prop))
 
 
 
@@ -466,3 +466,37 @@ summary_table_port_group_by_halfmonth <- n_pots_in_grids_by_halfmonth %>%
   select(-no_pots_in_this_grid, -no_pots_from_this_grid_to_port_group)
 
 #write_rds(summary_table_port_group_by_halfmonth,here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds"))
+
+
+#using landing date based half-month istead of SetDate (Set_ID) based half-month
+n_pots_in_grids_by_halfmonth <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>% 
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID, season, half_month_landing_date) %>%
+  summarise(no_pots_in_this_grid = sum(tottraps_FINAL))  
+
+n_pots_from_grid_to_port_group_by_halfmonth <- ALL_WA_2010_2020_and_ALL_OR_2008_2020_landing_port %>%
+  #might need to drop WA5 as it is unknwon port
+  filter(PACFIN_GROUP_PORT_CODE != "WA5") %>% 
+  #also for simplicity, drop those were port not clearly defined
+  filter(!PACFIN_PORT_NAME %in% c("O WA COAST", "O COL WA", "UNKN WASH",  "O S PUGET",  "O N PUGET" )) %>% 
+  group_by(GRID5KM_ID,  season, half_month_landing_date, PACFIN_GROUP_PORT_CODE) %>%
+  summarise(no_pots_from_this_grid_to_port_group = sum(tottraps_FINAL))
+
+summary_table_port_group_by_halfmonth <- n_pots_in_grids_by_halfmonth %>% 
+  left_join(n_pots_from_grid_to_port_group_by_halfmonth, by = c("GRID5KM_ID",  "season", "half_month_landing_date")) %>% 
+  mutate(prop_pots_to_port_group = no_pots_from_this_grid_to_port_group/no_pots_in_this_grid) %>% 
+  select(-no_pots_in_this_grid, -no_pots_from_this_grid_to_port_group)
+
+#write_rds(summary_table_port_group_by_halfmonth,here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth_based_on_landing_date.rds"))
+
+
+summary_table_port_group_by_halfmonth_landingdate <- summary_table_port_group_by_halfmonth
+summary_table_port_group_by_halfmonth_setID <- summary_table_port_group_by_halfmonth
+
+summary(summary_table_port_group_by_halfmonth_landingdate)
+summary(summary_table_port_group_by_halfmonth_setID)
+
+
