@@ -285,7 +285,7 @@ weighted_crab_price_points_sf <- st_as_sf(weighted_crab_price_points,
 
 ##This is where need to loop through all season and half-month combos
 subset <- weighted_crab_price_points_sf %>% 
-  filter(season=="2019-2020", half_month=="May_1")
+  filter(season=="2007-2008", half_month=="September_1")
 plot(subset)
 
 
@@ -305,7 +305,7 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
   st_set_geometry(NULL) %>% 
   rename(weighted_crab_ppp = var1.pred) %>% 
   #but do need columns denoting season and half-month - these would need to be added here
-  mutate(season = "2019-2020", half_month="May_1") %>% 
+  mutate(season = "2007-2008", half_month="September_1") %>% 
   #reorder columns
   select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
 
@@ -324,11 +324,13 @@ df_crab_price <- df_crab_price %>%
 unique(df_crab_price$half_month)
 
 ###THESE COMMENTS FROM FUEL CODE
-#note that e.g. 2007-2008 is OR data only so ends in August_1; 2012-2013 starts late (December_2)
+#note that e.g. 2007-2008 is OR data only so ends in August_1; 
+#2012-2013 starts late (December_2)
 #2014-2015 doesn't have August_2, but has August_1 and September_1
-#interpolated_fuel_price_2019_2020 <-  df_fuel_price
-#nrow(interpolated_fuel_price_2019_2020)
-#write_rds(interpolated_fuel_price_2019_2020,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2019_2020.rds"))
+
+#interpolated_crab_price_2007_2008 <-  df_crab_price
+#nrow(interpolated_crab_price_2007_2008)
+#write_rds(interpolated_crab_price_2007_2008,here::here('DCRB_sdmTMB', 'data', "port group crab price", "interpolated_crab_price_2007_2008.rds"))
 
 
 
