@@ -203,10 +203,11 @@ ppp_halfmonth_portgroup_adj_inf <- ppp_halfmonth_portgroup_v2 %>%
 #are we going to run into lot of NA cases if work on half-month instead of month?
 
 #read in proportion of pots to port groups by half month
-proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
-  rename(half_month = half_month_SetID) %>% 
-  #because some logs don't have a set_date, in earlier steps NAs created for half-month steps
-  filter(half_month != "NA_NA")
+#re-did this using landing date based half month - outputs are in folder 'v2'
+proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth_based_on_landing_date.rds")) %>% 
+  rename(half_month = half_month_landing_date) #%>% 
+  #because some logs don't have a set_date, in earlier steps NAs created for half-month steps (in lhalf_month_SetID only)
+  #filter(half_month != "NA_NA")
 
 
 #join crab price to df with proportion of pots from grid to port group
