@@ -133,9 +133,10 @@ fuel_price_month_step_portgroup_fixed <- rbind(fuel_price_month_step_portgroup_n
 
 
 #read in proportion of pots to port groups by half month
-proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth.rds")) %>% 
+#re-did this using landing date based half month - outputs are in folder 'v2'
+proportion_pots_to_port_group_by_halfmonth <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_by_halfmonth_based_on_landing_date.rds")) %>% 
   #this needs a column for month as fuel price is by month not half-month
-  mutate(half_month_dummy = half_month_SetID) %>% 
+  mutate(half_month_dummy = half_month_landing_date) %>% 
   separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
   select(-period)
 
@@ -208,9 +209,9 @@ proportion_pots_to_port_group_by_halfmonth_fuel_price_fixed_adj_inf <- proportio
 
 weighted_fuel_price <- proportion_pots_to_port_group_by_halfmonth_fuel_price_fixed_adj_inf %>% 
   mutate(price_multiply_prop = avg_pricegal_adj * prop_pots_to_port_group) %>% 
-  group_by(GRID5KM_ID, season, half_month_SetID) %>% 
+  group_by(GRID5KM_ID, season, half_month_landing_date) %>% 
   summarise(weighted_fuel_pricegal = sum(price_multiply_prop)) %>% 
-  rename(half_month = half_month_SetID)
+  rename(half_month = half_month_landing_date)
 
 weighted_fuel_price$half_month <- as.factor(weighted_fuel_price$half_month)
 
@@ -376,7 +377,6 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
 # columns <- c("GRID5KM_ID", "season", "half_month", "weighted_fuel_pricegal")
 # dummy_df <- data.frame(matrix(nrow = 0, ncol = length(columns))) 
 # colnames(dummy_df) = columns
-
 # df_fuel_price <- dummy_df 
 
 df_fuel_price <- df_fuel_price %>% 
@@ -385,11 +385,17 @@ df_fuel_price <- df_fuel_price %>%
 unique(df_fuel_price$half_month)
 
 
-#note that e.g. 2007-2008 is OR data only so ends in August_1; 2012-2013 starts late (December_2)
+
+
+#note that e.g. 2007-2008, 2008-2009 is OR data only so ends in August_1 (fishery closes 14 Aug); 
+#2012-2013, 2013-2014 starts late (December_2)
 #2014-2015 doesn't have August_2, but has August_1 and September_1
+#2015-2016 starts January_1, 2017-2018 starts January_2, 2018-2019 starts January_1, matches data from DFWs
+
+
 #interpolated_fuel_price_2019_2020 <-  df_fuel_price
 #nrow(interpolated_fuel_price_2019_2020)
-#write_rds(interpolated_fuel_price_2019_2020,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2019_2020.rds"))
+#write_rds(interpolated_fuel_price_2019_2020,here::here('DCRB_sdmTMB', 'data', 'fuel', 'v2', "interpolated_fuel_price_2019_2020.rds"))
 
 
 #------------------------------
@@ -405,7 +411,7 @@ interpolated_fuel_price_2014_2015_august1_september1 <- interpolated_fuel_price_
   select(GRID5KM_ID, season, half_month, weighted_fuel_pricegal)
   
 interpolated_fuel_price_2014_2015 <- rbind(interpolated_fuel_price_2014_2015, interpolated_fuel_price_2014_2015_august1_september1)
-#write_rds(interpolated_fuel_price_2014_2015,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_2014_2015.rds"))
+#write_rds(interpolated_fuel_price_2014_2015,here::here('DCRB_sdmTMB', 'data', "fuel",'v2', "interpolated_fuel_price_2014_2015.rds"))
 
 #------------------------------
  
@@ -424,7 +430,7 @@ interpolated_fuel_price_all <- rbind(interpolated_fuel_price_2007_2008,
                                      interpolated_fuel_price_2019_2020
                                      )
 
-#write_rds(interpolated_fuel_price_all,here::here('DCRB_sdmTMB', 'data', "fuel", "interpolated_fuel_price_all.rds"))
+#write_rds(interpolated_fuel_price_all,here::here('DCRB_sdmTMB', 'data', "fuel",'v2', "interpolated_fuel_price_all.rds"))
 
 #------------------------------
 
