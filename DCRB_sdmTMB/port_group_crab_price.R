@@ -285,7 +285,7 @@ weighted_crab_price_points_sf <- st_as_sf(weighted_crab_price_points,
 
 ##This is where need to loop through all season and half-month combos
 subset <- weighted_crab_price_points_sf %>% 
-  filter(season=="2007-2008", half_month=="September_1")
+  filter(season=="2019-2020", half_month=="September_1")
 plot(subset)
 
 
@@ -305,7 +305,7 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
   st_set_geometry(NULL) %>% 
   rename(weighted_crab_ppp = var1.pred) %>% 
   #but do need columns denoting season and half-month - these would need to be added here
-  mutate(season = "2007-2008", half_month="September_1") %>% 
+  mutate(season = "2019-2020", half_month="September_1") %>% 
   #reorder columns
   select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
 
@@ -315,7 +315,6 @@ test_join <- st_join(test_idw, grid_centroids_sf) %>%
 # columns <- c("GRID5KM_ID", "season", "half_month", "weighted_crab_ppp")
 # dummy_df <- data.frame(matrix(nrow = 0, ncol = length(columns))) 
 # colnames(dummy_df) = columns
-
 # df_crab_price <- dummy_df 
 
 df_crab_price <- df_crab_price %>% 
@@ -323,19 +322,70 @@ df_crab_price <- df_crab_price %>%
 
 unique(df_crab_price$half_month)
 
-###THESE COMMENTS FROM FUEL CODE
+
+###
 #note that e.g. 2007-2008 is OR data only so ends in August_1; 
-#2012-2013 starts late (December_2)
+#2008-2009 ends at August_1 -- only OR logs, OR closed Aug 14 
+
+#2009-2010 - actually has some point for August_2, even though fishery supposedly closed on Aug 14 - if from fishtix, could've landed after Aug 14 but pots were out of water by then
+#2009-2010 even September_1 has data...
+
+#2012-2013, 2013-2014 starts late (December_2)
 #2014-2015 doesn't have August_2, but has August_1 and September_1
+#2016-2016 starts January_1, matches data from DFWs
+#2017-2018 starts January_2, matches data from DFWs
+#2018-2019 starts January_1, matches data from DFWs
 
-#interpolated_crab_price_2007_2008 <-  df_crab_price
-#nrow(interpolated_crab_price_2007_2008)
-#write_rds(interpolated_crab_price_2007_2008,here::here('DCRB_sdmTMB', 'data', "port group crab price", "interpolated_crab_price_2007_2008.rds"))
+#interpolated_crab_price_2019_2020 <-  df_crab_price
+#nrow(interpolated_crab_price_2019_2020)
+#write_rds(interpolated_crab_price_2019_2020,here::here('DCRB_sdmTMB', 'data', "port group crab price", "interpolated_crab_price_2019_2020.rds"))
+
+#------------------------------
+#2014-2015 season had no pots in August_2, but as fishery (in WA) was open
+#we need fuel prices for grid cells in that month for the presence/absence model
+interpolated_crab_price_2014_2015
+
+interpolated_crab_price_2014_2015_august1_september1 <- interpolated_crab_price_2014_2015 %>% 
+  filter(half_month=='August_1' | half_month=='September_1') %>% 
+  group_by(GRID5KM_ID) %>% 
+  summarise(weighted_crab_ppp = mean(weighted_crab_ppp)) %>% 
+  mutate(season = "2014-2015", half_month = "August_2") %>% 
+  select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
+
+interpolated_crab_price_2014_2015 <- rbind(interpolated_crab_price_2014_2015, interpolated_crab_price_2014_2015_august1_september1)
+#write_rds(interpolated_crab_price_2014_2015,here::here('DCRB_sdmTMB', 'data', "port group crab price", "interpolated_crab_price_2014_2015.rds"))
+
+#------------------------------
+
+interpolated_crab_price_all <- rbind(interpolated_crab_price_2007_2008,
+                                     interpolated_crab_price_2008_2009,
+                                     interpolated_crab_price_2009_2010,
+                                     interpolated_crab_price_2010_2011,
+                                     interpolated_crab_price_2011_2012,
+                                     interpolated_crab_price_2012_2013,
+                                     interpolated_crab_price_2013_2014,
+                                     interpolated_crab_price_2014_2015,
+                                     interpolated_crab_price_2015_2016,
+                                     interpolated_crab_price_2016_2017,
+                                     interpolated_crab_price_2017_2018,
+                                     interpolated_crab_price_2018_2019,
+                                     interpolated_crab_price_2019_2020
+                                     )
+
+#write_rds(interpolated_crab_price_all,here::here('DCRB_sdmTMB', 'data', "port group crab price", "interpolated_crab_price_all.rds"))
+
+#------------------------------
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel.rds"))
 
 
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel %>% 
+  left_join(interpolated_crab_price_all, by=c('GRID5KM_ID', 'season', 'half_month'))
+#the cases where grid has NA for crab price should be cases where grids were closed (season closures etc)
+#these should get removed when get around to dealing with open/closed areas (grids)
 
 
-
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice.rds"))
 
 
 
