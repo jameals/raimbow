@@ -47,6 +47,16 @@ glimpse(df_full)
 
 
 #-------------------------------------------------------------------------------------------------
+#add closed areas data
+
+closed_areas_df <- read_csv(here::here('DCRB_sdmTMB', 'data', 'study_area_grids_with_all_season_halfmonth_combos_and_closed_areas_df.csv'))
+
+df_full_with_closed_areas <- df_full %>% 
+  left_join(closed_areas_df, by=c('season', 'half_month','GRID5KM_ID'))
+glimpse(df_full_with_closed_areas)
+
+
+#-------------------------------------------------------------------------------------------------
 
 
 ##here could also add couple things, like label for grids/time-steps in WA that have summer pot reduction 
@@ -60,7 +70,7 @@ glimpse(df_full)
 #this is just a working df for now - not a finished df of response and all predictors etc
 
 
-#write_rds(df_full,here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds"))
+#write_rds(df_full_with_closed_areas,here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds"))
 
 
 
