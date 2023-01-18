@@ -10,12 +10,15 @@ library(magrittr)
 
 #df with prepped response variable should be here
 
-response_var_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_response_var.rds')) %>% 
-  select(-tottraps_WA_data, -tottraps_OR_data)
 #this still includes grids that are closed in a given time step - so those 0s should be NAs 
 #or those grid - time step combos need to be dropped
-#but still need to finish closed areas df
-#after that need to add column denoting presence and absence (1, 0) -- 0 pots in grid will be absence (once closed areas removed)
+response_var_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_response_var.rds')) %>% 
+  select(-tottraps_WA_data, -tottraps_OR_data) %>% 
+  #add a presence/absence column - 0 pots in grid will be absence
+  #note that atm there are still grids included in this df that were closed (so effort should be NA not 0)
+  #once finish 'closed areas' df then these grids can just be dropped out
+  mutate(present = ifelse(tottraps == 0, 0, 1))
+
 
 
 
@@ -28,14 +31,41 @@ predictor_vars_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grid
 
 # join predictor df and response df
 df_full <- response_var_raw %>% 
-  left_join(predictor_vars_raw, by=c('season', 'half_month','GRID5KM_ID'))
+  left_join(predictor_vars_raw, by=c('season', 'half_month','GRID5KM_ID')) %>% 
+  #add a column denoting calendar month
+  mutate(half_month_dummy = half_month) %>% 
+  separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
+  select(-period) %>% 
+  #add a column denoting winter vs summer fishery
+  mutate(
+    winter_summer = case_when(
+      month_name == "December" | month_name == "January" | month_name == "February" | month_name == "March" | month_name == "April" ~ "Winter",
+      month_name == "May" | month_name == "June" | month_name == "July" | month_name == "August" | month_name == "September" ~ "Summer"
+    )
+  )
 glimpse(df_full)
 
 
-##here could add couple things, like variable that is calendar month, label for grids/tim-steps in WA that have summer pot reduction
+#-------------------------------------------------------------------------------------------------
 
 
+##here could also add couple things, like label for grids/time-steps in WA that have summer pot reduction 
+#--  would need to separate grids in WA waters
+
+#-------------------------------------------------------------------------------------------------
 
 
 ##export df
+
+#this is just a working df for now - not a finished df of response and all predictors etc
+
+
+#write_rds(df_full,here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds"))
+
+
+
+
+
+
+
 
