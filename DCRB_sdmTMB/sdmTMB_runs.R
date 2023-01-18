@@ -16,7 +16,7 @@ library(INLA)
 #note that this may not yet be a finished version of df - closed areas not done, some predictors might be added
 
 df_full <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_not_final.rds'))
-
+glimpse(df_full)
 
 #does X and Y need to be in a projected CRS? this is the lambert Azimuth projection
 #grd <- read_sf(here::here('wdfw','data','fivekm_grid_polys_shore_lamb.shp'))
