@@ -150,10 +150,12 @@ df_full_with_dist_to_closed_areas_dist <- df_full_with_dist_to_closed_areas_dist
   mutate(dist_to_closed_km = 
            ifelse(season=="2018-2019" & open_closed=="open" & is.na(dist_to_closed_km), 0, dist_to_closed_km))
 
+#also here add extra column to denote OR/WA waters
+#those grids at the border are more in WA waters so we will label them as such
+
+df_full_with_dist_to_closed_areas_ORWA_waters <- df_full_with_dist_to_closed_areas_dist %>% 
+  mutate(OR_WA_waters = ifelse(GRID5KM_ID <= 117319, 'OR', 'WA'))
 
 
-
-#write_rds(df_full_with_dist_to_closed_areas_dist,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
-
-
+#write_rds(df_full_with_dist_to_closed_areas_ORWA_waters,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
 
