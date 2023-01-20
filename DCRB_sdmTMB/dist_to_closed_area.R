@@ -136,6 +136,8 @@ dist_to_closed_all <- rbind(df_dist_to_closed_2009_2010,
 
 
 df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) 
+#dist_to_closed_all <- read_rds(here::here('DCRB_sdmTMB', 'data', 'closed areas', "dist_to_closed_all.rds")) 
+
 
 #when join all this to the 'full' df, any grids that are closed will have NA for distance to closed area (or we can make it 0)
 #those grids get dropped out anyways from the actual analysis
@@ -144,11 +146,12 @@ df_full_with_dist_to_closed_areas_dist <- df_full_with_closed_areas %>%
   left_join(dist_to_closed_all, by=c('season', 'half_month','GRID5KM_ID'))
 
 #2007-08 and 2008-09 are NAs as no logbooks for WA
-#fix 2018-2019 -- all grids are open between May_1 and August_1 so distance to closed area is 0 for all grids 
+#fix 2018-2019 -- all grids were open between May_1 and August_1 -- but distance to closed area 
+#can't be NA, so instead use a large value (data max is 594km)
 
 df_full_with_dist_to_closed_areas_dist <- df_full_with_dist_to_closed_areas_dist %>% 
   mutate(dist_to_closed_km = 
-           ifelse(season=="2018-2019" & open_closed=="open" & is.na(dist_to_closed_km), 0, dist_to_closed_km))
+           ifelse(season=="2018-2019" & open_closed=="open" & is.na(dist_to_closed_km), 800, dist_to_closed_km))
 
 #also here add extra column to denote OR/WA waters
 #those grids at the border are more in WA waters so we will label them as such
