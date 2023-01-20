@@ -157,5 +157,23 @@ df_full_with_dist_to_closed_areas_ORWA_waters <- df_full_with_dist_to_closed_are
   mutate(OR_WA_waters = ifelse(GRID5KM_ID <= 117319, 'OR', 'WA'))
 
 
-#write_rds(df_full_with_dist_to_closed_areas_ORWA_waters,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
+#and also while we're at it, add column for times when WA had its supper pot reduction in place
+df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs <- df_full_with_dist_to_closed_areas_ORWA_waters %>% 
+  #first add a season_month column to make this easier
+  mutate(season_month = paste0(season,"_",month_name)) %>% 
+  mutate(WA_pot_reduction = 
+           ifelse(OR_WA_waters=="WA" & season_month %in% c('2018-2019_July',
+                                                           '2018-2019_August',
+                                                           '2018-2019_September',
+                                                           '2019-2020_May',
+                                                           '2019-2020_June',
+                                                           '2019-2020_July',
+                                                           '2019-2020_August',
+                                                           '2019-2020_September')
+                                                          , "Y", "N")) %>% 
+  #drop season_month column as it is extra
+  select(-season_month)
+
+
+#write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
 
