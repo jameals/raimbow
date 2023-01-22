@@ -1117,8 +1117,16 @@ study_area_grids_with_all_season_halfmonth_combos_df <- study_area_grids_with_al
   #later will fix those that ned to be NA (will remove grids that were closed)
   mutate(tottraps = sum(tottraps_WA_data, tottraps_OR_data, na.rm = TRUE))
 
+#fix some repeating grids (repeating as broken up by land etc)
+study_area_grids_with_all_season_halfmonth_combos_df_updated <- study_area_grids_with_all_season_halfmonth_combos_df %>% 
+  select(-tottraps_WA_data, -tottraps_OR_data) %>% 
+  group_by(season, half_month, GRID5KM_ID, grd_x, grd_y) %>% 
+  mutate(tottraps = sum(tottraps, na.rm = TRUE)) %>% 
+  distinct()
+
+
 #save df
-#write_rds(study_area_grids_with_all_season_halfmonth_combos_df,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_response_var.rds"))
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_df_updated,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_response_var.rds"))
 
 
 
