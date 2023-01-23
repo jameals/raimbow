@@ -87,9 +87,20 @@ nrow(df_summer)
 
 # check correlation between predictors
 
+df_summer$yearn <- as.numeric(substr(df_summer$season,6,9))
+df_summer <- df_summer %>% 
+  mutate(monthn = case_when(
+    month_name == "May" ~ 5,
+    month_name == "June" ~ 6,
+    month_name == "July" ~ 7,
+    month_name == "August" ~ 8,
+    month_name == "September"  ~ 9
+  ))
 
 df_summer_predictors_only <- df_summer %>% 
-  select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters, WA_pot_reduction) 
+  #select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters, WA_pot_reduction) 
+  #different version of corrplot if year and month are numeric
+  select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 #note that there are multiple options for depth data: 
 #those with naming convention depth_zonal_ vs depth_point_ got sourced in slightly different ways
 #my current top choice to use is depth_point_mean
@@ -100,8 +111,21 @@ model.matrix(~0+., data=df_summer_predictors_only) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+
+df_winter$yearn <- as.numeric(substr(df_winter$season,6,9))
+df_winter <- df_winter %>% 
+  mutate(monthn = case_when(
+    month_name == "December" ~ 0,
+    month_name == "January" ~ 1,
+    month_name == "February" ~ 2,
+    month_name == "March" ~ 3,
+    month_name == "April"  ~ 4
+  ))
+
 df_winter_predictors_only <- df_winter %>% 
-  select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters)
+  #select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters)
+  #different version of corrplot if year and month are numeric
+  select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:OR_WA_waters, yearn, monthn)
 #note that there are multiple options for depth data: 
 #those with naming convention depth_zonal_ vs depth_point_ got sourced in slightly different ways
 #my current top choice to use is depth_point_mean
