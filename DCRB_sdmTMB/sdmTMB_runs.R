@@ -28,7 +28,8 @@ library(INLA)
 #read in df
 #note that this is not yet a finished version of df - some predictors might still get added
 
-df_full <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_not_final.rds'))
+df_full <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_with_dist_to_closed_areas_not_final_20230123.rds')) %>% 
+  ungroup()
 glimpse(df_full)
 
 
@@ -42,11 +43,16 @@ df_full_sf <- st_as_sf(df_full,
   # project to UTM zone 10
   st_transform(crs = "+proj=utm +north +zone=10 +ellps=WGS84")
 
-df_full_NOgeom <- df_full_sf %>% 
-  dplyr::mutate(grd_x_UTM10 = sf::st_coordinates(.)[,1],
-                grd_y_UTM10 = sf::st_coordinates(.)[,2]) %>% 
-  st_set_geometry(NULL)
 
+#for some reason this code stopped working...
+# df_full_NOgeom <- df_full_sf %>% 
+#   dplyr::mutate(grd_x_UTM10 = sf::st_coordinates(.)[,1],
+#                 grd_y_UTM10 = sf::st_coordinates(.)[,2]) %>% 
+#   st_set_geometry(NULL)
+
+df_full_NOgeom <- df_full_sf %>% add_utm_columns(ll_names = c("grd_x", "grd_y")) %>% 
+  st_set_geometry(NULL) %>% 
+  rename(grd_x_UTM10 = X, grd_y_UTM10 = Y) 
 
 #-------------------------------------------------------------------------------------------------
 
@@ -60,6 +66,11 @@ df_full_NOgeom <- df_full_NOgeom %>%
   filter(open_closed == 'open')
 
 #this step reduces the size of the df
+
+#also drop 2007-08 and 208-09
+
+df_full_NOgeom <- df_full_NOgeom %>% 
+  filter(!season %in% c("2007-2008","2008-2009"))
 
 #-------------------------------------------------------------------------------------------------
 
@@ -76,9 +87,20 @@ nrow(df_summer)
 
 # check correlation between predictors
 
+df_summer$yearn <- as.numeric(substr(df_summer$season,6,9))
+df_summer <- df_summer %>% 
+  mutate(monthn = case_when(
+    month_name == "May" ~ 5,
+    month_name == "June" ~ 6,
+    month_name == "July" ~ 7,
+    month_name == "August" ~ 8,
+    month_name == "September"  ~ 9
+  ))
 
 df_summer_predictors_only <- df_summer %>% 
-  select(season, SST_avg, wind_avg, depth_point_mean, depth_point_mean:month_name)
+  #select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters, WA_pot_reduction) 
+  #different version of corrplot if year and month are numeric
+  select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 #note that there are multiple options for depth data: 
 #those with naming convention depth_zonal_ vs depth_point_ got sourced in slightly different ways
 #my current top choice to use is depth_point_mean
@@ -89,8 +111,21 @@ model.matrix(~0+., data=df_summer_predictors_only) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+
+df_winter$yearn <- as.numeric(substr(df_winter$season,6,9))
+df_winter <- df_winter %>% 
+  mutate(monthn = case_when(
+    month_name == "December" ~ 0,
+    month_name == "January" ~ 1,
+    month_name == "February" ~ 2,
+    month_name == "March" ~ 3,
+    month_name == "April"  ~ 4
+  ))
+
 df_winter_predictors_only <- df_winter %>% 
-  select(season, SST_avg, wind_avg, depth_point_mean, depth_point_mean:month_name)
+  #select(season, SST_avg, wind_avg, depth_point_mean:month_name, dist_to_closed_km, OR_WA_waters)
+  #different version of corrplot if year and month are numeric
+  select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:OR_WA_waters, yearn, monthn)
 #note that there are multiple options for depth data: 
 #those with naming convention depth_zonal_ vs depth_point_ got sourced in slightly different ways
 #my current top choice to use is depth_point_mean

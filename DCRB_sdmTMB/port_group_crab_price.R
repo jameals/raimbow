@@ -332,7 +332,7 @@ unique(df_crab_price$half_month)
 #2009-2010 even September_1 has data...
 
 #2012-2013, 2013-2014 starts late (December_2)
-#2014-2015 doesn't have September_1, but has August_1 and September_1
+#2014-2015 doesn't have August_2, but has August_1 and September_1
 #2015-2016 starts January_1, matches data from DFWs
 #2017-2018 starts January_2, matches data from DFWs
 #2018-2019 starts January_1, matches data from DFWs
@@ -342,15 +342,17 @@ unique(df_crab_price$half_month)
 #write_rds(interpolated_crab_price_2019_2020,here::here('DCRB_sdmTMB', 'data', 'port group crab price', 'v2', "interpolated_crab_price_2019_2020.rds"))
 
 #------------------------------
-#2014-2015 season had no pots in September_1, but as fishery (in WA) was open
+#2014-2015 season had no pots in August_2, but as fishery (in WA) was open
 #we need fuel prices for grid cells in that month for the presence/absence model
-interpolated_crab_price_2014_2015
+#this was accidentially done by re-doing September_1 instead of August_2 so September_1 ended up repeating in df
+#first drop the erroneous September_1
+interpolated_crab_price_2014_2015 <- interpolated_crab_price_2014_2015[1:27576,]
 
 interpolated_crab_price_2014_2015_august1_september1 <- interpolated_crab_price_2014_2015 %>% 
   filter(half_month=='August_1' | half_month=='September_1') %>% 
   group_by(GRID5KM_ID) %>% 
   summarise(weighted_crab_ppp = mean(weighted_crab_ppp)) %>% 
-  mutate(season = "2014-2015", half_month = "September_1") %>% 
+  mutate(season = "2014-2015", half_month = "August_2") %>% 
   select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
 
 interpolated_crab_price_2014_2015 <- rbind(interpolated_crab_price_2014_2015, interpolated_crab_price_2014_2015_august1_september1)

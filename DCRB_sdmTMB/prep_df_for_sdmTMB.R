@@ -13,7 +13,6 @@ library(magrittr)
 #this still includes grids that are closed in a given time step - so those 0s should be NAs 
 #or those grid - time step combos need to be dropped
 response_var_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_response_var.rds')) %>% 
-  select(-tottraps_WA_data, -tottraps_OR_data) %>% 
   #add a presence/absence column - 0 pots in grid will be absence
   #note that atm there are still grids included in this df that were closed (so effort should be NA not 0)
   #once finish 'closed areas' df then these grids can just be dropped out
@@ -27,6 +26,7 @@ response_var_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_
 
 predictor_vars_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice.rds')) %>% 
   select(-grd_x, -grd_y )
+#September_1 2014-2015 repeats as there are two distinct crab prices - fixed in crab price script
 
 
 # join predictor df and response df
@@ -59,8 +59,11 @@ glimpse(df_full_with_closed_areas)
 #-------------------------------------------------------------------------------------------------
 
 
-##here could also add couple things, like label for grids/time-steps in WA that have summer pot reduction 
-#--  would need to separate grids in WA waters
+##note that few additions like label for 
+# grids in WA vs OR waters, and
+#grids/time-steps in WA that have summer pot reduction 
+#were done within the 'dist to closed areas' script using "df_full_not_final.rds"
+#(so scripts bit circular) and saved as "df_full_with_dist_to_closed_areas_not_final_20230120.rds"
 
 #-------------------------------------------------------------------------------------------------
 

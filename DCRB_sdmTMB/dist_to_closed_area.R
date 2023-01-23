@@ -136,7 +136,10 @@ dist_to_closed_all <- rbind(df_dist_to_closed_2009_2010,
 
 
 df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) 
-#dist_to_closed_all <- read_rds(here::here('DCRB_sdmTMB', 'data', 'closed areas', "dist_to_closed_all.rds")) 
+
+dist_to_closed_all <- read_rds(here::here('DCRB_sdmTMB', 'data', 'closed areas', "dist_to_closed_all.rds")) %>% 
+  #for some reason there are a small numebr of cases of pure duplications
+  distinct(GRID5KM_ID, season, half_month, dist_to_closed_km) 
 
 
 #when join all this to the 'full' df, any grids that are closed will have NA for distance to closed area (or we can make it 0)
@@ -179,4 +182,5 @@ df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs <- df_full_with_dis
 
 
 #write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
-
+#after fixing duplicating rows
+#write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
