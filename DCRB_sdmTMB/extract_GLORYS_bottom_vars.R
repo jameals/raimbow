@@ -145,3 +145,11 @@ datout %>%
   st_transform(32610) %>% 
   ggplot(aes(col=o2pred))+
   geom_sf()
+
+
+
+#-------
+#summarising bottom O2 data on half-month steps
+
+GLORYS_o2_5kgrd_2007_2020 <- read_rds(here::here('DCRB_sdmTMB','data','GLORYS','GLORYS_o2_5kgrd_2007-2020.rds'))
+glimpse(GLORYS_o2_5kgrd_2007_2020 )
