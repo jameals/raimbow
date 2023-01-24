@@ -164,7 +164,30 @@ GLORYS_o2_5kgrd_2007_2020_v2 <- GLORYS_o2_5kgrd_2007_2020 %>%
   mutate(year = lubridate::year(date)) %>% 
   mutate(season_start = ifelse(month == "December", year, year-1)) %>% 
   mutate(season_end = ifelse(month == "December", year+1, year)) %>% 
-  mutate(season = paste0(season_start,"-",season_end))
+  mutate(season = paste0(season_start,"-",season_end)) %>% 
+  #drop useless columns
+  select(-month, -day, -month_interval, -year, -season_start, -season_end, -date, -grd_x, -grd_y) %>% 
+  group_by(GRID5KM_ID, season, half_month) %>% 
+  summarise(bottom_O2_avg = mean(o2pred, na.rm = TRUE))
+glimpse(GLORYS_o2_5kgrd_2007_2020_v2)
+
+
+#-------
+#join with df - most recent file is df_full_with_dist_to_closed_areas_not_final_20230123
+df_full_with_dist_to_closed_areas_not_final_20230123 <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
+
+
+df_full_with_bottomO2 <- df_full_with_dist_to_closed_areas_not_final_20230123 %>% 
+  left_join(GLORYS_o2_5kgrd_2007_2020_v2, by=c("GRID5KM_ID","season", "half_month"))
+
+
+#write_rds(df_full_with_bottomO2, here('DCRB_sdmTMB','data','df_full_with_bottomO2_not_final_20230124.rds'))
+
+
+
+
+
+
 
 
 
