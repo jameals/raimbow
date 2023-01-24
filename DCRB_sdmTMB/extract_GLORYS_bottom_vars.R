@@ -153,3 +153,26 @@ datout %>%
 
 GLORYS_o2_5kgrd_2007_2020 <- read_rds(here::here('DCRB_sdmTMB','data','GLORYS','GLORYS_o2_5kgrd_2007-2020.rds'))
 glimpse(GLORYS_o2_5kgrd_2007_2020 )
+
+GLORYS_o2_5kgrd_2007_2020_v2 <- GLORYS_o2_5kgrd_2007_2020 %>% 
+  #specify which rows (dates) fall into each of half monthly time steps
+  mutate(month = lubridate::month(date, label = TRUE, abbr = FALSE)) %>% 
+  mutate(day = lubridate::day(date)) %>% 
+  mutate(month_interval = ifelse(day <= 15, 1, 2)) %>% 
+  mutate(half_month = paste0(month,"_",month_interval)) %>% 
+  #also need to specify crab season
+  mutate(year = lubridate::year(date)) %>% 
+  mutate(season_start = ifelse(month == "December", year, year-1)) %>% 
+  mutate(season_end = ifelse(month == "December", year+1, year)) %>% 
+  mutate(season = paste0(season_start,"-",season_end))
+
+
+
+
+
+
+
+
+
+
+
