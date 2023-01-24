@@ -18,6 +18,8 @@ library(tidyverse)
 library(sdmTMB)
 library(sf)
 library(ggcorrplot)
+library(mgcv)
+library(ggeffects)
 
 #this was needed for sdmTMB to work
 #install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
@@ -160,11 +162,326 @@ model.matrix(~0+., data=df_winter_predictors_only) %>%
 
 
 
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+
+#using Eric's code from "examples.pdf"
+#test on summer data
+
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_with_dist_to_closed_areas_not_final_20230120.rds'))
+
+# Filter out NAs
+d <- dplyr::filter(d,
+                   !is.na(weighted_fuel_pricegal),
+                   !is.na(weighted_crab_ppp),
+                   open_closed == "open",
+                   season %in% c("2007-2008","2008-2009") == FALSE)
+d$yearn <- as.numeric(substr(d$season,1,4))
+d$yearf <- as.factor(d$yearn)
+summer <- dplyr::filter(d, winter_summer == "Summer")
+
+# try smooth over months
+summer$month_n <- 5
+summer$month_n[which(summer$month_name=="June")] = 6
+summer$month_n[which(summer$month_name=="July")] = 7
+summer$month_n[which(summer$month_name=="August")] = 8
+summer$month_n[which(summer$month_name=="September")] = 9
+# Add UTM columns (zone 10)
+summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
+
+
+
+##Initial model: covariates only
+mesh <- make_mesh(summer, xy_cols = c("X","Y"), cutoff = 10)
+mesh$mesh$n
+fit0 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                 season +
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "off",
+               spatiotemporal = "off",
+               data = summer,
+               time = "yearf")
+#Warning message:
+#The model may not have converged. Maximum final gradient: 0.017510364781316. 
+#sanity(fit0)
+AIC(fit0)
+#300625.8
+
+
+
+##Adding spatial and spatiotemporal fields (seasons)
+fit1 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                 season +
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "on",
+               spatiotemporal = "off",
+               data = summer,
+               time = "yearf")
+#sanity(fit1)
+
+fit2 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                 season +
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "on",
+               spatiotemporal = "iid",
+               data = summer,
+               time = "yearf")
+#sanity(fit2)
+
+#no complaints about models not converging
+
+AIC(fit1, fit2)
+#     df    AIC
+#fit1 38 278815.1
+#fit2 39 272014.4
+
+
+##Just as a test, we can see if changing month to a smooth improves the fit
+fit3 <- sdmTMB(tottraps ~ 0 + s(month_n, k = 3) + # <- new
+                 OR_WA_waters +
+                 season +
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "on",
+               spatiotemporal = "iid",
+               data = summer,
+               time = "yearf")
+#sanity(fit3)
+#no complaints about convergence issues
+AIC(fit3)
+#272020.7
+
+
+
+## Just as a test, we can see if changing year/season to a smooth improves the fit
+fit4 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                 s(yearn) + # <- new
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "on",
+               spatiotemporal = "iid",
+               data = summer,
+               time = "yearf")
+#sanity(fit4)
+#Warning message:The model may not have converged: extreme or very small eigen values detected. 
+AIC(fit4)
+
+
+
+## Similarly, we can change the IID spatiotemporal fields in model 2 to “AR1” to test the autoregressive structure
+# Is there support for AR1 spatiotemporal fields?
+# Using the best model (fit2)
+fit5 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                 season +
+                 SST_avg +
+                 wind_avg +
+                 poly(depth_zonal_mean,2) +
+                 poly(depth_zonal_sd,2) +
+                 poly(faults_km,2) +
+                 poly(dist_canyon_km,2) +
+                 poly(weighted_dist,2) +
+                 poly(weighted_fuel_pricegal,2) +
+                 poly(weighted_crab_ppp,2) +
+                 poly(dist_to_closed_km,2),
+               family = tweedie(),
+               mesh = mesh,
+               spatial = "on",
+               spatiotemporal = "ar1",# <- new
+               data = summer,
+               time = "yearf")
+#sanity(fit5)
+#takes longer to run than previous iterations
+#sanity() seemed fine, but:
+#Warning message: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :  NA/NaN function evaluation
+AIC(fit2, fit5)
+#     df    AIC
+#fit2 39 272014.4
+#fit5 40 271946.5
 
 
 
 
+##Adding spatial and spatiotemporal fields (months)
+#Here we switch indexing of spatiotemporal fields to “month_name” and again can try the
+#spatiotemporal fields as IID or AR1. Model 6 seems to generally converge – but model 7
+#struggles -- similar to winter model
 
+# Other questions are whether it makes more sense to switch the spatiotemporal fields to month
+fit6 <- update(fit2,
+               time = "month_n")
+#sanity(fit6)
+fit7 <- update(fit2,
+               time = "month_n",
+               spatiotemporal = "ar1")
+#sanity(fit7)
+#Warning messages:
+# 1: In sqrt(diag(cov)) : NaNs produced
+#2: The model may not have converged: non-positive-definite Hessian matrix. 
+
+AIC(fit6, fit7) #no improvements
+#     df   AIC
+#fit6 39 276930.6
+#fit7 40 277902.9
+
+
+
+
+#skip models 8 and 9 - fancier smooths, had convergence issues in winter models
+
+
+#Comparing delta- models to the Tweedie distribution
+#Maybe should have done this first, but one thing that’s worth doing is also swapping in a delta-
+# Gamma hurdle or delta-model for the Tweedie, which should increase flexibility (particularly for lots of 0s).
+#This model is a lot slower than the straight Tweedie above…
+# tic()
+# fit10 <- update(fit5,
+# family = delta_gamma())
+# toc()
+
+tic()
+fit10 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
+                  yearf +
+                  SST_avg +
+                  wind_avg +
+                  poly(depth_zonal_mean,2) +
+                  poly(depth_zonal_sd,2) +
+                  poly(faults_km,2) +
+                  poly(dist_canyon_km,2) +
+                  poly(weighted_dist,2) +
+                  poly(weighted_fuel_pricegal,2) +
+                  poly(weighted_crab_ppp,2) +
+                  poly(dist_to_closed_km,2),
+                family = delta_gamma(),
+                mesh = mesh,
+                spatial = "on",
+                spatiotemporal = "ar1",
+                data = summer,
+                time = "yearf")
+toc()
+#Eric winter model: The delta-model is quite a bit better than the Tweedie – but takes longer to run (80 minutes on my slow computer)
+#summer model 83min on Leena's computer
+AIC(fit5, fit10)
+#      df    AIC
+#fit5  40 271946.5
+#fit10 77 262781.3
+
+
+
+
+#Gut check: do estimated relationships make sense?
+#  This little function is just for helping to display the effects on log scale
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+p1 <- plot_log(fit5, "depth_zonal_mean [all]")
+p2 <- plot_log(fit5, "depth_zonal_sd [all]")
+p3 <- plot_log(fit5, "faults_km [all]")
+p4 <- plot_log(fit5, "dist_canyon_km [all]")
+gridExtra::grid.arrange(p1,p2,p3,p4,nrow=2)
+
+p1 <- plot_log(fit5, "weighted_dist [all]")
+p2 <- plot_log(fit5, "weighted_fuel_pricegal [all]")
+p3 <- plot_log(fit5, "weighted_crab_ppp [all]")
+p4 <- plot_log(fit5, "dist_to_closed_km [all]")
+gridExtra::grid.arrange(p1,p2,p3,p4,nrow=2)
+
+p1 <- plot_log(fit5, "SST_avg [all]")
+p2 <- plot_log(fit5, "wind_avg [all]")
+gridExtra::grid.arrange(p1,p2,nrow=1)
+
+
+#Residuals – do qqplots look ok?
+res <- residuals(fit5)
+qqnorm(res)
+qqline(res)
+
+
+#The slower and more robust check is:
+mcmc_res <- residuals(fit5, type = "mle-mcmc", mcmc_iter = 101, mcmc_warmup = 100)
+qqnorm(mcmc_res)
+qqline(mcmc_res)
+
+
+
+
+#Spatial predictions – make sense?
+pred <- summer
+pred$OR_WA_waters <- summer$OR_WA_waters[1]
+pred$season <- "2018-2019"
+pred$SST_avg <- mean(summer$SST_avg)
+pred$wind_avg <- mean(summer$wind_avg)
+pred$depth_zonal_mean <- mean(summer$depth_zonal_mean)
+pred$depth_zonal_sd <- mean(summer$depth_zonal_sd)
+pred$faults_km <- mean(summer$faults_km)
+pred$dist_canyon_km <- mean(summer$dist_canyon_km)
+pred$weighted_dist <- mean(summer$weighted_dist)
+pred$weighted_fuel_pricegal <- mean(summer$weighted_fuel_pricegal)
+pred$weighted_crab_ppp <- mean(summer$weighted_crab_ppp)
+pred$dist_to_closed_km <- mean(summer$dist_to_closed_km)
+pred <- predict(fit5, pred)
+#as(<dgCMatrix>, "dgTMatrix") is deprecated since Matrix 1.5-0; do as(., "TsparseMatrix") instead
+p <- ggplot(dplyr::filter(pred,yearf=="2019"), aes(X,Y, col = est)) +
+  geom_point(size=1.5,alpha=0.3) +
+  scale_color_gradient2()
+p
 
 
 
