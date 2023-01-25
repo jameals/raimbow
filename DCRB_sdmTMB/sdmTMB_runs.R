@@ -214,7 +214,7 @@ fit0 <- sdmTMB(tottraps ~ 0 + month_name + OR_WA_waters +
                time = "yearf")
 #Warning message:
 #The model may not have converged. Maximum final gradient: 0.017510364781316. 
-#sanity(fit0)
+#sanity(fit0) #Non-linear minimizer did not converge: do not trust this model!
 AIC(fit0)
 #300625.8
 
