@@ -401,6 +401,7 @@ unique(df_fuel_price$half_month)
 #------------------------------
 #2014-2015 season had no pots in August_2, but as fishery (in WA) was open
 #we need fuel prices for grid cells in that month for the presence/absence model
+#note that don't want to run this again and duplicate August_2
 interpolated_fuel_price_2014_2015 <- read_rds(here::here('DCRB_sdmTMB', 'data', "fuel",'v2',"interpolated_fuel_price_2014_2015.rds"))
 #interpolated_fuel_price_2014_2015
 
