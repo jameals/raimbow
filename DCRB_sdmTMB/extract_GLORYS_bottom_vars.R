@@ -174,14 +174,15 @@ glimpse(GLORYS_o2_5kgrd_2007_2020_v2)
 
 #-------
 #join with df - most recent file is df_full_with_dist_to_closed_areas_not_final_20230123
-df_full_with_dist_to_closed_areas_not_final_20230123 <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
+#df_full_with_dist_to_closed_areas_not_final_20230123 <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice.rds"))
 
 
-df_full_with_bottomO2 <- df_full_with_dist_to_closed_areas_not_final_20230123 %>% 
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2 <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice %>% 
   left_join(GLORYS_o2_5kgrd_2007_2020_v2, by=c("GRID5KM_ID","season", "half_month"))
 
 
-#write_rds(df_full_with_bottomO2, here('DCRB_sdmTMB','data','df_full_with_bottomO2_not_final_20230124.rds'))
+#write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2, here('DCRB_sdmTMB','data','study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2.rds'))
 
 
 
