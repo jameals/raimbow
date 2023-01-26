@@ -343,8 +343,8 @@ unique(df_crab_price$half_month)
 
 #------------------------------
 #2014-2015 season had no pots in August_2, but as fishery (in WA) was open
-#we need fuel prices for grid cells in that month for the presence/absence model
-#this was accidentially done by re-doing September_1 instead of August_2 so September_1 ended up repeating in df
+#we need crab prices for grid cells in that month for the presence/absence model
+#this was accidentally done by re-doing September_1 instead of August_2 so September_1 ended up repeating in df
 #first drop the erroneous September_1
 interpolated_crab_price_2014_2015 <- interpolated_crab_price_2014_2015[1:27576,]
 
@@ -353,10 +353,34 @@ interpolated_crab_price_2014_2015_august1_september1 <- interpolated_crab_price_
   group_by(GRID5KM_ID) %>% 
   summarise(weighted_crab_ppp = mean(weighted_crab_ppp)) %>% 
   mutate(season = "2014-2015", half_month = "August_2") %>% 
-  select(GRID5KM_ID, season, half_month, weighted_crab_ppp)
+  select(GRID5KM_ID, season, half_month, weighted_crab_ppp) %>% 
+  ungroup()
 
 interpolated_crab_price_2014_2015 <- rbind(interpolated_crab_price_2014_2015, interpolated_crab_price_2014_2015_august1_september1)
 #write_rds(interpolated_crab_price_2014_2015,here::here('DCRB_sdmTMB', 'data', 'port group crab price', 'v2', "interpolated_crab_price_2014_2015.rds"))
+
+
+#------------------------------
+#2013-2014 needs crab price for December_1 -- use data for December_2
+interpolated_crab_price_2013_2014
+
+interpolated_crab_price_2013_2014_december_fix <- interpolated_crab_price_2013_2014 %>% 
+  filter(half_month=="December_2") %>% 
+  mutate(half_month = str_replace(half_month, "December_2", "December_1"))
+
+interpolated_crab_price_2013_2014 <- rbind(interpolated_crab_price_2013_2014, interpolated_crab_price_2013_2014_december_fix)
+#write_rds(interpolated_crab_price_2013_2014,here::here('DCRB_sdmTMB', 'data', "port group crab price",'v2', "interpolated_crab_price_2013_2014.rds"))
+
+
+#2017-2018 needs crab price for January_1 -- use data for January_2
+interpolated_crab_price_2017_2018
+
+interpolated_crab_price_2017_2018_january_fix <- interpolated_crab_price_2017_2018 %>% 
+  filter(half_month=="January_2") %>% 
+  mutate(half_month = str_replace(half_month, "January_2", "January_1"))
+
+interpolated_crab_price_2017_2018 <- rbind(interpolated_crab_price_2017_2018, interpolated_crab_price_2017_2018_january_fix)
+#write_rds(interpolated_crab_price_2017_2018,here::here('DCRB_sdmTMB', 'data', "port group crab price",'v2', "interpolated_crab_price_2017_2018.rds"))
 
 #------------------------------
 
@@ -386,6 +410,16 @@ study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_ca
   left_join(interpolated_crab_price_all, by=c('GRID5KM_ID', 'season', 'half_month'))
 #the cases where grid has NA for crab price should be cases where grids were closed (season closures etc)
 #these should get removed when get around to dealing with open/closed areas (grids)
+#not all NAs are during closed periods - so needs fixing
+#discrepancy is likely due to half_monthly by landing day or Set Date
+#we can ignore 2007-2008 and 2008-2009 as those will get dropped from the analysis
+#some other cases are when fishery fully closed, so fix only times when fishery is open
+#actually only 2 specific cases when fishery open but NAs for crab price
+# season    half_month
+# 2013-2014 December_1
+# 2017-2018 January_1 
+#fill these with the second half of that month (same as for fuel price)
+#code for this is above
 
 
 #write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice.rds"))
