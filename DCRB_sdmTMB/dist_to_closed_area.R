@@ -21,16 +21,54 @@ library(lubridate)
 library(nngeo)
 
 #-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+#this was originally in prep for sdmTMB script but moved here
+#df full was df with those predcitors that were done at that point and response variable joined
+
+closed_areas_df <- read_csv(here::here('DCRB_sdmTMB', 'data', 'study_area_grids_with_all_season_halfmonth_combos_and_closed_areas_df.csv'))
+
+# df_full_with_closed_areas <- df_full %>% 
+#   left_join(closed_areas_df, by=c('season', 'half_month','GRID5KM_ID'))
+# glimpse(df_full_with_closed_areas)
+
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2 <- read_rds(here::here('DCRB_sdmTMB', 'data', 'study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2.rds')) 
+
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_with_closed_areas <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2 %>% 
+  left_join(closed_areas_df, by=c('season', 'half_month','GRID5KM_ID'))
+glimpse(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_with_closed_areas)
+
+
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 # closed areas info was joined to the "full df"
 
-df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) %>% 
+# df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) %>% 
+#   #but drop other predictor columns 
+#   select(GRID5KM_ID:grd_y, open_closed)
+# 
+# #currently grid centroid location grd_x and grd_y are in lat and lon
+# #keep them but also create coordinates in UTM 10 zone (grd_x_UTM10 and grd_y_UTM10)
+# df_full_sf <- st_as_sf(df_full_with_closed_areas, 
+#                        coords = c("grd_x", "grd_y"),
+#                        crs = 4326,
+#                        remove=F
+# ) %>% 
+#   # project to UTM zone 10
+#   st_transform(crs = "+proj=utm +north +zone=10 +ellps=WGS84")
+# #length units are in meters
+
+
+
+
+df_with_closed_areas <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_with_closed_areas %>% 
   #but drop other predictor columns 
   select(GRID5KM_ID:grd_y, open_closed)
 
 #currently grid centroid location grd_x and grd_y are in lat and lon
 #keep them but also create coordinates in UTM 10 zone (grd_x_UTM10 and grd_y_UTM10)
-df_full_sf <- st_as_sf(df_full_with_closed_areas, 
+df_with_closed_areas_sf <- st_as_sf(df_with_closed_areas, 
                        coords = c("grd_x", "grd_y"),
                        crs = 4326,
                        remove=F
@@ -41,11 +79,19 @@ df_full_sf <- st_as_sf(df_full_with_closed_areas,
 
 #-------------------------------------------------------------------------------------------------
 
-df_open_grids <- df_full_sf %>% 
+# df_open_grids <- df_full_sf %>% 
+#   filter(open_closed == "open")
+# 
+# df_closed_grids <- df_full_sf %>% 
+#   filter(open_closed == "closed")
+
+
+df_open_grids <- df_with_closed_areas_sf %>% 
   filter(open_closed == "open")
 
-df_closed_grids <- df_full_sf %>% 
+df_closed_grids <- df_with_closed_areas_sf %>% 
   filter(open_closed == "closed")
+
 
 #-------------------------------------------------------------------------------------------------
 
@@ -135,18 +181,31 @@ dist_to_closed_all <- rbind(df_dist_to_closed_2009_2010,
 #------------------------------
 
 
-df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) 
+#df_full_with_closed_areas <- read_rds(here::here('DCRB_sdmTMB', 'data', "df_full_not_final.rds")) 
+#this was created at the begining of script:
+study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_with_closed_areas
+
 
 dist_to_closed_all <- read_rds(here::here('DCRB_sdmTMB', 'data', 'closed areas', "dist_to_closed_all.rds")) %>% 
-  #for some reason there are a small numebr of cases of pure duplications
+  #for some reason there are a small number of cases of pure duplication
   distinct(GRID5KM_ID, season, half_month, dist_to_closed_km) 
 
 
-#when join all this to the 'full' df, any grids that are closed will have NA for distance to closed area (or we can make it 0)
+
+
+
+#when join all this to the previous df, any grids that are closed will have NA for distance to closed area (or we can make it 0)
 #those grids get dropped out anyways from the actual analysis
 
-df_full_with_dist_to_closed_areas_dist <- df_full_with_closed_areas %>% 
+#df_full_with_dist_to_closed_areas_dist <- df_full_with_closed_areas %>% 
+#  left_join(dist_to_closed_all, by=c('season', 'half_month','GRID5KM_ID'))
+
+df_full_with_dist_to_closed_areas_dist <- study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_with_closed_areas %>% 
   left_join(dist_to_closed_all, by=c('season', 'half_month','GRID5KM_ID'))
+
+
+
+
 
 #2007-08 and 2008-09 are NAs as no logbooks for WA
 #fix 2018-2019 -- all grids were open between May_1 and August_1 -- but distance to closed area 
@@ -154,11 +213,11 @@ df_full_with_dist_to_closed_areas_dist <- df_full_with_closed_areas %>%
 
 df_full_with_dist_to_closed_areas_dist <- df_full_with_dist_to_closed_areas_dist %>% 
   mutate(dist_to_closed_km = 
-           ifelse(season=="2018-2019" & open_closed=="open" & is.na(dist_to_closed_km), 800, dist_to_closed_km))
+           ifelse(season=="2018-2019" & open_closed=="open" & is.na(dist_to_closed_km), 700, dist_to_closed_km))
+
 
 #also here add extra column to denote OR/WA waters
 #those grids at the border are more in WA waters so we will label them as such
-
 df_full_with_dist_to_closed_areas_ORWA_waters <- df_full_with_dist_to_closed_areas_dist %>% 
   mutate(OR_WA_waters = ifelse(GRID5KM_ID <= 117319, 'OR', 'WA'))
 
@@ -166,6 +225,9 @@ df_full_with_dist_to_closed_areas_ORWA_waters <- df_full_with_dist_to_closed_are
 #and also while we're at it, add column for times when WA had its supper pot reduction in place
 df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs <- df_full_with_dist_to_closed_areas_ORWA_waters %>% 
   #first add a season_month column to make this easier
+  mutate(half_month_dummy = half_month) %>% 
+  separate(col=half_month_dummy, into=c('month_name', 'period'), sep='_') %>% 
+  select(-period) %>% 
   mutate(season_month = paste0(season,"_",month_name)) %>% 
   mutate(WA_pot_reduction = 
            ifelse(OR_WA_waters=="WA" & season_month %in% c('2018-2019_July',
@@ -181,6 +243,11 @@ df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs <- df_full_with_dis
   select(-season_month)
 
 
+#write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_ClosedAreaDist.rds"))
+
+
+
+###OLD:
 #write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
 #after fixing duplicating rows
 #write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
