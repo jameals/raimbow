@@ -120,10 +120,28 @@ df_full_final_open <- df_full_final_chosen_predictors_years %>%
 #-------------------------------------------------------------------------------------------------
 #z-scoring
 
+
 #check how common 0s were in few of the variables
+## just for our info, how many 0s were in those few variables that had bunch of 0s (which we don't want in the model)
+#variables that have bunch of 0s: depth_point_sd, faults_km, and dist_canyon_km
+
+#depth_point_sd: 1203 cases (unique grid & half_month step combos). 7 unique grid cells (122919  89913 103449 113352 118291 118952 128194)
+##most of these 7 intersect with land, which explained 0s. Most had 0 traps, some had few (<57)
+
+#faults_km: 124,297 cases (unique grid & half_month step combos). 701 unique grid cells 
+## as there are a lot of grids that had no fault lines in them, some of them had a high number of pots. 
+# This variable might be dropped during modelling as it doesn;t seem to have an effect
+
+#dist_canyon_km: 3893 cases (unique grid & half_month step combos). 21 unique grid cells (90568 100470 116640 117301 117302 117303 117631 
+#117632 117633 117634 118291 118952, 119283 119613 119941 120270 122248 122578 125219 125549 125879)
+## as there are a quite a few grids that had 0 dist to canyon (i.e. grid centroid falls inside canyon polygon), 
+#some of them had a high number of pots (<446) --  grid off Klipsan beach, about half of it is outside canyon. 
+
+##none of these are excepted to be very problematic, so deal with these by z-scoring and fitting a quadratic term in the model
+
+
 
 #separate z-scoring for winter data, summer data, and the full dataset
-
 #save separate files for summer df (z-scored within itself), winter df (z-scored within itself) and all data (z-scored)
 
 
@@ -220,9 +238,12 @@ model.matrix(~0+., data=df_summer_scaled_corrplot) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+##export dfs
 
+#write_rds(df_all_scaled,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data.rds"))
+#write_rds(df_winter,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter.rds"))
+#write_rds(df_summer,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer.rds"))
 
-         
          
          
          
