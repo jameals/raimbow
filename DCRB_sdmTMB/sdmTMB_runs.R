@@ -62,7 +62,7 @@ d$month_n[which(d$month_name=="July")] = 8
 d$month_n[which(d$month_name=="August")] = 9
 d$month_n[which(d$month_name=="September")] = 10
 
-d$month_f <- as.factor(d$month_n)
+#d$month_f <- as.factor(d$month_n)
 
 #summer
 summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer.rds'))
@@ -755,15 +755,14 @@ AIC(fit7_summer)
 
 #index by half_month step
 summer$half_month_n <- 1
-summer$half_month_n[which(summer$half_month=="May_1")] = 2
-summer$half_month_n[which(summer$half_month=="May_2")] = 3
-summer$half_month_n[which(summer$half_month=="June_1")] = 4
-summer$half_month_n[which(summer$half_month=="June_2")] = 5
-summer$half_month_n[which(summer$half_month=="July_1")] = 6
-summer$half_month_n[which(summer$half_month=="July_2")] = 7
-summer$half_month_n[which(summer$half_month=="August_1")] = 8
-summer$half_month_n[which(summer$half_month=="August_2")] = 9
-summer$half_month_n[which(summer$half_month=="September_1")] = 10
+summer$half_month_n[which(summer$half_month=="May_2")] = 2
+summer$half_month_n[which(summer$half_month=="June_1")] = 3
+summer$half_month_n[which(summer$half_month=="June_2")] = 4
+summer$half_month_n[which(summer$half_month=="July_1")] = 5
+summer$half_month_n[which(summer$half_month=="July_2")] = 6
+summer$half_month_n[which(summer$half_month=="August_1")] = 7
+summer$half_month_n[which(summer$half_month=="August_2")] = 8
+summer$half_month_n[which(summer$half_month=="September_1")] = 9
 
 
 tic()
@@ -831,7 +830,9 @@ fit0_winter <- sdmTMB(tottraps ~ 0 +
 toc() #2.2min
 
 #sanity(fit0_winter)
-#no warning about convergence issues. Some red Xs in sanity check
+#no warning about convergence issues. Some red Xs in sanity check (b_js, thetaf, ln_phi)
+#sanity(fit0_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still X for ln_phi
 AIC(fit0_winter)
 #774067
 
@@ -862,11 +863,13 @@ fit1_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "off",
                       data = winter,
                       time = "yearf")
-toc() #7min
+toc() #6.7min
 
 #sanity(fit1_winter)
-#Warning message:The model may not have converged. Maximum final gradient: 0.0167330325325095
-#Couple red Xs in sanity check
+#Warning message:The model may not have converged. Maximum final gradient: 0.0129679188577158
+#Couple red Xs in sanity check (b_j, ln_tau, ln_kappa, thetaf, ln_phi)
+#sanity(fit1_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still X for ln_phi and b_js
 AIC(fit1_winter)
 #739449
 
@@ -898,7 +901,10 @@ fit2_winter <- sdmTMB(tottraps ~ 0 +
 toc() #8min
 
 #sanity(fit2_winter)
-#no warning about convergence issues. Some red Xs in sanity check
+#Warning message: The model may not have converged. Maximum final gradient: 0.014876525269969
+#Some red Xs in sanity check (b_js, ln_tau, thetaf, ln_phi)
+#sanity(fit2_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still Xs for b_j, ln_tau, thetaf, ln_phi
 AIC(fit2_winter)
 #728431
 #-------------------------------------------------------------------------------------------------
@@ -917,6 +923,7 @@ toc() #0.5min
 
 #sanity(fit1b_winter)
 #no warning about convergence issues. No red Xs in sanity check
+#sanity(fit1b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit1b_winter)
 #744916
 
@@ -934,45 +941,211 @@ toc() #1.1min
 
 #sanity(fit2b_winter)
 #no warning about convergence issues. No red Xs in sanity check
+#sanity(fit2b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit2b_winter)
 #734885
+#--------------------------------------
+
+#Just as a test, we can see if changing month to a smooth improves the fit
+
+tic()
+fit3_winter <- sdmTMB(tottraps ~ 0 + 
+                        s(month_n, k = 4) + # <- new,
+                        season +
+                        #month_name + 
+                        OR_WA_waters +
+                        #WA_pot_reduction +   #not relevant in winter
+                        poly(z_SST_avg,2) +
+                        poly(z_wind_avg,2) +
+                        poly(z_depth_point_mean,2) +
+                        poly(z_depth_point_sd,2) +
+                        poly(z_faults_km,2) +
+                        poly(z_dist_canyon_km,2) +
+                        poly(z_weighted_dist,2) +
+                        poly(z_weighted_fuel_pricegal,2) +
+                        poly(z_weighted_crab_ppp,2) +
+                        poly(z_bottom_O2_avg,2) +
+                        poly(z_dist_to_closed_km ,2),
+                      family = tweedie(),
+                      mesh = mesh,
+                      spatial = "on",
+                      spatiotemporal = "iid",
+                      data = winter,
+                      time = "yearf")
+toc() #7min 
+
+#sanity(fit3_winter)
+#Warning message:The model may not have converged. Maximum final gradient: 0.0136587717055114
+#X for thetaf, ln_phi
+#sanity(fit3_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still X for ln_phi
+AIC(fit3_winter)
+#728448
+
+#--------------------------------------
+
+# Just as a test, we can see if changing year/season to a smooth improves the fit
+
+tic()
+fit4_winter <- sdmTMB(tottraps ~ 0 + 
+                        month_name + 
+                        s(yearn, k = 10) + # <- new, let k be automatically selected // , k = 10
+                        #season +
+                        OR_WA_waters +
+                        #WA_pot_reduction +     #not relevant in winter
+                        poly(z_SST_avg,2) +
+                        poly(z_wind_avg,2) +
+                        poly(z_depth_point_mean,2) +
+                        poly(z_depth_point_sd,2) +
+                        poly(z_faults_km,2) +
+                        poly(z_dist_canyon_km,2) +
+                        poly(z_weighted_dist,2) +
+                        poly(z_weighted_fuel_pricegal,2) +
+                        poly(z_weighted_crab_ppp,2) +
+                        poly(z_bottom_O2_avg,2) +
+                        poly(z_dist_to_closed_km ,2),
+                      family = tweedie(),
+                      mesh = mesh,
+                      spatial = "on",
+                      spatiotemporal = "iid",
+                      data = winter,
+                      time = "yearf")
+toc() #7.8min 
+#this time fine to let k be automatically selected. doesn't matter if specify k=10
+#
+#sanity(fit4_winter)
+#Warning message: The model may not have converged: non-positive-definite Hessian matrix. lots of red Xs
+#sanity(fit4_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still lots of Xs
+AIC(fit4_winter)
+#728422
+
+
+#--------------------------------------
+
+#change the IID spatiotemporal fields in model 2 to “AR1” to test the autoregressive structure
+# Is there support for AR1 spatiotemporal fields?
+# Using the best model (fit2)
+
+tic()
+fit5_winter <- sdmTMB(tottraps ~ 0 + 
+                        season +
+                        month_name + 
+                        OR_WA_waters +
+                        #WA_pot_reduction +    #not relevant in winter
+                        poly(z_SST_avg,2) +
+                        poly(z_wind_avg,2) +
+                        poly(z_depth_point_mean,2) +
+                        poly(z_depth_point_sd,2) +
+                        poly(z_faults_km,2) +
+                        poly(z_dist_canyon_km,2) +
+                        poly(z_weighted_dist,2) +
+                        poly(z_weighted_fuel_pricegal,2) +
+                        poly(z_weighted_crab_ppp,2) +
+                        poly(z_bottom_O2_avg,2) +
+                        poly(z_dist_to_closed_km ,2),
+                      family = tweedie(),
+                      mesh = mesh,
+                      spatial = "on",
+                      spatiotemporal = "ar1", # <- new
+                      data = winter,
+                      time = "yearf")
+toc() #min
+
+#sanity(fit5_winter)
+#Warning message: The model may not have converged. Maximum final gradient: 0.0102205309983354
+#some red Xs b_j, ln_tau, thetaf, ln_phi, ar1_phi
+#sanity(fit5_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still Xs for thetaf and ln_phi
+AIC(fit5_winter)
+#728291
+#summary(fit5_winter)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+#--------------------------------------
+
+#Adding spatial and spatiotemporal fields (months)
+
+# switch indexing of spatiotemporal fields to “month_name” and again can try the spatiotemporal fields as IID or AR1.
+
+tic()
+fit6_winter <- update(fit2_winter,
+                      time = "month_n")
+toc()  #7.3min
+
+#sanity(fit6_winter)
+#no warnings. Some red Xs: thetaf and ln_phi
+#sanity(fit6_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#No Xs
+AIC(fit6_winter)
+#735079
+
+
+###as fit2 had issues, but fit2b didn't, try that one as well
+tic()
+fit6b_winter <- update(fit2b_winter,
+                      time = "month_n")
+toc()  #0.8min
+#sanity(fit6b_winter)
+#No warnings, only 1 X: thetaf
+#sanity(fit6b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still X for thetaf
+AIC(fit6b_winter)
+#738918.1
+###but it's not an improvement on fit6
+
+
+
+tic()
+fit7_winter <- update(fit2_winter,
+                      time = "month_n",
+                      spatiotemporal = "ar1")
+toc()  #9.2min
+
+#sanity(fit7_winter)
+#No warnings, some red Xs (b_j, thetaf, ln_phi)
+#sanity(fit7_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still 1x b_j, and ln_phi
+AIC(fit7_winter)
+#734859
+#summary(fit7_winter) #what is ar1 rho value?
+#Spatiotemporal AR1 correlation (rho): 
+
+
+#--------------------------------------
+
+#index by half_month step
+winter$half_month_n <- 1
+winter$half_month_n[which(winter$half_month=="December_2")] = 2
+winter$half_month_n[which(winter$half_month=="January_1")] = 3
+winter$half_month_n[which(winter$half_month=="January_2")] = 4
+winter$half_month_n[which(winter$half_month=="February_1")] = 5
+winter$half_month_n[which(winter$half_month=="February_2")] = 6
+winter$half_month_n[which(winter$half_month=="March_1")] = 7
+winter$half_month_n[which(winter$half_month=="March_2")] = 8
+winter$half_month_n[which(winter$half_month=="April_1")] = 9
+winter$half_month_n[which(winter$half_month=="April_2")] = 10
+
+
+tic()
+fit8_winter <- update(fit2_winter,
+                      time = "half_month_n") #as numeric
+toc()  #8min
+
+#sanity(fit8_winter)
+#No warnings. Red Xs: b_j and ln_phi
+#sanity(fit8_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still X for ln_phi
+AIC(fit8_winter)
+#734868
+
+
+#-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#-------------------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------------------
 
 
 #-------------------------------------------------------------------------------------------------
