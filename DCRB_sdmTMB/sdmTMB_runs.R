@@ -664,7 +664,7 @@ toc() #4.8min
 #Error in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots) : A term has fewer unique covariate combinations than specified maximum degrees of freedom
 
 #sanity(fit3_summer)
-#no warning messages. Red Xs: thetaf, ln_phi
+#no warning messages. Red Xs: thetaf, ln_phi ;; none on second run
 #sanity(fit3_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #No red Xs
 AIC(fit3_summer)
@@ -736,7 +736,7 @@ fit5_summer <- sdmTMB(tottraps ~ 0 +
                         spatiotemporal = "ar1", # <- new
                         data = summer,
                         time = "yearf")
-toc() #9.4min
+toc() #14min
 
 #sanity(fit5_summer)
 #no warnings. No red Xs
@@ -806,9 +806,9 @@ fit8_summer <- update(fit2_summer,
 toc()  #5.4min
 
 #sanity(fit8_summer)
-# No warnings. No red Xs
+# No warnings. No red Xs ;; some on second run
 #sanity(fit8_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#no Xs even on second run
 AIC(fit8_summer)
 #270583
 
@@ -865,7 +865,7 @@ fit0_winter <- sdmTMB(tottraps ~ 0 +
 toc() #2.2min
 
 #sanity(fit0_winter)
-#no warning about convergence issues. Some red Xs in sanity check (b_js, thetaf, ln_phi)
+#no warning about convergence issues (sometimes has them). Some red Xs in sanity check (b_js, thetaf, ln_phi)
 #sanity(fit0_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still X for ln_phi
 AIC(fit0_winter)
@@ -1011,6 +1011,7 @@ toc() #7min
 
 #sanity(fit3_winter)
 #Warning message:The model may not have converged. Maximum final gradient: 0.0136587717055114
+##new run even with seed, no warnings -- but ln_phi has red X in both checks
 #X for thetaf, ln_phi
 #sanity(fit3_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still X for ln_phi
@@ -1085,13 +1086,14 @@ fit5_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "ar1", # <- new
                       data = winter,
                       time = "yearf")
-toc() #min
+toc() #12min
 
 #sanity(fit5_winter)
 #Warning message: The model may not have converged. Maximum final gradient: 0.0102205309983354
+#on  anew run even with set.seed(1) - no warnings
 #some red Xs b_j, ln_tau, thetaf, ln_phi, ar1_phi
 #sanity(fit5_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still Xs for thetaf and ln_phi
+#still Xs for thetaf and ln_phi -- 1xb_j and ln_tau still on a second run
 AIC(fit5_winter)
 #728291
 #summary(fit5_winter)
@@ -1110,9 +1112,9 @@ fit6_winter <- update(fit2_winter,
 toc()  #7.3min
 
 #sanity(fit6_winter)
-#no warnings. Some red Xs: thetaf and ln_phi
+#no warnings. Some red Xs: b_js, thetaf and ln_phi
 #sanity(fit6_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#No Xs
+#No Xs (on a second run still had)
 AIC(fit6_winter)
 #735079
 
@@ -1139,13 +1141,13 @@ fit7_winter <- update(fit2_winter,
 toc()  #9.2min
 
 #sanity(fit7_winter)
-#No warnings, some red Xs (b_j, thetaf, ln_phi)
+#No warnings, some red Xs (b_j, thetaf, ln_phi) ;; only b_j on second run when set.seed(1)
 #sanity(fit7_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still 1x b_j, and ln_phi
+#still 1x b_j, and ln_phi ;; nothing on second run
 AIC(fit7_winter)
 #734859
 #summary(fit7_winter) #what is ar1 rho value?
-#Spatiotemporal AR1 correlation (rho): 
+#Spatiotemporal AR1 correlation (rho): 0.98
 
 
 #--------------------------------------
@@ -1169,12 +1171,49 @@ fit8_winter <- update(fit2_winter,
 toc()  #8min
 
 #sanity(fit8_winter)
-#No warnings. Red Xs: b_j and ln_phi
+#No warnings. Red Xs: b_j and ln_phi ;; warning on second run + b_j & ln_tau
 #sanity(fit8_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still X for ln_phi
+#still X for ln_phi ;; only b_j on second run
 AIC(fit8_winter)
 #734868
 
+
+
+#--------------------------------------
+
+tic()
+fit9_winter <- sdmTMB(tottraps ~ 0 + 
+                          s(half_month_n) + # <- new, let k be automatically selected
+                          season +
+                          #month_name + 
+                          OR_WA_waters +
+                          #WA_pot_reduction +
+                          poly(z_SST_avg,2) +
+                          poly(z_wind_avg,2) +
+                          poly(z_depth_point_mean,2) +
+                          poly(z_depth_point_sd,2) +
+                          poly(z_faults_km,2) +
+                          poly(z_dist_canyon_km,2) +
+                          poly(z_weighted_dist,2) +
+                          poly(z_weighted_fuel_pricegal,2) +
+                          poly(z_weighted_crab_ppp,2) +
+                          poly(z_bottom_O2_avg,2) +
+                          poly(z_dist_to_closed_km ,2),
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "iid",
+                        data = winter,
+                        time = "yearf")
+toc() #8min 
+
+#sanity(fit9_winter)
+#no warnings
+#No red Xs
+#sanity(fit9_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit9_winter)
+#728360 #abut 4th best
 
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
