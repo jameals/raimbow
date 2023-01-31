@@ -483,9 +483,8 @@ fit0_summer <- sdmTMB(tottraps ~ 0 +
 toc() #0.8min
 
 #sanity(fit0_summer)
-#Warning message:The model may not have converged. Maximum final gradient: 0.0150379936285089
-#no warning message on second run
-#Couple red Xs in sanity check (thetaf, ln_phi)
+#no warning message on second run (seed set)
+#No red Xs when seed set
 #sanity(fit0_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #No red Xs
 AIC(fit0_summer)
@@ -521,7 +520,7 @@ fit1_summer <- sdmTMB(tottraps ~ 0 +
 toc() #3.8min
 
 #sanity(fit1_summer)
-#no warning about convergence issues. No red Xs in sanity check -- second run had b_js and thetaf
+#no warning about convergence issues. 2 red Xs in sanity check but only b_js 
 #sanity(fit1_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #no red Xs
 AIC(fit1_summer)
@@ -575,6 +574,7 @@ toc() #0.2min
 
 #sanity(fit1b_summer)
 #no warning about convergence issues. No red Xs in sanity check
+#sanity(fit1b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit1b_summer)
 #277485
 
@@ -591,8 +591,10 @@ fit2b_summer <- sdmTMB(tottraps ~ 0,
 toc() #0.6min
 
 #sanity(fit2b_summer)
-#Warning message: The model may not have converged. Maximum final gradient: 0.0108565926496453
-#Couple red Xs in sanity check
+#Warning message: The model may not have converged. Maximum final gradient: 0.0108471688968166
+#red Xs: ln_tau, ln_kappa, ln_phi
+#sanity(fit2b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#red Xs: ln_tau, ln_phi
 AIC(fit2b_summer)
 #271531
 
@@ -629,9 +631,9 @@ toc() #4.8min
 #Error in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots) : A term has fewer unique covariate combinations than specified maximum degrees of freedom
 
 #sanity(fit3_summer)
-#no warning messages. No red Xs
+#no warning messages. Red Xs: thetaf, ln_phi
 #sanity(fit3_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#No red Xs
 AIC(fit3_summer)
 #265953
 
@@ -665,9 +667,9 @@ fit4_summer <- sdmTMB(tottraps ~ 0 +
                         time = "yearf")
 toc() #5.9min 
 #this time fine to let k be automatically selected
-#Warning message:   The model may not have converged: non-positive-definite Hessian matrix
+#Warning message:  The model may not have converged: extreme or very small eigen values detected
 #sanity(fit4_summer)
-#los of red Xs
+#lots of red Xs
 #sanity(fit4_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still lots
 AIC(fit4_summer)
@@ -701,7 +703,7 @@ fit5_summer <- sdmTMB(tottraps ~ 0 +
                         spatiotemporal = "ar1", # <- new
                         data = summer,
                         time = "yearf")
-toc() #12.2min
+toc() #9.4min
 
 #sanity(fit5_summer)
 #no warnings. No red Xs
@@ -740,12 +742,12 @@ tic()
 fit7_summer <- update(fit2_summer,
                         time = "month_n",
                         spatiotemporal = "ar1")
-toc()  #5.4min
+toc()  #7.5min
 
 #sanity(fit7_summer)
-#no warnings. Some red Xs (b_js, ln_kappa, ln_tau_O, sigma_O)
+#no warnings. Some red Xs (b_js, ln_kappa, ln_tau, sigma_O, ar1_phi)
 #sanity(fit7_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still red Xs: ln_tau_O, sigma_O
+#still red Xs: sigma_O
 AIC(fit7_summer)
 #270702
 #summary(fit7_summer) #what is ar1 rho value?
