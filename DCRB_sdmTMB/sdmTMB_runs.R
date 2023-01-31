@@ -137,9 +137,10 @@ fit0_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #3.6min
 
 #sanity(fit0_all_data)
-#no warning about convergence issues. some red Xs in sanity check (e.g. "`b_j` gradient > 0.001") - b_js only
+#When seed set: Warning message: The model may not have converged. Maximum final gradient: 0.0102533041557145 
+#some red Xs in sanity check - b_js only
 #sanity(fit0_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#no red Xs
+#1x b_j red X
 AIC(fit0_all_data)
 #1073744
 
@@ -173,11 +174,9 @@ fit1_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #12.5min
 
 #sanity(fit1_all_data)
-#no warning about convergence issues. some red Xs in sanity check (e.g. "`b_j` gradient > 0.001")
-#only b_js had red Xs
-#on a second run there was a Warning message: The model may not have converged. Maximum final gradient: 0.0230977928183649
+#no warning about convergence issues. some red Xs in sanity check (b_j only)
 #sanity(fit1_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still couple red Xs for b_js
+#No red Xs
 AIC(fit1_all_data)
 #1028092
 
@@ -209,7 +208,7 @@ fit2_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #13.3min
 
 #sanity(fit2_all_data)
-#no warning about convergence issues. 2 red Xs in sanity check (e.g. "`ln_kappa` gradient > 0.001"; "`ln_phi` gradient > 0.001")
+#no warning about convergence issues. 2 red Xs in sanity check ("`ln_kappa` gradient > 0.001"; "`ln_phi` gradient > 0.001")
 #sanity(fit2_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #none if change gradient
 AIC(fit2_all_data)
@@ -247,7 +246,7 @@ fit2b_all_data <- sdmTMB(tottraps ~ 0,
 toc() #1.3min
 
 #sanity(fit2b_all_data)
-#no warning about convergence issues. No red Xs in sanity check -- on second run had for ln_tau and ln_kappa
+#no warning about convergence issues. No red Xs in sanity check 
 #sanity(fit2b_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit2b_all_data)
 #1047840
@@ -283,9 +282,9 @@ fit3_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #12.6min 
 
 #sanity(fit3_all_data)
-#Warning message: The model may not have converged. Maximum final gradient: 0.0161461027851928. Some red Xs
+#No warnings. Some red Xs (b_j, ln_phi)
 #sanity(fit3_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#1 red X - `thetaf` gradient > 0.005
+#1 red X - ln_phi
 AIC(fit3_all_data)
 #1014351 
 
@@ -321,8 +320,7 @@ fit4_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #15.1min 
 
 #sanity(fit4_all_data)
-#Warning messages: 1: The model may not have converged: extreme or very small eigen values detected. 
-#                 2: The model may not have converged. Maximum final gradient: 0.013841806716254
+#Warning messages: The model may not have converged: non-positive-definite Hessian matrix
 #Lots of red Xs
 #sanity(fit4_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 # Still lots of red Xs
@@ -357,12 +355,13 @@ fit5_all_data <- sdmTMB(tottraps ~ 0 +
                         spatiotemporal = "ar1", # <- new
                         data = d,
                         time = "yearf")
-toc() #24min
+toc() #30.8min
 
 #sanity(fit5_all_data)
-#no warning messages. Some red Xs (including ln_kappa')
+#Warning message: The model may not have converged. Maximum final gradient: 0.0267688760472424 
+#Some red Xs (b_j, ln_tau, ln_kappa, thetaf, ln_phi,ar1_phi)
 #sanity(fit5_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#no red Xs here
+#Some red Xs (ln_tau, ln_kappa, thetaf, ln_phi)
 AIC(fit5_all_data)
 #1014141
 #summary(fit5_all_data)
@@ -379,7 +378,7 @@ fit6_all_data <- update(fit2_all_data,
 toc()  #13.7min
 
 #sanity(fit6_all_data)
-# no warning messages. No red Xs
+# no warning messages. some red Xs (ln_tau, ln_kappa, thetaf)
 #sanity(fit6_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #
 AIC(fit6_all_data)
@@ -394,15 +393,15 @@ tic()
 fit7_all_data <- update(fit2_all_data,
                time = "month_n",
                spatiotemporal = "ar1")
-toc()  #20.1min
+toc()  #43min
 
 #sanity(fit7_all_data)
-#Warning message:The model may not have converged. Maximum final gradient: 0.0511240002298674
-#some red Xs (b_js, ln_tau, thetaf, ln_phi, ar1_phi)
+#Warning message:The model may not have converged. Maximum final gradient: 12.2876279413012
+#some red Xs (Non-linear minimizer did not converge: do not trust this model, b_js, ln_tau, ar1_phi)
 #sanity(fit7_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still some: 2xb_j, thetaf, ln_phi
+#some red Xs (Non-linear minimizer did not converge: do not trust this model, b_js, ln_tau, ar1_phi)
 AIC(fit7_all_data)
-#1011966
+#1012123
 #summary(fit7_all_data) #what is ar1 rho value?
 #Spatiotemporal AR1 correlation (rho): 0.97
 
@@ -433,17 +432,51 @@ d$half_month_n[which(d$half_month=="September_1")] = 19
 tic()
 fit8_all_data <- update(fit2_all_data,
                         time = "half_month_n") #as numeric
-toc()  #14.9min
+toc()  #15.5min
 
 #sanity(fit8_all_data)
-# no warnings, some red Xs (b_js, in_tau)
+# no warnings, ! red Xs (b_js)
 #sanity(fit8_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #no red Xs
 AIC(fit8_all_data)
 #1012728
-#resulkts are same if half_month is factor AS LONG AS LEVELS ARE ORDERED CORRECTLY
+#results are same if half_month is factor AS LONG AS LEVELS ARE ORDERED CORRECTLY
 
 #--------------------------------------
+
+tic()
+fit9_all_data <- sdmTMB(tottraps ~ 0 + 
+                          s(half_month_n) + # <- new, let k be automatically selected
+                          season +
+                          #month_name + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          poly(z_SST_avg,2) +
+                          poly(z_wind_avg,2) +
+                          poly(z_depth_point_mean,2) +
+                          poly(z_depth_point_sd,2) +
+                          poly(z_faults_km,2) +
+                          poly(z_dist_canyon_km,2) +
+                          poly(z_weighted_dist,2) +
+                          poly(z_weighted_fuel_pricegal,2) +
+                          poly(z_weighted_crab_ppp,2) +
+                          poly(z_bottom_O2_avg,2) +
+                          poly(z_dist_to_closed_km ,2),
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "iid",
+                        data = d,
+                        time = "yearf")
+toc() #12.7min 
+
+#sanity(fit9_all_data)
+#Warning message: The model may not have converged. Maximum final gradient: 0.0772079237766903
+#Red Xs: b_j, thetaf, ln_phi, ln_smooth_sigma
+#sanity(fit9_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#Red Xs: thetaf, ln_phi,
+AIC(fit9_all_data)
+# 1013962
 
 
 #-------------------------------------------------------------------------------------------------
