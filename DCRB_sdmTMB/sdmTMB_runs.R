@@ -28,6 +28,9 @@ library(INLA)
 
 #-------------------------------------------------------------------------------------------------
 
+set.seed(1)
+
+#-------------------------------------------------------------------------------------------------
 # run models based on Eric's "examples" document in repo
 
 #read in df
@@ -372,18 +375,17 @@ AIC(fit5_all_data)
 
 tic()
 fit6_all_data <- update(fit2_all_data,
-               time = "month_f")
-toc()  #14.3min
+               time = "month_n")
+toc()  #13.7min
 
 #sanity(fit6_all_data)
-# no warning messages.Some red Xs (including b_js, ln_kappa, ln_tau, thetaf)
+# no warning messages. No red Xs
 #sanity(fit6_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still Xs for b_j, ln_kappa, thetaf
+#
 AIC(fit6_all_data)
 #1012696
 
-#if time = month_n, 13.7min
-#no warning messages, no red Xs. Same AIC
+
 
 
 
@@ -482,7 +484,10 @@ toc() #0.8min
 
 #sanity(fit0_summer)
 #Warning message:The model may not have converged. Maximum final gradient: 0.0150379936285089
-#Couple red Xs in sanity check
+#no warning message on second run
+#Couple red Xs in sanity check (thetaf, ln_phi)
+#sanity(fit0_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#No red Xs
 AIC(fit0_summer)
 #287161
 
@@ -516,7 +521,9 @@ fit1_summer <- sdmTMB(tottraps ~ 0 +
 toc() #3.8min
 
 #sanity(fit1_summer)
-#no warning about convergence issues. No red Xs in sanity check
+#no warning about convergence issues. No red Xs in sanity check -- second run had b_js and thetaf
+#sanity(fit1_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#no red Xs
 AIC(fit1_summer)
 #272600
 
@@ -549,6 +556,7 @@ toc() #5.1min
 
 #sanity(fit2_summer)
 #no warning about convergence issues. No red Xs in sanity check
+#sanity(fit2_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit2_summer)
 #265942
 #-------------------------------------------------------------------------------------------------
@@ -594,7 +602,7 @@ AIC(fit2b_summer)
 
 tic()
 fit3_summer <- sdmTMB(tottraps ~ 0 + 
-                          s(month_n) + # <- new, let k be automatically selected
+                          s(month_n, k = 4) + # <- new,
                           season +
                           #month_name + 
                           OR_WA_waters +
@@ -616,27 +624,162 @@ fit3_summer <- sdmTMB(tottraps ~ 0 +
                         spatiotemporal = "iid",
                         data = summer,
                         time = "yearf")
-toc() #min 
+toc() #4.8min 
+#with summmer model if try to let k be automatically selected, get error:
+#Error in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots) : A term has fewer unique covariate combinations than specified maximum degrees of freedom
 
 #sanity(fit3_summer)
-#
+#no warning messages. No red Xs
 #sanity(fit3_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #
 AIC(fit3_summer)
-# 
+#265953
 
 #-------------------------------------
 
+# Just as a test, we can see if changing year/season to a smooth improves the fit
+
+tic()
+fit4_summer <- sdmTMB(tottraps ~ 0 + 
+                          month_name + 
+                          s(yearn, k = 10) + # <- new, let k be automatically selected
+                          #season +
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          poly(z_SST_avg,2) +
+                          poly(z_wind_avg,2) +
+                          poly(z_depth_point_mean,2) +
+                          poly(z_depth_point_sd,2) +
+                          poly(z_faults_km,2) +
+                          poly(z_dist_canyon_km,2) +
+                          poly(z_weighted_dist,2) +
+                          poly(z_weighted_fuel_pricegal,2) +
+                          poly(z_weighted_crab_ppp,2) +
+                          poly(z_bottom_O2_avg,2) +
+                          poly(z_dist_to_closed_km ,2),
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "iid",
+                        data = summer,
+                        time = "yearf")
+toc() #5.9min 
+#this time fine to let k be automatically selected
+#Warning message:   The model may not have converged: non-positive-definite Hessian matrix
+#sanity(fit4_summer)
+#los of red Xs
+#sanity(fit4_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still lots
+AIC(fit4_summer)
+#265938
+
+#-------------------------------------
+#change the IID spatiotemporal fields in model 2 to “AR1” to test the autoregressive structure
+# Is there support for AR1 spatiotemporal fields?
+# Using the best model (fit2)
+
+tic()
+fit5_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          poly(z_SST_avg,2) +
+                          poly(z_wind_avg,2) +
+                          poly(z_depth_point_mean,2) +
+                          poly(z_depth_point_sd,2) +
+                          poly(z_faults_km,2) +
+                          poly(z_dist_canyon_km,2) +
+                          poly(z_weighted_dist,2) +
+                          poly(z_weighted_fuel_pricegal,2) +
+                          poly(z_weighted_crab_ppp,2) +
+                          poly(z_bottom_O2_avg,2) +
+                          poly(z_dist_to_closed_km ,2),
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #12.2min
+
+#sanity(fit5_summer)
+#no warnings. No red Xs
+#sanity(fit5_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit5_summer)
+#265861
+#summary(fit5_summer)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
 
 #-------------------------------------
 
+#Adding spatial and spatiotemporal fields (months)
+
+# switch indexing of spatiotemporal fields to “month_name” and again can try the spatiotemporal fields as IID or AR1.
+
+tic()
+fit6_summer <- update(fit2_summer,
+                        time = "month_n")
+toc()  #4.5min
+
+#sanity(fit6_summer)
+#no warnings.  No red Xs
+#sanity(fit6_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit6_summer)
+#270786
+
+
+
+
+
+
+tic()
+fit7_summer <- update(fit2_summer,
+                        time = "month_n",
+                        spatiotemporal = "ar1")
+toc()  #5.4min
+
+#sanity(fit7_summer)
+#no warnings. Some red Xs (b_js, ln_kappa, ln_tau_O, sigma_O)
+#sanity(fit7_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still red Xs: ln_tau_O, sigma_O
+AIC(fit7_summer)
+#270702
+#summary(fit7_summer) #what is ar1 rho value?
+#Spatiotemporal AR1 correlation (rho): 0.96
 
 #-------------------------------------
 
+#index by half_month step
+summer$half_month_n <- 1
+summer$half_month_n[which(summer$half_month=="May_1")] = 2
+summer$half_month_n[which(summer$half_month=="May_2")] = 3
+summer$half_month_n[which(summer$half_month=="June_1")] = 4
+summer$half_month_n[which(summer$half_month=="June_2")] = 5
+summer$half_month_n[which(summer$half_month=="July_1")] = 6
+summer$half_month_n[which(summer$half_month=="July_2")] = 7
+summer$half_month_n[which(summer$half_month=="August_1")] = 8
+summer$half_month_n[which(summer$half_month=="August_2")] = 9
+summer$half_month_n[which(summer$half_month=="September_1")] = 10
 
 
+tic()
+fit8_summer <- update(fit2_summer,
+                        time = "half_month_n") #as numeric
+toc()  #5.4min
+
+#sanity(fit8_summer)
+# No warnings. No red Xs
+#sanity(fit8_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit8_summer)
+#270583
 
 
+#-------------------------------------
 
 
 
