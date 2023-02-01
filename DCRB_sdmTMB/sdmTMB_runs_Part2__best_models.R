@@ -313,6 +313,218 @@ p <- ggplot(dplyr::filter(pred,yearf=="2019"), aes(X,Y, col = est)) +
 p
 
 
+#---------------------------------------------------
+#### TEST INTERACTIONS WITH BEST SUMMER MODEL ####
+
+tic()
+fit5_summer_interaction_a <- sdmTMB(tottraps ~ 0 + 
+                        season +
+                        month_name + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        poly(z_SST_avg,2) +
+                        poly(z_wind_avg,2) +
+                        poly(z_depth_point_mean,2) +
+                        poly(z_depth_point_sd,2) +
+                        poly(z_faults_km,2) +
+                        poly(z_dist_canyon_km,2) +
+                        poly(z_weighted_dist,2) +
+                        poly(z_weighted_fuel_pricegal,2) +
+                        poly(z_weighted_crab_ppp,2) +
+                        poly(z_bottom_O2_avg,2) +
+                        poly(z_dist_to_closed_km ,2) +
+                        poly(z_weighted_dist,2) * poly(z_weighted_fuel_pricegal,2),
+                      family = tweedie(),
+                      mesh = mesh,
+                      spatial = "on",
+                      spatiotemporal = "ar1", # <- new
+                      data = summer,
+                      time = "yearf")
+toc() #10.8min // interaction using polynomial terms 14.7min
+
+#sanity(fit5_summer_interaction_a)
+#Warning message: The model may not have converged: non-positive-definite Hessian matrix. 
+#lots of red Xs
+#sanity(fit5_summer_interaction_a, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still lots
+AIC(fit5_summer_interaction_a)
+#265867
+#summary(fit5_summer_interaction_a)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
+#// interaction using polynomial terms -- seemed to do better, fewer issues
+#Warning message: The model may not have converged. Maximum final gradient: 0.0114844230086604. 
+#Red Xs: b_j, thetaf, ln_phi even after changing gradient_threshold
+AIC(fit5_summer_interaction_a)
+#265844
+#Spatiotemporal AR1 correlation (rho): 0.47
+
+
+
+
+
+
+
+tic()
+fit5_summer_interaction_b <- sdmTMB(tottraps ~ 0 + 
+                                      season +
+                                      month_name + 
+                                      OR_WA_waters +
+                                      WA_pot_reduction +
+                                      poly(z_SST_avg,2) +
+                                      poly(z_wind_avg,2) +
+                                      poly(z_depth_point_mean,2) +
+                                      poly(z_depth_point_sd,2) +
+                                      poly(z_faults_km,2) +
+                                      poly(z_dist_canyon_km,2) +
+                                      poly(z_weighted_dist,2) +
+                                      poly(z_weighted_fuel_pricegal,2) +
+                                      poly(z_weighted_crab_ppp,2) +
+                                      poly(z_bottom_O2_avg,2) +
+                                      poly(z_dist_to_closed_km ,2) +
+                                      poly(z_weighted_dist,2) * poly(z_weighted_crab_ppp,2),
+                                    family = tweedie(),
+                                    mesh = mesh,
+                                    spatial = "on",
+                                    spatiotemporal = "ar1", # <- new
+                                    data = summer,
+                                    time = "yearf")
+toc() #interaction using polynomial terms 11.7min
+
+#sanity(fit5_summer_interaction_b)
+#Warning message: The model may not have converged. Maximum final gradient: 0.0195275586877486.
+#Red Xs: b_j, ln_tau, ln_kappa, thetaf, ln_phi
+#sanity(fit5_summer_interaction_b, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_j, thetaf, ln_phi
+AIC(fit5_summer_interaction_b)
+#265811
+#summary(fit5_summer_interaction_b)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
+
+
+tic()
+fit5_summer_interaction_c <- sdmTMB(tottraps ~ 0 + 
+                                      season +
+                                      month_name + 
+                                      OR_WA_waters +
+                                      WA_pot_reduction +
+                                      poly(z_SST_avg,2) +
+                                      poly(z_wind_avg,2) +
+                                      poly(z_depth_point_mean,2) +
+                                      poly(z_depth_point_sd,2) +
+                                      poly(z_faults_km,2) +
+                                      poly(z_dist_canyon_km,2) +
+                                      poly(z_weighted_dist,2) +
+                                      poly(z_weighted_fuel_pricegal,2) +
+                                      poly(z_weighted_crab_ppp,2) +
+                                      poly(z_bottom_O2_avg,2) +
+                                      poly(z_dist_to_closed_km ,2) +
+                                      OR_WA_waters * poly(z_dist_to_closed_km,2),
+                                    family = tweedie(),
+                                    mesh = mesh,
+                                    spatial = "on",
+                                    spatiotemporal = "ar1", # <- new
+                                    data = summer,
+                                    time = "yearf")
+toc() #interaction using polynomial terms 22.2min
+
+#sanity(fit5_summer_interaction_c)
+#no warnings. No red Xs
+#sanity(fit5_summer_interaction_c, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit5_summer_interaction_c)
+#265865
+#summary(fit5_summer_interaction_c)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
+
+
+tic()
+fit5_summer_interaction_d <- sdmTMB(tottraps ~ 0 + 
+                                      season +
+                                      month_name + 
+                                      OR_WA_waters +
+                                      WA_pot_reduction +
+                                      poly(z_SST_avg,2) +
+                                      poly(z_wind_avg,2) +
+                                      poly(z_depth_point_mean,2) +
+                                      poly(z_depth_point_sd,2) +
+                                      poly(z_faults_km,2) +
+                                      poly(z_dist_canyon_km,2) +
+                                      poly(z_weighted_dist,2) +
+                                      poly(z_weighted_fuel_pricegal,2) +
+                                      poly(z_weighted_crab_ppp,2) +
+                                      poly(z_bottom_O2_avg,2) +
+                                      poly(z_dist_to_closed_km ,2) +
+                                      poly(z_wind_avg,2) * poly(z_weighted_fuel_pricegal,2),
+                                    family = tweedie(),
+                                    mesh = mesh,
+                                    spatial = "on",
+                                    spatiotemporal = "ar1", # <- new
+                                    data = summer,
+                                    time = "yearf")
+toc() #interaction using polynomial terms 17.9min
+
+#sanity(fit5_summer_interaction_d)
+#no warnings. 
+#Red Xs: b_j, thetaf, ln_phi
+#sanity(fit5_summer_interaction_d, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still have ln_phi, b_j
+AIC(fit5_summer_interaction_d)
+#265745
+#summary(fit5_summer_interaction_d)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+tic()
+fit5_summer_interaction_e <- sdmTMB(tottraps ~ 0 + 
+                                      season +
+                                      month_name + 
+                                      OR_WA_waters +
+                                      WA_pot_reduction +
+                                      poly(z_SST_avg,2) +
+                                      poly(z_wind_avg,2) +
+                                      poly(z_depth_point_mean,2) +
+                                      poly(z_depth_point_sd,2) +
+                                      poly(z_faults_km,2) +
+                                      poly(z_dist_canyon_km,2) +
+                                      poly(z_weighted_dist,2) +
+                                      poly(z_weighted_fuel_pricegal,2) +
+                                      poly(z_weighted_crab_ppp,2) +
+                                      poly(z_bottom_O2_avg,2) +
+                                      poly(z_dist_to_closed_km ,2) +
+                                      poly(z_wind_avg,2) * month_n,
+                                    family = tweedie(),
+                                    mesh = mesh,
+                                    spatial = "on",
+                                    spatiotemporal = "ar1", # <- new
+                                    data = summer,
+                                    time = "yearf")
+toc() #interaction using polynomial terms 17.1min
+
+#sanity(fit5_summer_interaction_e)
+#no warnings
+#Red x: 1x b_j
+#sanity(fit5_summer_interaction_e, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still same `b_j` standard error may be large
+AIC(fit5_summer_interaction_e)
+#265855
+#summary(fit5_summer_interaction_e)
+#Spatiotemporal AR1 correlation (rho):
+
+
+
+
+
+
+
+
+
+
+
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
 
