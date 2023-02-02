@@ -179,8 +179,61 @@ model.matrix(~0+., data=df_all_scaled_corrplot) %>%
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
-         
-         
+ 
+##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
+#The paper by Gelman describes this. Use standardize() function in the arm package.    
+
+#first make season and month to be numerical
+df_all_scaled$yearn <- as.numeric(substr(df_all_scaled$season,1,4))
+df_all_scaled$yearf <- as.factor(df_all_scaled$yearn)
+
+df_all_scaled$month_n <- 1
+df_all_scaled$month_n[which(df_all_scaled$month_name=="January")] = 2
+df_all_scaled$month_n[which(df_all_scaled$month_name=="February")] = 3
+df_all_scaled$month_n[which(df_all_scaled$month_name=="March")] = 4
+df_all_scaled$month_n[which(df_all_scaled$month_name=="April")] = 5
+df_all_scaled$month_n[which(df_all_scaled$month_name=="May")] = 6
+df_all_scaled$month_n[which(df_all_scaled$month_name=="June")] = 7
+df_all_scaled$month_n[which(df_all_scaled$month_name=="July")] = 8
+df_all_scaled$month_n[which(df_all_scaled$month_name=="August")] = 9
+df_all_scaled$month_n[which(df_all_scaled$month_name=="September")] = 10
+
+df_all_scaled <- df_all_scaled %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == "WA" ~ 1,
+    OR_WA_waters == "OR" ~ 0
+  )) %>% 
+  mutate(WA_pot_reduction = case_when(
+    WA_pot_reduction == "Y" ~ 1,
+    WA_pot_reduction == "N" ~ 0
+  ))
+
+scale_this_2sd <- function(x){
+  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
+}
+
+df_all_scaled_2sd <- df_all_scaled %>%
+  mutate(z2sd_SST_avg = scale_this_2sd(SST_avg),
+         z2sd_wind_avg = scale_this_2sd(wind_avg),
+         z2sd_depth_point_mean = scale_this_2sd(depth_point_mean),
+         z2sd_depth_point_sd = scale_this_2sd(depth_point_sd),
+         z2sd_faults_km = scale_this_2sd(faults_km),
+         z2sd_dist_canyon_km = scale_this_2sd( dist_canyon_km),
+         z2sd_weighted_dist = scale_this_2sd(weighted_dist),
+         z2sd_weighted_fuel_pricegal = scale_this_2sd(weighted_fuel_pricegal),
+         z2sd_weighted_crab_ppp = scale_this_2sd(weighted_crab_ppp),
+         z2sd_bottom_O2_avg = scale_this_2sd(bottom_O2_avg),
+         z2sd_dist_to_closed_km = scale_this_2sd(dist_to_closed_km),
+         z2sd_yearn = scale_this_2sd(yearn),
+         z2sd_month_n = scale_this_2sd(month_n),
+         z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
+         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction)
+  )
+
+
+
+        
+#-----------------------------------------         
 df_winter <- df_full_final_open %>% 
   filter(winter_summer=="Winter") %>%
   ungroup() %>% 
@@ -208,8 +261,51 @@ model.matrix(~0+., data=df_winter_scaled_corrplot) %>%
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
-         
-         
+
+
+##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
+#The paper by Gelman describes this. Use standardize() function in the arm package.    
+
+#first make season and month to be numerical
+df_winter$yearn <- as.numeric(substr(df_winter$season,1,4))
+df_winter$yearf <- as.factor(df_winter$yearn)
+
+df_winter$month_n <- 1
+df_winter$month_n[which(df_winter$month_name=="January")] = 2
+df_winter$month_n[which(df_winter$month_name=="February")] = 3
+df_winter$month_n[which(df_winter$month_name=="March")] = 4
+df_winter$month_n[which(df_winter$month_name=="April")] = 5
+
+
+df_winter <- df_winter %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == "WA" ~ 1,
+    OR_WA_waters == "OR" ~ 0
+  )) 
+
+scale_this_2sd <- function(x){
+  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
+}
+
+df_winter_2sd <- df_winter %>%
+  mutate(z2sd_SST_avg = scale_this_2sd(SST_avg),
+         z2sd_wind_avg = scale_this_2sd(wind_avg),
+         z2sd_depth_point_mean = scale_this_2sd(depth_point_mean),
+         z2sd_depth_point_sd = scale_this_2sd(depth_point_sd),
+         z2sd_faults_km = scale_this_2sd(faults_km),
+         z2sd_dist_canyon_km = scale_this_2sd( dist_canyon_km),
+         z2sd_weighted_dist = scale_this_2sd(weighted_dist),
+         z2sd_weighted_fuel_pricegal = scale_this_2sd(weighted_fuel_pricegal),
+         z2sd_weighted_crab_ppp = scale_this_2sd(weighted_crab_ppp),
+         z2sd_bottom_O2_avg = scale_this_2sd(bottom_O2_avg),
+         z2sd_dist_to_closed_km = scale_this_2sd(dist_to_closed_km),
+         z2sd_yearn = scale_this_2sd(yearn),
+         z2sd_month_n = scale_this_2sd(month_n),
+         z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters)
+  )
+
+
+#-----------------------------------     
 df_summer <- df_full_final_open %>% 
   filter(winter_summer=="Summer") %>%
   ungroup() %>% 
@@ -238,11 +334,69 @@ model.matrix(~0+., data=df_summer_scaled_corrplot) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+
+##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
+#The paper by Gelman describes this. Use standardize() function in the arm package.    
+
+#first make season and month to be numerical
+df_summer$yearn <- as.numeric(substr(df_summer$season,1,4))
+df_summer$yearf <- as.factor(df_summer$yearn)
+
+df_summer$month_n <- 6
+df_summer$month_n[which(df_summer$month_name=="June")] = 7
+df_summer$month_n[which(df_summer$month_name=="July")] = 8
+df_summer$month_n[which(df_summer$month_name=="August")] = 9
+df_summer$month_n[which(df_summer$month_name=="September")] = 10
+
+df_summer <- df_summer %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == "WA" ~ 1,
+    OR_WA_waters == "OR" ~ 0
+  )) %>% 
+  mutate(WA_pot_reduction = case_when(
+    WA_pot_reduction == "Y" ~ 1,
+    WA_pot_reduction == "N" ~ 0
+  ))
+
+scale_this_2sd <- function(x){
+  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
+}
+
+df_summer_2sd <- df_summer %>%
+  mutate(z2sd_SST_avg = scale_this_2sd(SST_avg),
+         z2sd_wind_avg = scale_this_2sd(wind_avg),
+         z2sd_depth_point_mean = scale_this_2sd(depth_point_mean),
+         z2sd_depth_point_sd = scale_this_2sd(depth_point_sd),
+         z2sd_faults_km = scale_this_2sd(faults_km),
+         z2sd_dist_canyon_km = scale_this_2sd( dist_canyon_km),
+         z2sd_weighted_dist = scale_this_2sd(weighted_dist),
+         z2sd_weighted_fuel_pricegal = scale_this_2sd(weighted_fuel_pricegal),
+         z2sd_weighted_crab_ppp = scale_this_2sd(weighted_crab_ppp),
+         z2sd_bottom_O2_avg = scale_this_2sd(bottom_O2_avg),
+         z2sd_dist_to_closed_km = scale_this_2sd(dist_to_closed_km),
+         z2sd_yearn = scale_this_2sd(yearn),
+         z2sd_month_n = scale_this_2sd(month_n),
+         z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
+         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction)
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+#----------------------------------- 
 ##export dfs
 
-#write_rds(df_all_scaled,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data.rds"))
-#write_rds(df_winter,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter.rds"))
-#write_rds(df_summer,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer.rds"))
+#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230203.rds"))
+#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230203.rds"))
+#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230203.rds"))
 
          
          
