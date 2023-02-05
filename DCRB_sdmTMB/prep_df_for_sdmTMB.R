@@ -209,7 +209,7 @@ df_all_scaled <- df_all_scaled %>%
   ))
 
 scale_this_2sd <- function(x){
-  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
+  (x - mean(x, na.rm=TRUE)) / (2*sd(x, na.rm=TRUE))  
 }
 
 df_all_scaled_2sd <- df_all_scaled %>%
@@ -283,9 +283,9 @@ df_winter <- df_winter %>%
     OR_WA_waters == "OR" ~ 0
   )) 
 
-scale_this_2sd <- function(x){
-  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
-}
+#scale_this_2sd <- function(x){
+#  (x - mean(x, na.rm=TRUE)) / (2*sd(x, na.rm=TRUE))  
+#}
 
 df_winter_2sd <- df_winter %>%
   mutate(z2sd_SST_avg = scale_this_2sd(SST_avg),
@@ -358,9 +358,9 @@ df_summer <- df_summer %>%
     WA_pot_reduction == "N" ~ 0
   ))
 
-scale_this_2sd <- function(x){
-  (x - mean(x, na.rm=TRUE)) / 2*sd(x, na.rm=TRUE)  
-}
+#scale_this_2sd <- function(x){
+#  (x - mean(x, na.rm=TRUE)) / (2*sd(x, na.rm=TRUE))  
+#}
 
 df_summer_2sd <- df_summer %>%
   mutate(z2sd_SST_avg = scale_this_2sd(SST_avg),
