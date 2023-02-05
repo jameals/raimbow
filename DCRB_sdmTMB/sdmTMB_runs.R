@@ -1225,4 +1225,85 @@ AIC(fit9_winter)
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
 
+#test some basic lm -- try this on the original z-scored columns, not the 2*sd versions
+
+#summer
+
+tic()
+mod0_summer <- lm(tottraps ~ yearn + 
+                    month_n +
+                    OR_WA_waters +
+                    WA_pot_reduction +
+                    z_SST_avg  +
+                    z_wind_avg +
+                    z_depth_point_mean +
+                    z_depth_point_sd +
+                    z_faults_km +
+                    z_dist_canyon_km +
+                    z_weighted_dist +
+                    z_weighted_fuel_pricegal +
+                    z_weighted_crab_ppp +
+                    z_bottom_O2_avg  +
+                    z_dist_to_closed_km, 
+                  data=summer)
+toc() 
+
+summary(mod0_summer)
+
+##same result as with the 2*sd version - only non-significant variables are year and dist_to_closed...
+
+
+
+# WINTER
+
+tic()
+mod0_winter <- lm(tottraps ~ yearn + 
+                    month_n +
+                    OR_WA_waters +
+                    #WA_pot_reduction +
+                    z_SST_avg  +
+                    z_wind_avg +
+                    z_depth_point_mean +
+                    z_depth_point_sd +
+                    z_faults_km +
+                    z_dist_canyon_km +
+                    z_weighted_dist +
+                    z_weighted_fuel_pricegal +
+                    z_weighted_crab_ppp +
+                    z_bottom_O2_avg  +
+                    z_dist_to_closed_km, 
+                  data=winter)
+toc() 
+
+summary(mod0_winter)
+##same result as with the 2*sd version - all predictors are significant
+
+
+
+#ALL DATA
+
+tic()
+mod0_all_data <- lm(tottraps ~ yearn + 
+                      month_n +
+                      OR_WA_waters +
+                      WA_pot_reduction +
+                      z_SST_avg  +
+                      z_wind_avg +
+                      z_depth_point_mean +
+                      z_depth_point_sd +
+                      z_faults_km +
+                      z_dist_canyon_km +
+                      z_weighted_dist +
+                      z_weighted_fuel_pricegal +
+                      z_weighted_crab_ppp +
+                      z_bottom_O2_avg  +
+                      z_dist_to_closed_km, 
+                    data=d)
+toc() 
+
+summary(mod0_all_data)
+##same result as with the 2*sd version - all predictors are significant
+
+
+
 
