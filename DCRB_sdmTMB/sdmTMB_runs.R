@@ -1250,7 +1250,7 @@ toc()
 
 summary(mod0_summer)
 
-##same result as with the 2*sd version - only non-significant variables are year and dist_to_closed...
+##same result as with the 2*sd version - only non-significant variables are year, dist to canyon and dist_to_closed...
 
 
 
