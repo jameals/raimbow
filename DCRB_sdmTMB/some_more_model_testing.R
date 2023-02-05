@@ -64,8 +64,9 @@ mod0_summer <- lm(tottraps ~ z2sd_yearn +
                     z2sd_dist_to_closed_km, 
                   data=summer)
 toc() 
+AIC(mod0_summer) #additional test done later: one at a time test polynomial term on each variable and comapre AICs
 
-summary(mod0_summer)
+summary(mod0_summer) #no polynomials
 
 #Residuals:
 #  Min      1Q  Median      3Q     Max 
@@ -287,10 +288,61 @@ plotmo(mod0_all_data, caption="Prediction Sensitivity Plot")
 
 
 #-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+
+#test the new columns in one of the good models
+##SUMMER MODEL
+
+#best summer model is fit5_summer
+
+# Add UTM columns (zone 10)
+summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
+
+mesh <- make_mesh(summer, xy_cols = c("X","Y"), cutoff = 10)
+mesh$mesh$n
 
 
+tic()
+fit5_summer_new_cols <- sdmTMB(tottraps ~ 0 + 
+                        z2sd_yearn + 
+                        z2sd_month_n +
+                        z2sd_OR_WA_waters +
+                        z2sd_WA_pot_reduction +
+                        z2sd_SST_avg +
+                        z2sd_wind_avg +
+                        z2sd_depth_point_mean +
+                        z2sd_depth_point_sd +
+                        z2sd_faults_km +
+                        z2sd_dist_canyon_km +
+                        z2sd_weighted_dist +
+                        z2sd_weighted_fuel_pricegal +
+                        z2sd_weighted_crab_ppp +
+                        z2sd_bottom_O2_avg +
+                        z2sd_dist_to_closed_km,
+                      family = tweedie(),
+                      mesh = mesh,
+                      spatial = "on",
+                      spatiotemporal = "ar1", # <- new
+                      data = summer,
+                      time = "yearf")
+toc() #30 min
 
+#Warning messages:
+#1: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
+#2: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
+#3: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
+#4: The model may not have converged: non-positive-definite Hessian matrix
 
+#sanity(fit5_summer_new_cols)
+#lots of red Xs
+#sanity(fit5_summer_new_cols, big_sd_log10 = 3, gradient_thresh = 0.005)
+#lots of red Xs
+AIC(fit5_summer_new_cols)
+#284834
+#summary(fit5_summer_new_cols)
+#all coef.se are NaN
+#Spatiotemporal AR1 correlation (rho): 0.01
 
 
 
