@@ -11,6 +11,7 @@ library(mgcv)
 library(ggeffects)
 library(tictoc)
 library(car)
+library(arm)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -98,6 +99,7 @@ summary(mod0_summer) #no polynomials
 #F-statistic: 683.8 on 15 and 98760 DF,  p-value: < 2.2e-16
 
 
+
 residualPlots(mod0_summer)
 
 #                               Test stat Pr(>|Test stat|)    
@@ -125,6 +127,28 @@ plotmo(mod0_summer, caption="Prediction Sensitivity Plot")
 
 arm::display(standardize(mod0_summer))
 
+
+#first build lm with non-standardised variables?
+mod0_summer_raw <- lm(tottraps ~ yearn + 
+                        month_n +
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        SST_avg +
+                        wind_avg +
+                        depth_point_mean +
+                        depth_point_sd +
+                        faults_km +
+                        dist_canyon_km +
+                        weighted_dist +
+                        weighted_fuel_pricegal +
+                        weighted_crab_ppp +
+                        bottom_O2_avg +
+                        dist_to_closed_km, 
+                      data=summer)
+#then use arm::standardize() on the lm object?
+mod0_summer_raw_standardized <- standardize(mod0_summer_raw)
+display(mod0_summer_raw_standardized )
+summary(mod0_summer_raw_standardized)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -285,6 +309,31 @@ residualPlots(mod0_all_data)
 
 
 plotmo(mod0_all_data, caption="Prediction Sensitivity Plot")
+
+
+
+#first build lm with non-standardised variables?
+mod0_alldata_raw <- lm(tottraps ~ yearn + 
+                        month_n +
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        SST_avg +
+                        wind_avg +
+                        depth_point_mean +
+                        depth_point_sd +
+                        faults_km +
+                        dist_canyon_km +
+                        weighted_dist +
+                        weighted_fuel_pricegal +
+                        weighted_crab_ppp +
+                        bottom_O2_avg +
+                        dist_to_closed_km, 
+                      data=d)
+#then use arm::standardize() on the lm object?
+mod0_alldata_raw_standardized <- standardize(mod0_alldata_raw)
+display(mod0_alldata_raw_standardized )
+summary(mod0_alldata_raw_standardized)
+
 
 
 #-------------------------------------------------------------------------------------------------
