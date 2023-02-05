@@ -12,6 +12,7 @@ library(ggeffects)
 library(tictoc)
 library(car)
 library(arm)
+library(plotmo)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -65,7 +66,7 @@ mod0_summer <- lm(tottraps ~ z2sd_yearn +
                     z2sd_dist_to_closed_km, 
                   data=summer)
 toc() 
-AIC(mod0_summer) #additional test done later: one at a time test polynomial term on each variable and comapre AICs
+AIC(mod0_summer) #additional test done later: one at a time test polynomial term on each variable and compare AICs
 
 summary(mod0_summer) #no polynomials
 
@@ -75,22 +76,22 @@ summary(mod0_summer) #no polynomials
 
 #Coefficients:
 #                             Estimate    Std. Error  t value Pr(>|t|)    
-#  (Intercept)                  3.769e+01  4.212e-01  89.482  < 2e-16 ***
-#  z2sd_yearn                   2.916e-01  1.835e-01   1.589   0.1120    
-#  z2sd_month_n                -9.313e+00  9.452e-01  -9.852  < 2e-16 ***
-#  z2sd_OR_WA_waters           -1.650e+01  6.654e+00  -2.479   0.0132 *  
-#  z2sd_WA_pot_reduction       -5.394e+01  1.699e+01  -3.175   0.0015 ** 
-#  z2sd_SST_avg                -6.138e-01  9.963e-02  -6.161 7.28e-10 ***
-#  z2sd_wind_avg               -3.665e+00  1.448e+00  -2.530   0.0114 *  
-#  z2sd_depth_point_mean        2.548e-02  4.872e-04  52.294  < 2e-16 ***
-#  z2sd_depth_point_sd          1.661e-02  2.855e-03   5.816 6.04e-09 ***
-#  z2sd_faults_km               2.345e-01  9.181e-02   2.554   0.0107 *  
-#  z2sd_dist_canyon_km          1.073e-02  6.407e-03   1.675   0.0940 .  
-#  z2sd_weighted_dist          -8.709e-03  6.536e-04 -13.324  < 2e-16 ***
-#  z2sd_weighted_fuel_pricegal  1.305e+01  2.250e+00   5.799 6.70e-09 ***
-#  z2sd_weighted_crab_ppp       4.991e+00  1.006e+00   4.961 7.01e-07 ***
-#  z2sd_bottom_O2_avg           5.913e-03  6.437e-04   9.186  < 2e-16 ***
-#  z2sd_dist_to_closed_km      -2.300e-05  2.689e-05  -0.855   0.3924    
+# (Intercept)                    37.6875     0.4212  89.482  < 2e-16 ***
+#   z2sd_yearn                    2.9167     1.8353   1.589   0.1120    
+#   z2sd_month_n                -13.1388     1.3336  -9.852  < 2e-16 ***
+#   z2sd_OR_WA_waters            -4.0546     1.6353  -2.479   0.0132 *  
+#   z2sd_WA_pot_reduction        -3.1370     0.9881  -3.175   0.0015 ** 
+#   z2sd_SST_avg                 -7.1452     1.1598  -6.161 7.28e-10 ***
+#   z2sd_wind_avg                -2.5285     0.9993  -2.530   0.0114 *  
+#   z2sd_depth_point_mean        72.2535     1.3817  52.294  < 2e-16 ***
+#   z2sd_depth_point_sd           4.9554     0.8520   5.816 6.04e-09 ***
+#   z2sd_faults_km                2.2938     0.8981   2.554   0.0107 *  
+#   z2sd_dist_canyon_km           2.0589     1.2295   1.675   0.0940 .  
+#   z2sd_weighted_dist          -14.6379     1.0986 -13.324  < 2e-16 ***
+#   z2sd_weighted_fuel_pricegal   8.8644     1.5286   5.799 6.70e-09 ***
+#   z2sd_weighted_crab_ppp        5.9083     1.1909   4.961 7.01e-07 ***
+#   z2sd_bottom_O2_avg           12.3380     1.3431   9.186  < 2e-16 ***
+#   z2sd_dist_to_closed_km       -1.0228     1.1960  -0.855   0.3924    
 #---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
@@ -103,22 +104,22 @@ summary(mod0_summer) #no polynomials
 residualPlots(mod0_summer)
 
 #                               Test stat Pr(>|Test stat|)    
-#  z2sd_yearn                     7.5450        4.562e-14 ***
-#  z2sd_month_n                  14.4822        < 2.2e-16 ***
-#  z2sd_OR_WA_waters              0.7165         0.473702    
-#  z2sd_WA_pot_reduction         -0.3268         0.743797    
-#  z2sd_SST_avg                  -1.6782         0.093312 .  
-#  z2sd_wind_avg                 -1.4026         0.160748    
-#  z2sd_depth_point_mean         44.5300        < 2.2e-16 ***
-#  z2sd_depth_point_sd           -2.0276         0.042606 *  
-#  z2sd_faults_km                 1.6335         0.102358    
-#  z2sd_dist_canyon_km           14.3559        < 2.2e-16 ***
-#  z2sd_weighted_dist            -2.7880         0.005305 ** 
-#  z2sd_weighted_fuel_pricegal   11.2860        < 2.2e-16 ***
-#  z2sd_weighted_crab_ppp         8.5259        < 2.2e-16 ***
-#  z2sd_bottom_O2_avg            13.6348        < 2.2e-16 ***
-#  z2sd_dist_to_closed_km         1.7167         0.086041 .  
-#Tukey test                    52.2195        < 2.2e-16 ***
+#z2sd_yearn                     7.5450        4.562e-14 ***
+#z2sd_month_n                  14.4822        < 2.2e-16 ***
+#z2sd_OR_WA_waters             -0.6989         0.484610    
+#z2sd_WA_pot_reduction          0.0705         0.943791    
+#z2sd_SST_avg                  -1.6782         0.093312 .  
+# z2sd_wind_avg                 -1.4026         0.160748    
+#z2sd_depth_point_mean         44.5300        < 2.2e-16 ***
+#z2sd_depth_point_sd           -2.0276         0.042606 *  
+#z2sd_faults_km                 1.6335         0.102358    
+#z2sd_dist_canyon_km           14.3559        < 2.2e-16 ***
+#z2sd_weighted_dist            -2.7880         0.005305 ** 
+#z2sd_weighted_fuel_pricegal   11.2860        < 2.2e-16 ***
+#z2sd_weighted_crab_ppp         8.5259        < 2.2e-16 ***
+#z2sd_bottom_O2_avg            13.6348        < 2.2e-16 ***
+#z2sd_dist_to_closed_km         1.7167         0.086041 .  
+# Tukey test                    52.2195        < 2.2e-16 ***
 #  ---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
@@ -128,27 +129,27 @@ plotmo(mod0_summer, caption="Prediction Sensitivity Plot")
 arm::display(standardize(mod0_summer))
 
 
-#first build lm with non-standardised variables?
-mod0_summer_raw <- lm(tottraps ~ yearn + 
-                        month_n +
-                        OR_WA_waters +
-                        WA_pot_reduction +
-                        SST_avg +
-                        wind_avg +
-                        depth_point_mean +
-                        depth_point_sd +
-                        faults_km +
-                        dist_canyon_km +
-                        weighted_dist +
-                        weighted_fuel_pricegal +
-                        weighted_crab_ppp +
-                        bottom_O2_avg +
-                        dist_to_closed_km, 
-                      data=summer)
-#then use arm::standardize() on the lm object?
-mod0_summer_raw_standardized <- standardize(mod0_summer_raw)
-display(mod0_summer_raw_standardized )
-summary(mod0_summer_raw_standardized)
+# #first build lm with non-standardised variables?
+# mod0_summer_raw <- lm(tottraps ~ yearn + 
+#                         month_n +
+#                         OR_WA_waters +
+#                         WA_pot_reduction +
+#                         SST_avg +
+#                         wind_avg +
+#                         depth_point_mean +
+#                         depth_point_sd +
+#                         faults_km +
+#                         dist_canyon_km +
+#                         weighted_dist +
+#                         weighted_fuel_pricegal +
+#                         weighted_crab_ppp +
+#                         bottom_O2_avg +
+#                         dist_to_closed_km, 
+#                       data=summer)
+# #then use arm::standardize() on the lm object?
+# mod0_summer_raw_standardized <- standardize(mod0_summer_raw)
+# display(mod0_summer_raw_standardized )
+# summary(mod0_summer_raw_standardized)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -181,21 +182,21 @@ summary(mod0_winter)
 
 #Coefficients:
 #                             Estimate  Std. Error    t value Pr(>|t|)    
-#(Intercept)                  1.210e+02  7.573e-01 159.807  < 2e-16 ***
-#  z2sd_yearn                   6.857e-01  2.155e-01   3.182 0.001463 ** 
-#  z2sd_month_n                -2.321e+01  1.243e+00 -18.677  < 2e-16 ***
-#  z2sd_OR_WA_waters            3.650e+01  1.358e+01   2.687 0.007202 ** 
-#  z2sd_SST_avg                -1.489e+00  3.345e-01  -4.453 8.50e-06 ***
-#  z2sd_wind_avg               -6.129e+00  7.005e-01  -8.750  < 2e-16 ***
-#  z2sd_depth_point_mean        6.298e-02  9.488e-04  66.379  < 2e-16 ***
-#  z2sd_depth_point_sd          5.500e-02  4.642e-03  11.850  < 2e-16 ***
-#  z2sd_faults_km               6.836e-01  1.847e-01   3.701 0.000215 ***
-#  z2sd_dist_canyon_km         -9.004e-02  1.162e-02  -7.750 9.29e-15 ***
-#  z2sd_weighted_dist          -2.427e-02  1.315e-03 -18.457  < 2e-16 ***
-#  z2sd_weighted_fuel_pricegal  1.360e+01  3.653e+00   3.723 0.000197 ***
-#  z2sd_weighted_crab_ppp      -7.573e+00  8.145e-01  -9.298  < 2e-16 ***
-#  z2sd_bottom_O2_avg           1.125e-02  5.294e-04  21.258  < 2e-16 ***
-# z2sd_dist_to_closed_km       2.555e-04  8.932e-05   2.860 0.004236 ** 
+# (Intercept)                 121.0276     0.7573 159.807  < 2e-16 ***
+#   z2sd_yearn                    6.9097     2.1715   3.182 0.001463 ** 
+#   z2sd_month_n                -37.4356     2.0044 -18.677  < 2e-16 ***
+#   z2sd_OR_WA_waters             8.1320     3.0260   2.687 0.007202 ** 
+#   z2sd_SST_avg                 -8.8431     1.9861  -4.453 8.50e-06 ***
+#   z2sd_wind_avg               -18.1742     2.0771  -8.750  < 2e-16 ***
+#   z2sd_depth_point_mean       178.0153     2.6818  66.379  < 2e-16 ***
+#   z2sd_depth_point_sd          18.1695     1.5333  11.850  < 2e-16 ***
+#   z2sd_faults_km                6.0211     1.6271   3.701 0.000215 ***
+#   z2sd_dist_canyon_km         -17.1959     2.2189  -7.750 9.29e-15 ***
+#   z2sd_weighted_dist          -36.2062     1.9617 -18.457  < 2e-16 ***
+#   z2sd_weighted_fuel_pricegal   8.5147     2.2870   3.723 0.000197 ***
+#   z2sd_weighted_crab_ppp      -18.2186     1.9595  -9.298  < 2e-16 ***
+#   z2sd_bottom_O2_avg           48.2610     2.2702  21.258  < 2e-16 ***
+#   z2sd_dist_to_closed_km        6.9682     2.4363   2.860 0.004236 **
 #  ---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
@@ -261,22 +262,22 @@ summary(mod0_all_data)
 # 
 # Coefficients:
 #                               Estimate  Std. Error  t value Pr(>|t|)    
-# (Intercept)                  8.105e+01  4.476e-01 181.077  < 2e-16 ***
-#   z2sd_yearn                   1.480e+00  1.422e-01  10.410  < 2e-16 ***
-#   z2sd_month_n                -1.076e+01  2.871e-01 -37.468  < 2e-16 ***
-#   z2sd_OR_WA_waters           -2.094e+01  7.179e+00  -2.917  0.00353 ** 
-#   z2sd_WA_pot_reduction       -1.516e+02  3.411e+01  -4.444 8.86e-06 ***
-#   z2sd_SST_avg                -6.146e-01  8.141e-02  -7.550 4.38e-14 ***
-#   z2sd_wind_avg               -3.777e+00  4.518e-01  -8.360  < 2e-16 ***
-#   z2sd_depth_point_mean        4.157e-02  5.299e-04  78.454  < 2e-16 ***
-#   z2sd_depth_point_sd          3.793e-02  2.874e-03  13.197  < 2e-16 ***
-#   z2sd_faults_km               4.760e-01  1.030e-01   4.621 3.82e-06 ***
-#   z2sd_dist_canyon_km         -4.578e-02  6.712e-03  -6.821 9.10e-12 ***
-#   z2sd_weighted_dist          -1.849e-02  7.296e-04 -25.340  < 2e-16 ***
-#   z2sd_weighted_fuel_pricegal  2.295e+01  2.168e+00  10.588  < 2e-16 ***
-#   z2sd_weighted_crab_ppp      -8.474e+00  5.367e-01 -15.788  < 2e-16 ***
-#   z2sd_bottom_O2_avg           1.523e-02  3.691e-04  41.271  < 2e-16 ***
-#   z2sd_dist_to_closed_km       8.639e-05  3.589e-05   2.407  0.01609 *  
+#   (Intercept)                  81.0511     0.4476 181.077  < 2e-16 ***
+#   z2sd_yearn                   14.8795     1.4293  10.410  < 2e-16 ***
+#   z2sd_month_n                -63.1206     1.6847 -37.468  < 2e-16 ***
+#   z2sd_OR_WA_waters            -4.9490     1.6964  -2.917  0.00353 ** 
+#   z2sd_WA_pot_reduction        -4.3733     0.9842  -4.444 8.86e-06 ***
+#   z2sd_SST_avg                -12.3862     1.6406  -7.550 4.38e-14 ***
+#   z2sd_wind_avg               -10.9801     1.3133  -8.360  < 2e-16 ***
+#   z2sd_depth_point_mean       117.7516     1.5009  78.454  < 2e-16 ***
+#   z2sd_depth_point_sd          11.9503     0.9055  13.197  < 2e-16 ***
+#   z2sd_faults_km                4.4196     0.9563   4.621 3.82e-06 ***
+#   z2sd_dist_canyon_km          -8.7665     1.2853  -6.821 9.10e-12 ***
+#   z2sd_weighted_dist          -29.4025     1.1603 -25.340  < 2e-16 ***
+#   z2sd_weighted_fuel_pricegal  14.9575     1.4127  10.588  < 2e-16 ***
+#   z2sd_weighted_crab_ppp      -15.6003     0.9881 -15.788  < 2e-16 ***
+#   z2sd_bottom_O2_avg           56.8239     1.3768  41.271  < 2e-16 ***
+#   z2sd_dist_to_closed_km        3.0913     1.2843   2.407  0.01609 * 
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # 
