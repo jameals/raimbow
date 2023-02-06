@@ -173,7 +173,7 @@ mod0_winter <- lm(tottraps ~ z2sd_yearn +
                     z2sd_dist_to_closed_km, 
                   data=winter)
 toc() 
-
+AIC(mod0_winter)
 summary(mod0_winter)
 
 #Residuals:
