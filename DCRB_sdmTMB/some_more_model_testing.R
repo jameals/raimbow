@@ -250,10 +250,10 @@ mod0_all_data <- lm(tottraps ~ z2sd_yearn +
                     z2sd_weighted_fuel_pricegal +
                     z2sd_weighted_crab_ppp +
                     z2sd_bottom_O2_avg +
-                    z2sd_dist_to_closed_km, 
+                    poly(z2sd_dist_to_closed_km,2), 
                   data=d)
 toc() 
-
+AIC(mod0_all_data)
 summary(mod0_all_data)
 
 # Residuals:
