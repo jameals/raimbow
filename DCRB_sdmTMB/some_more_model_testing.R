@@ -250,7 +250,7 @@ mod0_all_data <- lm(tottraps ~ z2sd_yearn +
                     z2sd_weighted_fuel_pricegal +
                     z2sd_weighted_crab_ppp +
                     z2sd_bottom_O2_avg +
-                    poly(z2sd_dist_to_closed_km,2), 
+                    z2sd_dist_to_closed_km, 
                   data=d)
 toc() 
 AIC(mod0_all_data)
