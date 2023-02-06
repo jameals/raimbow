@@ -291,8 +291,8 @@ residualPlots(mod0_all_data)
 #                                 Test stat Pr(>|Test stat|)    
 # z2sd_yearn                    -1.0192        0.3080893    
 # z2sd_month_n                  10.9924        < 2.2e-16 ***
-# z2sd_OR_WA_waters              0.7780        0.4365840    
-# z2sd_WA_pot_reduction          1.1365        0.2557667    
+# z2sd_OR_WA_waters             -0.8126        0.4164277    
+# z2sd_WA_pot_reduction         -1.3075        0.1910322    
 # z2sd_SST_avg                  -1.8100        0.0702919 .  
 # z2sd_wind_avg                -12.3544        < 2.2e-16 ***
 # z2sd_depth_point_mean         39.6543        < 2.2e-16 ***
@@ -304,7 +304,7 @@ residualPlots(mod0_all_data)
 # z2sd_weighted_crab_ppp         3.5861        0.0003358 ***
 # z2sd_bottom_O2_avg            37.2106        < 2.2e-16 ***
 # z2sd_dist_to_closed_km        -8.9504        < 2.2e-16 ***
-#   Tukey test                    83.7010        < 2.2e-16 ***
+# Tukey test                    83.7010        < 2.2e-16 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
@@ -313,27 +313,27 @@ plotmo(mod0_all_data, caption="Prediction Sensitivity Plot")
 
 
 
-#first build lm with non-standardised variables?
-mod0_alldata_raw <- lm(tottraps ~ yearn + 
-                        month_n +
-                        OR_WA_waters +
-                        WA_pot_reduction +
-                        SST_avg +
-                        wind_avg +
-                        depth_point_mean +
-                        depth_point_sd +
-                        faults_km +
-                        dist_canyon_km +
-                        weighted_dist +
-                        weighted_fuel_pricegal +
-                        weighted_crab_ppp +
-                        bottom_O2_avg +
-                        dist_to_closed_km, 
-                      data=d)
-#then use arm::standardize() on the lm object?
-mod0_alldata_raw_standardized <- standardize(mod0_alldata_raw)
-display(mod0_alldata_raw_standardized )
-summary(mod0_alldata_raw_standardized)
+# #first build lm with non-standardised variables?
+# mod0_alldata_raw <- lm(tottraps ~ yearn + 
+#                         month_n +
+#                         OR_WA_waters +
+#                         WA_pot_reduction +
+#                         SST_avg +
+#                         wind_avg +
+#                         depth_point_mean +
+#                         depth_point_sd +
+#                         faults_km +
+#                         dist_canyon_km +
+#                         weighted_dist +
+#                         weighted_fuel_pricegal +
+#                         weighted_crab_ppp +
+#                         bottom_O2_avg +
+#                         dist_to_closed_km, 
+#                       data=d)
+# #then use arm::standardize() on the lm object?
+# mod0_alldata_raw_standardized <- standardize(mod0_alldata_raw)
+# display(mod0_alldata_raw_standardized )
+# summary(mod0_alldata_raw_standardized)
 
 
 
@@ -376,27 +376,71 @@ fit5_summer_new_cols <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "ar1", # <- new
                       data = summer,
                       time = "yearf")
-toc() #30 min
+toc() #8.5 min
 
+#After fixing 2*sd
 #Warning messages:
-#1: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
-#2: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
-#3: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :   NA/NaN function evaluation
-#4: The model may not have converged: non-positive-definite Hessian matrix
+#The model may not have converged. Maximum final gradient: 0.208164203222275
 
 #sanity(fit5_summer_new_cols)
-#lots of red Xs
+#few b_j, ln_tau, thetaf, ln_phi
 #sanity(fit5_summer_new_cols, big_sd_log10 = 3, gradient_thresh = 0.005)
-#lots of red Xs
+#2x b_j, thetaf, ln_phi
 AIC(fit5_summer_new_cols)
-#284834
+#267862
 #summary(fit5_summer_new_cols)
 #all coef.se are NaN
 #Spatiotemporal AR1 correlation (rho): 0.01
 
 
 
+#ALL DATA
 
+#best all data model is fit6_all_data
+
+# Add UTM columns (zone 10)
+d = add_utm_columns(d, ll_names = c("grd_x", "grd_y"))
+
+mesh <- make_mesh(d, xy_cols = c("X","Y"), cutoff = 10)
+mesh$mesh$n
+
+
+tic()
+fit6_all_data_new_cols <- sdmTMB(tottraps ~ 0 + 
+                          z2sd_yearn + 
+                          z2sd_month_n +
+                          z2sd_OR_WA_waters +
+                          z2sd_WA_pot_reduction +
+                          z2sd_SST_avg +
+                          z2sd_wind_avg +
+                          z2sd_depth_point_mean +
+                          z2sd_depth_point_sd +
+                          z2sd_faults_km +
+                          z2sd_dist_canyon_km +
+                          z2sd_weighted_dist +
+                          z2sd_weighted_fuel_pricegal +
+                          z2sd_weighted_crab_ppp +
+                          z2sd_bottom_O2_avg +
+                          z2sd_dist_to_closed_km,
+                          family = tweedie(),
+                          mesh = mesh,
+                          spatial = "on",
+                          spatiotemporal = "iid", 
+                          data = d,
+                          time = "month_n")
+toc() #7.5min
+
+# Warning messages:
+# 1: In doTryCatch(return(expr), name, parentenv, handler) :  display list redraw incomplete
+# 2: In doTryCatch(return(expr), name, parentenv, handler) :  invalid graphics state
+# 3: In doTryCatch(return(expr), name, parentenv, handler) :  invalid graphics state
+# 4: The model may not have converged. Maximum final gradient: 0.124553691012341. 
+#sanity(fit6_all_data_new_cols)
+# bunch
+#sanity(fit6_all_data_new_cols, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still a bunch
+AIC(fit6_all_data_new_cols)
+#1016582
 
 
 
