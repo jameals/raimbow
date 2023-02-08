@@ -18,20 +18,20 @@ library(plotmo)
 
 #read in files where did a new scaling - center and divide by 2sd
 
-d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230203.rds'))
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds'))
 #z-scoring has been done across all data (winter and summer)
 glimpse(d) 
 
 
 #summer
-summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer_20230203.rds')) 
+summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer_20230209.rds')) 
 #z-scoring has been done across summer only
 glimpse(summer)
 
 
 
 #winter
-winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230203.rds'))
+winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230209.rds'))
 #z-scoring has been done across summer only
 glimpse(winter) 
 
@@ -50,7 +50,9 @@ set.seed(1)
 
 tic()
 mod0_summer <- lm(tottraps ~ z2sd_yearn + 
-                    z2sd_month_n +
+                    #z2sd_month_n +
+                    #z2sd_month_of_season +
+                    z2sd_half_month_of_season +
                     z2sd_OR_WA_waters +
                     z2sd_WA_pot_reduction +
                     z2sd_SST_avg +
@@ -158,6 +160,8 @@ arm::display(standardize(mod0_summer))
 tic()
 mod0_winter <- lm(tottraps ~ z2sd_yearn + 
                     z2sd_month_n +
+                    #z2sd_month_of_season +
+                    z2sd_half_month_of_season +
                     z2sd_OR_WA_waters +
                     #z2sd_WA_pot_reduction + #not relevant in winter
                     z2sd_SST_avg +
@@ -237,7 +241,9 @@ plotmo(mod0_winter, caption="Prediction Sensitivity Plot")
 
 tic()
 mod0_all_data <- lm(tottraps ~ z2sd_yearn + 
-                    z2sd_month_n +
+                    #z2sd_month_n +
+                    #z2sd_month_of_season +
+                    z2sd_half_month_of_season +
                     z2sd_OR_WA_waters +
                     z2sd_WA_pot_reduction +
                     z2sd_SST_avg +
