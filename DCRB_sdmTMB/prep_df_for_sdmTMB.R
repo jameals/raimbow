@@ -401,8 +401,8 @@ df_summer_2sd <- df_summer %>%
          z2sd_month_n = scale_this_2sd(month_n),
          z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
          z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction),
-         z_half_month_of_season = scale_this(half_month_of_season),
-         z_month_of_season = scale_this(month_of_season)
+         z2sd_half_month_of_season = scale_this_2sd(half_month_of_season),
+         z2sd_month_of_season = scale_this_2sd(month_of_season)
   )
 
 
