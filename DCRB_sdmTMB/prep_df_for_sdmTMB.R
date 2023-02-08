@@ -24,9 +24,10 @@ response_var_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_
 
 
 #df with prepped predictor variables
-#includes bottom)2, closed areas, dist to closed area, OR/WA waters, WA summer pot limit etc
+#includes bottomO2, closed areas, dist to closed area, OR/WA waters, WA summer pot limit etc
+#now also includes MOS = month of season, and half-month of season
 
-predictor_vars_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_ClosedAreaDist.rds')) %>% 
+predictor_vars_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_ClosedAreaDist_MOS.rds')) %>% 
   select(-grd_x, -grd_y )
 
 
@@ -166,18 +167,25 @@ df_all_scaled <- df_full_final_open %>%
          z_weighted_fuel_pricegal = scale_this(weighted_fuel_pricegal),
          z_weighted_crab_ppp = scale_this(weighted_crab_ppp),
          z_bottom_O2_avg = scale_this(bottom_O2_avg),
-         z_dist_to_closed_km = scale_this(dist_to_closed_km)
+         z_dist_to_closed_km = scale_this(dist_to_closed_km),
+         z_half_month_of_season = scale_this(half_month_of_season),
+         z_month_of_season = scale_this(month_of_season)
          )
          
          
 df_all_scaled_corrplot <- df_all_scaled %>% 
-  select(season, z_SST_avg:z_dist_to_closed_km, OR_WA_waters:winter_summer) 
+  select(season, z_SST_avg:z_month_of_season, OR_WA_waters, WA_pot_reduction, winter_summer) 
   #different version of corrplot if year and month are numeric
   #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
 model.matrix(~0+., data=df_all_scaled_corrplot) %>% 
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
+
+##we might want to have month of season as a factorial option
+df_all_scaled$month_of_seasonf <- as.factor(df_all_scaled$month_of_season)
+df_all_scaled$half_month_of_seasonf <- as.factor(df_all_scaled$half_month_of_season)
 
  
 ##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
@@ -227,7 +235,9 @@ df_all_scaled_2sd <- df_all_scaled %>%
          z2sd_yearn = scale_this_2sd(yearn),
          z2sd_month_n = scale_this_2sd(month_n),
          z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
-         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction)
+         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction),
+         z2sd_half_month_of_season = scale_this_2sd(half_month_of_season),
+         z2sd_month_of_season = scale_this_2sd(month_of_season)
   )
 
 
@@ -247,13 +257,15 @@ df_winter <- df_full_final_open %>%
          z_weighted_fuel_pricegal = scale_this(weighted_fuel_pricegal),
          z_weighted_crab_ppp = scale_this(weighted_crab_ppp),
          z_bottom_O2_avg = scale_this(bottom_O2_avg),
-         z_dist_to_closed_km = scale_this(dist_to_closed_km)
+         z_dist_to_closed_km = scale_this(dist_to_closed_km),
+         z_half_month_of_season = scale_this(half_month_of_season),
+         z_month_of_season = scale_this(month_of_season)
   ) %>% 
   select(-winter_summer)
 
 
 df_winter_scaled_corrplot <- df_winter %>% 
-  select(season, z_SST_avg:z_dist_to_closed_km, OR_WA_waters:month_name) #drop WA_pot_reduction
+  select(season, z_SST_avg:z_month_of_season, OR_WA_waters) #drop WA_pot_reduction
 #different version of corrplot if year and month are numeric
 #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
@@ -261,6 +273,10 @@ model.matrix(~0+., data=df_winter_scaled_corrplot) %>%
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
+
+##we might want to have month of season as a factorial option
+df_winter$month_of_seasonf <- as.factor(df_winter$month_of_season)
+df_winter$half_month_of_seasonf <- as.factor(df_winter$half_month_of_season)
 
 
 ##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
@@ -301,7 +317,9 @@ df_winter_2sd <- df_winter %>%
          z2sd_dist_to_closed_km = scale_this_2sd(dist_to_closed_km),
          z2sd_yearn = scale_this_2sd(yearn),
          z2sd_month_n = scale_this_2sd(month_n),
-         z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters)
+         z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
+         z2sd_half_month_of_season = scale_this_2sd(half_month_of_season),
+         z2sd_month_of_season = scale_this_2sd(month_of_season)
   )
 
 
@@ -319,13 +337,15 @@ df_summer <- df_full_final_open %>%
          z_weighted_fuel_pricegal = scale_this(weighted_fuel_pricegal),
          z_weighted_crab_ppp = scale_this(weighted_crab_ppp),
          z_bottom_O2_avg = scale_this(bottom_O2_avg),
-         z_dist_to_closed_km = scale_this(dist_to_closed_km)
+         z_dist_to_closed_km = scale_this(dist_to_closed_km),
+         z_half_month_of_season = scale_this(half_month_of_season),
+         z_month_of_season = scale_this(month_of_season)
   ) %>% 
   select(-winter_summer)
 
 
 df_summer_scaled_corrplot <- df_summer %>% 
-  select(season, z_SST_avg:z_dist_to_closed_km, OR_WA_waters:WA_pot_reduction) #drop WA_pot_reduction
+  select(season, z_SST_avg:z_month_of_season, OR_WA_waters,WA_pot_reduction) #drop WA_pot_reduction
 #different version of corrplot if year and month are numeric
 #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
@@ -334,6 +354,9 @@ model.matrix(~0+., data=df_summer_scaled_corrplot) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 
+##we might want to have month of season as a factorial option
+df_summer$month_of_seasonf <- as.factor(df_summer$month_of_season)
+df_summer$half_month_of_seasonf <- as.factor(df_summer$half_month_of_season)
 
 ##secondary scaling option -- if we center all variables and divide by 2 sd rather than 1, the relative influences will be similar
 #The paper by Gelman describes this. Use standardize() function in the arm package.    
@@ -377,7 +400,9 @@ df_summer_2sd <- df_summer %>%
          z2sd_yearn = scale_this_2sd(yearn),
          z2sd_month_n = scale_this_2sd(month_n),
          z2sd_OR_WA_waters = scale_this_2sd(OR_WA_waters),
-         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction)
+         z2sd_WA_pot_reduction = scale_this_2sd(WA_pot_reduction),
+         z_half_month_of_season = scale_this(half_month_of_season),
+         z_month_of_season = scale_this(month_of_season)
   )
 
 
@@ -394,9 +419,9 @@ df_summer_2sd <- df_summer %>%
 #----------------------------------- 
 ##export dfs
 
-#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230203.rds"))
-#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230203.rds"))
-#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230203.rds"))
+#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230209.rds"))
+#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230209.rds"))
+#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230209.rds"))
 
          
          
