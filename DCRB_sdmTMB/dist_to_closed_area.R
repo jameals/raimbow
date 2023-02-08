@@ -251,3 +251,38 @@ df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs <- df_full_with_dis
 #write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230120.rds"))
 #after fixing duplicating rows
 #write_rds(df_full_with_dist_to_closed_areas_ORWA_waters_WA_summer_regs,here::here('DCRB_sdmTMB', 'data', "df_full_with_dist_to_closed_areas_not_final_20230123.rds"))
+
+
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+
+##add a new variable: month / half-month of season
+#which could replace the use of calendar month
+
+#read in current file of predictors:
+
+current_df <- read_rds(here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_ClosedAreaDist.rds"))
+
+half_month_of_season <- read_csv(here::here('DCRB_sdmTMB', 'data', "closed areas",  "month of season", "Halfmonth_of_season.csv")) %>% 
+  select(-half_month_numeric, -open_closed )
+
+
+month_of_season <- read_csv(here::here('DCRB_sdmTMB', 'data', "closed areas",  "month of season", "month_of_season.csv")) %>% 
+  select(-month_numeric, -open_closed ) %>% 
+  rename(month_name = month)
+
+#MOS = month of season
+#note that didn't do month of season and half month of season for 2007-08 and 2008-09 as they get dropped later on anayway
+current_df_with_MOS <- current_df %>% 
+  left_join(half_month_of_season, by=c('season', 'half_month','GRID5KM_ID')) %>% 
+  left_join(month_of_season, by=c('season', 'month_name','GRID5KM_ID'))
+
+
+#save
+#write_rds(current_df_with_MOS,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice_bottomO2_ClosedAreaDist_MOS.rds"))
+
+
+
+
+
+
