@@ -35,49 +35,30 @@ set.seed(1)
 
 #read in df
 #no need to filter, that has been done
+#also more recent dfs already have steps for numeric and factorial year, numerical months (for smooths)
 #but make sure set UTM zone
 
 ##NOTE THAT NEED TO RUN ALL DATA, SUMMER, AND WINTER DATASETS
 
 
-d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data.rds'))
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds'))
 #z-scoring has been done across all data (winter and summer)
-glimpse(d) #none z-scored column have been retained
+glimpse(d) 
 
-d$yearn <- as.numeric(substr(d$season,1,4))
-d$yearf <- as.factor(d$yearn)
+d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
+                                                   "May", "June", "July", "August", "September"))
 
 # Add UTM columns (zone 10)
 d = add_utm_columns(d, ll_names = c("grd_x", "grd_y"))
 
-# try smooth over months
-d$month_n <- 1
-d$month_n[which(d$month_name=="January")] = 2
-d$month_n[which(d$month_name=="February")] = 3
-d$month_n[which(d$month_name=="March")] = 4
-d$month_n[which(d$month_name=="April")] = 5
-d$month_n[which(d$month_name=="May")] = 6
-d$month_n[which(d$month_name=="June")] = 7
-d$month_n[which(d$month_name=="July")] = 8
-d$month_n[which(d$month_name=="August")] = 9
-d$month_n[which(d$month_name=="September")] = 10
 
-#d$month_f <- as.factor(d$month_n)
 
 #summer
-summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer.rds'))
+summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer_20230209.rds')) 
 #z-scoring has been done across summer only
-glimpse(summer) #none z-scored column have been retained
+glimpse(summer)
 
-summer$yearn <- as.numeric(substr(summer$season,1,4))
-summer$yearf <- as.factor(summer$yearn)
-
-# try smooth over months
-summer$month_n <- 5
-summer$month_n[which(summer$month_name=="June")] = 6
-summer$month_n[which(summer$month_name=="July")] = 7
-summer$month_n[which(summer$month_name=="August")] = 8
-summer$month_n[which(summer$month_name=="September")] = 9
+summer$month_name_f <- factor(summer$month_name, levels = c("May", "June", "July", "August", "September"))
 
 # Add UTM columns (zone 10)
 summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
@@ -85,23 +66,18 @@ summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
 
 
 #winter
-
-winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter.rds'))
+winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230209.rds'))
 #z-scoring has been done across summer only
-glimpse(winter) #none z-scored column have been retained
+glimpse(winter) 
 
-winter$yearn <- as.numeric(substr(winter$season,1,4))
-winter$yearf <- as.factor(winter$yearn)
-
-# try smooth over months
-winter$month_n <- 1
-winter$month_n[which(winter$month_name=="January")] = 2
-winter$month_n[which(winter$month_name=="February")] = 3
-winter$month_n[which(winter$month_name=="March")] = 4
-winter$month_n[which(winter$month_name=="April")] = 5
+winter$month_name_f <- factor(winter$month_name, levels = c("December", "January", "February", "March", "April"))
 
 # Add UTM columns (zone 10)
 winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
+
+#-------------------------------------------------------------------------------------------------
+##in the current round of models, the default is to not use polynomial terms, and to use the basic z-scored values
+#except for e.g. season/year/month that will be factorials
 #-------------------------------------------------------------------------------------------------
 
 #Initial model
@@ -114,35 +90,35 @@ mesh$mesh$n
 tic()
 fit0_all_data <- sdmTMB(tottraps ~ 0 + 
                  season +
-                 month_name + 
+                 month_name_f + 
                  OR_WA_waters +
                  WA_pot_reduction +
-                 poly(z_SST_avg,2) +
-                 poly(z_wind_avg,2) +
-                 poly(z_depth_point_mean,2) +
-                 poly(z_depth_point_sd,2) +
-                 poly(z_faults_km,2) +
-                 poly(z_dist_canyon_km,2) +
-                 poly(z_weighted_dist,2) +
-                 poly(z_weighted_fuel_pricegal,2) +
-                 poly(z_weighted_crab_ppp,2) +
-                 poly(z_bottom_O2_avg,2) +
-                 poly(z_dist_to_closed_km ,2),
+                 z_SST_avg +
+                 z_wind_avg +
+                 z_depth_point_mean +
+                 z_depth_point_sd +
+                 z_faults_km +
+                 z_dist_canyon_km +
+                 z_weighted_dist +
+                 z_weighted_fuel_pricegal +
+                 z_weighted_crab_ppp +
+                 z_bottom_O2_avg +
+                 z_dist_to_closed_km,
                family = tweedie(),
                mesh = mesh,
                spatial = "off",
                spatiotemporal = "off",
                data = d,
                time = "yearf")
-toc() #3.6min
+toc() #4min
 
 #sanity(fit0_all_data)
-#When seed set: Warning message: The model may not have converged. Maximum final gradient: 0.0102533041557145 
-#some red Xs in sanity check - b_js only
+#When seed set & no polynomials: The model may not have converged. Maximum final gradient: 0.0268904298444301 
+#some red Xs in sanity check - b_js, thetaf, ln_phi
 #sanity(fit0_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#1x b_j red X
+#still b_js, thetaf, ln_phi
 AIC(fit0_all_data)
-#1073744
+#1076517
 
 #-------------------------------------------------------------------------------------------------
 
@@ -151,54 +127,55 @@ AIC(fit0_all_data)
 tic()
 fit1_all_data <- sdmTMB(tottraps ~ 0 + 
                           season +
-                          month_name + 
+                          month_name_f + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "off",
                         data = d,
                         time = "yearf")
-toc() #12.5min
+toc() #117.6min
 
 #sanity(fit1_all_data)
-#no warning about convergence issues. some red Xs in sanity check (b_j only)
+#seed set or no polynomials: The model may not have converged. Maximum final gradient: 0.264274485057823
+#some red Xs in sanity check (b_js, ln_tau, ln_phi)
 #sanity(fit1_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#No red Xs
+#still b_js, ln_tau, ln_phi
 AIC(fit1_all_data)
-#1028092
+#1030530
 
 
 
 tic()
 fit2_all_data <- sdmTMB(tottraps ~ 0 + 
                           season +
-                          month_name + 
+                          month_name_f + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
@@ -208,11 +185,12 @@ fit2_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #13.3min
 
 #sanity(fit2_all_data)
-#no warning about convergence issues. 2 red Xs in sanity check ("`ln_kappa` gradient > 0.001"; "`ln_phi` gradient > 0.001")
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.146955463494238
+#some red Xs: b_js, ln_tau
 #sanity(fit2_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#none if change gradient
+#still b_js, ln_tau
 AIC(fit2_all_data)
-#1014316
+#1017844
 #-------------------------------------------------------------------------------------------------
 
 #model with only spatial and spatiotemporal fields (seasons), no covariates
@@ -228,7 +206,8 @@ fit1b_all_data <- sdmTMB(tottraps ~ 0,
 toc() #0.6min
 
 #sanity(fit1b_all_data)
-#no warning about convergence issues. No red Xs in sanity check
+#when seed set and no polynomials: no warning about convergence issues. 
+#No red Xs in sanity check
 #sanity(fit1b_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit1b_all_data)
 #1058927
@@ -246,7 +225,8 @@ fit2b_all_data <- sdmTMB(tottraps ~ 0,
 toc() #1.3min
 
 #sanity(fit2b_all_data)
-#no warning about convergence issues. No red Xs in sanity check 
+#when seed set and no polynomials:no warning about convergence issues. 
+#No red Xs in sanity check 
 #sanity(fit2b_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit2b_all_data)
 #1047840
@@ -262,17 +242,17 @@ fit3_all_data <- sdmTMB(tottraps ~ 0 +
                           #month_name + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
@@ -281,12 +261,13 @@ fit3_all_data <- sdmTMB(tottraps ~ 0 +
                         time = "yearf")
 toc() #12.6min 
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.15756103918822 
 #sanity(fit3_all_data)
-#No warnings. Some red Xs (b_j, ln_phi)
+#Some red Xs (b_js, ln_kappa, thetaf, ln_phi)
 #sanity(fit3_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#1 red X - ln_phi
+#still b_js, ln_kappa, thetaf, ln_phi
 AIC(fit3_all_data)
-#1014351 
+#1017878 
 
 
 #------------------------------------
@@ -295,22 +276,22 @@ AIC(fit3_all_data)
 
 tic()
 fit4_all_data <- sdmTMB(tottraps ~ 0 + 
-                          month_name + 
+                          month_name_f + 
                           s(yearn) + # <- new, let k be automatically selected
                           #season +
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
@@ -319,13 +300,13 @@ fit4_all_data <- sdmTMB(tottraps ~ 0 +
                         time = "yearf")
 toc() #15.1min 
 
+#when seed is set and no polynomials: The model may not have converged: non-positive-definite Hessian matrix
 #sanity(fit4_all_data)
-#Warning messages: The model may not have converged: non-positive-definite Hessian matrix
 #Lots of red Xs
 #sanity(fit4_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 # Still lots of red Xs
 AIC(fit4_all_data)
-#1014307 
+#1017833 
 
 #--------------------------------------
 #change the IID spatiotemporal fields in model 2 to “AR1” to test the autoregressive structure
@@ -335,37 +316,37 @@ AIC(fit4_all_data)
 tic()
 fit5_all_data <- sdmTMB(tottraps ~ 0 + 
                           season +
-                          month_name + 
+                          month_name_f + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "ar1", # <- new
                         data = d,
                         time = "yearf")
-toc() #30.8min
+toc() #40.4min
 
 #sanity(fit5_all_data)
-#Warning message: The model may not have converged. Maximum final gradient: 0.0267688760472424 
-#Some red Xs (b_j, ln_tau, ln_kappa, thetaf, ln_phi,ar1_phi)
+#when seed set and no polynomial terms: The model may not have converged. Maximum final gradient: 0.133647741153254 
+#Some red Xs (b_js, ln_tau)
 #sanity(fit5_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Some red Xs (ln_tau, ln_kappa, thetaf, ln_phi)
+#Some red Xs (b_j only)
 AIC(fit5_all_data)
-#1014141
+#1017657
 #summary(fit5_all_data)
-#Spatiotemporal AR1 correlation (rho): 0.53
+#Spatiotemporal AR1 correlation (rho): 0.55
 
 #--------------------------------------
 #Adding spatial and spatiotemporal fields (months)
@@ -377,12 +358,13 @@ fit6_all_data <- update(fit2_all_data,
                time = "month_n")
 toc()  #13.7min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0975291024016594 
 #sanity(fit6_all_data)
-# no warning messages. some red Xs (ln_tau, ln_kappa, thetaf)
+#some red Xs (b_js, ln_kappa)
 #sanity(fit6_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#Some red Xs (b_j only)
 AIC(fit6_all_data)
-#1012696
+#1015953
 
 
 
@@ -395,15 +377,15 @@ fit7_all_data <- update(fit2_all_data,
                spatiotemporal = "ar1")
 toc()  #43min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0541188746935877
 #sanity(fit7_all_data)
-#Warning message:The model may not have converged. Maximum final gradient: 12.2876279413012
-#some red Xs (Non-linear minimizer did not converge: do not trust this model, b_js, ln_tau, ar1_phi)
+#some red Xs (b_js, thetaf, ln_phi, ln_tau, sigma_O)
 #sanity(fit7_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#some red Xs (Non-linear minimizer did not converge: do not trust this model, b_js, ln_tau, ar1_phi)
+#some red Xs (b_js, thetaf, ln_phi, ln_tau, sigma_O)
 AIC(fit7_all_data)
-#1012123
-#summary(fit7_all_data) #what is ar1 rho value?
-#Spatiotemporal AR1 correlation (rho): 0.97
+#1015198
+#summary(fit7_all_data) 
+#Spatiotemporal AR1 correlation (rho): 0.98
 
 
 
@@ -434,12 +416,13 @@ fit8_all_data <- update(fit2_all_data,
                         time = "half_month_n") #as numeric
 toc()  #15.5min
 
+#when seed set and no polynomials: had some warning but not copied down here
 #sanity(fit8_all_data)
-# no warnings, ! red Xs (b_js)
+#red Xs (b_js, ln_tau, thetaf)
 #sanity(fit8_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#no red Xs
+#still b_js, ln_tau, thetaf
 AIC(fit8_all_data)
-#1012728
+#1016081
 #results are same if half_month is factor AS LONG AS LEVELS ARE ORDERED CORRECTLY
 
 #--------------------------------------
@@ -451,17 +434,17 @@ fit9_all_data <- sdmTMB(tottraps ~ 0 +
                           #month_name + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
                         family = tweedie(),
                         mesh = mesh,
                         spatial = "on",
@@ -470,13 +453,13 @@ fit9_all_data <- sdmTMB(tottraps ~ 0 +
                         time = "yearf")
 toc() #12.7min 
 
-#sanity(fit9_all_data)
 #Warning message: The model may not have converged. Maximum final gradient: 0.0772079237766903
-#Red Xs: b_j, thetaf, ln_phi, ln_smooth_sigma
+#sanity(fit9_all_data)
+#Red Xs: b_j, ln_tau
 #sanity(fit9_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: thetaf, ln_phi,
+#Red Xs: b_j, ln_tau
 AIC(fit9_all_data)
-# 1013962
+# 1017473
 
 
 #-------------------------------------------------------------------------------------------------
@@ -487,41 +470,41 @@ AIC(fit9_all_data)
 #Initial model
 #fit0 = covariates only
 
-mesh <- make_mesh(summer, xy_cols = c("X","Y"), cutoff = 10)
-mesh$mesh$n
+mesh_summer <- make_mesh(summer, xy_cols = c("X","Y"), cutoff = 10)
+mesh_summer$mesh$n
 
 tic()
 fit0_summer <- sdmTMB(tottraps ~ 0 + 
-                          season +
-                          month_name + 
-                          OR_WA_waters +
-                          WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        season +
+                        month_name_f + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "off",
                         spatiotemporal = "off",
                         data = summer,
                         time = "yearf")
 toc() #0.8min
 
+#when seed is set and no polynomials: The model may not have converged. Maximum final gradient: 0.0123570464511804
 #sanity(fit0_summer)
-#no warning message on second run (seed set)
-#No red Xs when seed set
+#Red Xs: b_js, thetaf, ln_phi
 #sanity(fit0_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#No red Xs
+#Red Xs: b_js, ln_phi
 AIC(fit0_summer)
-#287161
+#287759.8
 
 #-------------------------------------------------------------------------------------------------
 
@@ -529,68 +512,71 @@ AIC(fit0_summer)
 
 tic()
 fit1_summer <- sdmTMB(tottraps ~ 0 + 
-                          season +
-                          month_name + 
-                          OR_WA_waters +
-                          WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        season +
+                        month_name_f + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "on",
                         spatiotemporal = "off",
                         data = summer,
                         time = "yearf")
 toc() #3.8min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0246840868351694 
 #sanity(fit1_summer)
-#no warning about convergence issues. 2 red Xs in sanity check but only b_js 
+#Red Xs: b_js, ln_phi 
 #sanity(fit1_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#no red Xs
+#still b_js, ln_phi 
 AIC(fit1_summer)
-#272600
+#273554.1
 
 
 
 tic()
 fit2_summer <- sdmTMB(tottraps ~ 0 + 
-                          season +
-                          month_name + 
-                          OR_WA_waters +
-                          WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        season +
+                        month_name_f + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "on",
                         spatiotemporal = "iid",
                         data = summer,
                         time = "yearf")
 toc() #5.1min
 
+#when seed set and no polynomials:The model may not have converged. Maximum final gradient: 0.105323135497564
 #sanity(fit2_summer)
-#no warning about convergence issues. No red Xs in sanity check
+#Red Xs: b_js, ln_tau, thetaf,ln_phi
 #sanity(fit2_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau, thetaf,ln_phi
 AIC(fit2_summer)
-#265942
+#267717.8
 #-------------------------------------------------------------------------------------------------
 
 #model with only spatial and spatiotemporal fields (seasons), no covariates
@@ -598,38 +584,40 @@ AIC(fit2_summer)
 tic()
 fit1b_summer <- sdmTMB(tottraps ~ 0,
                          family = tweedie(),
-                         mesh = mesh,
+                         mesh = mesh_summer,
                          spatial = "on",
                          spatiotemporal = "off",
                          data = summer,
                          time = "yearf")
 toc() #0.2min
 
+
+#when set seed and no polynomials: no warning about convergence issues. 
 #sanity(fit1b_summer)
-#no warning about convergence issues. No red Xs in sanity check
+#No red Xs
 #sanity(fit1b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit1b_summer)
-#277485
+#277485.1
 
 
 
 tic()
 fit2b_summer <- sdmTMB(tottraps ~ 0,
                          family = tweedie(),
-                         mesh = mesh,
+                         mesh = mesh_summer,
                          spatial = "on",
                          spatiotemporal = "iid",
                          data = summer,
                          time = "yearf")
 toc() #0.6min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0108447213867819
 #sanity(fit2b_summer)
-#Warning message: The model may not have converged. Maximum final gradient: 0.0108471688968166
 #red Xs: ln_tau, ln_kappa, ln_phi
 #sanity(fit2b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #red Xs: ln_tau, ln_phi
 AIC(fit2b_summer)
-#271531
+#271531.5
 
 #-------------------------------------
 
@@ -639,22 +627,22 @@ tic()
 fit3_summer <- sdmTMB(tottraps ~ 0 + 
                           s(month_n, k = 4) + # <- new,
                           season +
-                          #month_name + 
+                          #month_name_f + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "on",
                         spatiotemporal = "iid",
                         data = summer,
@@ -663,12 +651,13 @@ toc() #4.8min
 #with summmer model if try to let k be automatically selected, get error:
 #Error in smooth.construct.tp.smooth.spec(object, dk$data, dk$knots) : A term has fewer unique covariate combinations than specified maximum degrees of freedom
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0160984928631862
 #sanity(fit3_summer)
-#no warning messages. Red Xs: thetaf, ln_phi ;; none on second run
+#Red Xs: b_js only
 #sanity(fit3_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#No red Xs
+#Red Xs: b_js only
 AIC(fit3_summer)
-#265953
+#267727.9
 
 #-------------------------------------
 
@@ -676,37 +665,37 @@ AIC(fit3_summer)
 
 tic()
 fit4_summer <- sdmTMB(tottraps ~ 0 + 
-                          month_name + 
+                        month_name_f + 
                           s(yearn, k = 10) + # <- new, let k be automatically selected
                           #season +
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "on",
                         spatiotemporal = "iid",
                         data = summer,
                         time = "yearf")
 toc() #5.9min 
 #this time fine to let k be automatically selected
-#Warning message:  The model may not have converged: extreme or very small eigen values detected
+#seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0363551898475372
 #sanity(fit4_summer)
-#lots of red Xs
+#Red Xs: b_js, ln_tau, ln_smooth_sigma
 #sanity(fit4_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still lots
+#still b_js, ln_smooth_sigma
 AIC(fit4_summer)
-#265938
+#267710.2
 
 #-------------------------------------
 #change the IID spatiotemporal fields in model 2 to “AR1” to test the autoregressive structure
@@ -716,32 +705,33 @@ AIC(fit4_summer)
 tic()
 fit5_summer <- sdmTMB(tottraps ~ 0 + 
                           season +
-                          month_name + 
+                          month_name_f + 
                           OR_WA_waters +
                           WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_summer,
                         spatial = "on",
                         spatiotemporal = "ar1", # <- new
                         data = summer,
                         time = "yearf")
 toc() #14min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.144498983789155
 #sanity(fit5_summer)
-#no warnings. No red Xs
+#red Xs: b_js, ln_tau, ln_phi, ar1_phi
 #sanity(fit5_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#still b_js, ln_tau, ln_phi
 AIC(fit5_summer)
 #265861
 #summary(fit5_summer)
@@ -759,12 +749,13 @@ fit6_summer <- update(fit2_summer,
                         time = "month_n")
 toc()  #4.5min
 
+#when seed est and no polynomial terms: The model may not have converged. Maximum final gradient: 0.0685854251422118
 #sanity(fit6_summer)
-#no warnings.  No red Xs
+#Red Xs: b_js, thetaf, ln_phi
 #sanity(fit6_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#still b_js, thetaf, ln_phi
 AIC(fit6_summer)
-#270786
+#271878.2
 
 
 
@@ -777,14 +768,15 @@ fit7_summer <- update(fit2_summer,
                         spatiotemporal = "ar1")
 toc()  #7.5min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0304410014337826
 #sanity(fit7_summer)
-#no warnings. Some red Xs (b_js, ln_kappa, ln_tau, sigma_O, ar1_phi)
+#Some red Xs (b_js, ln_tau, ar1_phi)
 #sanity(fit7_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still red Xs: sigma_O
+#still red Xs: b_js, ln_tau, ar1_phi
 AIC(fit7_summer)
-#270702
-#summary(fit7_summer) #what is ar1 rho value?
-#Spatiotemporal AR1 correlation (rho): 0.96
+#271799.8
+#summary(fit7_summer) 
+#Spatiotemporal AR1 correlation (rho): 0.97
 
 #-------------------------------------
 
@@ -805,12 +797,13 @@ fit8_summer <- update(fit2_summer,
                         time = "half_month_n") #as numeric
 toc()  #5.4min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0465512301905608
 #sanity(fit8_summer)
-# No warnings. No red Xs ;; some on second run
+#Red Xs: b_js, ln_tau, ln_kappa, ln_phi
 #sanity(fit8_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#no Xs even on second run
+#still b_js, ln_tau, ln_phi
 AIC(fit8_summer)
-#270583
+#271748.7
 
 
 #-------------------------------------
@@ -836,8 +829,8 @@ AIC(fit8_summer)
 #Initial model
 #fit0 = covariates only
 
-mesh <- make_mesh(winter, xy_cols = c("X","Y"), cutoff = 10)
-mesh$mesh$n
+mesh_winter <- make_mesh(winter, xy_cols = c("X","Y"), cutoff = 10)
+mesh_winter$mesh$n
 
 tic()
 fit0_winter <- sdmTMB(tottraps ~ 0 + 
@@ -857,19 +850,20 @@ fit0_winter <- sdmTMB(tottraps ~ 0 +
                         poly(z_bottom_O2_avg,2) +
                         poly(z_dist_to_closed_km ,2),
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "off",
                       spatiotemporal = "off",
                       data = winter,
                       time = "yearf")
 toc() #2.2min
 
+# when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.01975976529072
 #sanity(fit0_winter)
-#no warning about convergence issues (sometimes has them). Some red Xs in sanity check (b_js, thetaf, ln_phi)
+#Some red Xs in sanity check (b_js, thetaf, ln_phi)
 #sanity(fit0_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still X for ln_phi
+#still X for thetaf, ln_phi
 AIC(fit0_winter)
-#774067
+#774067.9
 
 #-------------------------------------------------------------------------------------------------
 
@@ -878,70 +872,70 @@ AIC(fit0_winter)
 tic()
 fit1_winter <- sdmTMB(tottraps ~ 0 + 
                         season +
-                        month_name + 
+                        month_name_f + 
                         OR_WA_waters +
                         #WA_pot_reduction +    #not relevant in winter
-                        poly(z_SST_avg,2) +
-                        poly(z_wind_avg,2) +
-                        poly(z_depth_point_mean,2) +
-                        poly(z_depth_point_sd,2) +
-                        poly(z_faults_km,2) +
-                        poly(z_dist_canyon_km,2) +
-                        poly(z_weighted_dist,2) +
-                        poly(z_weighted_fuel_pricegal,2) +
-                        poly(z_weighted_crab_ppp,2) +
-                        poly(z_bottom_O2_avg,2) +
-                        poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "on",
                       spatiotemporal = "off",
                       data = winter,
                       time = "yearf")
 toc() #6.7min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.113602006008465
 #sanity(fit1_winter)
-#Warning message:The model may not have converged. Maximum final gradient: 0.0129679188577158
-#Couple red Xs in sanity check (b_j, ln_tau, ln_kappa, thetaf, ln_phi)
+#Couple red Xs in sanity check (b_j, thetaf, ln_phi)
 #sanity(fit1_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still X for ln_phi and b_js
+#still X for b_j, thetaf, ln_phi
 AIC(fit1_winter)
-#739449
+#741447
 
 
 
 tic()
 fit2_winter <- sdmTMB(tottraps ~ 0 + 
                         season +
-                        month_name + 
+                        month_name_f + 
                         OR_WA_waters +
-                        #WA_pot_reduction +      #not relevant in winter
-                        poly(z_SST_avg,2) +
-                        poly(z_wind_avg,2) +
-                        poly(z_depth_point_mean,2) +
-                        poly(z_depth_point_sd,2) +
-                        poly(z_faults_km,2) +
-                        poly(z_dist_canyon_km,2) +
-                        poly(z_weighted_dist,2) +
-                        poly(z_weighted_fuel_pricegal,2) +
-                        poly(z_weighted_crab_ppp,2) +
-                        poly(z_bottom_O2_avg,2) +
-                        poly(z_dist_to_closed_km ,2),
+                        #WA_pot_reduction +    #not relevant in winter
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "on",
                       spatiotemporal = "iid",
                       data = winter,
                       time = "yearf")
 toc() #8min
 
+#when set seed and no polynomials: The model may not have converged. Maximum final gradient: 0.0885550831947178
 #sanity(fit2_winter)
-#Warning message: The model may not have converged. Maximum final gradient: 0.014876525269969
-#Some red Xs in sanity check (b_js, ln_tau, thetaf, ln_phi)
+#Some red Xs in sanity check (b_js, ln_tau, ln_kappa)
 #sanity(fit2_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still Xs for b_j, ln_tau, thetaf, ln_phi
+#still Xs for b_js, ln_tau, ln_kappa
 AIC(fit2_winter)
-#728431
+#731319.1
 #-------------------------------------------------------------------------------------------------
 
 #model with only spatial and spatiotemporal fields (seasons), no covariates
@@ -949,36 +943,38 @@ AIC(fit2_winter)
 tic()
 fit1b_winter <- sdmTMB(tottraps ~ 0,
                        family = tweedie(),
-                       mesh = mesh,
+                       mesh = mesh_winter,
                        spatial = "on",
                        spatiotemporal = "off",
                        data = winter,
                        time = "yearf")
 toc() #0.5min
 
+#when seed set and no polynomials: no warnings
 #sanity(fit1b_winter)
-#no warning about convergence issues. No red Xs in sanity check
+#No red Xs in sanity check
 #sanity(fit1b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit1b_winter)
-#744916
+#744916.7
 
 
 
 tic()
 fit2b_winter <- sdmTMB(tottraps ~ 0,
                        family = tweedie(),
-                       mesh = mesh,
+                       mesh = mesh_winter,
                        spatial = "on",
                        spatiotemporal = "iid",
                        data = winter,
                        time = "yearf")
 toc() #1.1min
 
+#when seed set and no polynomials: no warnings
 #sanity(fit2b_winter)
-#no warning about convergence issues. No red Xs in sanity check
+#No red Xs in sanity check
 #sanity(fit2b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 AIC(fit2b_winter)
-#734885
+#734885.2
 #--------------------------------------
 
 #Just as a test, we can see if changing month to a smooth improves the fit
@@ -987,36 +983,35 @@ tic()
 fit3_winter <- sdmTMB(tottraps ~ 0 + 
                         s(month_n, k = 4) + # <- new,
                         season +
-                        #month_name + 
+                        #month_name_f + 
                         OR_WA_waters +
                         #WA_pot_reduction +   #not relevant in winter
-                        poly(z_SST_avg,2) +
-                        poly(z_wind_avg,2) +
-                        poly(z_depth_point_mean,2) +
-                        poly(z_depth_point_sd,2) +
-                        poly(z_faults_km,2) +
-                        poly(z_dist_canyon_km,2) +
-                        poly(z_weighted_dist,2) +
-                        poly(z_weighted_fuel_pricegal,2) +
-                        poly(z_weighted_crab_ppp,2) +
-                        poly(z_bottom_O2_avg,2) +
-                        poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "on",
                       spatiotemporal = "iid",
                       data = winter,
                       time = "yearf")
 toc() #7min 
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.154623119063547
 #sanity(fit3_winter)
-#Warning message:The model may not have converged. Maximum final gradient: 0.0136587717055114
-##new run even with seed, no warnings -- but ln_phi has red X in both checks
-#X for thetaf, ln_phi
+#X for b_js, ln_tau, thetaf, ln_phi
 #sanity(fit3_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still X for ln_phi
+#still X for b_js, ln_tau, thetaf, ln_phi
 AIC(fit3_winter)
-#728448
+#731335.5
 
 #--------------------------------------
 
@@ -1024,37 +1019,37 @@ AIC(fit3_winter)
 
 tic()
 fit4_winter <- sdmTMB(tottraps ~ 0 + 
-                        month_name + 
+                        month_name_f + 
                         s(yearn, k = 10) + # <- new, let k be automatically selected // , k = 10
                         #season +
                         OR_WA_waters +
                         #WA_pot_reduction +     #not relevant in winter
-                        poly(z_SST_avg,2) +
-                        poly(z_wind_avg,2) +
-                        poly(z_depth_point_mean,2) +
-                        poly(z_depth_point_sd,2) +
-                        poly(z_faults_km,2) +
-                        poly(z_dist_canyon_km,2) +
-                        poly(z_weighted_dist,2) +
-                        poly(z_weighted_fuel_pricegal,2) +
-                        poly(z_weighted_crab_ppp,2) +
-                        poly(z_bottom_O2_avg,2) +
-                        poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "on",
                       spatiotemporal = "iid",
                       data = winter,
                       time = "yearf")
 toc() #7.8min 
 #this time fine to let k be automatically selected. doesn't matter if specify k=10
-#
+#when seed set and no polynomials: The model may not have converged: non-positive-definite Hessian matrix
 #sanity(fit4_winter)
-#Warning message: The model may not have converged: non-positive-definite Hessian matrix. lots of red Xs
+#lots of Xs
 #sanity(fit4_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still lots of Xs
 AIC(fit4_winter)
-#728422
+#731308.3
 
 
 #--------------------------------------
@@ -1066,38 +1061,37 @@ AIC(fit4_winter)
 tic()
 fit5_winter <- sdmTMB(tottraps ~ 0 + 
                         season +
-                        month_name + 
+                        month_name_f + 
                         OR_WA_waters +
                         #WA_pot_reduction +    #not relevant in winter
-                        poly(z_SST_avg,2) +
-                        poly(z_wind_avg,2) +
-                        poly(z_depth_point_mean,2) +
-                        poly(z_depth_point_sd,2) +
-                        poly(z_faults_km,2) +
-                        poly(z_dist_canyon_km,2) +
-                        poly(z_weighted_dist,2) +
-                        poly(z_weighted_fuel_pricegal,2) +
-                        poly(z_weighted_crab_ppp,2) +
-                        poly(z_bottom_O2_avg,2) +
-                        poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                       family = tweedie(),
-                      mesh = mesh,
+                      mesh = mesh_winter,
                       spatial = "on",
                       spatiotemporal = "ar1", # <- new
                       data = winter,
                       time = "yearf")
-toc() #12min
+toc() #37min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0397814681147731
 #sanity(fit5_winter)
-#Warning message: The model may not have converged. Maximum final gradient: 0.0102205309983354
-#on  anew run even with set.seed(1) - no warnings
-#some red Xs b_j, ln_tau, thetaf, ln_phi, ar1_phi
+#some red Xs b_js, ln_tau, thetaf, ar1_phi
 #sanity(fit5_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still Xs for thetaf and ln_phi -- 1xb_j and ln_tau still on a second run
+#still Xs for b_js, ln_tau, thetaf
 AIC(fit5_winter)
-#728291
+#731164.3
 #summary(fit5_winter)
-#Spatiotemporal AR1 correlation (rho): 0.48
+#Spatiotemporal AR1 correlation (rho): 0.51
 
 
 #--------------------------------------
@@ -1111,12 +1105,13 @@ fit6_winter <- update(fit2_winter,
                       time = "month_n")
 toc()  #7.3min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.211205146064904
 #sanity(fit6_winter)
-#no warnings. Some red Xs: b_js, thetaf and ln_phi
+#Some red Xs: b_js, ln_tau, thetaf, ln_phi
 #sanity(fit6_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#No Xs (on a second run still had)
+#still b_js, ln_tau, thetaf, ln_phi
 AIC(fit6_winter)
-#735079
+#737417.6
 
 
 ###as fit2 had issues, but fit2b didn't, try that one as well
@@ -1124,8 +1119,9 @@ tic()
 fit6b_winter <- update(fit2b_winter,
                       time = "month_n")
 toc()  #0.8min
+#when set seed and no polynomials: no warnings
 #sanity(fit6b_winter)
-#No warnings, only 1 X: thetaf
+#only 1 X: thetaf
 #sanity(fit6b_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still X for thetaf
 AIC(fit6b_winter)
@@ -1138,16 +1134,17 @@ tic()
 fit7_winter <- update(fit2_winter,
                       time = "month_n",
                       spatiotemporal = "ar1")
-toc()  #9.2min
+toc()  #14min
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.255937961202847
 #sanity(fit7_winter)
-#No warnings, some red Xs (b_j, thetaf, ln_phi) ;; only b_j on second run when set.seed(1)
+#some red Xs (b_js, ln_tau, ln_kappa)
 #sanity(fit7_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still 1x b_j, and ln_phi ;; nothing on second run
+#still b_js, ln_kappa
 AIC(fit7_winter)
-#734859
-#summary(fit7_winter) #what is ar1 rho value?
-#Spatiotemporal AR1 correlation (rho): 0.98
+#737194.7
+#summary(fit7_winter) 
+#Spatiotemporal AR1 correlation (rho): 0.99
 
 
 #--------------------------------------
@@ -1170,12 +1167,13 @@ fit8_winter <- update(fit2_winter,
                       time = "half_month_n") #as numeric
 toc()  #8min
 
+#when seed set and no poynomials: The model may not have converged. Maximum final gradient: 0.270807483364804
 #sanity(fit8_winter)
-#No warnings. Red Xs: b_j and ln_phi ;; warning on second run + b_j & ln_tau
+#Red Xs: b_js, ln_tau, ln_kappa
 #sanity(fit8_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still X for ln_phi ;; only b_j on second run
+#only b_j on second run
 AIC(fit8_winter)
-#734868
+#737296
 
 
 
@@ -1185,35 +1183,35 @@ tic()
 fit9_winter <- sdmTMB(tottraps ~ 0 + 
                           s(half_month_n) + # <- new, let k be automatically selected
                           season +
-                          #month_name + 
+                          #month_name_f + 
                           OR_WA_waters +
                           #WA_pot_reduction +
-                          poly(z_SST_avg,2) +
-                          poly(z_wind_avg,2) +
-                          poly(z_depth_point_mean,2) +
-                          poly(z_depth_point_sd,2) +
-                          poly(z_faults_km,2) +
-                          poly(z_dist_canyon_km,2) +
-                          poly(z_weighted_dist,2) +
-                          poly(z_weighted_fuel_pricegal,2) +
-                          poly(z_weighted_crab_ppp,2) +
-                          poly(z_bottom_O2_avg,2) +
-                          poly(z_dist_to_closed_km ,2),
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
                         family = tweedie(),
-                        mesh = mesh,
+                        mesh = mesh_winter,
                         spatial = "on",
                         spatiotemporal = "iid",
                         data = winter,
                         time = "yearf")
 toc() #8min 
 
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0425400878098907
 #sanity(fit9_winter)
-#no warnings
-#No red Xs
+#Red Xs: b_js, ln_tau, ln_kappa, ln_phi
 #sanity(fit9_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#
+#still b_js, ln_tau, ln_phi
 AIC(fit9_winter)
-#728360 #abut 4th best
+#731242 
 
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
