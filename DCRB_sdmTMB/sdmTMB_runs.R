@@ -41,15 +41,15 @@ set.seed(1)
 ##NOTE THAT NEED TO RUN ALL DATA, SUMMER, AND WINTER DATASETS
 
 
-d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds'))
+d_all_data <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds'))
 #z-scoring has been done across all data (winter and summer)
-glimpse(d) 
+glimpse(d_all_data) 
 
-d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
+d_all_data$month_name_f <- factor(d_all_data$month_name, levels = c("December", "January", "February", "March", "April", 
                                                    "May", "June", "July", "August", "September"))
 
 # Add UTM columns (zone 10)
-d = add_utm_columns(d, ll_names = c("grd_x", "grd_y"))
+d_all_data = add_utm_columns(d_all_data, ll_names = c("grd_x", "grd_y"))
 
 
 
@@ -84,7 +84,7 @@ winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
 
 #fit0 = covariates only
 
-mesh <- make_mesh(d, xy_cols = c("X","Y"), cutoff = 10)
+mesh <- make_mesh(d_all_data, xy_cols = c("X","Y"), cutoff = 10)
 mesh$mesh$n
 
 tic()
@@ -108,7 +108,7 @@ fit0_all_data <- sdmTMB(tottraps ~ 0 +
                mesh = mesh,
                spatial = "off",
                spatiotemporal = "off",
-               data = d,
+               data = d_all_data,
                time = "yearf")
 toc() #4min
 
@@ -145,7 +145,7 @@ fit1_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "off",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #117.6min
 
@@ -180,7 +180,7 @@ fit2_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "iid",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #13.3min
 
@@ -201,7 +201,7 @@ fit1b_all_data <- sdmTMB(tottraps ~ 0,
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "off",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #0.6min
 
@@ -220,7 +220,7 @@ fit2b_all_data <- sdmTMB(tottraps ~ 0,
                          mesh = mesh,
                          spatial = "on",
                          spatiotemporal = "iid",
-                         data = d,
+                         data = d_all_data,
                          time = "yearf")
 toc() #1.3min
 
@@ -239,7 +239,7 @@ fit2c_all_data <- sdmTMB(tottraps ~ 0,
                          mesh = mesh,
                          spatial = "on",
                          spatiotemporal = "ar1",
-                         data = d,
+                         data = d_all_data,
                          time = "yearf")
 toc() #4.4min
 
@@ -279,7 +279,7 @@ fit3_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "iid",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #12.6min 
 
@@ -318,7 +318,7 @@ fit4_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "iid",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #15.1min 
 
@@ -356,7 +356,7 @@ fit5_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "ar1", # <- new
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #40.4min
 
@@ -375,9 +375,35 @@ AIC(fit5_all_data)
 
 # switch indexing of spatiotemporal fields to “month_name” and again can try the spatiotemporal fields as IID or AR1.
 
+# tic()
+# fit6_all_data <- update(fit2_all_data,
+#                time = "month_n")
+# toc()  #13.7min
+
+
 tic()
-fit6_all_data <- update(fit2_all_data,
-               time = "month_n")
+fit6_all_data <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "iid",
+                        data = d_all_data,
+                        time = "month_n")
 toc()  #13.7min
 
 #when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0975291024016594 
@@ -388,16 +414,42 @@ toc()  #13.7min
 AIC(fit6_all_data)
 #1015953
 
+#plots <- plot_diag(fit6_all_data)
 
 
 
 
+
+# tic()
+# fit7_all_data <- update(fit2_all_data,
+#                time = "month_n",
+#                spatiotemporal = "ar1")
+# toc()  #43min
 
 tic()
-fit7_all_data <- update(fit2_all_data,
-               time = "month_n",
-               spatiotemporal = "ar1")
-toc()  #43min
+fit7_all_data <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "ar1",
+                        data = d_all_data,
+                        time = "month_n")
+toc() #min
 
 #when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.0541188746935877
 #sanity(fit7_all_data)
@@ -412,25 +464,25 @@ AIC(fit7_all_data)
 
 
 #index by half_month step
-d$half_month_n <- 1
-d$half_month_n[which(d$half_month=="December_2")] = 2
-d$half_month_n[which(d$half_month=="January_1")] = 3
-d$half_month_n[which(d$half_month=="January_2")] = 4
-d$half_month_n[which(d$half_month=="February_1")] = 5
-d$half_month_n[which(d$half_month=="February_2")] = 6
-d$half_month_n[which(d$half_month=="March_1")] = 7
-d$half_month_n[which(d$half_month=="March_2")] = 8
-d$half_month_n[which(d$half_month=="April_1")] = 9
-d$half_month_n[which(d$half_month=="April_2")] = 10
-d$half_month_n[which(d$half_month=="May_1")] = 11
-d$half_month_n[which(d$half_month=="May_2")] = 12
-d$half_month_n[which(d$half_month=="June_1")] = 13
-d$half_month_n[which(d$half_month=="June_2")] = 14
-d$half_month_n[which(d$half_month=="July_1")] = 15
-d$half_month_n[which(d$half_month=="July_2")] = 16
-d$half_month_n[which(d$half_month=="August_1")] = 17
-d$half_month_n[which(d$half_month=="August_2")] = 18
-d$half_month_n[which(d$half_month=="September_1")] = 19
+d_all_data$half_month_n <- 1
+d_all_data$half_month_n[which(d_all_data$half_month=="December_2")] = 2
+d_all_data$half_month_n[which(d_all_data$half_month=="January_1")] = 3
+d_all_data$half_month_n[which(d_all_data$half_month=="January_2")] = 4
+d_all_data$half_month_n[which(d_all_data$half_month=="February_1")] = 5
+d_all_data$half_month_n[which(d_all_data$half_month=="February_2")] = 6
+d_all_data$half_month_n[which(d_all_data$half_month=="March_1")] = 7
+d_all_data$half_month_n[which(d_all_data$half_month=="March_2")] = 8
+d_all_data$half_month_n[which(d_all_data$half_month=="April_1")] = 9
+d_all_data$half_month_n[which(d_all_data$half_month=="April_2")] = 10
+d_all_data$half_month_n[which(d_all_data$half_month=="May_1")] = 11
+d_all_data$half_month_n[which(d_all_data$half_month=="May_2")] = 12
+d_all_data$half_month_n[which(d_all_data$half_month=="June_1")] = 13
+d_all_data$half_month_n[which(d_all_data$half_month=="June_2")] = 14
+d_all_data$half_month_n[which(d_all_data$half_month=="July_1")] = 15
+d_all_data$half_month_n[which(d_all_data$half_month=="July_2")] = 16
+d_all_data$half_month_n[which(d_all_data$half_month=="August_1")] = 17
+d_all_data$half_month_n[which(d_all_data$half_month=="August_2")] = 18
+d_all_data$half_month_n[which(d_all_data$half_month=="September_1")] = 19
 
 
 tic()
@@ -471,7 +523,7 @@ fit9_all_data <- sdmTMB(tottraps ~ 0 +
                         mesh = mesh,
                         spatial = "on",
                         spatiotemporal = "iid",
-                        data = d,
+                        data = d_all_data,
                         time = "yearf")
 toc() #12.7min 
 
@@ -483,6 +535,111 @@ toc() #12.7min
 AIC(fit9_all_data)
 # 1017473
 
+
+#--------------------------------------
+
+
+tic()
+fit10a_all_data <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh,
+                        spatial = "on",
+                        spatiotemporal = "iid",
+                        data = d_all_data,
+                        time = "month_n")
+toc() #15 min
+
+#The model may not have converged. Maximum final gradient: 0.0447868798046311
+#sanity(fit10a_all_data)
+#Red Xs: b_js, ln_tau, thetaf 
+#sanity(fit10a_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#Red Xs: b_js, thetaf 
+AIC(fit10a_all_data)
+# 1013714
+
+tic()
+fit10b_all_data <- sdmTMB(tottraps ~ 0 + 
+                            season +
+                            month_name_f + 
+                            OR_WA_waters +
+                            WA_pot_reduction +
+                            z_SST_avg +
+                            z_wind_avg +
+                            z_depth_point_mean +
+                            z_depth_point_sd +
+                            z_faults_km +
+                            z_dist_canyon_km +
+                            z_weighted_dist +
+                            z_weighted_fuel_pricegal +
+                            z_weighted_crab_ppp +
+                            poly(z_bottom_O2_avg,2) +
+                            z_dist_to_closed_km,
+                          family = tweedie(),
+                          mesh = mesh,
+                          spatial = "on",
+                          spatiotemporal = "iid",
+                          data = d_all_data,
+                          time = "month_n")
+toc() #13min
+
+#The model may not have converged. Maximum final gradient: 0.0491395900269096
+#sanity(fit10b_all_data)
+#Red Xs: b_js, ln_tau, ln_kappa
+#sanity(fit10b_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#Red Xs: b_js, ln_tau, ln_kappa
+AIC(fit10b_all_data)
+# 1015954
+
+
+tic()
+fit10c_all_data <- sdmTMB(tottraps ~ 0 + 
+                            season +
+                            month_name_f + 
+                            OR_WA_waters +
+                            WA_pot_reduction +
+                            z_SST_avg +
+                            z_wind_avg +
+                            poly(z_depth_point_mean,2) +
+                            z_depth_point_sd +
+                            z_faults_km +
+                            z_dist_canyon_km +
+                            z_weighted_dist +
+                            z_weighted_fuel_pricegal +
+                            z_weighted_crab_ppp +
+                            poly(z_bottom_O2_avg,2) +
+                            z_dist_to_closed_km,
+                          family = tweedie(),
+                          mesh = mesh,
+                          spatial = "on",
+                          spatiotemporal = "iid",
+                          data = d_all_data,
+                          time = "month_n")
+toc() #14min
+
+#No warnings
+#sanity(fit10c_all_data)
+#Red Xs: b_js only
+#sanity(fit10c_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#Red Xs: none
+AIC(fit10c_all_data)
+# 1013716
+
+#plots <- plot_diag(fit10c_all_data)
 
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
