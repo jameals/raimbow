@@ -799,6 +799,108 @@ toc() #0.6min
 AIC(fit2b_summer)
 #271531.5
 
+
+
+#2c
+tic()
+fit2c_summer <- sdmTMB(tottraps ~ 0,
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "yearf")
+toc() #1.4min
+
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.072301593333485
+#sanity(fit2c_summer)
+#red Xs: ln_tau, thetaf, ln_phi
+#sanity(fit2c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#red Xs: ln_tau, ln_phi
+AIC(fit2c_summer)
+#271460.9
+summary(fit2c_summer)
+#AR1 correlation (rho): 0.46
+
+
+
+
+#2d
+tic()
+fit2d_summer <- sdmTMB(tottraps ~ 0,
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "month_name_f")
+toc() #1.3sec
+
+#when seed set at no polys: no warnings
+#sanity(fit2d_summer)
+#Red Xs: ln_phi
+#sanity(fit2d_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#none
+AIC(fit2d_summer)
+#272759.7
+summary(fit2d_summer)
+#AR1 correlation (rho): 0.97
+
+
+
+
+#2e
+tic()
+fit2e_summer <- sdmTMB(tottraps ~ 0,
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "month_of_seasonf")
+toc() #1.5
+min
+
+#when seed set at no polys: no warnings
+#sanity(fit2e_summer)
+#Red Xs: None
+#sanity(fit2e_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#none 
+AIC(fit2e_summer)
+#272614.4
+summary(fit2e_summer)
+#AR1 correlation (rho): 0.97
+
+#plots <- plot_diag(fit2e_summer)
+###PLOTS LOOKED WEIRD BECAUSE SMAs OPEN, AND MAY IS 1 MONTH OF SEASON FOR THEM
+
+
+
+#2f
+tic()
+fit2f_summer <- sdmTMB(tottraps ~ 0,
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "half_month_of_seasonf")
+toc() #6min
+
+#when seed set at no polys: no warnings
+#sanity(fit2f_summer)
+#Red Xs: none
+#sanity(fit2f_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#none
+AIC(fit2f_summer)
+#272146.1
+summary(fit2f_summer)
+#AR1 correlation (rho): 0.98
+
+#plots <- plot_diag(fit2f_summer)
+
+
+
 #-------------------------------------
 
 #Just as a test, we can see if changing month to a smooth improves the fit
@@ -838,6 +940,46 @@ toc() #4.8min
 #Red Xs: b_js only
 AIC(fit3_summer)
 #267727.9
+
+
+
+
+tic()
+fit3b_summer <- sdmTMB(tottraps ~ 0 + 
+                        s(month_n, k = 4) + # <- new,
+                        season +
+                        #month_name_f + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        z_SST_avg +
+                        z_wind_avg +
+                        z_depth_point_mean +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
+                      family = tweedie(),
+                      mesh = mesh_summer,
+                      spatial = "on",
+                      spatiotemporal = "ar1", #ar1
+                      data = summer,
+                      time = "yearf")
+toc() #10min 
+
+#when seed set and no polynomials: The model may not have converged. Maximum final gradient: 0.116710570962219
+#sanity(fit3b_summer)
+#Red Xs: b_js, bs, thetaf, ln_phi
+#sanity(fit3b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#Red Xs: b_js, thetaf, ln_phi
+AIC(fit3b_summer)
+#267651.9
+summary(fit3b_summer)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
 
 #-------------------------------------
 
