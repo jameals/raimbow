@@ -2199,6 +2199,12 @@ fit2c_winter <- sdmTMB(tottraps ~ 0,
                          time = "yearf")
 toc() #4.4min
 
+res <- residuals(fit2c_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
+
+
 #when seed set at no polys: no warnings
 #sanity(fit2c_winter)
 #Red Xs: None
@@ -2670,7 +2676,9 @@ gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
 
 gridExtra::grid.arrange(p10,p11,p12,ncol=2)
 
-
+res <- residuals(fit10c_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 #------------
 
@@ -2916,6 +2924,44 @@ AIC(fit12b_winter)
 
 #plots <- plot_diag(fit12b_winter)
 
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit12b_winter, "season [all]")
+p2 <- plot_log(fit12b_winter, "month_name_f [all]")
+p3 <- plot_log(fit12b_winter, "OR_WA_waters [all]")
+p4 <- plot_log(fit12b_winter, "z_SST_avg [all]")
+p5 <- plot_log(fit12b_winter, "z_wind_avg [all]")
+p6 <- plot_log(fit12b_winter, "z_depth_point_mean [all]")
+p7 <- plot_log(fit12b_winter, "z_depth_point_sd [all]")
+p8 <- plot_log(fit12b_winter, "z_faults_km [all]")
+p9 <- plot_log(fit12b_winter, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit12b_winter, "z_weighted_dist [all]")
+p11 <- plot_log(fit12b_winter, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit12b_winter, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit12b_winter, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit12b_winter, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit12b_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
 
 
 
@@ -3036,6 +3082,46 @@ AIC(fit12e_winter)
 #Spatiotemporal AR1 correlation (rho): 0.48
 
 #plots <- plot_diag(fit12e_winter)
+
+
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit12e_winter, "season [all]")
+p2 <- plot_log(fit12e_winter, "month_name_f [all]")
+p3 <- plot_log(fit12e_winter, "OR_WA_waters [all]")
+p4 <- plot_log(fit12e_winter, "z_SST_avg [all]")
+p5 <- plot_log(fit12e_winter, "z_wind_avg [all]")
+p6 <- plot_log(fit12e_winter, "z_depth_point_mean [all]")
+p7 <- plot_log(fit12e_winter, "z_depth_point_sd [all]")
+p8 <- plot_log(fit12e_winter, "z_faults_km [all]")
+p9 <- plot_log(fit12e_winter, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit12e_winter, "z_weighted_dist [all]")
+p11 <- plot_log(fit12e_winter, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit12e_winter, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit12e_winter, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit12e_winter, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit12e_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
+
 #---------------------------------
 
 
