@@ -1130,6 +1130,510 @@ AIC(fit8_summer)
 
 #-------------------------------------
 
+#add chosen polynomial terms
+
+
+tic()
+fit10a_summer <- sdmTMB(tottraps ~ 0 + 
+                        season +
+                        month_name_f + 
+                        OR_WA_waters +
+                        WA_pot_reduction +
+                        z_SST_avg +
+                        z_wind_avg +
+                        poly(z_depth_point_mean,2) +
+                        z_depth_point_sd +
+                        z_faults_km +
+                        z_dist_canyon_km +
+                        z_weighted_dist +
+                        z_weighted_fuel_pricegal +
+                        z_weighted_crab_ppp +
+                        z_bottom_O2_avg +
+                        z_dist_to_closed_km,
+                      family = tweedie(),
+                      mesh = mesh_summer,
+                      spatial = "on",
+                      spatiotemporal = "ar1", # <- new
+                      data = summer,
+                      time = "yearf")
+toc() #12min
+
+#when seed set and depth is poly: The model may not have converged. Maximum final gradient: 0.0201316143244483
+#sanity(fit10a_summer)
+#red Xs: b_js, ln_tau, thetaf
+#sanity(fit10a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, thetaf
+AIC(fit10a_summer)
+#266794
+#summary(fit10a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+tic()
+fit10b_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          z_depth_point_mean +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #12min
+
+#when seed set and bottom O2 is poly: no warnings
+#sanity(fit10b_summer)
+#red Xs: b_js only
+#sanity(fit10b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js only
+AIC(fit10b_summer)
+#267626.3
+#summary(fit10b_summer)
+#Spatiotemporal AR1 correlation (rho): 0.47
+
+
+
+
+tic()
+fit10c_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #9min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit10c_summer)
+#red Xs: b_js, ln_tau, thetaf
+#sanity(fit10c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_j only
+AIC(fit10c_summer)
+#266778.5
+#summary(fit10c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+#plots <- plot_diag(fit10c_summer)
+
+
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit10c_summer, "season [all]")
+p2 <- plot_log(fit10c_summer, "month_name_f [all]")
+p3 <- plot_log(fit10c_summer, "OR_WA_waters [all]")
+p35 <- plot_log(fit10c_summer, "WA_pot_reduction [all]")
+p4 <- plot_log(fit10c_summer, "z_SST_avg [all]")
+p5 <- plot_log(fit10c_summer, "z_wind_avg [all]")
+p6 <- plot_log(fit10c_summer, "z_depth_point_mean [all]")
+p7 <- plot_log(fit10c_summer, "z_depth_point_sd [all]")
+p8 <- plot_log(fit10c_summer, "z_faults_km [all]")
+p9 <- plot_log(fit10c_summer, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit10c_summer, "z_weighted_dist [all]")
+p11 <- plot_log(fit10c_summer, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit10c_summer, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit10c_summer, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit10c_summer, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit10c_summer)
+qqnorm(res)
+qqline(res)
+
+
+
+tic()
+fit10d_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "iid", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #5min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit10d_summer)
+#red Xs: b_js, ln_tau
+#sanity(fit10d_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau
+AIC(fit10d_summer)
+#266859.2
+
+
+
+
+tic()
+fit10e_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #14min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit10e_summer)
+#red Xs: b_js, ln_tau, thetaf, ln_phi, ar1_phi
+#sanity(fit10e_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_phi 
+AIC(fit10e_summer)
+#266726.8
+#summary(fit10e_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+tic()
+fit10f_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #12min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit10f_summer)
+#red Xs: b_js, ln_tau, ln_kappa, thetaf, ln_phi
+#sanity(fit10f_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_j only
+AIC(fit10f_summer)
+#266479.6
+#summary(fit10f_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+#plots <- plot_diag(fit10f_summer)
+
+
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit10f_summer, "season [all]")
+p2 <- plot_log(fit10f_summer, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit10f_summer, "OR_WA_waters [all]")
+p35 <- plot_log(fit10f_summer, "WA_pot_reduction [all]")
+p4 <- plot_log(fit10f_summer, "z_SST_avg [all]")
+p5 <- plot_log(fit10f_summer, "z_wind_avg [all]")
+p6 <- plot_log(fit10f_summer, "z_depth_point_mean [all]")
+p7 <- plot_log(fit10f_summer, "z_depth_point_sd [all]")
+p8 <- plot_log(fit10f_summer, "z_faults_km [all]")
+p9 <- plot_log(fit10f_summer, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit10f_summer, "z_weighted_dist [all]")
+p11 <- plot_log(fit10f_summer, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit10f_summer, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit10f_summer, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit10f_summer, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit10f_summer)
+qqnorm(res)
+qqline(res)
+
+
+
+#-------------------------------------
+
+
+tic()
+fit11a_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "month_name_f")
+toc() #7min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit11a_summer)
+#red Xs: b_js, thetaf, ln_tau, sigma_O
+#sanity(fit11a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still thetaf, ln_tau, sigma_O
+AIC(fit11a_summer)
+#271257.9
+#summary(fit11a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.96
+
+
+
+
+tic()
+fit11b_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "month_of_seasonf")
+toc() #14min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit11a_summer)
+#red Xs: b_js, thetaf, ln_tau, sigma_O
+#sanity(fit11a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still thetaf, ln_tau, sigma_O
+AIC(fit11a_summer)
+#271257.9
+#summary(fit11a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.96
+
+
+
+
+tic()
+fit11c_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "half_month_of_seasonf")
+toc() #59min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit11c_summer)
+#red Xs: b_js, thetaf, ln_phi, ln_tau, sigma_O
+#sanity(fit11c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still ln_tau, sigma_O
+AIC(fit11c_summer)
+#270355.7
+#summary(fit11c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.98
+
+
+#-------------------------------------
+
+#INTERACTIONS
+
+tic()
+fit12a_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_crab_ppp + #interaction
+                          #z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #10min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit12a_summer)
+#red Xs: b_js, ln_tau_E
+#sanity(fit12a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#no red Xs 
+AIC(fit12a_summer)
+#266775.4
+#summary(fit12a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+#plots <- plot_diag(fit12a_summer)
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit12a_summer, "season [all]")
+p2 <- plot_log(fit12a_summer, "month_name_f [all]")
+p3 <- plot_log(fit12a_summer, "OR_WA_waters [all]")
+p35 <- plot_log(fit12a_summer, "WA_pot_reduction [all]")
+p4 <- plot_log(fit12a_summer, "z_SST_avg [all]")
+p5 <- plot_log(fit12a_summer, "z_wind_avg [all]")
+p6 <- plot_log(fit12a_summer, "z_depth_point_mean [all]")
+p7 <- plot_log(fit12a_summer, "z_depth_point_sd [all]")
+p8 <- plot_log(fit12a_summer, "z_faults_km [all]")
+p9 <- plot_log(fit12a_summer, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit12a_summer, "z_weighted_dist [all]")
+p11 <- plot_log(fit12a_summer, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit12a_summer, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit12a_summer, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit12a_summer, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit12a_summer)
+qqnorm(res)
+qqline(res)
 
 
 
@@ -1137,9 +1641,394 @@ AIC(fit8_summer)
 
 
 
+tic()
+fit12b_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          #z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_wind_avg + #interaction
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #9min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0222395155980664
+#sanity(fit12a_summer)
+#red Xs: b_js, ln_tau_E
+#sanity(fit12a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+# none
+AIC(fit12a_summer)
+#266775.4
+#summary(fit12a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
 
 
 
+
+
+
+tic()
+fit12c_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          #OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km * OR_WA_waters, #interaction
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #9min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0158429278868581
+#sanity(fit12c_summer)
+#red Xs: b_js, ln_tau_O
+#sanity(fit12c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau_O
+AIC(fit12c_summer)
+#266780.5
+#summary(fit12c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+tic()
+fit12d_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          #z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_dist + #interaction
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km, 
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #18min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0113732064805987
+#sanity(fit12d_summer)
+#red Xs: b_js, ln_tau, ln_kappa, ar1_phi
+#sanity(fit12d_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_j, ln_tau, ln_kappa
+AIC(fit12d_summer)
+#266778.4 
+#summary(fit12d_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+tic()
+fit12e_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg * z_wind_avg + #interaction
+                          #z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal + 
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km, 
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", # <- new
+                        data = summer,
+                        time = "yearf")
+toc() #9min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0146633443045658
+#sanity(fit12e_summer)
+#red Xs: b_js only
+#sanity(fit12e_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js only 
+AIC(fit12e_summer)
+# 266780.2
+#summary(fit12e_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+#-------------------------------
+
+
+tic()
+fit13a_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_crab_ppp + #interaction
+                          #z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #min
+
+#when seed set and depth & bottom O2 is poly: 
+#sanity(fit13a_summer)
+#red Xs: 
+#sanity(fit13a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still 
+AIC(fit13a_summer)
+#
+#summary(fit13a_summer)
+#Spatiotemporal AR1 correlation (rho): 
+
+#plots <- plot_diag(fit13a_summer)
+
+
+
+tic()
+fit13a_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_crab_ppp + #interaction
+                          #z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #12min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0282404987638287
+#sanity(fit13a_summer)
+#red Xs: b_js, ln_tau, thetaf, ln_phi
+#sanity(fit13a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, thetaf 
+AIC(fit13a_summer)
+#266474.6
+#summary(fit13a_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+tic()
+fit13b_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          #z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_wind_avg + #interaction
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #14min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0208514122309253
+#sanity(fit13b_summer)
+#red Xs: b_js, ln_tau, ln_kappa, thetaf, ar1_phi
+#sanity(fit13b_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_kappa
+AIC(fit13b_summer)
+#266473.2
+#summary(fit13b_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+tic()
+fit13c_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          #z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_dist + #interaction
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #12min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.027385052428599
+#sanity(fit13c_summer)
+#red Xs: b_js, ln_tau, ln_kappa, thetaf, ar1_phi
+#sanity(fit13c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau, ln_kappa, thetaf
+AIC(fit13c_summer)
+#266478.2
+#summary(fit13c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+
+
+tic()
+fit13d_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          #OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal + 
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km * OR_WA_waters, #interaction
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #14min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit13c_summer)
+#red Xs: b_js, ln_tau, ln_kappa, thetaf, ar1_phi
+#sanity(fit13c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau, ln_kappa, thetaf
+AIC(fit13c_summer)
+#266478.2
+#summary(fit13c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+
+tic()
+fit13e_summer <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          WA_pot_reduction +
+                          z_SST_avg * z_wind_avg +  #interaction
+                          #z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal + 
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km, 
+                        family = tweedie(),
+                        mesh = mesh_summer,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = summer,
+                        time = "yearf")
+toc() #11min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0328257078239034
+#sanity(fit13c_summer)
+#red Xs: b_js, ln_tau, ln_kappa, thetaf, ar1_phi
+#sanity(fit13c_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_tau, ln_kappa, thetaf
+AIC(fit13c_summer)
+#266478.2
+#summary(fit13c_summer)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+#-------------------------------
 
 
 
