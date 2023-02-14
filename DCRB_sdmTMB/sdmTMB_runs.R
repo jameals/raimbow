@@ -1796,44 +1796,6 @@ AIC(fit12e_summer)
 #-------------------------------
 
 
-tic()
-fit13a_summer <- sdmTMB(tottraps ~ 0 + 
-                          season +
-                          half_month_of_seasonf +  #new
-                          #month_name_f + 
-                          OR_WA_waters +
-                          WA_pot_reduction +
-                          z_SST_avg +
-                          z_wind_avg +
-                          poly(z_depth_point_mean,2) +
-                          z_depth_point_sd +
-                          z_faults_km +
-                          z_dist_canyon_km +
-                          z_weighted_dist +
-                          z_weighted_fuel_pricegal * z_weighted_crab_ppp + #interaction
-                          #z_weighted_crab_ppp +
-                          poly(z_bottom_O2_avg,2) +
-                          z_dist_to_closed_km,
-                        family = tweedie(),
-                        mesh = mesh_summer,
-                        spatial = "on",
-                        spatiotemporal = "ar1", 
-                        data = summer,
-                        time = "yearf")
-toc() #min
-
-#when seed set and depth & bottom O2 is poly: 
-#sanity(fit13a_summer)
-#red Xs: 
-#sanity(fit13a_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still 
-AIC(fit13a_summer)
-#
-#summary(fit13a_summer)
-#Spatiotemporal AR1 correlation (rho): 
-
-#plots <- plot_diag(fit13a_summer)
-
 
 
 tic()
@@ -2719,6 +2681,122 @@ AIC(fit10d_winter)
 
 
 
+tic()
+fit10e_winter <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          #WA_pot_reduction +  #not relevant in winter
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_winter,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = winter,
+                        time = "yearf")
+toc() #25min
+
+#when seed set and depth & bottom O2 is poly: no warnings
+#sanity(fit10e_winter)
+#red Xs: b_js only
+#sanity(fit10e_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still one b_j
+AIC(fit10e_winter)
+#728209.7
+#summary(fit10e_winter)
+#Spatiotemporal AR1 correlation (rho): 0.48
+
+
+#plots <- plot_diag(fit10e_winter)
+
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit10e_winter, "season [all]")
+p2 <- plot_log(fit10e_winter, "month_of_seasonf [all]")
+p3 <- plot_log(fit10e_winter, "OR_WA_waters [all]")
+p4 <- plot_log(fit10e_winter, "z_SST_avg [all]")
+p5 <- plot_log(fit10e_winter, "z_wind_avg [all]")
+p6 <- plot_log(fit10e_winter, "z_depth_point_mean [all]")
+p7 <- plot_log(fit10e_winter, "z_depth_point_sd [all]")
+p8 <- plot_log(fit10e_winter, "z_faults_km [all]")
+p9 <- plot_log(fit10e_winter, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit10e_winter, "z_weighted_dist [all]")
+p11 <- plot_log(fit10e_winter, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit10e_winter, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit10e_winter, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit10e_winter, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit10e_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
+
+
+
+
+tic()
+fit10f_winter <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          #WA_pot_reduction + #note relevant in winter
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_winter,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = winter,
+                        time = "yearf")
+toc() #23min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.102345627924144
+#sanity(fit10f_winter)
+#red Xs: b_js, ln_kappa, thetaf
+#sanity(fit10f_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ln_kappa, thetaf
+AIC(fit10f_winter)
+#727323.8
+#summary(fit10f_winter)
+#Spatiotemporal AR1 correlation (rho): 0.48
 
 
 
@@ -3125,9 +3203,79 @@ qqline(res)
 #---------------------------------
 
 
+tic()
+fit13a_winter <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          #WA_pot_reduction +  #not relevant in winter
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_crab_ppp +  #interaction
+                          #z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_winter,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = winter,
+                        time = "yearf")
+toc() #16min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0935398218437418
+#sanity(fit13a_winter)
+#red Xs: b_js, ar1_phi
+#sanity(fit13a_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, ar1_phi 
+AIC(fit13a_winter)
+#728137
+#summary(fit13a_winter)
+#Spatiotemporal AR1 correlation (rho): 0.48
 
 
 
+tic()
+fit13ax_winter <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                           half_month_of_seasonf +  #new
+                          #month_name_f + 
+                          OR_WA_waters +
+                          #WA_pot_reduction +  #not relevant in winter
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal * z_weighted_crab_ppp +  #interaction
+                          #z_weighted_crab_ppp +
+                          poly(z_bottom_O2_avg,2) +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_winter,
+                        spatial = "on",
+                        spatiotemporal = "ar1", 
+                        data = winter,
+                        time = "yearf")
+toc() #14min
+
+#when seed set and depth & bottom O2 is poly: The model may not have converged. Maximum final gradient: 0.0282729428644547
+#sanity(fit13ax_winter)
+#red Xs: b_js, ln_tau, thetaf
+#sanity(fit13ax_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#still b_js, thetaf
+AIC(fit13ax_winter)
+#727282
+#summary(fit13ax_winter)
+#Spatiotemporal AR1 correlation (rho): 0.48
 
 #---------------------------------
 
