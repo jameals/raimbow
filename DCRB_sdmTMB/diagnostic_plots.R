@@ -3,8 +3,12 @@ library(vista)
 
 plot_diag = function(obj) {
   d <- obj$data
-  d$pred <- predict(obj)$est
+  pred_obj <- predict(obj)
+  d$pred <- pred_obj$est
   d$resid <- residuals(obj)
+  d$spatial <- pred_obj$omega_s
+  d$spatiotemporal <- pred_obj$epsilon_st
+  d$rf_combined <- pred_obj$est_rf
   
   # first -- make basic residual plots with vista
   # https://fate-spatialindicators.github.io/vista/
@@ -89,5 +93,20 @@ plot_diag = function(obj) {
     geom_point(alpha=0.1)  + 
     geom_smooth() + ylab("Residuals")
   
+  #d$spatial <- pred_obj$omega_s
+  #d$spatiotemporal <- pred_obj$epsilon_st
+  #d$rf_combined <- pred_obj$est_rf
+  plots[[23]] <- ggplot(d, aes(X, Y, col = spatial)) + geom_point(alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_color_viridis(end = 0.8) + 
+    ggtitle("Spatial field")
+  
+  d$time <- d[[obj$time]]
+  plots[[24]] <- ggplot(d, aes(X, Y, col = spatiotemporal)) + geom_point(alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_color_viridis(end = 0.8) + 
+    ggtitle("Spatiotemporal field") + facet_wrap(~ time)
+  
+  plots[[25]] <- ggplot(d, aes(X, Y, col = rf_combined)) + geom_point(alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_color_viridis(end = 0.8) + 
+    ggtitle("Combined random field") + facet_wrap(~ time)
   return(plots)
 }
