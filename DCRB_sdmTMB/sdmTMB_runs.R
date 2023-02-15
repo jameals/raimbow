@@ -13,6 +13,7 @@
 
 #-------------------------------------------------------------------------------------------------
 
+library(here)
 library(ggplot2)
 library(tidyverse)
 library(sdmTMB)
@@ -1701,15 +1702,22 @@ toc() #12min
 
 #when seed set and depth & bottom O2 is poly: no warnings
 #sanity(fit10f_summer)
-#red Xs: b_js, ln_tau, ln_kappa, thetaf, ln_phi
+#red Xs: b_js, thetaf, ln_phi (old model run: b_js, ln_tau, ln_kappa, thetaf, ln_phi)
 #sanity(fit10f_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#still b_j only
+#still b_js, thetaf (old model run: b_j only)
 AIC(fit10f_summer)
 #266479.6
 #summary(fit10f_summer)
 #Spatiotemporal AR1 correlation (rho): 0.48
 
+
+#exported model
+#write_rds(fit10f_summer,here::here('DCRB_sdmTMB', 'exported model objects',"fit10f_summer.rds"))
+#testrds <- read_rds(here::here('DCRB_sdmTMB', 'exported model objects','fit10f_summer.rds')) 
+
+#plots for exported model
 #plots <- plot_diag(fit10f_summer)
+
 
 
 #some plots
