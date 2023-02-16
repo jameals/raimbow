@@ -1,0 +1,85 @@
+---
+title: "Cross validation example - winter"
+format: pdf
+date: "`r Sys.Date()`"
+editor: visual
+---
+
+## Data loading and cleaning
+
+```{r}
+library(sdmTMB)
+library(mgcv)
+library(ggeffects)
+library(ggplot2)
+
+d = readRDS("data/df_full_final_tidy_all_data.rds")
+
+# Filter out NAs
+d$yearn <- as.numeric(substr(d$season,1,4))
+d$yearf <- as.factor(d$yearn)
+
+winter <- dplyr::filter(d, month_name %in% c("December", "January", "February",
+                                        "March", "April", "May"))
+# try smooth over months
+winter$month_n <- 1
+winter$month_n[which(winter$month_name=="January")] = 2
+winter$month_n[which(winter$month_name=="February")] = 3
+winter$month_n[which(winter$month_name=="March")] = 4
+winter$month_n[which(winter$month_name=="April")] = 5
+winter$month_n[which(winter$month_name=="May")] = 6
+# Add UTM columns (zone 10)
+winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
+```
+
+## Workflow
+
+-   identify a small number of models to do the cross validation for. below is code for 1 model, and you'd want to repeat this for several
+-   identify time period used for validation. below, it's the second half-month of April. For the May/summer models, this filtering will have to be slightly different.
+-   to make sure our predictions are robust, we'll want to test each of these models against 5-10 years of data. These are forward looking, so all future years are not included in fits
+-   sdmTMB_cv replaces sdmTMB, where we include the fold IDs
+-   several metrics exist for model selection, and we want to total these across our validation years. The highest ELPD or loglik will correspond to the model with highest predictive accuracy.
+
+## Example of a model
+
+```{r eval = FALSE}
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+
+cv_fits <- list()
+
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+
+for(yr in validation_years) {
+
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + month_name + OR_WA_waters +
+                 season + 
+                SST_avg + 
+                wind_avg, 
+            family = tweedie(),
+            fold_ids = sub$fold_id,
+              mesh = mesh,
+              spatial = "on",
+              spatiotemporal = "iid",
+              data = sub,
+              time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+
+```
