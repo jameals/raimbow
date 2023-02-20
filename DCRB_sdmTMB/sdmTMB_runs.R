@@ -23,6 +23,7 @@ library(mgcv)
 library(ggeffects)
 library(tictoc)
 library(plotmo)
+library(viridis)
 
 #this was needed for sdmTMB to work
 #install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
@@ -713,7 +714,7 @@ toc() #30min
 
 #The model may not have converged. Maximum final gradient: 0.0343650626988037
 #sanity(fit10e_all_data)
-#Red Xs: b_js, thetaf
+#Red Xs: b_js, thetaf ---- on a later run "Non-linear minimizer did not converge: do not trust this model!"
 #sanity(fit10e_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: b_js only
 AIC(fit10e_all_data)
@@ -1174,12 +1175,52 @@ AIC(fit12d_all_data)
 
 #exported model - where b_js only
 #write_rds(fit12d_all_data,here::here('DCRB_sdmTMB', 'exported model objects',"fit12d_all_data_v1.rds"))
+#fit12d_all_data <- read_rds(here::here('DCRB_sdmTMB', 'exported model objects','fit12d_all_data_v1.rds')) 
 
 
+#plots <- plot_diag(fit12d_all_data)
+
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
 
 
+p1 <- plot_log(fit12d_all_data, "season [all]")
+p2 <- plot_log(fit12d_all_data, "month_name_f [all]")
+p3 <- plot_log(fit12d_all_data, "OR_WA_waters [all]")
+p35 <- plot_log(fit12d_all_data, "WA_pot_reduction [all]")
+p4 <- plot_log(fit12d_all_data, "z_SST_avg [all]")
+p5 <- plot_log(fit12d_all_data, "z_wind_avg [all]")
+p6 <- plot_log(fit12d_all_data, "z_depth_point_mean [all]")
+p7 <- plot_log(fit12d_all_data, "z_depth_point_sd [all]")
+p8 <- plot_log(fit12d_all_data, "z_faults_km [all]")
+p9 <- plot_log(fit12d_all_data, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit12d_all_data, "z_weighted_dist [all]")
+p11 <- plot_log(fit12d_all_data, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit12d_all_data, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit12d_all_data, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit12d_all_data, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit12d_all_data)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 
+##
 
 tic()
 fit12e_all_data <- sdmTMB(tottraps ~ 0 + 
@@ -1375,9 +1416,52 @@ AIC(fit13c_all_data)
 #summary(fit13c_all_data) #rho = 0.97
 
 #write_rds(fit13c_all_data,here::here('DCRB_sdmTMB', 'exported model objects','some all data models',"fit13c_all_data_v1.rds"))
+#fit13c_all_data <- read_rds(here::here('DCRB_sdmTMB', 'exported model objects','some all data models',"fit13c_all_data_v1.rds")) 
 
 
+#plots <- plot_diag(fit13c_all_data)
 
+#some plots
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit13c_all_data, "season [all]")
+p2 <- plot_log(fit13c_all_data, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit13c_all_data, "OR_WA_waters [all]")
+p35 <- plot_log(fit13c_all_data, "WA_pot_reduction [all]")
+p4 <- plot_log(fit13c_all_data, "z_SST_avg [all]")
+p5 <- plot_log(fit13c_all_data, "z_wind_avg [all]")
+p6 <- plot_log(fit13c_all_data, "z_depth_point_mean [all]")
+p7 <- plot_log(fit13c_all_data, "z_depth_point_sd [all]")
+p8 <- plot_log(fit13c_all_data, "z_faults_km [all]")
+p9 <- plot_log(fit13c_all_data, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit13c_all_data, "z_weighted_dist [all]")
+p11 <- plot_log(fit13c_all_data, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit13c_all_data, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit13c_all_data, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit13c_all_data, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit13c_all_data)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
+
+#####
 #
 tic()
 fit13cx_all_data <- sdmTMB(tottraps ~ 0 + 
