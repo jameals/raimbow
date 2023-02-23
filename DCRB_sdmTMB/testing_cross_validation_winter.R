@@ -469,11 +469,11 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-##DID THIS ONE HAVE WARNINGS??
+##had some wraning ar1 close to ro at its lowest end. and the 'may not have convergerd - hessina matrix stuff
 
-#took about h
-#tot_elpd = -s
-#tot_loglik = -
+#took about 2.2h
+#tot_elpd = -3.094883
+#tot_loglik = -26756
 
 
 #---------------------------------------------
