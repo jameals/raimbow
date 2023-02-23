@@ -1,0 +1,516 @@
+## testing cross validation - winter 
+
+#---------------------------------------------
+
+#use Eric's code from here: https://github.com/jameals/raimbow/blob/master/DCRB_sdmTMB/cv_example_winter.qmd
+
+
+#---------------------------------------------
+
+
+library(here)
+library(tidyverse)
+library(tictoc)
+library(viridis)
+
+library(sdmTMB)
+library(mgcv)
+library(ggeffects)
+library(ggplot2)
+
+
+#---------------------------------------------
+
+
+## Data loading and cleaning
+
+
+#d = readRDS("data/df_full_final_tidy_all_data.rds")
+
+#if instead read in this one, can skip couple of the next steps:
+#but note that we need May in the data set as well
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds')) 
+d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
+                                                  "May", "June", "July", "August", "September"))
+
+# # Filter out NAs
+# d$yearn <- as.numeric(substr(d$season,1,4))
+# d$yearf <- as.factor(d$yearn)
+
+winter <- dplyr::filter(d, month_name %in% c("December", "January", "February",
+                                            "March", "April", "May"))
+
+# # try smooth over months
+# winter$month_n <- 1
+# winter$month_n[which(winter$month_name=="January")] = 2
+# winter$month_n[which(winter$month_name=="February")] = 3
+# winter$month_n[which(winter$month_name=="March")] = 4
+# winter$month_n[which(winter$month_name=="April")] = 5
+# winter$month_n[which(winter$month_name=="May")] = 6
+
+
+# Add UTM columns (zone 10)
+winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
+
+
+#---------------------------------------------
+
+## Workflow
+
+#-   identify a small number of models to do the cross validation for. below is code for 1 model, and you'd want to repeat this for several
+#-   identify time period used for validation. below, it's the second half-month of April. For the May/summer models, this filtering will have to be slightly different.
+#-   to make sure our predictions are robust, we'll want to test each of these models against 5-10 years of data. These are forward looking, so all future years are not included in fits
+#-   sdmTMB_cv replaces sdmTMB, where we include the fold IDs
+#-   several metrics exist for model selection, and we want to total these across our validation years. The highest ELPD or loglik will correspond to the model with highest predictive accuracy.
+
+#---------------------------------------------
+
+## Example of a model
+
+#based on fit10e_winter but no polynomial terms
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_of_seasonf +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+#took about 1.3 hours
+#tot_elpd = -3.280038
+#tot_loglik = -26529.34
+
+
+#---------------------------------------------
+
+#same as above but with iid
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_of_seasonf +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "iid",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#took about 40mins
+#tot_elpd = -3.28263
+#tot_loglik = -26,528.2
+
+
+#---------------------------------------------
+
+#month_name_f as fixed effect
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#took about 1.6h
+#tot_elpd = -3.248421
+#tot_loglik = -26498.39
+
+
+#---------------------------------------------
+
+#month_name_f as fixed effect - now with iid
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "iid",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#took about 39min
+#tot_elpd = -3.250456
+#tot_loglik = -26495.87
+
+#---------------------------------------------
+
+
+#based on fit10f_winter but no polynomial terms - test HMOS as fixed effect 
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 half_month_of_seasonf +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#took about 1.4h
+#tot_elpd = -3.293931
+#tot_loglik = -26546.88
+
+
+#---------------------------------------------
+
+#based on fit10f_winter but no polynomial terms - test HMOS as fixed effect WITH IID
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 half_month_of_seasonf +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "iid",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#took about 46min
+#tot_elpd = -3.296629
+#tot_loglik = -26545.78
+
+
+
+#---------------------------------------------
+
+#based on fit2_winter but no polynomial terms - time = "half_month_of_seasonf" 
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "half_month_of_season") #The time column is a factor and there are extra factor levels
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+##DID THIS ONE HAVE WARNINGS??
+
+#took about h
+#tot_elpd = -s
+#tot_loglik = -
+
+
+#---------------------------------------------
+
+
+
+
+#---------------------------------------------
+
+
+
+
+
+#---------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
