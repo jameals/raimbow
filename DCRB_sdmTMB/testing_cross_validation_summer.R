@@ -47,6 +47,42 @@ summer$month_name_f <- factor(summer$month_name, levels = c("May", "June", "July
 summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
 
 
+
+
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds')) 
+
+d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
+                                                  "May", "June", "July", "August", "September"))
+
+# Filter out NAs
+#d$yearn <- as.numeric(substr(d$season,1,4))
+#d$yearf <- as.factor(d$yearn)
+
+summer <- dplyr::filter(d, month_name %in% c("May","June","July","August","September"))
+
+# # try smooth over months
+# summer$month_n <- 1
+# summer$month_n[which(summer$month_name=="June")] = 2
+# summer$month_n[which(summer$month_name=="July")] = 3
+# summer$month_n[which(summer$month_name=="August")] = 4
+# summer$month_n[which(summer$month_name=="September")] = 5
+
+# Add UTM columns (zone 10)
+summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #---------------------------------------------
 
 ## Workflow
@@ -545,7 +581,72 @@ toc()
 #tot_loglik = -297,753
 
 
+#---------------------------------------------
 
+
+# test polynomial terms on new input data
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  train <- dplyr::filter(summer, yearn < yr)
+  train$fold_id <- 1
+  test <- dplyr::filter(summer, yearn == yr, month_name == "May")
+  test$fold_id <- 2
+  sub <- rbind(test, train)
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season + 
+                                 month_name_f + 
+                                 OR_WA_waters +
+                                 WA_pot_reduction +
+                                 z_SST_avg  + 
+                                 z_wind_avg +
+                                 poly(z_depth_point_mean,2) +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 poly(z_bottom_O2_avg,2) +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+#1: The model may not have converged: non-positive-definite Hessian matrix.
+#2: The time elements in `newdata` are not identical to those in the original dataset.
+#This is normally fine, but may create problems for index standardization.
+#9: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn,  ... :  NA/NaN function evaluation
+#the first 1-2 round were super quick, extra warnings?
+
+#took about 39mins
+#tot_elpd = -2.802408
+#tot_loglik = -42865.04
+
+
+#---------------------------------------------
 
 
 
