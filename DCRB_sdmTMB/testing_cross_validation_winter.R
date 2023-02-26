@@ -69,6 +69,11 @@ winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
 
 #based on fit10e_winter but no polynomial terms
 
+#this doesn't work with polys
+#Error in stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :  NA/NaN gradient evaluation
+#In addition: Warning message:
+#In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :  NA/NaN function evaluation
+
 
 tic()
 validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
@@ -93,14 +98,14 @@ for(yr in validation_years) {
                                  #WA_pot_reduction +  #not relevant in winter
                                  z_SST_avg +
                                  z_wind_avg +
-                                 z_depth_point_mean +
+                                 poly(z_depth_point_mean,2) +
                                  z_depth_point_sd +
                                  z_faults_km +
                                  z_dist_canyon_km +
                                  z_weighted_dist +
                                  z_weighted_fuel_pricegal +
                                  z_weighted_crab_ppp +
-                                 z_bottom_O2_avg +
+                                 poly(z_bottom_O2_avg,2) +
                                  z_dist_to_closed_km, 
                                family = tweedie(),
                                fold_ids = sub$fold_id,
@@ -126,6 +131,7 @@ toc()
 #---------------------------------------------
 
 #same as above but with iid
+#polys don't work in this one either
 
 tic()
 validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
@@ -150,14 +156,14 @@ for(yr in validation_years) {
                                  #WA_pot_reduction +  #not relevant in winter
                                  z_SST_avg +
                                  z_wind_avg +
-                                 z_depth_point_mean +
+                                 poly(z_depth_point_mean,2) +
                                  z_depth_point_sd +
                                  z_faults_km +
                                  z_dist_canyon_km +
                                  z_weighted_dist +
                                  z_weighted_fuel_pricegal +
                                  z_weighted_crab_ppp +
-                                 z_bottom_O2_avg +
+                                 poly(z_bottom_O2_avg,2) +
                                  z_dist_to_closed_km, 
                                family = tweedie(),
                                fold_ids = sub$fold_id,
@@ -184,6 +190,7 @@ toc()
 #---------------------------------------------
 
 #month_name_f as fixed effect
+#didn't run it, but polys seem to work in this model
 
 tic()
 validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
@@ -208,14 +215,14 @@ for(yr in validation_years) {
                                  #WA_pot_reduction +  #not relevant in winter
                                  z_SST_avg +
                                  z_wind_avg +
-                                 z_depth_point_mean +
+                                 poly(z_depth_point_mean,2) +
                                  z_depth_point_sd +
                                  z_faults_km +
                                  z_dist_canyon_km +
                                  z_weighted_dist +
                                  z_weighted_fuel_pricegal +
                                  z_weighted_crab_ppp +
-                                 z_bottom_O2_avg +
+                                 poly(z_bottom_O2_avg,2) +
                                  z_dist_to_closed_km, 
                                family = tweedie(),
                                fold_ids = sub$fold_id,
