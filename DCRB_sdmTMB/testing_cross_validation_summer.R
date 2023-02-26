@@ -98,7 +98,7 @@ summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
 ## Example of a model
 
 # first test: fit10f_summer -- except can't add in polynomials without getting an error - so do fit10f without polynomials
-
+#now try this with new input file and polynomials should work --no still doesn't work...
 
 
 tic()
@@ -150,12 +150,21 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-#took about 40-45mins
+#took about 40-45mins (when input df that is already prefiltered to be summer and then z-scored)
 #tot_elpd = -9.716058
 #tot_loglik = -1,148,336
 
 #exported model
 #write_rds(cv_fits[[indx]],here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation',"fit10f_summer_noPolys.rds"))
+
+#when re-run with the new input file (all data, and then filter) but no polynomials
+#46min
+#1: The model may not have converged: non-positive-definite Hessian matrix.
+#2: The time elements in `newdata` are not identical to those in the original dataset.
+#This is normally fine, but may create problems for index standardization.
+#tot_elpd = -9.690052
+#tot_loglik = -1,128,565
+
 
 #---------------------------------------------
 
@@ -217,7 +226,7 @@ toc()
 
 #---------------------------------------------
 
-#now try version of fit11c_summer (but no polys)
+#now try version of fit11c_summer (but no polys) -- this one can be run with polys
 
 tic()
 validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
@@ -243,14 +252,14 @@ for(yr in validation_years) {
                                  WA_pot_reduction +
                                  z_SST_avg  + 
                                  z_wind_avg +
-                                 z_depth_point_mean +
+                                 poly(z_depth_point_mean,2) +
                                  z_depth_point_sd +
                                  z_faults_km +
                                  z_dist_canyon_km +
                                  z_weighted_dist +
                                  z_weighted_fuel_pricegal +
                                  z_weighted_crab_ppp +
-                                 z_bottom_O2_avg +
+                                 poly(z_bottom_O2_avg,2) +
                                  z_dist_to_closed_km, 
                                family = tweedie(),
                                fold_ids = sub$fold_id,
@@ -275,8 +284,13 @@ toc()
 #tot_elpd = -9.54091
 #tot_loglik = -367,848.2
 
-
-
+#if add polynomial terms
+#3.3 h
+#1: The model may not have converged: non-positive-definite Hessian matrix.
+#3: The time elements in `newdata` are not identical to those in the original dataset.
+#This is normally fine, but may create problems for index standardization.
+#tot_elpd = -3.415496
+#tot_loglik = -33,997.32
 
 #---------------------------------------------
 
@@ -526,6 +540,7 @@ toc()
 
 
 # test one interaction with the best cv test
+#didn't run it, but looks like this should work with polynomials
 
 tic()
 validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
@@ -551,14 +566,14 @@ for(yr in validation_years) {
                                  #WA_pot_reduction +
                                  z_SST_avg  + 
                                  z_wind_avg +
-                                 z_depth_point_mean +
+                                 poly(z_depth_point_mean,2) +
                                  z_depth_point_sd +
                                  z_faults_km +
                                  z_dist_canyon_km +
                                  z_weighted_dist +
                                  z_weighted_fuel_pricegal +
                                  z_weighted_crab_ppp +
-                                 z_bottom_O2_avg +
+                                 poly(z_bottom_O2_avg,2) +
                                  z_dist_to_closed_km * WA_pot_reduction, 
                                family = tweedie(),
                                fold_ids = sub$fold_id,
