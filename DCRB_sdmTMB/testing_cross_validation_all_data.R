@@ -806,10 +806,14 @@ tot_loglik <- sum(model_selection$loglik)
 toc()
 
 
-#took about hours 
-#tot_elpd = -
-#tot_loglik = -
-
+#took about 2.4hours 
+#tot_elpd = -2.278948
+#tot_loglik = -58774.31
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 7: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn,  ... : NA/NaN function evaluation
+# 15: In sqrt(diag(cov)) : NaNs produced
 
 
 
