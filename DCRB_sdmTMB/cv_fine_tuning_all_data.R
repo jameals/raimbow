@@ -74,7 +74,8 @@ for(yr in validation_years) {
   mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
   # fit model with sdmTMB_cv
   indx <- yr - min(validation_years) + 1
-  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + season +
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
                                  month_name_f +  
                                  #OR_WA_waters + #part of interaction term
                                  WA_pot_reduction +  
