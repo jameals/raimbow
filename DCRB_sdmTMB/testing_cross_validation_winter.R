@@ -69,6 +69,8 @@ winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
 
 #based on fit10e_winter but no polynomial terms
 
+#test 1
+
 #this doesn't work with polys
 #Error in stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,  :  NA/NaN gradient evaluation
 #In addition: Warning message:
@@ -130,6 +132,8 @@ toc()
 
 #---------------------------------------------
 
+#test 2
+
 #same as above but with iid
 #polys don't work in this one either
 
@@ -188,6 +192,8 @@ toc()
 
 
 #---------------------------------------------
+
+#test 3
 
 #month_name_f as fixed effect
 #didn't run it, but polys seem to work in this model
@@ -248,6 +254,8 @@ toc()
 
 #---------------------------------------------
 
+#test 4
+
 #month_name_f as fixed effect - now with iid
 
 tic()
@@ -305,6 +313,7 @@ toc()
 
 #---------------------------------------------
 
+#test 5
 
 #based on fit10f_winter but no polynomial terms - test HMOS as fixed effect 
 
@@ -364,6 +373,8 @@ toc()
 
 
 #---------------------------------------------
+
+#test 6
 
 #based on fit10f_winter but no polynomial terms - test HMOS as fixed effect WITH IID
 
@@ -425,6 +436,8 @@ toc()
 
 #---------------------------------------------
 
+#test 7 
+
 #based on fit2_winter but no polynomial terms - time = "half_month_of_seasonf" 
 
 
@@ -484,6 +497,8 @@ toc()
 
 
 #---------------------------------------------
+
+# test 7b
 
 #same as above but with iid
 
@@ -546,7 +561,7 @@ toc()
 
 #---------------------------------------------
 
-
+#test 8
 
 #based on  fit7_winter but no polynomial terms - time = "month_n" 
 
@@ -611,6 +626,8 @@ toc()
 
 #---------------------------------------------
 
+#test 8b
+
 #same as above but now with iid
 
 tic()
@@ -674,6 +691,7 @@ toc()
 
 #---------------------------------------------
 
+#test 9
 
 #based on  fit11b_winter but no polynomial terms - time = "month_of_season" 
 
@@ -738,6 +756,8 @@ toc()
 
 #---------------------------------------------
 
+#test 10 
+
 #model based of fit2c_winter - no covariates - test different terms in time = xx?
 
 
@@ -775,6 +795,7 @@ tot_loglik <- sum(model_selection$loglik)
 toc()
 
 
+#test 10
 #time = "yearn"
 #1: The time elements in `newdata` are not identical to those in the original dataset.
 #This is normally fine, but may create problems for index standardization. 
@@ -785,7 +806,7 @@ toc()
 #tot_elpd = -3.774164
 #tot_loglik = -27236.09
 
-
+#test 10b
 #time = "month_n"
 #1: The time elements in `newdata` are not identical to those in the original dataset.
 #This is normally fine, but may create problems for index standardization. 
@@ -796,7 +817,7 @@ toc()
 #tot_elpd = -3.008716
 #tot_loglik = -26900.54
 
-
+#test 10c
 #time = "month_of_season"
 #1: In sqrt(diag(cov)) : NaNs produced
 #2: The model may not have converged: non-positive-definite Hessian matrix.
@@ -808,7 +829,7 @@ toc()
 #tot_elpd = -3.198134
 #tot_loglik = -26757.84
 
-
+#Test 10d
 #time = "half_month_of_season"
 #1: Parameter ar1_phi is very close or equal to its lower bound.
 #Consider changing your model configuration or bounds. 
@@ -821,6 +842,8 @@ toc()
 
 
 #---------------------------------------------
+
+#test 11
 
 #realised polynomial terms work here
 #month_name_f as fixed effect (test 3) but now with polynomials
