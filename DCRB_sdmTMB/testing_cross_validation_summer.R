@@ -1213,12 +1213,101 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-#took about mins
-#tot_elpd = -
-#tot_loglik = -
+#took about 57mins
+#tot_elpd = -4.660863
+#tot_loglik = -45053.38
+
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 7: Parameter ar1_phi is very close or equal to its lower bound.
+# Consider changing your model configuration or bounds.
+
 
 #--------------------------------------------------
 
+#test 10 to 10d -- no covariates included - test different terms in time = xx?
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  train <- dplyr::filter(summer, yearn < yr)
+  train$fold_id <- 1
+  test <- dplyr::filter(summer, yearn == yr, month_name == "May")
+  test$fold_id <- 2
+  sub <- rbind(test, train)
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0,
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "half_month_of_season")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these,
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+
+#time = "yearn"
+#took about 8 mins
+#tot_elpd = -2.136352
+#tot_loglik = -31958.28
+# 1: In sqrt(diag(cov)) : NaNs produced
+# 2: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 6: The model may not have converged. Maximum final gradient: 0.0494452411295043.
+# 19: The model may not have converged. Maximum final gradient: 0.136542894124339.
+
+#time = "month_n"
+#took about 4mins
+#tot_elpd = -2.537671
+#tot_loglik = -27630.81
+# 1: In sqrt(diag(cov)) : NaNs produced
+# 2: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 12: The model may not have converged: extreme or very small eigen values detected.
+#THIS ONE SAYS CONVERGED: TRUE
+
+#time = "month_of_season"
+#took about 15mins
+#tot_elpd = -2.542227
+#tot_loglik = -28139.36
+# 1: In sqrt(diag(cov)) : NaNs produced
+# 2: The model may not have converged: non-positive-definite Hessian matrix. 
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization. 
+#THIS ONE SAYS CONVERGED: TRUE
+
+
+#time = "half_month_of_season"
+#took about 49mins
+#tot_elpd = -2.501227
+#tot_loglik = -28073.07
+# 1: Parameter ar1_phi is very close or equal to its lower bound.
+# Consider changing your model configuration or bounds. 
+# 2: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization. 
+#THIS ONE SAYS CONVERGED: TRUE
+
+
+#--------------------------------------------------
 
 #test 11 = test 3 but with polynomial terms
 
