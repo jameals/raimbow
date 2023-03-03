@@ -901,15 +901,167 @@ toc()
 #This is normally fine, but may create problems for index standardization.
 
 #took about 1.7h
-#tot_elpd = -
-#tot_loglik = -
+#tot_elpd = -3.24055
+#tot_loglik = -26431.91
 
 
 #---------------------------------------------
 
 #---------------------------------------------
 
+#test Eric's suggested fix to solve convergence issues
+# "If you inspect the fitted model's 'sdreport', e.g. fit$sdreport, you'll see a number of the b_j elements exactly 0.
+# This gives a clue that something's amiss. What's happening was that the model is trying to estimate coefficients 
+# for all months / years, even those that had been filtered out of the original datsaset. 
+# So the fix is to create the factors from the 'sub' dataframe right before fitting. 
+# For example, you could add the line
+# > sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+# right before the sdmTMB_cv() line
+
+
+#try this on test 3
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  #new
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 poly(z_depth_point_mean,2) +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 poly(z_bottom_O2_avg,2) +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+#took about 1.5h
+#tot_elpd = -3.240544
+#tot_loglik = -26431.9
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0350006509944336.
+# 3: The time elements in `newdata` are not identical to those in the original
+# dataset.
+# This is normally fine, but may create problems for index standardization.
+# 5: The model may not have converged. Maximum final gradient: 0.0260781339255871.
+# This is normally fine, but may create problems for index standardization.
+# 7: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn,  ... :  NA/NaN function evaluation
+# 9: The model may not have converged. Maximum final gradient: 0.0317673145919155.
+# 12: The model may not have converged. Maximum final gradient: 0.0170458381847016.
+# 15: The model may not have converged. Maximum final gradient: 0.0209721724593714.
+
+#models[[1]] coef.se are NaN, but models[[2]] has real values
+# $converged
+# [1] FALSE
+# $pdHess
+# [1] FALSE  TRUE
+
 #---------------------------------------------
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  
+                                 #OR_WA_waters + #part of interaction term
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 poly(z_depth_point_mean,2) +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 OR_WA_waters * z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1", #this could be changed to iid
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+#took about 1.9h
+#tot_elpd = -3.174503
+#tot_loglik = -26382.78
+
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0501663847832816.
+# 3: The time elements in `newdata` are not identical to those in the original
+# dataset.
+# This is normally fine, but may create problems for index standardization.
+# 5: The model may not have converged. Maximum final gradient: 0.226560473671281.
+# 8: The model may not have converged. Maximum final gradient: 0.0716482083583689.
+# 11: The model may not have converged. Maximum final gradient: 0.0743825495192245.
+# 14: The model may not have converged. Maximum final gradient: 0.0160229243713683.
+
+#models[[1]] coef.se are NaN, but models[[2]] has real values
+# $converged
+# [1] FALSE
+# $pdHess
+# [1] FALSE  TRUE
 
 #---------------------------------------------
 
