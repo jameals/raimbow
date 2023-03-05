@@ -1031,7 +1031,7 @@ for(yr in validation_years) {
                                fold_ids = sub$fold_id,
                                mesh = mesh,
                                spatial = "on",
-                               spatiotemporal = "ar1", #this could be changed to iid
+                               spatiotemporal = "iid", #this could be changed to iid / ar1
                                data = sub,
                                time = "yearn")
   #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
@@ -1043,19 +1043,40 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
+#when  use ar1
 #took about 1.9h
 #tot_elpd = -3.174503
 #tot_loglik = -26382.78
 
 # 1: The model may not have converged: non-positive-definite Hessian matrix.
 # 2: The model may not have converged. Maximum final gradient: 0.0501663847832816.
-# 3: The time elements in `newdata` are not identical to those in the original
-# dataset.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
 # This is normally fine, but may create problems for index standardization.
 # 5: The model may not have converged. Maximum final gradient: 0.226560473671281.
 # 8: The model may not have converged. Maximum final gradient: 0.0716482083583689.
 # 11: The model may not have converged. Maximum final gradient: 0.0743825495192245.
 # 14: The model may not have converged. Maximum final gradient: 0.0160229243713683.
+
+#models[[1]] coef.se are NaN, but models[[2]] has real values
+# $converged
+# [1] FALSE
+# $pdHess
+# [1] FALSE  TRUE
+
+
+#when  use iid
+#took about 42min
+#tot_elpd = -3.176277
+#tot_loglik = -26380.35
+
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0707940909908444.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 5: The model may not have converged. Maximum final gradient: 0.0314324164842628.
+# 8: The model may not have converged. Maximum final gradient: 0.0165566737313227.
+# 11: The model may not have converged. Maximum final gradient: 0.0223200074353397.
+# 14: The model may not have converged. Maximum final gradient: 0.0840231262982662.
 
 #models[[1]] coef.se are NaN, but models[[2]] has real values
 # $converged
