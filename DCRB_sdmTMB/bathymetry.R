@@ -1,5 +1,8 @@
 # predictor variable: bathymetry
 
+#there is a lot of unnecessary code here as originally compared the depth values based on
+#GEBCO depth extracted to pot points, zonal statistic used on GEBCO depth and study area grids,
+#and the original depth layer from Blake which didn't have real depth for ports and embayments
 #-------------------------------------------------------------------------------------------------
 
 library(tidyverse)
@@ -185,8 +188,9 @@ all_logs_points_sf_GEBCObathy_NOgeom2 <- rbind(all_logs_points_sf_GEBCObathy_NOg
 
 #assign depth for a grid cell based on the depth of each pot in it
 summary_from_points <- all_logs_points_sf_GEBCObathy_NOgeom2 %>% 
-  #need to filter out port and embayments, large negative values
-  filter(depth > -1000) %>% 
+  #need to filter out port and embayments, large negative values 
+  #actually no, as no longer need to compare the different depth data
+  #filter(depth > -1000) %>% 
   #drop out the few cases of no grid ID
   filter(!is.na(GRID5KM_ID)) %>% 
   group_by(GRID5KM_ID) %>% 
@@ -230,7 +234,7 @@ study_area_grids_with_bathy <- depth_comparison %>%
          depth_point_median = median_depth_gebco,
          depth_point_sd = stdev_depth_gebco
          ) %>% 
-  #if point extracted mean/median depth is > 0 (8 unique grids), make it -1
+  #if point extracted mean/median depth is > 0 (19 unique grids), make it -1
   mutate(depth_point_median = ifelse(depth_point_median > 0, -1, depth_point_median)) %>% 
   mutate(depth_point_mean = ifelse(depth_point_mean > 0, -1, depth_point_mean)) 
 
@@ -254,6 +258,17 @@ mean_depth_positive <- mean_depth_positive %>%
   mutate(depth_zonal_mean = ifelse(is.na(depth_point_mean), -1, depth_point_mean))
 
 study_area_grids_with_bathy <- rbind(mean_depth_positive, mean_depth_negative)
+
+
+#originally filled in NAs in depth_point_mean with depth_zonal_mean. 
+#later decision on restricting study area to only grids that have ever had effort makes it redundant
+#but earlier filter of filter(depth > -1000) caused a loss of some embayment grids that had pots to calc depth mean
+#to fix that, at this point, restricted study_area_grids_with_bathy to the new study area to obtain a df
+#study_area_grids_with_bathy_restricted, from which selected gridID, depth mean and depth sd columns for df study_area_grids_with_bathy_restricted_v2. 
+#Also it has few NAs for sd for grid that had only 1 pot to calc depth mean. change the sd to 0 instead
+#Export that and use it in a later script to fix couple of the depth values (instead of resaving outputs of all scripts)
+#write_csv(study_area_grids_with_bathy_restricted_v2,here::here('DCRB_sdmTMB', 'data', "bathymetry_fixes.csv"))
+
 
 #grids that didn't have point data to get bathymetry, use zonal statistic value
 study_area_grids_with_bathy <- study_area_grids_with_bathy %>% 
