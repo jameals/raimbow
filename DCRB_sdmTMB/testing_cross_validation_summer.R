@@ -1489,7 +1489,7 @@ for(yr in validation_years) {
                                  season + 
                                  month_name_f + 
                                  #OR_WA_waters + #part of interaction term
-                                 WA_pot_reduction +
+                                 #WA_pot_reduction + #eric thinks this is the root of converging issues
                                  z_SST_avg  + 
                                  z_wind_avg +
                                  poly(z_depth_point_mean, 2) +
@@ -1554,9 +1554,20 @@ toc()
 #if test iid and skip the "fix" code line, still not converging
 
 
-
-
-
+#eric's suggestion: remove WA_pot_reduction variable
+#test that here -- still didn't converge
+#when use iid
+#took about 19min
+#tot_elpd = -6.713508
+#tot_loglik = -731612.3
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+#both models[[1]] and models[[2]]  coef.se are NaN
+# $converged
+# [1] FALSE
+# $pdHess
+# [1] FALSE FALSE
 
 
 
