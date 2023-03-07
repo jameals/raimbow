@@ -1086,6 +1086,11 @@ toc()
 
 #---------------------------------------------
 
+# as a test run the above model but turn spatial and spatio-temporal fields off
+#took about 12min
+#tot_elpd = -3.969028
+#tot_loglik = -44,577.12 --> so model performance is poorer if spatial and s-t field are off, good!
+
 #---------------------------------------------
 
 
