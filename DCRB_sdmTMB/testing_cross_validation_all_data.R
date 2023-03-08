@@ -916,8 +916,10 @@ toc()
 # $pdHess
 # [1] FALSE  TRUE
 
-                    
-                    
+#EXPORT THIS MODEL
+#write_rds(cv_fits, here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation',"cv_all_data_fix_test_2_iid.rds"))                   
+#and export the data for plotting: cv_fits_5_data <- cv_fits[[5]]$data
+#write_rds(cv_fits_5_data, here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation',"all_data_cv_fits_5_data.rds"))                
                     
                     
                     
