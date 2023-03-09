@@ -70,7 +70,7 @@ summer = add_utm_columns(summer, ll_names = c("grd_x", "grd_y"))
 
 #winter
 winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230209.rds'))
-#z-scoring has been done across summer only
+#z-scoring has been done across winter only
 glimpse(winter) 
 
 winter$month_name_f <- factor(winter$month_name, levels = c("December", "January", "February", "March", "April"))
@@ -78,6 +78,13 @@ winter$month_name_f <- factor(winter$month_name, levels = c("December", "January
 # Add UTM columns (zone 10)
 winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
 
+
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds')) 
+d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
+                                                  "May", "June", "July", "August", "September"))
+winter <- dplyr::filter(d, month_name %in% c("December", "January", "February",
+                                             "March", "April"))
+winter = add_utm_columns(winter, ll_names = c("grd_x", "grd_y"))
 #-------------------------------------------------------------------------------------------------
 ##in the current round of models, the default is to not use polynomial terms, and to use the basic z-scored values
 #except for e.g. season/year/month that will be factorials
@@ -4780,8 +4787,55 @@ AIC(fit13ex_winter)
 #---------------------------------
 
 
+winter$month_name_f <- factor(winter$month_name_f, levels = c("December", "January", "February", "March", "April"))
 
+tic()
+fit14_winter <- sdmTMB(tottraps ~ 0 + 
+                         season +
+                         month_name_f +  
+                         #OR_WA_waters + #part of interaction term
+                         #WA_pot_reduction +  #not relevant in winter
+                         z_SST_avg +
+                         z_wind_avg +
+                         poly(z_depth_point_mean,2) +
+                         z_depth_point_sd +
+                         z_faults_km +
+                         z_dist_canyon_km +
+                         z_weighted_dist +
+                         z_weighted_fuel_pricegal +
+                         z_weighted_crab_ppp +
+                         z_bottom_O2_avg +
+                         OR_WA_waters * z_dist_to_closed_km,   
+                         family = tweedie(),
+                         mesh = mesh_winter,
+                         spatial = "on",
+                         spatiotemporal = "iid", 
+                         data = winter,
+                         time = "yearn")
+toc() #9min
 
+#if don't fix the factor levels:
+#The model may not have converged: non-positive-definite Hessian matrix. -- not to worry?
+#sanity(fit14_winter)
+#Non-positive-definite Hessian matrix: model may not have converged; `b_j` gradient > 0.001, ln_tau_E, thetaf, 
+#`b_j` standard error is NA - Try simplifying the model, adjusting the mesh, or adding priors
+#`ln_tau_O` standard error is NA, `ln_kappa` standard error is NA, `log_range` standard error is NA etc etc
+#sanity(fit14_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#same as before really, lots and now also the se is NA message
+AIC(fit14_winter)
+#729,062.6
+#summary(fit14_winter)
+
+#If fix factor levels:
+#9mins
+#The model may not have converged. Maximum final gradient: 0.0765753448053593.
+#sanity(fit14_winter)
+#b_js, ln_tau_O, ln_kappa
+#sanity(fit14_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#b_js, ln_tau_O, ln_kappa
+AIC(fit14_winter)
+#729052.6 
+#summary(fit14_winter)
 
 
 #-------------------------------------------------------------------------------------------------
