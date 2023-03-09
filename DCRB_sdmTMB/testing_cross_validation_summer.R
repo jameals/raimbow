@@ -1252,7 +1252,7 @@ for(yr in validation_years) {
                                spatial = "on",
                                spatiotemporal = "ar1",
                                data = sub,
-                               time = "half_month_of_season")
+                               time = "month_n")
   #cv_fits[[1]] is now a list of 2 models. We want the second of each of these,
   model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
   model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
@@ -1291,6 +1291,11 @@ toc()
 # [1] TRUE
 # $pdHess
 # [1] TRUE TRUE
+#EXPORT THIS MODEL
+#write_rds(cv_fits, here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation',"cv_summer_test_10b_ar1.rds"))
+#and export the data for plotting: cv_fits_5_data <- cv_fits[[5]]$data
+#write_rds(cv_fits_5_data, here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation',"summer_cv_fits_5_data.rds"))
+
 
 #time = "month_of_season"
 #took about 15mins
