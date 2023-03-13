@@ -3108,7 +3108,13 @@ toc() #2.2min
 #sanity(fit0_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still X for thetaf, ln_phi
 AIC(fit0_winter)
-#774067.9
+#774067.9 -- i think this is with all polynomials
+
+#AIC: 777617.9 when no polynomials - no diff if time=yearf or yearn
+
+#once changed fixed effect from month_name to month_name_f and did the factorial fix, no initial convergence complaint
+#BUT sanity check: "Non-linear minimizer did not converge: do not trust this model!"
+#no change in AIC
 
 #-------------------------------------------------------------------------------------------------
 
@@ -3180,7 +3186,7 @@ toc() #8min
 #sanity(fit2_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still Xs for b_js, ln_tau, ln_kappa
 AIC(fit2_winter)
-#731319.1
+#731319.1 ##don't think this changed if used z-scored data across all seasons
 #-------------------------------------------------------------------------------------------------
 
 #model with only spatial and spatiotemporal fields (seasons), no covariates
