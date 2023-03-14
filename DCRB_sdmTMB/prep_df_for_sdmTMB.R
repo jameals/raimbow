@@ -94,6 +94,23 @@ df_full_final_in_restricted_study_area <- df_full_final_raw %>% filter(GRID5KM_I
 #few of the grids that get dropped were in WA SMAs, but they never had any effort in them (not even in winter)
 
 #-------------------------------------------------------------------------------------------------
+
+#fix couple bathymetry values
+
+bathymetry_fixes <- read_csv(here::here('DCRB_sdmTMB', 'data','bathymetry_fixes.csv')) 
+
+df_full_final_in_restricted_study_area_bathyFIX <- df_full_final_in_restricted_study_area %>% 
+  left_join(bathymetry_fixes, by="GRID5KM_ID") %>% 
+  #drop the old bathy columns
+  select(-depth_point_mean.x, -depth_point_sd.x) %>% 
+  #rename the new bathy columns
+  rename(depth_point_mean = depth_point_mean.y,
+         depth_point_sd = depth_point_sd.y)
+
+df_full_final_in_restricted_study_area <- df_full_final_in_restricted_study_area_bathyFIX
+
+#-------------------------------------------------------------------------------------------------
+
 #drop some predictors
 #based on corrplots distance to escarpments and distance to canyons are highly correlated
 #after checking which predictor performed better, decided to drop escarpments (but keep dist to canyons)
@@ -419,9 +436,9 @@ df_summer_2sd <- df_summer %>%
 #----------------------------------- 
 ##export dfs
 
-#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230209.rds"))
-#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230209.rds"))
-#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230209.rds"))
+#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230315.rds"))
+#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230315.rds"))
+#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230315.rds"))
 
          
          
