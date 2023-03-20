@@ -837,6 +837,42 @@ summary(fit13_all_data)
 #AIC: 1010030 -- same as before
 #write_rds(fit13b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_all_data.rds"))
 
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit13b_all_data, "season [all]")
+p2 <- plot_log(fit13b_all_data, "month_name_f [all]")
+p3 <- plot_log(fit13b_all_data, "OR_WA_waters [all]")
+p35 <- plot_log(fit13b_all_data, "WA_pot_reduction [all]")
+p4 <- plot_log(fit13b_all_data, "z_SST_avg [all]")
+p5 <- plot_log(fit13b_all_data, "z_wind_avg [all]")
+p6 <- plot_log(fit13b_all_data, "z_depth_point_mean [all]")
+p7 <- plot_log(fit13b_all_data, "z_depth_point_sd [all]")
+p8 <- plot_log(fit13b_all_data, "z_faults_km [all]")
+p9 <- plot_log(fit13b_all_data, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit13b_all_data, "z_weighted_dist [all]")
+p11 <- plot_log(fit13b_all_data, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit13b_all_data, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit13b_all_data, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit13b_all_data, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit13b_all_data)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 #-------------------------------------------------------------------------------------------------
 
