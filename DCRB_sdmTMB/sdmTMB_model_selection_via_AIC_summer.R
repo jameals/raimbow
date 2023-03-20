@@ -585,7 +585,49 @@ summary(fit13_summer)
 #EXPORT THIS MODEL
 #write_rds(fit13_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13_summer.rds"))
 
+###CHECK OPTIMIZATION
+#fit13b_summer <- run_extra_optimization(fit13_summer, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: 266439.9 -- same as before
+#write_rds(fit13b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_summer.rds"))
 
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit13b_summer, "season [all]")
+p2 <- plot_log(fit13b_summer, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit13b_summer, "OR_WA_waters [all]")
+p35 <- plot_log(fit13b_summer, "WA_pot_reduction [all]")
+p4 <- plot_log(fit13b_summer, "z_SST_avg [all]")
+p5 <- plot_log(fit13b_summer, "z_wind_avg [all]")
+p6 <- plot_log(fit13b_summer, "z_depth_point_mean [all]")
+p7 <- plot_log(fit13b_summer, "z_depth_point_sd [all]")
+p8 <- plot_log(fit13b_summer, "z_faults_km [all]")
+p9 <- plot_log(fit13b_summer, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit13b_summer, "z_weighted_dist [all]")
+p11 <- plot_log(fit13b_summer, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit13b_summer, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit13b_summer, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit13b_summer, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit13b_summer)
+qqnorm(res)
+qqline(res)
 
 
 #-------------------------------------------------------------------------------------------------
@@ -888,8 +930,95 @@ toc() #19min
 AIC(fit19_summer)
 #266441.9 - not the best AIC out of interactions
 summary(fit19_summer)
+##NOT EXPORTED
+
+###############
+
+tic()
+fit19_summer <- sdmTMB(tottraps ~ 0 + 
+                         season +
+                         half_month_of_seasonf + 
+                         OR_WA_waters +
+                         WA_pot_reduction +  
+                         z_SST_avg + 
+                         z_wind_avg +
+                         poly(z_depth_point_mean,2) * z_bottom_O2_avg  +
+                         z_depth_point_sd +
+                         z_faults_km +
+                         z_dist_canyon_km +
+                         z_weighted_dist +
+                         z_weighted_fuel_pricegal + 
+                         z_weighted_crab_ppp  +
+                         #z_bottom_O2_avg + #part of interaction term
+                         z_dist_to_closed_km,
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "yearn")
+toc() #15min
+
+# when seed set and no polynomials
+#The model may not have converged. Maximum final gradient: 0.0227277651881579. 
+#sanity(fit19_summer)
+#b_js, thetaf, ln_phi
+#sanity(fit19_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#b_j, thetaf, ln_phi
+AIC(fit19_summer)
+#266082.3
+summary(fit19_summer)
+
+#EXPORT THIS MODEL
+#write_rds(fit19_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19_summer.rds"))
 
 
+#test  the optimisation run
+#fit19b_summer <- run_extra_optimization(fit19_summer, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: 266082.3 -- same as before
+
+#EXPORT THIS MODEL
+#write_rds(fit19b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_summer.rds"))
+
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit19b_summer, "season [all]")
+p2 <- plot_log(fit19b_summer, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit19b_summer, "OR_WA_waters [all]")
+p35 <- plot_log(fit19b_summer, "WA_pot_reduction [all]")
+p4 <- plot_log(fit19b_summer, "z_SST_avg [all]")
+p5 <- plot_log(fit19b_summer, "z_wind_avg [all]")
+p6 <- plot_log(fit19b_summer, "z_depth_point_mean [all]")
+p7 <- plot_log(fit19b_summer, "z_depth_point_sd [all]")
+p8 <- plot_log(fit19b_summer, "z_faults_km [all]")
+p9 <- plot_log(fit19b_summer, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit19b_summer, "z_weighted_dist [all]")
+p11 <- plot_log(fit19b_summer, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit19b_summer, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit19b_summer, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit19b_summer, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit19b_summer)
+qqnorm(res)
+qqline(res)
 
 
 
