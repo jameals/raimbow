@@ -897,6 +897,88 @@ summary(fit18_winter)
 
 
 
+tic()
+fit19_winter <- sdmTMB(tottraps ~ 0 + 
+                         season +
+                         half_month_of_seasonf + 
+                         OR_WA_waters +
+                         #WA_pot_reduction +  #not relevant in winter
+                         z_SST_avg +
+                         z_wind_avg +
+                         poly(z_depth_point_mean,2) * z_bottom_O2_avg +
+                         z_depth_point_sd +
+                         z_faults_km +
+                         z_dist_canyon_km +
+                         z_weighted_dist +
+                         z_weighted_fuel_pricegal + 
+                         z_weighted_crab_ppp +
+                         #z_bottom_O2_avg + #part of interaction term
+                         z_dist_to_closed_km,
+                       family = tweedie(),
+                       mesh = mesh_winter,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = winter,
+                       time = "yearn")
+toc() #22min
+
+# when seed set and no polynomials
+# The model may not have converged. Maximum final gradient: 0.026248905852257.
+#sanity(fit19_winter)
+#b_js, ar1_phi
+#sanity(fit19_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
+#b_js only
+AIC(fit19_winter)
+#726783.4
+summary(fit19_winter)
+
+#EXPORT THIS MODEL
+#write_rds(fit19_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19_winter.rds"))
+
+#test  the optimisation run
+#fit19b_winter <- run_extra_optimization(fit19_winter, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: 726783.4 -- same as before
+
+#EXPORT THIS MODEL
+#write_rds(fit19b_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_winter.rds"))
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit19b_winter, "season [all]")
+p2 <- plot_log(fit19b_winter, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit19b_winter, "OR_WA_waters [all]")
+p4 <- plot_log(fit19b_winter, "z_SST_avg [all]")
+p5 <- plot_log(fit19b_winter, "z_wind_avg [all]")
+p6 <- plot_log(fit19b_winter, "z_depth_point_mean [all]")
+p7 <- plot_log(fit19b_winter, "z_depth_point_sd [all]")
+p8 <- plot_log(fit19b_winter, "z_faults_km [all]")
+p9 <- plot_log(fit19b_winter, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit19b_winter, "z_weighted_dist [all]")
+p11 <- plot_log(fit19b_winter, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit19b_winter, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit19b_winter, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit19b_winter, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit19b_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 #-------------------------------------------------------------------------------------------------
 
