@@ -633,6 +633,41 @@ summary(fit13_winter)
 #EXPORT THIS MODEL
 #write_rds(fit13b_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_winter.rds"))
 
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit13b_winter, "season [all]")
+p2 <- plot_log(fit13b_winter, "half_month_of_seasonf [all]")
+p3 <- plot_log(fit13b_winter, "OR_WA_waters [all]")
+p4 <- plot_log(fit13b_winter, "z_SST_avg [all]")
+p5 <- plot_log(fit13b_winter, "z_wind_avg [all]")
+p6 <- plot_log(fit13b_winter, "z_depth_point_mean [all]")
+p7 <- plot_log(fit13b_winter, "z_depth_point_sd [all]")
+p8 <- plot_log(fit13b_winter, "z_faults_km [all]")
+p9 <- plot_log(fit13b_winter, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit13b_winter, "z_weighted_dist [all]")
+p11 <- plot_log(fit13b_winter, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit13b_winter, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit13b_winter, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit13b_winter, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit13b_winter)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 #-------------------------------------------------------------------------------------------------
 
