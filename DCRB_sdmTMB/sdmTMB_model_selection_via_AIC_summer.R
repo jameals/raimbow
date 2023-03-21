@@ -1021,6 +1021,31 @@ qqnorm(res)
 qqline(res)
 
 
+#-----------------------------------------
+
+#given that depth is so overwhelming in model estimates, what if that was the only predictor 
+#(with spatial and spatio-temporal fields)?
+
+tic()
+fit20_summer <- sdmTMB(tottraps ~ 0 + 
+                       poly(z_depth_point_mean,2),
+                       family = tweedie(),
+                       mesh = mesh_summer,
+                       spatial = "on",
+                       spatiotemporal = "ar1",
+                       data = summer,
+                       time = "yearn")
+toc() #min
+
+# when seed set 
+# no warnings
+#sanity(fit20_summer)
+#no red Xs
+#sanity(fit20_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit20_summer)
+#271112.3 -- not better than e.g. fit13
+summary(fit20_summer)
 
 
 
