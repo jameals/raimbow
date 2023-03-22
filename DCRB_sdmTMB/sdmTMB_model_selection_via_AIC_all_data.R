@@ -1232,4 +1232,68 @@ qqline(res)
 
 
 
+#------------------------------------------------------
+#extra test
+
+tic()
+fit20_all_data <- sdmTMB(tottraps ~ 0 + 
+                          season +
+                          half_month_of_seasonf + 
+                          OR_WA_waters +
+                          WA_pot_reduction +  
+                          z_SST_avg +
+                          z_wind_avg +
+                          poly(z_depth_point_mean,2) +
+                          z_depth_point_sd +
+                          z_faults_km +
+                          z_dist_canyon_km +
+                          z_weighted_dist +
+                          z_weighted_fuel_pricegal +
+                          z_weighted_crab_ppp +
+                          z_bottom_O2_avg +
+                          z_dist_to_closed_km,
+                        family = tweedie(),
+                        mesh = mesh_all_data,
+                        spatial = "off",
+                        spatiotemporal = "ar1",
+                        data = all_data,
+                        time = "yearn")
+toc() #38min
+
+# when seed set and no polynomials
+# The model may not have converged. Maximum final gradient: 0.0698869219602045.
+#sanity(fit20_all_data)
+#
+#sanity(fit20_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#
+AIC(fit20_all_data)
+#1014016 -- NOT BETTER, NOT WORTH IT
+summary(fit20_all_data)
+
+#EXPORT THIS MODEL
+#write_rds(fit20_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit20_all_data.rds"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
