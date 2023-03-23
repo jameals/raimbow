@@ -109,6 +109,19 @@ df_full_final_in_restricted_study_area_bathyFIX <- df_full_final_in_restricted_s
 
 df_full_final_in_restricted_study_area <- df_full_final_in_restricted_study_area_bathyFIX
 
+## then do secondary bathymetry fixes on few wonky grids
+bathymetry_fixes2 <- read_csv(here::here('DCRB_sdmTMB', 'data','bathymetry_fixes2.csv')) 
+
+wonky_grids <- sort(unique(bathymetry_fixes2$GRID5KM_ID))
+
+bathy_ok <- df_full_final_in_restricted_study_area %>% filter(!GRID5KM_ID %in% wonky_grids)
+bathy_NOT_ok <- df_full_final_in_restricted_study_area %>% filter(GRID5KM_ID %in% wonky_grids) %>% 
+  select(-depth_point_mean, -depth_point_sd) %>% 
+  left_join(bathymetry_fixes2, by=c('GRID5KM_ID'))
+
+df_full_final_in_restricted_study_area <- rbind(bathy_ok, bathy_NOT_ok)
+
+
 #-------------------------------------------------------------------------------------------------
 
 #drop some predictors
@@ -436,9 +449,9 @@ df_summer_2sd <- df_summer %>%
 #----------------------------------- 
 ##export dfs
 
-#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230315.rds"))
-#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230315.rds"))
-#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230315.rds"))
+#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230323.rds"))
+#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230323.rds"))
+#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230323.rds"))
 
          
          
