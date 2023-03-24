@@ -26,7 +26,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------------------------
 
 #read in winter data - the version where z-scoring is done across winter only
-winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230315.rds'))
+winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230323.rds'))
 glimpse(winter) 
 
 winter$month_name_f <- factor(winter$month_name, levels = c("December", "January", "February", "March", "April"))
@@ -76,7 +76,7 @@ toc() #2.5min
 #sanity(fit1_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still 2 X for b_j 
 AIC(fit1_winter)
-#777123.4
+#775060.3 (was 777123.4 before wonky bathy fix)
 #no change in AIC regardless if time = "yearn" of time = "yearf"
 #or if fixed effect is month_name or month_name_f
 summary(fit1_winter)
@@ -113,16 +113,16 @@ fit2_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "off",
                       data = winter,
                       time = "yearn")
-toc() #6.9min
+toc() #7min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.146107840889455.
+# The model may not have converged. Maximum final gradient: 0.48311427299012
 #sanity(fit2_winter)
-#red Xs: b_j only
+#red Xs: b_js, ln_tau_O, ln_kappa
 #sanity(fit2_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#red Xs: b_j only
+#red Xs: b_js, ln_tau_O
 AIC(fit2_winter)
-#741503.4
+#739926.9
 summary(fit2_winter)
 
 #EXPORT THIS MODEL
@@ -157,16 +157,16 @@ fit3_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "iid",
                       data = winter,
                       time = "yearn")
-toc() #8.1min
+toc() #8min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.179440996013223.
+# The model may not have converged. Maximum final gradient: 0.089623522998167
 #sanity(fit3_winter)
-#Red Xs: b_js, ln_tau_E, thetaf, ln_phi
+#Red Xs: b_js, ln_kappa, thetaf, ln_phi
 #sanity(fit3_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_tau_E, thetaf, ln_phi
+#Red Xs: b_js, thetaf, ln_phi
 AIC(fit3_winter)
-#731392.1
+#729701.8
 summary(fit3_winter)
 
 #EXPORT THIS MODEL
@@ -179,7 +179,7 @@ summary(fit3_winter)
 
 #-------------------------------------------------------------------------------------------------
 
-#covariates + spatial fields + spatiotemporal fields (iid)
+#covariates + spatial fields + spatiotemporal fields (ar1)
 
 tic()
 fit4_winter <- sdmTMB(tottraps ~ 0 + 
@@ -207,13 +207,13 @@ fit4_winter <- sdmTMB(tottraps ~ 0 +
 toc() #17min
 
 # when seed set and no polynomials
-#The model may not have converged. Maximum final gradient: 0.216568184626503. 
+#The model may not have converged. Maximum final gradient: 0.0584167117420975 
 #sanity(fit4_winter)
-#Red Xs: b_js, ln_phi
+#Red Xs: b_js, ln_tau_O, ln_phi, ar1_phi
 #sanity(fit4_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_phi
+#Red Xs: b_js, ln_phi, ar1_phi
 AIC(fit4_winter)
-#731237
+#729548.9
 summary(fit4_winter)
 
 #EXPORT THIS MODEL
@@ -346,13 +346,13 @@ fit8_winter <- sdmTMB(tottraps ~ 0 +
 toc() #16min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.112408805647971.
+# The model may not have converged. Maximum final gradient: 0.0689342149141479
 #sanity(fit8_winter)
-#red Xs: b_js, ln_tau_E, ar1_phi
+#red Xs: b_js, ln_tau_E, ln_phi
 #sanity(fit8_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js only
+#b_js, ln_tau_E, ln_phi
 AIC(fit8_winter)
-#737249.2
+#735593.9
 summary(fit8_winter)
 
 #EXPORT THIS MODEL
@@ -384,16 +384,16 @@ fit9_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "ar1",
                       data = winter,
                       time = "month_of_season")
-toc() #13min
+toc() #9min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.167211172907528. 
+# The model may not have converged. Maximum final gradient: 0.116619430702939 
 #sanity(fit9_winter)
-#Red Xs: b_js, ln_kappa, thetaf, ar1_phi
+#Red Xs: b_js, ln_tau_E, ln_kappa, thetaf, ar1_phi, `ln_tau_O` standard error may be large
 #sanity(fit9_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_kappa, thetaf
+#Red Xs: b_js, ln_tau_E, thetaf, ar1_phi, `ln_tau_O` standard error may be large
 AIC(fit9_winter)
-#736816
+#735144
 summary(fit9_winter)
 
 #EXPORT THIS MODEL
@@ -426,16 +426,16 @@ fit10_winter <- sdmTMB(tottraps ~ 0 +
                       spatiotemporal = "ar1",
                       data = winter,
                       time = "half_month_of_season")
-toc() #16min
+toc() #14min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.272645924517795.
+# The model may not have converged. Maximum final gradient: 0.3589499224902
 #sanity(fit10_winter)
-#Red Xs: b_js, ln_kappa, ln_phi, ar1_phi, ln_tau_O, sigma_O
+#Red Xs: b_js, ln_tau_E, ln_kappa, ln_phi, ar1_phi, `ln_tau_O` standard error may be large, `sigma_O` is smaller than 0.01
 #sanity(fit10_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_kappa, ln_phi, ln_tau_O, sigma_O
+#Red Xs: b_js, ln_tau_E, ln_kappa, ln_phi, ar1_phi, `ln_tau_O` standard error may be large, `sigma_O` is smaller than 0.01
 AIC(fit10_winter)
-#735228
+#733522.9
 summary(fit10_winter)
 
 #EXPORT THIS MODEL
@@ -477,16 +477,16 @@ fit11_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #36min
+toc() #25min
 
 # when seed set and no polynomials
-#  The model may not have converged. Maximum final gradient: 0.0800049470813269. 
+#  The model may not have converged. Maximum final gradient: 0.484813431975992 
 #sanity(fit11_winter)
-#Red Xs: b_js, ln_tau_E, thetaf, ln_phi
+#Red Xs: b_js, ln_tau_O, ln_tau_E, ln_kappa, thetaf, ln_phi
 #sanity(fit11_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_tau_E, thetaf, ln_phi
+#Red Xs: b_js, ln_tau_O, ln_tau_E, ln_kappa, thetaf, ln_phi
 AIC(fit11_winter)
-#730548.9 -- so far the bet
+#728846.9 
 summary(fit11_winter)
 
 #EXPORT THIS MODEL
@@ -531,13 +531,13 @@ fit12_winter <- sdmTMB(tottraps ~ 0 +
 toc() #23min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0968867569996164. 
+# The model may not have converged. Maximum final gradient: 0.0351828101826014 
 #sanity(fit12_winter)
-#Red Xs: b_js, ln_tau_O, ln_kappa, thetaf, ln_phi
+#Red Xs: b_js, ln_tau_O, ar1_phi
 #sanity(fit12_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Red Xs: b_js, ln_tau_O, ln_kappa, thetaf, ln_phi
+#Red Xs: b_js, ln_tau_O
 AIC(fit12_winter)
-#729689.7
+#727971.4
 summary(fit12_winter)
 
 #EXPORT THIS MODEL
@@ -609,16 +609,16 @@ fit13_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #39min
+toc() #29min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.0291937496603865.
+# The model may not have converged. Maximum final gradient: 0.0227294668521357
 #sanity(fit13_winter)
 #b_js, ln_phi
 #sanity(fit13_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, ln_phi
+#b_js only
 AIC(fit13_winter)
-#727058
+#725673.5
 summary(fit13_winter)
 
 #EXPORT THIS MODEL
@@ -628,7 +628,7 @@ summary(fit13_winter)
 #test  the optimisation run
 #fit13b_winter <- run_extra_optimization(fit13_winter, nlminb_loops = 0, newton_loops = 1)
 #no message came up after. basic sanity check no Xs (so no for the second check either)
-#AIC: 727058 -- same as before
+#AIC: 725673.5 -- same as before
 
 #EXPORT THIS MODEL
 #write_rds(fit13b_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_winter.rds"))
@@ -696,16 +696,16 @@ fit14_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #40min
+toc() #20min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0361484867733388. 
+# The model may not have converged. Maximum final gradient: 0.0152104066960312 
 #sanity(fit14_winter)
 #b_js, thetaf, ln_phi
 #sanity(fit14_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js, thetaf, ln_phi
 AIC(fit14_winter)
-#727018.4
+#725634.3
 summary(fit14_winter)
 
 #EXPORT THIS MODEL
@@ -786,18 +786,16 @@ fit15_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #40min
+toc() #30min
 
 # when seed set and no polynomials
-# Warning messages:
-#1: In sqrt(diag(cov)) : NaNs produced
-#2: The model may not have converged: non-positive-definite Hessian matrix. 
+# The model may not have converged. Maximum final gradient: 0.0378678986062653.
 #sanity(fit15_winter)
-#lots
+#b_js, ln_tau_E, ln_kappa, ln_phi, ar1_phi
 #sanity(fit15_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#lots
+#b_js, ln_tau_E, ln_phi
 AIC(fit15_winter)
-#727172.8
+#725658.2
 summary(fit15_winter)
 
 #EXPORT THIS MODEL
@@ -830,16 +828,16 @@ fit16_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #22min
+toc() #40min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0330852711023812. 
+# The model may not have converged. Maximum final gradient: 0.0434193807743952 
 #sanity(fit16_winter)
-#b_js only
+#b_js, ln_phi, ar1_phi
 #sanity(fit16_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js only
 AIC(fit16_winter)
-#727056.8
+#725673
 summary(fit16_winter)
 
 #EXPORT THIS MODEL
@@ -872,16 +870,18 @@ fit17_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #34min
+toc() #39min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0819660675468272.
+# warnings:
+#1: In sqrt(diag(cov)) : NaNs produced
+#2: The model may not have converged: non-positive-definite Hessian matrix.
 #sanity(fit17_winter)
-#b_js, thetaf
+#lots
 #sanity(fit17_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, thetaf
+#lots
 AIC(fit17_winter)
-#727057
+#725911.3
 summary(fit17_winter)
 
 #EXPORT THIS MODEL
@@ -916,13 +916,13 @@ fit18_winter <- sdmTMB(tottraps ~ 0 +
 toc() #32min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0483960498666045. 
+# The model may not have converged. Maximum final gradient: 0.0477071006063969 
 #sanity(fit18_winter)
-#b_js, ln_tau_E, ln_kappa, thetaf
+#b_js, thetaf, ln_phi
 #sanity(fit18_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, thetaf
+#b_js, thetaf,ln_phi
 AIC(fit18_winter)
-#727060
+#725675.5
 summary(fit18_winter)
 
 #EXPORT THIS MODEL
@@ -955,16 +955,16 @@ fit19_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #22min
+toc() #21min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.026248905852257.
+# The model may not have converged. Maximum final gradient: 0.0545024540088832.
 #sanity(fit19_winter)
-#b_js, ar1_phi
+#b_js, thetaf, ln_phi
 #sanity(fit19_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js only
+#b_js, thetaf, ln_phi
 AIC(fit19_winter)
-#726783.4
+#725413.5
 summary(fit19_winter)
 
 #EXPORT THIS MODEL
@@ -974,7 +974,7 @@ summary(fit19_winter)
 #fit19b_winter <- run_extra_optimization(fit19_winter, nlminb_loops = 0, newton_loops = 1)
 #no warnings
 #no red Xs
-#AIC: 726783.4 -- same as before
+#AIC: 725413.5 -- same as before
 
 #EXPORT THIS MODEL
 #write_rds(fit19b_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_winter.rds"))
