@@ -121,6 +121,20 @@ bathy_NOT_ok <- df_full_final_in_restricted_study_area %>% filter(GRID5KM_ID %in
 
 df_full_final_in_restricted_study_area <- rbind(bathy_ok, bathy_NOT_ok)
 
+#-------------------------------------------------------------------------------------------------
+
+#fix fuel and crab price
+
+
+weighted_fuel_price_fix <- read_rds(here::here('DCRB_sdmTMB', 'data','weighted_fuel_price_fix.rds')) 
+weighted_crab_price_fix <- read_rds(here::here('DCRB_sdmTMB', 'data','weighted_crab_price_fix.rds')) 
+
+df_full_final_in_restricted_study_area <- df_full_final_in_restricted_study_area %>% 
+  left_join(weighted_fuel_price_fix, by=c('GRID5KM_ID', 'season','half_month')) %>% 
+  left_join(weighted_crab_price_fix, by=c('GRID5KM_ID', 'season','half_month')) %>% 
+  select(-weighted_fuel_pricegal, -weighted_crab_ppp) %>% 
+  rename(weighted_fuel_pricegal = weighted_fuel_pricegal_v2,
+         weighted_crab_ppp = weighted_crab_ppp_v2)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -439,19 +453,42 @@ df_summer_2sd <- df_summer %>%
 
 
 
+df_all_scaled_2sd <- df_all_scaled_2sd %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == 1 ~ "WA",
+    OR_WA_waters == 0 ~ "OR"
+  )) %>% 
+  mutate(WA_pot_reduction = case_when(
+    WA_pot_reduction == 1 ~ "Y",
+    WA_pot_reduction == 0 ~ "N"
+  ))
 
 
+df_winter_2sd <- df_winter_2sd %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == 1 ~ "WA",
+    OR_WA_waters == 0 ~ "OR"
+  )) 
 
 
+df_summer <- df_summer %>% 
+  mutate(OR_WA_waters = case_when(
+    OR_WA_waters == 1 ~ "WA",
+    OR_WA_waters == 0 ~ "OR"
+  )) %>% 
+  mutate(WA_pot_reduction = case_when(
+    WA_pot_reduction == 1 ~ "Y",
+    WA_pot_reduction == 0 ~ "N"
+  ))
 
 
 
 #----------------------------------- 
 ##export dfs
 
-#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230323.rds"))
-#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230323.rds"))
-#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230323.rds"))
+#write_rds(df_all_scaled_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_all_data_20230324.rds"))
+#write_rds(df_winter_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_winter_20230324.rds"))
+#write_rds(df_summer_2sd,here::here('DCRB_sdmTMB', 'data', "df_full_final_tidy_summer_20230324.rds"))
 
          
          
