@@ -26,7 +26,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------------------------
 
 #read in winter data - the version where z-scoring is done across winter only
-winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230323.rds'))
+winter <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_winter_20230324.rds'))
 glimpse(winter) 
 
 winter$month_name_f <- factor(winter$month_name, levels = c("December", "January", "February", "March", "April"))
@@ -609,16 +609,16 @@ fit13_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #29min
+toc() #17min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.0227294668521357
+# The model may not have converged. Maximum final gradient: 0.0982702344726238
 #sanity(fit13_winter)
-#b_js, ln_phi
+#b_js, ln_tau_O
 #sanity(fit13_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js only
 AIC(fit13_winter)
-#725673.5
+#725833.7 -- when changed fuel and crab ppp
 summary(fit13_winter)
 
 #EXPORT THIS MODEL
@@ -955,16 +955,16 @@ fit19_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #21min
+toc() #25min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0545024540088832.
+# The model may not have converged. Maximum final gradient: 0.0440529846108673
 #sanity(fit19_winter)
-#b_js, thetaf, ln_phi
+#b_js, tln_kappa
 #sanity(fit19_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, thetaf, ln_phi
+#b_js only
 AIC(fit19_winter)
-#725413.5
+#725570.3
 summary(fit19_winter)
 
 #EXPORT THIS MODEL
