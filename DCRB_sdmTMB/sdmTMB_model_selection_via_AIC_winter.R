@@ -955,14 +955,14 @@ fit19_winter <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = winter,
                        time = "yearn")
-toc() #25min
+toc() #32min
 
 # when seed set and no polynomials
-# The model may not have converged. Maximum final gradient: 0.0440529846108673
+# The model may not have converged. Maximum final gradient: 0.015548926467952
 #sanity(fit19_winter)
-#b_js, tln_kappa
+#b_js, ln_phi
 #sanity(fit19_winter, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js only
+#b_js, ln_phi
 AIC(fit19_winter)
 #725570.3
 summary(fit19_winter)
