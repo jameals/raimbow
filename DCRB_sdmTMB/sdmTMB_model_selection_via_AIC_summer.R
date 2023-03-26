@@ -26,7 +26,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------------------------
 
 #read in summer data - the version where z-scoring is done across summer only
-summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer_20230315.rds'))
+summer <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_summer_20230324.rds'))
 glimpse(summer) 
 
 summer$month_name_f <- factor(summer$month_name, levels = c("May", "June", "July", "August", "September"))
