@@ -238,6 +238,11 @@ study_area_grids_with_bathy <- depth_comparison %>%
   mutate(depth_point_median = ifelse(depth_point_median > 0, -1, depth_point_median)) %>% 
   mutate(depth_point_mean = ifelse(depth_point_mean > 0, -1, depth_point_mean)) 
 
+#If a depth of >0m was assigned to a grid, a depth value of -1m was assigned instead. 
+#This occurred in 22 grids in the study area (or 1.9%, out of 1174 grids), 
+#all of which intersected with the coastline which may have affected the accuracy of the GEBCO data layer, 
+#and/or been due to spatial inaccuracies in logbook data at such fine scales.
+
 median_depth_positive <- study_area_grids_with_bathy %>% 
   filter(depth_zonal_median > 0)
 median_depth_negative <- study_area_grids_with_bathy %>% 
