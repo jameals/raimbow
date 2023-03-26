@@ -579,7 +579,7 @@ toc() #12min
 #sanity(fit13_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js only
 AIC(fit13_summer)
-#266439.9
+#266098
 summary(fit13_summer)
 
 #EXPORT THIS MODEL
@@ -966,7 +966,7 @@ toc() #15min
 #sanity(fit19_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_j, thetaf, ln_phi
 AIC(fit19_summer)
-#266082.3
+#265737.4
 summary(fit19_summer)
 
 #EXPORT THIS MODEL
