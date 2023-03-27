@@ -26,7 +26,7 @@ set.seed(123)
 #-------------------------------------------------------------------------------------------------
 
 #read in all data - the version where z-scoring is done across all data
-all_data <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230315.rds'))
+all_data <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds'))
 glimpse(all_data) 
 
 all_data$month_name_f <- factor(all_data$month_name, levels = c("December", "January", "February", "March", "April",
@@ -78,7 +78,7 @@ toc() #4min
 #sanity(fit1_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #still Non-linear minimizer did not converge: do not trust this model!; b_js, thetaf
 AIC(fit1_all_data)
-#AIC: 1075784
+#AIC: 1073391
 summary(fit1_all_data)
 
 
@@ -128,7 +128,7 @@ toc() #12min
 #sanity(fit2_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #red Xs: b_js, thetaf, ln_phi
 AIC(fit2_all_data)
-#1030651
+#1029110
 summary(fit2_all_data)
 
 #EXPORT THIS MODEL
@@ -172,7 +172,7 @@ toc() #14min
 #sanity(fit3_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: b_js, ln_tau_O
 AIC(fit3_all_data)
-#1017984
+#1016369
 summary(fit3_all_data)
 
 #EXPORT THIS MODEL
@@ -219,7 +219,7 @@ toc() #46min
 #sanity(fit4_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: b_js, ln_tau_E, thetaf
 AIC(fit4_all_data)
-#1017797
+#1016184
 summary(fit4_all_data)
 
 #EXPORT THIS MODEL
@@ -357,7 +357,7 @@ toc() #32min
 #sanity(fit8_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js only
 AIC(fit8_all_data)
-#1015302
+#1013512
 summary(fit8_all_data)
 
 #EXPORT THIS MODEL
@@ -412,7 +412,7 @@ toc() #23min
 #sanity(fit9_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: Non-positive-definite Hessian matrix: model may not have converged, b_js, ln_kappa, ln_tau_O, log_sigma_O, sigma_O
 AIC(fit9_all_data)
-#1014766
+#1013001
 summary(fit9_all_data)
 
 #EXPORT THIS MODEL
@@ -471,7 +471,7 @@ toc() #1.5h
 #sanity(fit10_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: Non-linear minimizer did not converge: do not trust this model!; b_js, thetaf, ln_phi, ar1_phi
 AIC(fit10_all_data)
-#1012781
+#1010965
 summary(fit10_all_data)
 
 #EXPORT THIS MODEL
@@ -657,7 +657,7 @@ toc() #39min
 #sanity(fit10X_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: b_js, ln_tau_E, ln_kappa, ar1_phi
 AIC(fit10X_all_data)
-#1012757
+#1010963
 summary(fit10X_all_data)
 
 #EXPORT THIS MODEL
@@ -667,8 +667,45 @@ summary(fit10X_all_data)
 #fit10Xb_all_data <- run_extra_optimization(fit10X_all_data, nlminb_loops = 0, newton_loops = 1)
 #no warnings
 #No red Xs in sanity check
-#AIC: 1012757 -- same as before
+#AIC: 1010963 -- same as before
 #write_rds(fit10Xb_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit10Xb_all_data.rds"))
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit10Xb_all_data, "season [all]")
+p2 <- plot_log(fit10Xb_all_data, "month_name_f [all]")
+p3 <- plot_log(fit10Xb_all_data, "OR_WA_waters [all]")
+p35 <- plot_log(fit10Xb_all_data, "WA_pot_reduction [all]")
+p4 <- plot_log(fit10Xb_all_data, "z_SST_avg [all]")
+p5 <- plot_log(fit10Xb_all_data, "z_wind_avg [all]")
+p6 <- plot_log(fit10Xb_all_data, "z_depth_point_mean [all]")
+p7 <- plot_log(fit10Xb_all_data, "z_depth_point_sd [all]")
+p8 <- plot_log(fit10Xb_all_data, "z_faults_km [all]")
+p9 <- plot_log(fit10Xb_all_data, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit10Xb_all_data, "z_weighted_dist [all]")
+p11 <- plot_log(fit10Xb_all_data, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit10Xb_all_data, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit10Xb_all_data, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit10Xb_all_data, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit10Xb_all_data)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
 
 #-------------------------------------------------------------------------------------------------
 
@@ -709,7 +746,7 @@ toc() #26min
 #sanity(fit11_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: b_js, thetaf, ln_phi
 AIC(fit11_all_data)
-#1012893
+#1011098
 summary(fit11_all_data)
 
 #EXPORT THIS MODEL
@@ -761,7 +798,7 @@ toc() #64min
 #sanity(fit12_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #Red Xs: Non-linear minimizer did not converge: do not trust this model! b_js, thetaf, ln_phi, ar1_phi
 AIC(fit12_all_data)
-#1012955
+#1011135
 summary(fit12_all_data)
 
 #EXPORT THIS MODEL
@@ -815,18 +852,17 @@ fit13_all_data <- sdmTMB(tottraps ~ 0 +
                           spatiotemporal = "ar1",
                           data = all_data,
                           time = "half_month_of_season")
-toc() #45min
+toc() #50min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.0976125960974379.
+# The model may not have converged. Maximum final gradient: 0.0687660594445232
 #sanity(fit13_all_data)
-#b_js, ln_phi
+#b_js, ln_tau_E, ln_kappa, ln_phi
 #sanity(fit13_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js, ln_phi
 AIC(fit13_all_data)
-#1010030
+#1008674
 summary(fit13_all_data)
-
 #EXPORT THIS MODEL
 #write_rds(fit13_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13_all_data.rds"))
 
@@ -834,8 +870,9 @@ summary(fit13_all_data)
 #fit13b_all_data <- run_extra_optimization(fit13_all_data, nlminb_loops = 0, newton_loops = 1)
 #no warnings
 #no red Xs
-#AIC: 1010030 -- same as before
+#AIC: 1008674
 #write_rds(fit13b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_all_data.rds"))
+
 
 plot_log = function(object, term) {
   g <- ggeffect(object, term, back.transform = FALSE)
@@ -902,20 +939,65 @@ fit14_all_data <- sdmTMB(tottraps ~ 0 +
                          spatiotemporal = "ar1",
                          data = all_data,
                          time = "half_month_of_season")
-toc() #64min
+toc() #62min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 28.4330017989434.
+# The model may not have converged. Maximum final gradient: 0.138722191591116
 #sanity(fit14_all_data)
-#Non-linear minimizer did not converge: do not trust this model! b_js, thetaf, ln_phi, ar1_phi
+#b_js, ln_phi
 #sanity(fit14_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Non-linear minimizer did not converge: do not trust this model! b_js, thetaf, ln_phi, ar1_phi
+#b_js, ln_phi
 AIC(fit14_all_data)
-#1010267
+#1008671
 summary(fit14_all_data)
 
 #EXPORT THIS MODEL
 #write_rds(fit14_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit14_all_data.rds"))
+
+###CHECK OPTIMIZATION
+#fit14b_all_data <- run_extra_optimization(fit14_all_data, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: --> fine after optimisation -- same as before
+#write_rds(fit14b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit14b_all_data.rds"))
+
+plot_log = function(object, term) {
+  g <- ggeffect(object, term, back.transform = FALSE)
+  g$conf.low <- log(g$conf.low)
+  g$conf.high <- log(g$conf.high)
+  g$predicted <- log(g$predicted)
+  plot(g)
+}
+
+
+p1 <- plot_log(fit14b_all_data, "season [all]")
+p2 <- plot_log(fit14b_all_data, "month_name_f [all]")
+p3 <- plot_log(fit14b_all_data, "OR_WA_waters [all]")
+p35 <- plot_log(fit14b_all_data, "WA_pot_reduction [all]")
+p4 <- plot_log(fit14b_all_data, "z_SST_avg [all]")
+p5 <- plot_log(fit14b_all_data, "z_wind_avg [all]")
+p6 <- plot_log(fit14b_all_data, "z_depth_point_mean [all]")
+p7 <- plot_log(fit14b_all_data, "z_depth_point_sd [all]")
+p8 <- plot_log(fit14b_all_data, "z_faults_km [all]")
+p9 <- plot_log(fit14b_all_data, "z_dist_canyon_km [all]")
+p10 <- plot_log(fit14b_all_data, "z_weighted_dist [all]")
+p11 <- plot_log(fit14b_all_data, "z_weighted_fuel_pricegal [all]")
+p12 <- plot_log(fit14b_all_data, "z_weighted_crab_ppp [all]")
+p13 <- plot_log(fit14b_all_data, "z_bottom_O2_avg [all]")
+p14 <- plot_log(fit14b_all_data, "z_dist_to_closed_km [all]")
+
+gridExtra::grid.arrange(p1,p2,p3,p35,ncol=2)
+
+gridExtra::grid.arrange(p4,p5,p6,p7,ncol=2)
+
+gridExtra::grid.arrange(p8,p9,p13,p14,ncol=2)
+
+gridExtra::grid.arrange(p10,p11,p12,ncol=2)
+
+res <- residuals(fit14b_all_data)
+qqnorm(res,ylim=c(-5,5))
+qqline(res)
+
 
 
 
@@ -947,13 +1029,13 @@ fit15_all_data <- sdmTMB(tottraps ~ 0 +
 toc() #61min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.324220189398519. 
+# The model may not have converged. Maximum final gradient:  
 #sanity(fit15_all_data)
-#b_js, ln_tau_E, ln_kappa, ar1_phi
+#Non-linear minimizer did not converge: do not trust this model - b_js, ln_tau_E, ln_kappa, ar1_phi
 #sanity(fit15_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
 #b_js, ln_tau_E, ln_kappa, ar1_phi
 AIC(fit15_all_data)
-#1009988
+#1009653
 summary(fit15_all_data)
 
 #EXPORT THIS MODEL
@@ -961,10 +1043,9 @@ summary(fit15_all_data)
 
 ###CHECK OPTIMIZATION
 #fit15b_all_data <- run_extra_optimization(fit15_all_data, nlminb_loops = 0, newton_loops = 1)
-#no warnings
-#no red Xs
-#AIC: 1009988 -- same as before
-#write_rds(fit15b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit15b_all_data.rds"))
+#The model may not have converged. Maximum final gradient: 30.0123493180581
+#AIC: 1010961 -- slightly different
+
 
 #this one is the best all data model
 
@@ -1037,22 +1118,27 @@ fit16_all_data <- sdmTMB(tottraps ~ 0 +
                          spatiotemporal = "ar1",
                          data = all_data,
                          time = "half_month_of_season")
-toc() #67min
+toc() #33min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 20.4754653297611. 
+# The model may not have converged. Maximum final gradient: 0.0372923765366124 
 #sanity(fit16_all_data)
-#Non-linear minimizer did not converge: do not trust this model! b_js, thetaf, ln_phi, ar1_phi
+#b_js, ln_kappa, thetaf
 #sanity(fit16_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Non-linear minimizer did not converge: do not trust this model! b_js, thetaf, ln_phi, ar1_phi
+#b_js, thetaf
 AIC(fit16_all_data)
-#1011220
+#1008649
 summary(fit16_all_data)
 
 #EXPORT THIS MODEL
 #write_rds(fit16_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16_all_data.rds"))
 
-
+###CHECK OPTIMIZATION
+#fit16b_all_data <- run_extra_optimization(fit16_all_data, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: 1008649 -- same
+#write_rds(fit16b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16b_all_data.rds"))
 
 
 
@@ -1082,22 +1168,26 @@ fit17_all_data <- sdmTMB(tottraps ~ 0 +
                          spatiotemporal = "ar1",
                          data = all_data,
                          time = "half_month_of_season")
-toc() #65min
+toc() #67min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 17.6396165929671.
+# The model may not have converged. Maximum final gradient: 1.57703118458138
 #sanity(fit17_all_data)
-#Non-linear minimizer did not converge: do not trust this model! b_js, ar1_phi
+#Non-linear minimizer did not converge: do not trust this model! b_js, ln_tau_E, ar1_phi
 #sanity(fit17_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#Non-linear minimizer did not converge: do not trust this model! b_js, ar1_phi
+#Non-linear minimizer did not converge: do not trust this model! b_js, ln_tau_E, ar1_phi
 AIC(fit17_all_data)
-#1010061
+#1008676
 summary(fit17_all_data)
 
 #EXPORT THIS MODEL
 #write_rds(fit17_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit17_all_data.rds"))
 
-
+###CHECK OPTIMIZATION
+#fit17b_all_data <- run_extra_optimization(fit17_all_data, nlminb_loops = 0, newton_loops = 1)
+#warning The model may not have converged. Maximum final gradient: 10.9250059519932
+#
+#AIC: 1008670 -- slightly different
 
 
 
@@ -1125,21 +1215,27 @@ fit18_all_data <- sdmTMB(tottraps ~ 0 +
                          spatiotemporal = "ar1",
                          data = all_data,
                          time = "half_month_of_season")
-toc() #42min
+toc() #43min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.136528236875038. 
+# The model may not have converged. Maximum final gradient: 0.0532832861451773 
 #sanity(fit18_all_data)
-#b_js, ln_tau_E, ln_kappa, ar1_phi
+#b_js, ln_tau_E, ar1_phi
 #sanity(fit18_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, ln_tau_E, ln_kappa, ar1_phi
+#b_js, ln_tau_E
 AIC(fit18_all_data)
-#1010032
+#1008673
 summary(fit18_all_data)
 
 #EXPORT THIS MODEL
 #write_rds(fit18_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit18_all_data.rds"))
 
+###CHECK OPTIMIZATION
+#fit18b_all_data <- run_extra_optimization(fit18_all_data, nlminb_loops = 0, newton_loops = 1)
+#no warning
+#no red Xs
+#AIC: 1008673 -- same
+#write_rds(fit18b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit18b_all_data.rds"))
 
 
 
@@ -1170,27 +1266,29 @@ fit19_all_data <- sdmTMB(tottraps ~ 0 +
                          spatiotemporal = "ar1",
                          data = all_data,
                          time = "half_month_of_season")
-toc() #28min
+toc() #64min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.111499584422893. 
+# The model may not have converged. Maximum final gradient: 16.3177350118664 
 #sanity(fit19_all_data)
-#b_js, ln_kappa, ar1_phi
+#Non-linear minimizer did not converge: do not trust this model!
+#b_js, ar1_phi
 #sanity(fit19_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js, ln_kappa
+#Non-linear minimizer did not converge: do not trust this model!
+#b_js, ar1_phi
 AIC(fit19_all_data)
-#1009641
+#1009602 (previous run (v1) was 1008841)
 summary(fit19_all_data)
 
 #EXPORT THIS MODEL
-#write_rds(fit19_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19_all_data.rds"))
+#write_rds(fit19_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19_all_data_v2.rds"))
 
 ###CHECK OPTIMIZATION
 #fit19b_all_data <- run_extra_optimization(fit19_all_data, nlminb_loops = 0, newton_loops = 1)
-#no warnings
-#no red Xs
-#AIC: 1009641 -- same as before
-#write_rds(fit19b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_all_data.rds"))
+#warning The model may not have converged. Maximum final gradient: 16.3177350118664
+#
+#AIC: 1012163 -- different (previous run v1 was 1008883)
+#write_rds(fit19b_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_all_data_v2.rds"))
 
 
 plot_log = function(object, term) {
@@ -1230,6 +1328,51 @@ res <- residuals(fit19b_all_data)
 qqnorm(res,ylim=c(-5,5))
 qqline(res)
 
+
+tic()
+fit19X_all_data <- sdmTMB(tottraps ~ 0 + 
+                           season +
+                           month_name_f + 
+                           OR_WA_waters + 
+                           WA_pot_reduction + 
+                           z_SST_avg + 
+                           z_wind_avg + 
+                           z_depth_point_mean * z_bottom_O2_avg + #remove polynomial term
+                           z_depth_point_sd +
+                           z_faults_km +
+                           z_dist_canyon_km +
+                           z_weighted_dist + 
+                           z_weighted_fuel_pricegal + 
+                           z_weighted_crab_ppp +
+                           #z_bottom_O2_avg + #part of interaction term
+                           z_dist_to_closed_km,
+                         family = tweedie(),
+                         mesh = mesh_all_data,
+                         spatial = "off",
+                         spatiotemporal = "ar1",
+                         data = all_data,
+                         time = "half_month_of_season")
+toc() #45min
+
+# when seed set and no polynomials
+# The model may not have converged. Maximum final gradient: 0.126431123566249
+#sanity(fit19X_all_data)
+#b_js only
+#sanity(fit19X_all_data, big_sd_log10 = 3, gradient_thresh = 0.005)
+#b_js only
+AIC(fit19X_all_data)
+#1010936 
+summary(fit19X_all_data)
+
+#EXPORT THIS MODEL
+#write_rds(fit19X_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19X_all_data.rds"))
+
+###CHECK OPTIMIZATION
+#fit19Xb_all_data <- run_extra_optimization(fit19X_all_data, nlminb_loops = 0, newton_loops = 1)
+#no warnings
+#no red Xs
+#AIC: 1010936 - same
+#write_rds(fit19Xb_all_data, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19Xb_all_data.rds"))
 
 
 #------------------------------------------------------
