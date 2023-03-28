@@ -570,14 +570,14 @@ fit13_summer <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = summer,
                        time = "yearn")
-toc() #12min
+toc() #20min
 
 # when seed set 
-# The model may not have converged. Maximum final gradient: 0.0127912393276404.
+# The model may not have converged. Maximum final gradient: 0.0197435181903884
 #sanity(fit13_summer)
-#b_js, ln_tau_O
+#b_js, ln_tau_O, thetaf, ln_phi
 #sanity(fit13_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
-#b_js only
+#b_js, thetaf, ln_phi
 AIC(fit13_summer)
 #266098
 summary(fit13_summer)
@@ -589,7 +589,7 @@ summary(fit13_summer)
 #fit13b_summer <- run_extra_optimization(fit13_summer, nlminb_loops = 0, newton_loops = 1)
 #no warnings
 #no red Xs
-#AIC: 266439.9 -- same as before
+#AIC: 266098 -- same as before
 #write_rds(fit13b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit13b_summer.rds"))
 
 plot_log = function(object, term) {
@@ -957,10 +957,10 @@ fit19_summer <- sdmTMB(tottraps ~ 0 +
                        spatiotemporal = "ar1",
                        data = summer,
                        time = "yearn")
-toc() #15min
+toc() #11min
 
 # when seed set and no polynomials
-#The model may not have converged. Maximum final gradient: 0.0227277651881579. 
+#The model may not have converged. Maximum final gradient: 0.0114698416933052 
 #sanity(fit19_summer)
 #b_js, thetaf, ln_phi
 #sanity(fit19_summer, big_sd_log10 = 3, gradient_thresh = 0.005)
@@ -977,7 +977,7 @@ summary(fit19_summer)
 #fit19b_summer <- run_extra_optimization(fit19_summer, nlminb_loops = 0, newton_loops = 1)
 #no warnings
 #no red Xs
-#AIC: 266082.3 -- same as before
+#AIC: 265737.4 -- same as before
 
 #EXPORT THIS MODEL
 #write_rds(fit19b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit19b_summer.rds"))
