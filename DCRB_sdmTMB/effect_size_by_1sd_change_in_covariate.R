@@ -209,3 +209,22 @@ dummy_dist_to_closed$half_month_of_seasonf <- as.factor(dummy_dist_to_closed$hal
 predictions_dummy_dist_to_closed <- predict(fit19b_summer, newdata = dummy_dist_to_closed)
 
 
+
+
+
+
+
+
+
+dummy_HMOS_test <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_all_HMOS.csv"))
+dummy_HMOS_test$half_month_of_seasonf <- as.factor(dummy_HMOS_test$half_month_of_seasonf)
+predictions_HMOS_all <- predict(fit19b_summer, newdata = dummy_HMOS_test)
+predictions_HMOS_all_v2 <- predictions_HMOS_all %>% mutate(effect = (exp(est)-1)*100)
+plot(predictions_HMOS_all$half_month_of_seasonf,predictions_HMOS_all$est)
+plot(predictions_HMOS_all_v2$half_month_of_seasonf,predictions_HMOS_all_v2$effect)
+
+dummy_HMOS_test_v2 <- dummy_HMOS_test %>% filter(half_month_of_seasonf %in% c("10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
+predictions_HMOS_all_v3 <- predict(fit19b_summer, newdata = dummy_HMOS_test_v2)
+predictions_HMOS_all_v4 <- predictions_HMOS_all_v3 %>% mutate(effect = (exp(est)-1)*100)
+plot(predictions_HMOS_all_v4$half_month_of_seasonf,predictions_HMOS_all_v4$effect)
+
