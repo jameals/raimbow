@@ -471,7 +471,7 @@ df_winter_2sd <- df_winter_2sd %>%
   )) 
 
 
-df_summer <- df_summer %>% 
+df_summer_2sd <- df_summer_2sd %>% 
   mutate(OR_WA_waters = case_when(
     OR_WA_waters == 1 ~ "WA",
     OR_WA_waters == 0 ~ "OR"
