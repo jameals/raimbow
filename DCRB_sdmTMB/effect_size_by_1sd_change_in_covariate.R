@@ -228,3 +228,82 @@ predictions_HMOS_all_v3 <- predict(fit19b_summer, newdata = dummy_HMOS_test_v2)
 predictions_HMOS_all_v4 <- predictions_HMOS_all_v3 %>% mutate(effect = (exp(est)-1)*100)
 plot(predictions_HMOS_all_v4$half_month_of_seasonf,predictions_HMOS_all_v4$effect)
 
+
+
+
+
+dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth_O2_interaction.csv"))
+dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
+predictions_depth_O2_interaction <- predict(fit19b_summer, newdata = dummy_depth_O2_interaction)
+
+ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
+  geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
+  geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
+  scale_color_grey() + 
+  theme_classic()
+
+
+
+
+#-------------------------------------------------------------------------------------------------
+
+##ALL DATA
+
+#-------------------------------------------------------------------------------------------------
+
+#read in all data - the version where z-scoring is done across all data
+all_data <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds'))
+glimpse(all_data) 
+
+all_data$month_name_f <- factor(all_data$month_name, levels = c("December", "January", "February", "March", "April",
+                                                                "May", "June", "July", "August", "September"))
+
+# Add UTM columns (zone 10)
+all_data = add_utm_columns(all_data, ll_names = c("grd_x", "grd_y"))
+
+
+mesh_all_data <- make_mesh(all_data, xy_cols = c("X","Y"), cutoff = 10)
+mesh_all_data$mesh$n
+
+
+#-------------------------------------------------------------------------------------------------
+
+fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16b_all_data.rds"))
+
+
+dummy_dist_to_closed_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_dist_to_closed_effect.csv"))
+dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
+
+#predict with new data:
+predictions <- predict(fit16b_all_data, newdata = dummy_dist_to_closed_interaction)
+predictions_v2 <- predictions %>% mutate(effect = (exp(est)-1)*100)
+
+ggplot(data=predictions, aes(x=z_dist_to_closed_km, y=est, group=OR_WA_waters)) +
+  geom_line(aes(color=OR_WA_waters))+
+  geom_point(aes(color=OR_WA_waters))+
+  scale_color_grey() + 
+  theme_classic()
+
+View(predictions_v2)
+#for WA, between 0 and 1 of covariate 1.6% increase in effort
+#for OR, between 0 and 1 of covariate 7.9% decrease in effort
+
+
+
+predictionsv2 <- predict(fit16b_all_data)
+predictionsv2$resids <- residuals(fit16b_all_data)
+
+ggplot(data=predictionsv2, aes(x=z_dist_to_closed_km, y=resids, group=OR_WA_waters)) +
+  geom_line(aes(color=OR_WA_waters))+
+  geom_point(aes(color=OR_WA_waters))+
+  scale_color_grey() + 
+  theme_classic()
+
+
+
+
+
+
+
+
+
