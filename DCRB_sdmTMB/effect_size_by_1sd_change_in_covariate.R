@@ -40,72 +40,72 @@ mesh_winter$mesh$n
 fit19b_winter <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC','winter','after fixing fuel and crab price',"fit19b_winter.rds"))
 
 #SST
-dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_SST.csv"))
+dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_SST.csv"))
 dummy_SST$half_month_of_seasonf <- as.factor(dummy_SST$half_month_of_seasonf)
-predictions <- predict(fit19b_winter, newdata = dummy_SST)
+predictions_SST <- predict(fit19b_winter, newdata = dummy_SST)
 
 #depth
-dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_depth.csv"))
+dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth.csv"))
 dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf)
 predictions_depth <- predict(fit19b_winter, newdata = dummy_depth)
 
 #fishing state
-dummy_fishing_state <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_fishing_state.csv"))
+dummy_fishing_state <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_fishing_state.csv"))
 dummy_fishing_state$half_month_of_seasonf <- as.factor(dummy_fishing_state$half_month_of_seasonf)
 predictions_dummy_fishing_state <- predict(fit19b_winter, newdata = dummy_fishing_state)
 
 #season
-dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_season.csv"))
+dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_season.csv"))
 dummy_season$half_month_of_seasonf <- as.factor(dummy_season$half_month_of_seasonf)
 predictions_dummy_season <- predict(fit19b_winter, newdata = dummy_season)
 
 #half-month of season
-dummy_HMOS <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_HMOS.csv"))
+dummy_HMOS <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_HMOS.csv"))
 dummy_HMOS$half_month_of_seasonf <- as.factor(dummy_HMOS$half_month_of_seasonf)
 predictions_dummy_HMOS <- predict(fit19b_winter, newdata = dummy_HMOS)
 
 #wind
-dummy_wind <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_wind.csv"))
+dummy_wind <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_wind.csv"))
 dummy_wind$half_month_of_seasonf <- as.factor(dummy_wind$half_month_of_seasonf)
 predictions_dummy_wind <- predict(fit19b_winter, newdata = dummy_wind)
 
 #depth sd
-dummy_depth_sd <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_depth_sd.csv"))
+dummy_depth_sd <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth_sd.csv"))
 dummy_depth_sd$half_month_of_seasonf <- as.factor(dummy_depth_sd$half_month_of_seasonf)
 predictions_dummy_depth_sd <- predict(fit19b_winter, newdata = dummy_depth_sd)
 
 #fault lines
-dummy_faults <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_faults.csv"))
+dummy_faults <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_faults.csv"))
 dummy_faults$half_month_of_seasonf <- as.factor(dummy_faults$half_month_of_seasonf)
 predictions_dummy_faults <- predict(fit19b_winter, newdata = dummy_faults)
 
 #canyons
-dummy_canyons <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_canyons.csv"))
+dummy_canyons <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_canyons.csv"))
 dummy_canyons$half_month_of_seasonf <- as.factor(dummy_canyons$half_month_of_seasonf)
 predictions_dummy_canyons <- predict(fit19b_winter, newdata = dummy_canyons)
 
 #distance to port
-dummy_port_dist <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_port_dist.csv"))
+dummy_port_dist <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_port_dist.csv"))
 dummy_port_dist$half_month_of_seasonf <- as.factor(dummy_port_dist$half_month_of_seasonf)
 predictions_dummy_port_dist <- predict(fit19b_winter, newdata = dummy_port_dist)
 
 #fuel price
-dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_fuel.csv"))
+dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_fuel.csv"))
 dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
 predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel)
 
 #crab price
-dummy_crab <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_crab.csv"))
+dummy_crab <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_crab.csv"))
 dummy_crab$half_month_of_seasonf <- as.factor(dummy_crab$half_month_of_seasonf)
 predictions_dummy_crab <- predict(fit19b_winter, newdata = dummy_crab)
 
 #bottom O2
-dummy_O2 <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_O2.csv"))
+dummy_O2 <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_O2.csv"))
 dummy_O2$half_month_of_seasonf <- as.factor(dummy_O2$half_month_of_seasonf)
 predictions_dummy_O2 <- predict(fit19b_winter, newdata = dummy_O2)
 
 #distance to closed area
-dummy_dist_to_closed <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs',"dummy_df_dist_to_closed.csv"))
+dummy_dist_to_closed <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_dist_to_closed.csv"))
 dummy_dist_to_closed$half_month_of_seasonf <- as.factor(dummy_dist_to_closed$half_month_of_seasonf)
 predictions_dummy_dist_to_closed <- predict(fit19b_winter, newdata = dummy_dist_to_closed)
 
@@ -210,11 +210,55 @@ predictions_dummy_dist_to_closed <- predict(fit19b_summer, newdata = dummy_dist_
 
 
 
+#-------------------------------------------------------------------------------------------------
+
+###ALL DATA
+
+#-------------------------------------------------------------------------------------------------
+
+fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16b_all_data.rds"))
+
+#depth
+dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_depth.csv"))
+dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
+predictions_depth <- predict(fit16b_all_data, newdata = dummy_depth)
+
+dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_SST.csv"))
+dummy_SST$month_name_f <- as.factor(dummy_SST$month_name_f)
+predictions_SST <- predict(fit16b_all_data, newdata = dummy_SST)
+
+dummy_month <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_month.csv"))
+dummy_month$month_name_f <- as.factor(dummy_month$month_name_f)
+predictions_month <- predict(fit16b_all_data, newdata = dummy_month, `se_fit` = TRUE)
+
+#% change 
+#Dec-Jan: 22.53077
+#Jan-Feb: 18.70284
+#Feb-Mar: 13.21732
+#Mar-Apr: -1.431653
+#Apr-May: 5.881991
+#May-Jun: -11.97779
+#Jun-Jul: -6.061324
+#Jul-Aug: 12.94559
+#Aug-Sep: 35.02503
+
+predictions_month <- predictions_month %>% 
+  mutate(month_name_f = factor(month_name_f, 
+                               levels = c('December','January','February','March','April','May','June','July','August','September')))  
+ggplot(data=predictions_month, aes(x=month_name_f, y=est, group=1)) +
+  geom_line()+
+  #geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se, alpha=0.2))+
+  geom_point()+
+  theme_classic()
+
+#the 'increasing trend' in this plot, its not that the total number of pots increases, but maybe it's capturing
+#the shrinkage of the fishing area, and that's why pots pr grid goes up?
+#could this need a companion plot of avg number of unique grids used in a given month? and number of active vessels?
 
 
-
-
-
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+#visualising interaction
 
 dummy_HMOS_test <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_all_HMOS.csv"))
 dummy_HMOS_test$half_month_of_seasonf <- as.factor(dummy_HMOS_test$half_month_of_seasonf)
@@ -231,18 +275,38 @@ plot(predictions_HMOS_all_v4$half_month_of_seasonf,predictions_HMOS_all_v4$effec
 
 
 
-
+#SUMMER
 dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth_O2_interaction.csv"))
 dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
-predictions_depth_O2_interaction <- predict(fit19b_summer, newdata = dummy_depth_O2_interaction)
+predictions_depth_O2_interaction <- predict(fit19b_summer, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
 
 ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
   geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
+  geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se,color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
   geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
-  scale_color_grey() + 
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+#WINTER
+dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth_O2_interaction.csv"))
+dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
+predictions_depth_O2_interaction <- predict(fit19b_winter, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
+
+ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
+  geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
+  geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se,color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
+  geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
 
 
+#boxplot -- but not enough instance to make a box
+p <- ggplot(predictions_depth_O2_interaction, aes(as.factor(z_depth_point_mean), est, colour = as.factor(z_bottom_O2_avg))) + geom_boxplot()
+p
 
 
 #-------------------------------------------------------------------------------------------------
@@ -275,14 +339,17 @@ dummy_dist_to_closed_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','
 dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
 
 #predict with new data:
-predictions <- predict(fit16b_all_data, newdata = dummy_dist_to_closed_interaction)
+predictions <- predict(fit16b_all_data, newdata = dummy_dist_to_closed_interaction, `se_fit` = TRUE)
 predictions_v2 <- predictions %>% mutate(effect = (exp(est)-1)*100)
 
 ggplot(data=predictions, aes(x=z_dist_to_closed_km, y=est, group=OR_WA_waters)) +
   geom_line(aes(color=OR_WA_waters))+
+  geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se,color=OR_WA_waters, fill = OR_WA_waters), alpha=0.2)+
   geom_point(aes(color=OR_WA_waters))+
-  scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
+
 
 View(predictions_v2)
 #for WA, between 0 and 1 of covariate 1.6% increase in effort
@@ -304,6 +371,17 @@ ggplot(data=predictionsv2, aes(x=z_dist_to_closed_km, y=resids, group=OR_WA_wate
 
 
 
+#
+all_data_subset <- all_data %>% filter(tottraps <500)
+ggplot(data=all_data_subset, aes(x=tottraps, group=OR_WA_waters, fill=OR_WA_waters)) +
+  geom_density(adjust=1.5) +
+  theme_classic() +
+  facet_grid(~ OR_WA_waters) +
+  theme(
+    legend.position="right",
+    panel.spacing = unit(0.1, "lines"),
+    axis.ticks.x=element_blank()
+  )
 
-
-
+ggplot(all_data_subset, aes(x = tottraps, y = OR_WA_waters, fill = OR_WA_waters)) +
+  geom_density_ridges()
