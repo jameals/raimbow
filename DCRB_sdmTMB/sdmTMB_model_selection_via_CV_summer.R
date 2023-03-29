@@ -444,6 +444,68 @@ cv_test5_summer <- cv_fits
 #EXPORT THIS MODEL
 #write_rds(cv_test5_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test5_summer.rds"))
 
+
+
+#test 5b
+#no covariates, spatial fields but no s-t fields, time=month
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  train <- dplyr::filter(summer, yearn < yr)
+  train$fold_id <- 1
+  test <- dplyr::filter(summer, yearn == yr, month_name == "May")
+  test$fold_id <- 2
+  sub <- rbind(test, train)
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "off", 
+                               data = sub,
+                               time = "month_n")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 1.2min
+#tot_elpd = -2.258108
+#tot_loglik = -28303.96 - doesn't matter if time = month_n, prob as no s-t field anyway
+
+#Warning messages:
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization. 
+# 4: The model may not have converged. Maximum final gradient: 0.0439054271480988. 
+
+#MODEL DID NOT CONVERGE
+# [[5]]$converged
+# [1] TRUE
+# 
+# [[5]]$pdHess
+# [1] TRUE TRUE
+
+
+cv_test5b_summer <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test5b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test5b_summer.rds"))
+
 #---------------------------------------------
 
 
@@ -574,8 +636,148 @@ cv_test7_summer <- cv_fits
 #EXPORT THIS MODEL
 #write_rds(cv_test7_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test7_summer.rds"))
 
+
+
+#7b - test 7 but tim=month
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  train <- dplyr::filter(summer, yearn < yr)
+  train$fold_id <- 1
+  test <- dplyr::filter(summer, yearn == yr, month_name == "May")
+  test$fold_id <- 2
+  sub <- rbind(test, train)
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0,
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1", 
+                               data = sub,
+                               time = "month_n")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 4min
+#tot_elpd = -2.537671
+#tot_loglik = -27630.81
+
+#Warning messages:
+# Warning messages:
+#   1: In sqrt(diag(object$cov.fixed)) : NaNs produced
+# 2: In sqrt(as.numeric(object$diag.cov.random)) : NaNs produced
+
+#MODEL DID CONVERGE
+#[[5]]$converged
+#[1] FALSE
+
+#[[5]]$pdHess
+#[1] FALSE  TRUE
+#or all TRUES for model 5
+
+cv_test7b_summer <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test7b_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test7b_summer.rds"))
+
 #---------------------------------------------
 
+
+#test 8
+#covariates, no polynomials, month_name_f is fixed effect, 
+# s and  s-t fields (ar1), time='month_n'
+
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  train <- dplyr::filter(summer, yearn < yr)
+  train$fold_id <- 1
+  test <- dplyr::filter(summer, yearn == yr, month_name == "May")
+  test$fold_id <- 2
+  sub <- rbind(test, train)
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season + 
+                                 month_name_f + 
+                                 OR_WA_waters + 
+                                 #WA_pot_reduction + #eric thinks this is the root of converging issues
+                                 z_SST_avg  + 
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1", 
+                               data = sub,
+                               time = "month_n")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 19min
+#tot_elpd = -13.14259
+#tot_loglik = -1329205
+
+#Warning messages:
+#1: The model may not have converged: non-positive-definite Hessian matrix.
+#2: The time elements in `newdata` are not identical to those in the original dataset.
+#This is normally fine, but may create problems for index standardization.
+
+#MODEL DID NOT CONVERGE
+#[[5]]$converged
+#[1] FALSE
+
+#[[5]]$pdHess
+#[1] FALSE  FALSE
+
+
+cv_test8_summer <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test8_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test8_summer.rds"))
+
+#---------------------------------------------
 
 
 
