@@ -431,7 +431,7 @@ toc()
 #2: The time elements in `newdata` are not identical to those in the original dataset.
 #This is normally fine, but may create problems for index standardization.
 
-#MODEL DID NOT CONVERGE
+#MODEL DID CONVERGE
 # [[5]]$converged
 # [1] TRUE
 # 
@@ -493,7 +493,7 @@ toc()
 # This is normally fine, but may create problems for index standardization. 
 # 4: The model may not have converged. Maximum final gradient: 0.0439054271480988. 
 
-#MODEL DID NOT CONVERGE
+#MODEL DID CONVERGE
 # [[5]]$converged
 # [1] TRUE
 # 
