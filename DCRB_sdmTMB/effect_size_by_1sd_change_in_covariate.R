@@ -255,17 +255,58 @@ ggplot(data=predictions_month, aes(x=month_name_f, y=est, group=1)) +
 #the shrinkage of the fishing area, and that's why pots pr grid goes up?
 #could this need a companion plot of avg number of unique grids used in a given month? and number of active vessels?
 
+plot(predictions_month$month_name_f,predictions_month$est)
+
+
+
+dummy_year <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_year.csv"))
+dummy_year$month_name_f <- as.factor(dummy_year$month_name_f)
+dummy_year$season <- as.factor(dummy_year$season)
+
+predictions_year <- predict(fit16b_all_data, newdata = dummy_year) #, `se_fit` = TRUE
+
+plot(predictions_year$season,predictions_year$est)
+
+
 
 #-------------------------------------------------------------------------------------------------
+
+##summer - season effect
+
+dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_season.csv"))
+dummy_season$half_month_of_seasonf <- as.factor(dummy_season$half_month_of_seasonf)
+dummy_season$season <- as.factor(dummy_season$season)
+
+predictions_season <- predict(fit19b_summer, newdata = dummy_season)
+
+plot(predictions_season$season,predictions_season$est)
+
+
+##winter - season effect
+
+dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_HMOS_fixed_effect_season.csv"))
+dummy_season$half_month_of_seasonf <- as.factor(dummy_season$half_month_of_seasonf)
+dummy_season$season <- as.factor(dummy_season$season)
+
+predictions_season <- predict(fit19b_winter, newdata = dummy_season, `se_fit` = TRUE)
+
+plot(predictions_season$season,predictions_season$est)
+
+# The errorbars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.1) # move them .05 to the left and right
+ggplot(predictions_season, aes(x=season, y=est,group=1)) + 
+  geom_errorbar(aes(ymin=est-est_se, ymax=est+est_se), colour="black", width=.1, position=pd) +
+  geom_point(position=pd, size=3)
 #-------------------------------------------------------------------------------------------------
-#visualising interaction
+
+#SUMMER - VISUALISING HMOS EFFECT
 
 dummy_HMOS_test <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_all_HMOS.csv"))
 dummy_HMOS_test$half_month_of_seasonf <- as.factor(dummy_HMOS_test$half_month_of_seasonf)
 predictions_HMOS_all <- predict(fit19b_summer, newdata = dummy_HMOS_test)
-predictions_HMOS_all_v2 <- predictions_HMOS_all %>% mutate(effect = (exp(est)-1)*100)
+#predictions_HMOS_all_v2 <- predictions_HMOS_all %>% mutate(effect = (exp(est)-1)*100)
 plot(predictions_HMOS_all$half_month_of_seasonf,predictions_HMOS_all$est)
-plot(predictions_HMOS_all_v2$half_month_of_seasonf,predictions_HMOS_all_v2$effect)
+#plot(predictions_HMOS_all_v2$half_month_of_seasonf,predictions_HMOS_all_v2$effect)
 
 dummy_HMOS_test_v2 <- dummy_HMOS_test %>% filter(half_month_of_seasonf %in% c("10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
 predictions_HMOS_all_v3 <- predict(fit19b_summer, newdata = dummy_HMOS_test_v2)
@@ -273,16 +314,149 @@ predictions_HMOS_all_v4 <- predictions_HMOS_all_v3 %>% mutate(effect = (exp(est)
 plot(predictions_HMOS_all_v4$half_month_of_seasonf,predictions_HMOS_all_v4$effect)
 
 
+#WINTER - VISUALISING HMOS EFFECT
+
+dummy_HMOS_test <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_HMOS_fixed_effect_all_HMOS.csv"))
+dummy_HMOS_test$half_month_of_seasonf <- as.factor(dummy_HMOS_test$half_month_of_seasonf)
+predictions_HMOS_all <- predict(fit19b_summer, newdata = dummy_HMOS_test)
+#predictions_HMOS_all_v2 <- predictions_HMOS_all %>% mutate(effect = (exp(est)-1)*100)
+plot(predictions_HMOS_all$half_month_of_seasonf,predictions_HMOS_all$est)
+#plot(predictions_HMOS_all_v2$half_month_of_seasonf,predictions_HMOS_all_v2$effect)
 
 
+
+
+
+
+
+#SUMMER - VISUALISING HMOS EFFECT
+
+dummy_testtest <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_vary_year_HMOS_steady.csv"))
+dummy_testtest$half_month_of_seasonf <- as.factor(dummy_testtest$half_month_of_seasonf)
+predictions_testtest <- predict(fit19b_summer, newdata = dummy_testtest)
+
+plot(predictions_testtest$yearn,predictions_testtest$est)
+
+ggplot(data=predictions_testtest, aes(x=yearn, y=est, group=half_month_of_seasonf)) +
+  geom_line(aes(color=half_month_of_seasonf))+
+  geom_point(aes(color=half_month_of_seasonf))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+ggplot(data=predictions_testtest, aes(x=half_month_of_seasonf, y=est, group=season)) +
+  geom_line(aes(color=season))+
+  geom_point(aes(color=season))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+
+#WINTER - VISUALISING HMOS EFFECT
+
+dummy_testtest <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_vary_year_HMOS_steady.csv"))
+dummy_testtest$half_month_of_seasonf <- as.factor(dummy_testtest$half_month_of_seasonf)
+predictions_testtest <- predict(fit19b_summer, newdata = dummy_testtest)
+
+#plot(predictions_testtest$yearn,predictions_testtest$est)
+
+ggplot(data=predictions_testtest, aes(x=yearn, y=est, group=half_month_of_seasonf)) +
+  geom_line(aes(color=half_month_of_seasonf))+
+  geom_point(aes(color=half_month_of_seasonf))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+ggplot(data=predictions_testtest, aes(x=half_month_of_seasonf, y=est, group=season)) +
+  geom_line(aes(color=season))+
+  geom_point(aes(color=season))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+
+#ALL DATA - VISUALISING MONTH EFFECT
+
+dummy_testtest <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_vary_year_month_steady.csv"))
+#dummy_testtest$month_name_f <- as.factor(dummy_testtest$month_name_f)
+dummy_testtest$month_name_f <- factor(dummy_testtest$month_name_f, levels = c("December", "January", "February", "March", "April",
+                                                                "May", "June", "July", "August", "September"))
+
+predictions_testtest <- predict(fit16b_all_data, newdata = dummy_testtest)
+
+datax <- predictions_testtest %>%
+  group_by(month_name_f) %>%
+  top_n(1, season) 
+
+ggplot(data=predictions_testtest, aes(x=season, y=est, group=month_name_f)) +
+  geom_line(aes(color=month_name_f, label = month_name_f))+
+  geom_point(aes(color=month_name_f))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  geom_text_repel(
+    aes(label = month_name_f), data = datax,
+    size = 3) +
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+
+datax <- predictions_testtest %>%
+  group_by(season) %>%
+  top_n(1, month_name_f) 
+
+ggplot(data=predictions_testtest, aes(x=month_name_f, y=est, group=season)) +
+  geom_line(aes(color=season))+
+  geom_point(aes(color=season))+
+  #scale_color_grey() + 
+  #scale_color_continuous()+
+  scale_color_hue(c = 40)+
+  geom_text_repel(
+    aes(label = season), data = datax,
+    size = 3) +
+  #scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+
+#visualising interaction
+
+##interaction between depth and bottom O2
 #SUMMER
 dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth_O2_interaction.csv"))
 dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
 predictions_depth_O2_interaction <- predict(fit19b_summer, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
 
+#ribbon uses SE
 ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
   geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
   geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se,color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
+  geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+#ribbon uses 95%CI
+ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
+  geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975),color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
   geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
   #scale_color_grey() + 
   scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
@@ -294,6 +468,7 @@ dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy 
 dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
 predictions_depth_O2_interaction <- predict(fit19b_winter, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
 
+#ribbon uses SE
 ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
   geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
   geom_ribbon(aes(ymin=est-est_se, ymax=est+est_se,color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
@@ -303,6 +478,15 @@ ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, g
   scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
 
+#ribbon uses 95%CI
+ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, group=as.factor(z_bottom_O2_avg))) +
+  geom_line(aes(color=as.factor(z_bottom_O2_avg)))+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975),color=as.factor(z_bottom_O2_avg), fill = as.factor(z_bottom_O2_avg)), alpha=0.2)+
+  geom_point(aes(color=as.factor(z_bottom_O2_avg)))+
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
 
 #boxplot -- but not enough instance to make a box
 p <- ggplot(predictions_depth_O2_interaction, aes(as.factor(z_depth_point_mean), est, colour = as.factor(z_bottom_O2_avg))) + geom_boxplot()
