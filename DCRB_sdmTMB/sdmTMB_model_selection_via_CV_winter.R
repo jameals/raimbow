@@ -119,8 +119,10 @@ toc()
 #tot_loglik = -27448.2
 
 #Warning messages:
-#  1: The model may not have converged: non-positive-definite Hessian matrix. 
-#2: The model may not have converged. Maximum final gradient: 0.0129883306598302. 
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 4: The model may not have converged. Maximum final gradient: 0.013992997718373.
 
 #MODEL DID CONVERGE
 #[[5]]$converged
@@ -193,20 +195,22 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-# 42min
-#tot_elpd = -3.32651
-#tot_loglik = -26621.72
+# 33min
+#tot_elpd = -3.326518
+#tot_loglik = -26621.73
 
 #Warning messages:
-#  1: The model may not have converged: non-positive-definite Hessian matrix. 
-#2: The model may not have converged. Maximum final gradient: 0.0782281376894849. 
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0137257711133432.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
 
-#MODEL DIDN'T CONVERGE
+#MODEL DID CONVERGE
 #[[5]]$converged
 #[1] FALSE
-#
+
 #[[5]]$pdHess
-#[1] FALSE FALSE
+#[1] FALSE  TRUE
 
 
 cv_test2_winter <- cv_fits
@@ -270,19 +274,22 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-# 49min
-#tot_elpd = -3.293958
-#tot_loglik = -26426.45
+# 39min
+#tot_elpd = -3.270455
+#tot_loglik = -26410
 
 #Warning messages:
-#  1: The model may not have converged: non-positive-definite Hessian matrix. 
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0384819939249539.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
 
-#MODEL DIDN'T CONVERGE
-#[[5]]$converged
-#[1] FALSE
-#
-#[[5]]$pdHess
-#[1] FALSE FALSE
+#MODEL DID CONVERGE
+# [[1]]$converged
+# [1] FALSE
+# 
+# [[1]]$pdHess
+# [1] FALSE  TRUE
 
 
 cv_test3_winter <- cv_fits
@@ -346,32 +353,216 @@ tot_elpd <- sum(model_selection$elpd)
 tot_loglik <- sum(model_selection$loglik)
 toc()
 
-# 49min
-#tot_elpd = -3.293958
-#tot_loglik = -26426.45
+# 73min
+#tot_elpd = -3.268641
+#tot_loglik = -26413.44
 
 #Warning messages:
-#  1: The model may not have converged: non-positive-definite Hessian matrix. 
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.096839048103142.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization. 
 
-#MODEL DIDN'T CONVERGE
-#[[5]]$converged
-#[1] FALSE
-#
-#[[5]]$pdHess
-#[1] FALSE FALSE
+#MODEL DID CONVERGE
+# [[2]]$converged
+# [1] FALSE
+# 
+# [[2]]$pdHess
+# [1] FALSE  TRUE
 
 
-cv_test3_winter <- cv_fits
+cv_test4_winter <- cv_fits
 
 #EXPORT THIS MODEL
-#write_rds(cv_test3_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test3_winter.rds"))
+#write_rds(cv_test4_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test4_winter.rds"))
+
+#---------------------------------------------
+
+#test 5
+#No covariates, no polynomials
+# spatial but no  s-t fields, time='yearn'
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "off",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 3min
+#tot_elpd = -3.785159
+#tot_loglik = -27277.99
+
+#Warning messages:
+# 4: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization. 
+# 5: The model may not have converged. Maximum final gradient: 0.0287616318709073. 
+
+#MODEL DID CONVERGE
+# [[1]]$converged
+# [1] TRUE
+# 
+# [[1]]$pdHess
+# [1] TRUE TRUE
+
+
+cv_test5_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test5_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test5_winter.rds"))
 
 #---------------------------------------------
 
 
+#test 6
+#No covariates, no polynomials
+# spatial and  s-t fields, iid, time='yearn'
 
 
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "iid",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
 
+# 6min
+#tot_elpd = -3.777363
+#tot_loglik = -27236.47
+
+#Warning messages:
+# 1: The model may not have converged. Maximum final gradient: 0.0214664789250421. 
+# 2: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+
+#MODEL DID CONVERGE
+# [[4]]$converged
+# [1] TRUE
+# 
+# [[4]]$pdHess
+# [1] TRUE TRUE
+
+cv_test6_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test6_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test6_winter.rds"))
+
+#---------------------------------------------
+
+#test 7
+#No covariates, no polynomials
+# spatial and  s-t fields, iid, time='yearn'
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 13min
+#tot_elpd = -3.774164
+#tot_loglik = -27236.09
+
+#Warning messages:
+
+#MODEL DID CONVERGE
+# [[2]]$converged
+# [1] FALSE
+# 
+# [[2]]$pdHess
+# [1] FALSE  TRUE
+
+
+cv_test7_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test7_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test7_winter.rds"))
+
+#---------------------------------------------
 
 
 
