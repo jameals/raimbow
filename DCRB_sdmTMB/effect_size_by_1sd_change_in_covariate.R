@@ -44,65 +44,85 @@ dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"du
 dummy_SST$half_month_of_seasonf <- as.factor(dummy_SST$half_month_of_seasonf)
 predictions_SST <- predict(fit19b_winter, newdata = dummy_SST)
 
+
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth.csv"))
 dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf)
 predictions_depth <- predict(fit19b_winter, newdata = dummy_depth)
+
 
 #fishing state
 dummy_fishing_state <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_fishing_state.csv"))
 dummy_fishing_state$half_month_of_seasonf <- as.factor(dummy_fishing_state$half_month_of_seasonf)
 predictions_dummy_fishing_state <- predict(fit19b_winter, newdata = dummy_fishing_state)
 
+
 #season
 dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_season.csv"))
 dummy_season$half_month_of_seasonf <- as.factor(dummy_season$half_month_of_seasonf)
 predictions_dummy_season <- predict(fit19b_winter, newdata = dummy_season)
+
 
 #half-month of season
 dummy_HMOS <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_HMOS.csv"))
 dummy_HMOS$half_month_of_seasonf <- as.factor(dummy_HMOS$half_month_of_seasonf)
 predictions_dummy_HMOS <- predict(fit19b_winter, newdata = dummy_HMOS)
 
+
 #wind
 dummy_wind <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_wind.csv"))
 dummy_wind$half_month_of_seasonf <- as.factor(dummy_wind$half_month_of_seasonf)
 predictions_dummy_wind <- predict(fit19b_winter, newdata = dummy_wind)
+
 
 #depth sd
 dummy_depth_sd <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth_sd.csv"))
 dummy_depth_sd$half_month_of_seasonf <- as.factor(dummy_depth_sd$half_month_of_seasonf)
 predictions_dummy_depth_sd <- predict(fit19b_winter, newdata = dummy_depth_sd)
 
+
 #fault lines
 dummy_faults <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_faults.csv"))
 dummy_faults$half_month_of_seasonf <- as.factor(dummy_faults$half_month_of_seasonf)
 predictions_dummy_faults <- predict(fit19b_winter, newdata = dummy_faults)
+
 
 #canyons
 dummy_canyons <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_canyons.csv"))
 dummy_canyons$half_month_of_seasonf <- as.factor(dummy_canyons$half_month_of_seasonf)
 predictions_dummy_canyons <- predict(fit19b_winter, newdata = dummy_canyons)
 
+
 #distance to port
 dummy_port_dist <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_port_dist.csv"))
 dummy_port_dist$half_month_of_seasonf <- as.factor(dummy_port_dist$half_month_of_seasonf)
 predictions_dummy_port_dist <- predict(fit19b_winter, newdata = dummy_port_dist)
 
+
 #fuel price
 dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_fuel.csv"))
 dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
-predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel)
+predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel, `se_fit` = TRUE)
 
+ggplot(data=predictions_dummy_fuel, aes(x=z_weighted_fuel_pricegal, y=est, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  theme_classic()
+
+  
 #crab price
 dummy_crab <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_crab.csv"))
 dummy_crab$half_month_of_seasonf <- as.factor(dummy_crab$half_month_of_seasonf)
 predictions_dummy_crab <- predict(fit19b_winter, newdata = dummy_crab)
 
+
 #bottom O2
 dummy_O2 <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_O2.csv"))
 dummy_O2$half_month_of_seasonf <- as.factor(dummy_O2$half_month_of_seasonf)
 predictions_dummy_O2 <- predict(fit19b_winter, newdata = dummy_O2)
+
 
 #distance to closed area
 dummy_dist_to_closed <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_dist_to_closed.csv"))
@@ -138,70 +158,91 @@ dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer' ,"d
 dummy_SST$half_month_of_seasonf <- as.factor(dummy_SST$half_month_of_seasonf)
 predictions <- predict(fit19b_summer, newdata = dummy_SST)
 
+
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth.csv"))
 dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf)
 predictions_depth <- predict(fit19b_summer, newdata = dummy_depth)
+
 
 #fishing state
 dummy_fishing_state <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_fishing_state.csv"))
 dummy_fishing_state$half_month_of_seasonf <- as.factor(dummy_fishing_state$half_month_of_seasonf)
 predictions_dummy_fishing_state <- predict(fit19b_summer, newdata = dummy_fishing_state)
 
+
 #WA pot reduction
 dummy_WA_pot_reduction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_WA_pot_reduction.csv"))
 dummy_WA_pot_reduction$half_month_of_seasonf <- as.factor(dummy_WA_pot_reduction$half_month_of_seasonf)
 predictions_dummy_WA_pot_reduction <- predict(fit19b_summer, newdata = dummy_WA_pot_reduction)
+
 
 #season
 dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_season.csv"))
 dummy_season$half_month_of_seasonf <- as.factor(dummy_season$half_month_of_seasonf)
 predictions_dummy_season <- predict(fit19b_summer, newdata = dummy_season)
 
+
 #half-month of season
 dummy_HMOS <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS.csv"))
 dummy_HMOS$half_month_of_seasonf <- as.factor(dummy_HMOS$half_month_of_seasonf)
 predictions_dummy_HMOS <- predict(fit19b_summer, newdata = dummy_HMOS)
+
 
 #wind
 dummy_wind <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_wind.csv"))
 dummy_wind$half_month_of_seasonf <- as.factor(dummy_wind$half_month_of_seasonf)
 predictions_dummy_wind <- predict(fit19b_summer, newdata = dummy_wind)
 
+
 #depth sd
 dummy_depth_sd <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth_sd.csv"))
 dummy_depth_sd$half_month_of_seasonf <- as.factor(dummy_depth_sd$half_month_of_seasonf)
 predictions_dummy_depth_sd <- predict(fit19b_summer, newdata = dummy_depth_sd)
+
 
 #fault lines
 dummy_faults <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_faults.csv"))
 dummy_faults$half_month_of_seasonf <- as.factor(dummy_faults$half_month_of_seasonf)
 predictions_dummy_faults <- predict(fit19b_summer, newdata = dummy_faults)
 
+
 #canyons
 dummy_canyons <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_canyons.csv"))
 dummy_canyons$half_month_of_seasonf <- as.factor(dummy_canyons$half_month_of_seasonf)
 predictions_dummy_canyons <- predict(fit19b_summer, newdata = dummy_canyons)
+
 
 #distance to port
 dummy_port_dist <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_port_dist.csv"))
 dummy_port_dist$half_month_of_seasonf <- as.factor(dummy_port_dist$half_month_of_seasonf)
 predictions_dummy_port_dist <- predict(fit19b_summer, newdata = dummy_port_dist)
 
+
 #fuel price
 dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_fuel.csv"))
 dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
-predictions_dummy_fuel <- predict(fit19b_summer, newdata = dummy_fuel)
+predictions_dummy_fuel <- predict(fit19b_summer, newdata = dummy_fuel, `se_fit` = TRUE)
+
+ggplot(data=predictions_dummy_fuel, aes(x=z_weighted_fuel_pricegal, y=est, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  theme_classic()
+
 
 #crab price
 dummy_crab <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_crab.csv"))
 dummy_crab$half_month_of_seasonf <- as.factor(dummy_crab$half_month_of_seasonf)
 predictions_dummy_crab <- predict(fit19b_summer, newdata = dummy_crab)
 
+
 #bottom O2
 dummy_O2 <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_O2.csv"))
 dummy_O2$half_month_of_seasonf <- as.factor(dummy_O2$half_month_of_seasonf)
 predictions_dummy_O2 <- predict(fit19b_summer, newdata = dummy_O2)
+
 
 #distance to closed area
 dummy_dist_to_closed <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_dist_to_closed.csv"))
@@ -216,7 +257,7 @@ predictions_dummy_dist_to_closed <- predict(fit19b_summer, newdata = dummy_dist_
 
 #-------------------------------------------------------------------------------------------------
 
-fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16b_all_data.rds"))
+fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC', 'all data', 'after fixes',"fit16b_all_data.rds"))
 
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_depth.csv"))
@@ -267,6 +308,19 @@ predictions_year <- predict(fit16b_all_data, newdata = dummy_year) #, `se_fit` =
 
 plot(predictions_year$season,predictions_year$est)
 
+
+
+#fuel price
+dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_fuel.csv"))
+dummy_fuel$month_name_f <- as.factor(dummy_fuel$month_name_f)
+predictions_dummy_fuel <- predict(fit16b_all_data, newdata = dummy_fuel, `se_fit` = TRUE)
+
+ggplot(data=predictions_dummy_fuel, aes(x=z_weighted_fuel_pricegal, y=est, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  theme_classic()
 
 
 #-------------------------------------------------------------------------------------------------
@@ -569,3 +623,81 @@ ggplot(data=all_data_subset, aes(x=tottraps, group=OR_WA_waters, fill=OR_WA_wate
 
 ggplot(all_data_subset, aes(x = tottraps, y = OR_WA_waters, fill = OR_WA_waters)) +
   geom_density_ridges()
+
+
+
+
+
+
+##-----------------------------------------------------------------
+##-----------------------------------------------------------------
+      #investigating fuel variable more
+##-----------------------------------------------------------------
+
+#fuel price changed in all ports (half, original price, doubled)
+dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"winter_test_data_fuel_changes_in_all_ports.csv"))
+dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
+predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel) #, `se_fit` = TRUE
+
+predictions_dummy_fuel_v2 <- predictions_dummy_fuel %>% mutate(bck_trns_est = exp(est)) %>% 
+  select(GRID5KM_ID:tottraps, weighted_fuel_pricegal, z_weighted_fuel_pricegal,fuel_change:bck_trns_est)
+
+
+scale_values <- function(x){(x-min(x))/(max(x)-min(x))}
+
+predictions_dummy_fuel_base <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="base") %>% 
+  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
+  
+predictions_dummy_fuel_doubled <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="doubled") %>% 
+  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
+
+predictions_dummy_fuel_v2 <- rbind(predictions_dummy_fuel_base, predictions_dummy_fuel_doubled)
+
+
+#read in restricted study area shapefile
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
+#plot(study_area)
+
+
+fuel_mapping_sf <- predictions_dummy_fuel_v2 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA)
+
+#export shapefile for QGIS
+#st_write(fuel_mapping_sf, "fuel_mapping_sf.shp")
+
+
+
+## fuel price doubled in TLA only
+dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"winter_test_data_fuel_changes_in_TLA_port_only.csv"))
+dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
+predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel) #, `se_fit` = TRUE
+
+predictions_dummy_fuel_v2 <- predictions_dummy_fuel %>% mutate(bck_trns_est = exp(est)) %>% 
+  select(GRID5KM_ID:tottraps, weighted_fuel_pricegal, z_weighted_fuel_pricegal,fuel_change:bck_trns_est)
+
+
+scale_values <- function(x){(x-min(x))/(max(x)-min(x))}
+
+predictions_dummy_fuel_base <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="base") %>% 
+  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
+
+predictions_dummy_fuel_doubled <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="TLA changed") %>% 
+  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
+
+predictions_dummy_fuel_v2 <- rbind(predictions_dummy_fuel_base, predictions_dummy_fuel_doubled)
+
+
+#read in restricted study area shapefile
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
+#plot(study_area)
+
+
+fuel_mapping_sf <- predictions_dummy_fuel_v2 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA)
+
+#export shapefile for QGIS
+#st_write(fuel_mapping_sf, "fuel_mapping_TLA_changed_sf.shp")
+
+
+
+
