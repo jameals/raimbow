@@ -379,6 +379,12 @@ cv_test4_summer <- cv_fits
 #EXPORT THIS MODEL
 #write_rds(cv_test4_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test4_summer.rds"))
 
+
+##if run this model with summer only df
+#tot_elpd = -7.930693
+#tot_loglik = -401107.6
+#some change 
+#but still didn't converge
 #---------------------------------------------
 
 
