@@ -642,6 +642,12 @@ cv_test8_winter <- cv_fits
 #EXPORT THIS MODEL
 #write_rds(cv_test8_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test8_winter.rds"))
 
+
+#test8b iid instead of ar1
+#37min
+# tot_elpd = -3.042702
+# tot_loglik = -26832.66
+#model did converge,but it isn't the best model 
 #---------------------------------------------
 
 
