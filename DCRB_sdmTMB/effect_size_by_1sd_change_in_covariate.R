@@ -78,7 +78,14 @@ predictions_dummy_wind <- predict(fit19b_winter, newdata = dummy_wind)
 #depth sd
 dummy_depth_sd <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth_sd.csv"))
 dummy_depth_sd$half_month_of_seasonf <- as.factor(dummy_depth_sd$half_month_of_seasonf)
-predictions_dummy_depth_sd <- predict(fit19b_winter, newdata = dummy_depth_sd)
+predictions_dummy_depth_sd <- predict(fit19b_winter, newdata = dummy_depth_sd, `se_fit` = TRUE)
+
+ggplot(data=predictions_dummy_depth_sd, aes(x=z_depth_point_sd, y=est, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  theme_classic()
 
 
 #fault lines
