@@ -650,9 +650,326 @@ cv_test8_winter <- cv_fits
 #model did converge,but it isn't the best model 
 #---------------------------------------------
 
+#test 9
+#covariates, no polynomials, month_name_f is fixed effect, 
+# s and  s-t fields (ar1), time='month_of_season'
 
 
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "month_of_season")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
 
+# 59min
+#tot_elpd = -3.19837
+#tot_loglik = -26793.03
+
+#Warning messages:
+# 1: The model may not have converged: non-positive-definite Hessian matrix.
+# 2: The model may not have converged. Maximum final gradient: 0.0763801297044484
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+# 7: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn,  ... :   NA/NaN function evaluation
+
+#MODEL DID CONVERGE
+# [[2]]$converged
+# [1] FALSE
+# 
+# [[2]]$pdHess
+# [1] FALSE  TRUE
+
+
+cv_test9_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test9_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test9_winter.rds"))
+
+
+#---------------------------------------------
+
+#test 10
+#covariates, no polynomials, month_name_f is fixed effect, 
+# s and  s-t fields (ar1), time='month_of_season'
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_name_f +  
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "half_month_of_season")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 1.9h
+#tot_elpd = -3.102217
+#tot_loglik = -26634.45
+
+#Warning messages:
+# 1: Parameter ar1_phi is very close or equal to its lower bound.
+# Consider changing your model configuration or bounds.
+# 2: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The model may not have converged. Maximum final gradient: 0.123697669406631.
+# 4: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+
+#MODEL DID CONVERGE
+# [[2]]$converged
+# [1] FALSE
+# 
+# [[2]]$pdHess
+# [1] FALSE  TRUE
+
+
+cv_test10_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test10_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test10_winter.rds"))
+
+
+#---------------------------------------------
+
+#test 11
+#covariates, no polynomials, month_of_seasonf is fixed effect, 
+# s and  s-t fields (ar1), time='yearn'
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 month_of_seasonf +  
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 1.4h
+#tot_elpd = -3.291668
+#tot_loglik = -26428.36
+
+#Warning messages:
+# 2: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+
+#MODEL DID NOT CONVERGE
+# [[1]]$converged
+# [1] FALSE
+# 
+# [[1]]$pdHess
+# [1] FALSE FALSE
+
+
+cv_test11_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test11_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test11_winter.rds"))
+
+
+#---------------------------------------------
+
+#test 12
+#covariates, no polynomials, half_month_of_seasonf is fixed effect, 
+# s and  s-t fields (ar1), time='yearn'
+
+
+tic()
+validation_years <- 2015:2019 # I'd make this no fewer than 5, no more than 10
+cv_fits <- list()
+model_selection <- data.frame(validation_years = validation_years,
+                              elpd = NA,
+                              loglik = NA)
+for(yr in validation_years) {
+  # remove data in future years
+  sub <- dplyr::filter(winter, yearn <= yr)
+  # assign folds using april_2 in this year as test/validation set
+  sub$fold_id <- 1
+  sub$fold_id[which(sub$yearn == yr & sub$month_name == "May")] <- 2
+  # make mesh for this dataset
+  mesh <- make_mesh(sub, xy_cols = c("X","Y"), cutoff = 10)
+  # fit model with sdmTMB_cv
+  indx <- yr - min(validation_years) + 1
+  sub$month_name_f <- as.factor(as.character(sub$month_name_f))
+  cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
+                                 season +
+                                 half_month_of_seasonf +  
+                                 OR_WA_waters +
+                                 #WA_pot_reduction +  #not relevant in winter
+                                 z_SST_avg +
+                                 z_wind_avg +
+                                 z_depth_point_mean +
+                                 z_depth_point_sd +
+                                 z_faults_km +
+                                 z_dist_canyon_km +
+                                 z_weighted_dist +
+                                 z_weighted_fuel_pricegal +
+                                 z_weighted_crab_ppp +
+                                 z_bottom_O2_avg +
+                                 z_dist_to_closed_km, 
+                               family = tweedie(),
+                               fold_ids = sub$fold_id,
+                               mesh = mesh,
+                               spatial = "on",
+                               spatiotemporal = "ar1",
+                               data = sub,
+                               time = "yearn")
+  #cv_fits[[1]] is now a list of 2 models. We want the second of each of these, 
+  model_selection$elpd[indx] <- cv_fits[[indx]]$fold_elpd[2]
+  model_selection$loglik[indx] <- cv_fits[[indx]]$fold_loglik[2]
+}
+# total the log lik or ELPD now across years
+tot_elpd <- sum(model_selection$elpd)
+tot_loglik <- sum(model_selection$loglik)
+toc()
+
+# 1.6h
+#tot_elpd = -3.304559
+#tot_loglik = -26454.48
+
+#Warning messages:
+# 2: The model may not have converged: non-positive-definite Hessian matrix.
+# 3: The time elements in `newdata` are not identical to those in the original dataset.
+# This is normally fine, but may create problems for index standardization.
+
+#MODEL DID NOT CONVERGE
+# [[1]]$converged
+# [1] FALSE
+# 
+# [[1]]$pdHess
+# [1] FALSE FALSE
+
+
+cv_test12_winter <- cv_fits
+
+#EXPORT THIS MODEL
+#write_rds(cv_test12_winter, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test12_winter.rds"))
+
+
+#---------------------------------------------
 
 
 
