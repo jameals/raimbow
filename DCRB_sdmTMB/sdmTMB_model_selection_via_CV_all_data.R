@@ -1293,7 +1293,7 @@ for(yr in validation_years) {
   indx <- yr - min(validation_years) + 1
   cv_fits[[indx]] <- sdmTMB_cv(formula = tottraps ~ 0 + 
                                  season + 
-                                 month_of_seasonf + 
+                                 half_month_of_seasonf + 
                                  OR_WA_waters + 
                                  #WA_pot_reduction + #eric thinks this is the root of converging issues
                                  z_SST_avg  + 
