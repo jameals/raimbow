@@ -199,6 +199,11 @@ ppp_halfmonth_portgroup_adj_inf <- ppp_halfmonth_portgroup_v2 %>%
   select(-(total_rev:convert2020))
 
 
+
+### go to bottom to do fuel pricing with the same proportion of pots to port groups as with dist to port
+
+
+
 #--------------------------------------------------------
 #are we going to run into lot of NA cases if work on half-month instead of month?
 
@@ -425,4 +430,94 @@ study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_ca
 #write_rds(study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice,here::here('DCRB_sdmTMB', 'data', "study_area_grids_with_all_season_halfmonth_combos_wind_SST_fixed_depth_faults_canyon_escarp_portdist_fuel_crabprice.rds"))
 
 
+
+
+
+
+
+
+
+
+
+
+### do fuel pricing with the same proportion of pots to port groups as with dist to port
+
+#prop pots to port group done across full data set
+proportion_pots_to_port_group <- read_rds(here::here('DCRB_sdmTMB', 'data', "proportion_pots_to_port_group_across_all_data.rds")) %>% 
+  ungroup()
+#but if join that to fuel prices, end up missing some cases where e.g. fuel surveys ended
+#proportion_pots_to_port_group is missing 2 grids: 121931 122578
+#for 121931 use prop pots to port from 121933: CWA = 9.644169e-01, NPS = 3.558309e-02
+#for 122578 use prop pots to port from 122579: CLW = 0.2112838131, CWA = 0.7692591820
+
+df_fix_NAs <- data.frame (GRID5KM_ID  = c(121931,121931,122578,122578),
+                          PACFIN_GROUP_PORT_CODE = c("CWA", "NPS", "CLW", "CWA"),
+                          prop_pots_to_port_group = c(9.644169e-01, 3.558309e-02, 0.2112838131, 0.7692591820)
+)
+
+proportion_pots_to_port_group <- rbind(proportion_pots_to_port_group, df_fix_NAs)
+
+
+
+
+
+restricted_study_area <- read_sf(here::here('DCRB_sdmTMB','data', 'restricted_study_area.shp')) %>% 
+  st_set_geometry(NULL) 
+
+df_full_final_raw <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_raw.rds')) 
+restricted_study_area_grids <- sort(unique(restricted_study_area$GRID5KM_ID))
+df_full_final_in_restricted_study_area <- df_full_final_raw %>% filter(GRID5KM_ID %in% restricted_study_area_grids) 
+
+
+proportion_pots_to_port_group_restricted_study_area <- df_full_final_in_restricted_study_area %>% 
+  left_join(proportion_pots_to_port_group, by=c('GRID5KM_ID'))
+
+proportion_pots_to_port_group_restricted_study_area_crab_price  <- proportion_pots_to_port_group_restricted_study_area %>% 
+  left_join(ppp_halfmonth_portgroup_adj_inf, by=c('season', 'half_month', 'PACFIN_GROUP_PORT_CODE'))
+
+
+
+proportion_pots_to_port_group_restricted_study_area_crab_price_noNAs <- proportion_pots_to_port_group_restricted_study_area_crab_price %>%  
+  filter(!is.na(ppp_adj)) 
+
+#missing monthly ppp from pacfin: https://reports.psmfc.org/pacfin/f?p=501:402:13662342683453:INITIAL::::
+NAs_crab_ppp <-  read_csv(here::here('DCRB_sdmTMB', 'data', "NAs_crab_ppp.csv")) %>% 
+  mutate(season2 = season) %>% 
+  separate(season2, into = c("season_start", "season_end"), sep = "-") %>% 
+  mutate(month2 = month_name) %>% 
+  mutate(year = ifelse(month_name == "December", season_start, season_end)) %>% 
+  select(-season_start, -season_end, -month2) 
+
+NAs_crab_ppp$year <- as.numeric(NAs_crab_ppp$year)
+
+NAs_crab_ppp_adj_inf <- NAs_crab_ppp %>% 
+  left_join(cpi, by = c('year')) %>% 
+  mutate(ppp_adj = ppp * convert2020) %>% 
+  #drop columns no longer needed
+  select(-(ppp:convert2020))
+
+proportion_pots_to_port_group_restricted_study_area_crab_price_NAs <- proportion_pots_to_port_group_restricted_study_area_crab_price %>% 
+  filter(is.na(ppp_adj)) %>% 
+  select( -ppp_adj) %>% 
+  left_join(NAs_crab_ppp_adj_inf, by=c("PACFIN_GROUP_PORT_CODE", "season", "month_name"))
+
+proportion_pots_to_port_group_restricted_study_area_crab_price_fixed <- rbind(proportion_pots_to_port_group_restricted_study_area_crab_price_noNAs, proportion_pots_to_port_group_restricted_study_area_crab_price_NAs)
+
+
+
+#--------------------------------------------------------
+#weight port group specific crab price by proportion of pots in grid
+
+weighted_crab_price <- proportion_pots_to_port_group_restricted_study_area_crab_price_fixed %>% 
+  mutate(price_multiply_prop = ppp_adj * prop_pots_to_port_group) %>% 
+  group_by(GRID5KM_ID, season, half_month) %>% 
+  summarise(weighted_crab_ppp = sum(price_multiply_prop)) %>% 
+  rename(weighted_crab_ppp_v2 = weighted_crab_ppp)
+
+
+write_rds(weighted_crab_price,here::here('DCRB_sdmTMB', 'data',  "weighted_crab_price_fix.rds"))
+
+#this part will be done in prep for sdmTMb script
+# testtest7 <- df_full_final_in_restricted_study_area %>% left_join(weighted_crab_price)
+# View(testtest7 %>% filter(open_closed=="open"))
 
