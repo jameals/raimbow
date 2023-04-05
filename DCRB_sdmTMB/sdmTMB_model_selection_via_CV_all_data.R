@@ -1324,15 +1324,15 @@ tot_loglik <- sum(model_selection$loglik)
 toc()
 
 
-# 2h
-#tot_elpd = -2.3601
-#tot_loglik = -58715
+# 2.4h
+#tot_elpd = -2.372294
+#tot_loglik = -58758.87
 
 #Warning messages:
 # 1: In stats::nlminb(start = tmb_obj$par, objective = tmb_obj$fn,  ... : NA/NaN function evaluation
-# 2: The model may not have converged: non-positive-definite Hessian matrix.
-# 3: The model may not have converged. Maximum final gradient: 0.0211982542444815.
-# 4: The time elements in `newdata` are not identical to those in the original dataset.
+# 3: The model may not have converged: non-positive-definite Hessian matrix.
+# 4: The model may not have converged. Maximum final gradient: 26.7650939471882.
+# 5: The time elements in `newdata` are not identical to those in the original dataset.
 # This is normally fine, but may create problems for index standardization.
 
 #MODEL DID CONVERGE
