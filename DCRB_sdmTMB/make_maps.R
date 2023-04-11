@@ -14,6 +14,385 @@ library(sf)
 
 #---------------------------------------------
 
+
+
+#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+
+#make map of actuals vs predicted for best CV model
+
+
+#read in best CV model object
+cv_test16_all_data <- read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV', 'cv_test16_all_data.rds')) 
+
+
+#pick one May half_month to map
+cv_test16_all_data_data_May1_2016 <- cv_test16_all_data[[1]]$data %>% 
+  filter(season == "2015-2016") %>% 
+  filter(half_month == "May_1") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*70900) #70900 was total estimated pots for May_1 2016 from landings
+
+glimpse(cv_test16_all_data_data_May1_2016)
+
+
+#read in restricted study area shapefile
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
+#plot(study_area)
+
+
+df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016.shp")
+
+
+#May_2 of 2016
+cv_test16_all_data_data_May2_2016 <- cv_test16_all_data[[1]]$data %>% 
+  filter(season == "2015-2016") %>% 
+  filter(half_month == "May_2") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*55900) #55900 was total estimated pots for May_2 2016 from landings
+
+glimpse(cv_test16_all_data_data_May2_2016)
+
+df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016.shp")
+
+
+#---------------------------------------------
+
+#May 2016-2017
+
+
+#pick one May half_month to map
+cv_test16_all_data_data_May1_2017 <- cv_test16_all_data[[2]]$data %>% 
+  filter(season == "2016-2017") %>% 
+  filter(half_month == "May_1") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*94800) #94800 was total estimated pots for May_1 2017 from landings
+
+glimpse(cv_test16_all_data_data_May1_2017)
+
+
+df_mapping_sf_May1_2017 <- cv_test16_all_data_data_May1_2017 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May1_2017, "df_mapping_sf_May1_2017.shp")
+
+
+#May_2 of 2017
+cv_test16_all_data_data_May2_2017 <- cv_test16_all_data[[2]]$data %>% 
+  filter(season == "2016-2017") %>% 
+  filter(half_month == "May_2") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*67700) #67700 was total estimated pots for May_2 2017 from landings
+
+glimpse(cv_test16_all_data_data_May2_2017)
+
+df_mapping_sf_May2_2017 <- cv_test16_all_data_data_May2_2017 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May2_2017, "df_mapping_sf_May2_2017.shp")
+
+
+
+#---------------------------------------------
+
+#May 2017-2018
+
+
+#pick one May half_month to map
+cv_test16_all_data_data_May1_2018 <- cv_test16_all_data[[3]]$data %>% 
+  filter(season == "2017-2018") %>% 
+  filter(half_month == "May_1") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*89800) #89800 was total estimated pots for May_1 2018 from landings
+
+glimpse(cv_test16_all_data_data_May1_2018)
+
+
+df_mapping_sf_May1_2018 <- cv_test16_all_data_data_May1_2018 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May1_2018, "df_mapping_sf_May1_2018.shp")
+
+
+#May_2 of 2018
+cv_test16_all_data_data_May2_2018 <- cv_test16_all_data[[3]]$data %>% 
+  filter(season == "2017-2018") %>% 
+  filter(half_month == "May_2") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*73400) #73400 was total estimated pots for May_2 2018 from landings
+
+glimpse(cv_test16_all_data_data_May2_2018)
+
+df_mapping_sf_May2_2018 <- cv_test16_all_data_data_May2_2018 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May2_2018, "df_mapping_sf_May2_2018.shp")
+
+
+#---------------------------------------------
+
+#May 2018-2019 -- note that WA pot reduction was not included in current model as it gave errors
+
+
+#pick one May half_month to map
+cv_test16_all_data_data_May1_2019 <- cv_test16_all_data[[4]]$data %>% 
+  filter(season == "2018-2019") %>% 
+  filter(half_month == "May_1") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*79400) #79400 was total estimated pots for May_1 2019 from landings
+
+glimpse(cv_test16_all_data_data_May1_2019)
+
+
+df_mapping_sf_May1_2019 <- cv_test16_all_data_data_May1_2019 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May1_2019, "df_mapping_sf_May1_2019.shp")
+
+
+#May_2 of 2019
+cv_test16_all_data_data_May2_2019 <- cv_test16_all_data[[4]]$data %>% 
+  filter(season == "2018-2019") %>% 
+  filter(half_month == "May_2") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*61100) #61100 was total estimated pots for May_2 2019 from landings
+
+glimpse(cv_test16_all_data_data_May2_2019)
+
+df_mapping_sf_May2_2019 <- cv_test16_all_data_data_May2_2019 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May2_2019, "df_mapping_sf_May2_2019.shp")
+
+
+#---------------------------------------------
+
+#May 2019-2020 -- note that WA pot reduction was not included in current model as it gave errors
+
+
+#pick one May half_month to map
+cv_test16_all_data_data_May1_2020 <- cv_test16_all_data[[5]]$data %>% 
+  filter(season == "2019-2020") %>% 
+  filter(half_month == "May_1") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*65400) #65400 was total estimated pots for May_1 2020 from landings
+
+glimpse(cv_test16_all_data_data_May1_2020)
+
+
+df_mapping_sf_May1_2020 <- cv_test16_all_data_data_May1_2020 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May1_2020, "df_mapping_sf_May1_2020.shp")
+
+
+#May_2 of 2020
+cv_test16_all_data_data_May2_2020 <- cv_test16_all_data[[5]]$data %>% 
+  filter(season == "2019-2020") %>% 
+  filter(half_month == "May_2") %>% 
+  #drop bunch of unnecessary columns
+  select(GRID5KM_ID:month_n, month_name_f:cv_loglik) %>% 
+  #backtransform predictions
+  mutate(bck_trns_preds = exp(cv_predicted)) %>% 
+  #each grid would be some % of the total pots
+  #can't calc for backtransformed because of infinte values for backtransformed pred - get one grid with NaN, all others 0
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*63700) #63700 was total estimated pots for May_2 2019 from landings
+
+glimpse(cv_test16_all_data_data_May2_2020)
+
+df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) %>% 
+  #writing shapefile has issues with column names, so drop most columns
+  select(-(SST_avg:month_name_f)) %>% 
+  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-bck_trns_preds)
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020.shp")
+
+
+
+#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+
+#would e.g. avg. pots in grid in all May_1/May_2 across all years produce an equally good map?
+
+df_full <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds')) 
+
+
+df_full_filtered_May_1 <- df_full %>% 
+  filter(half_month == "May_1") 
+
+sum(df_full_filtered_May_1$tottraps)
+#851793.6 ##across all seasons 2009-2010 to 2019-2020
+
+df_full_summary_May_1 <- df_full_filtered_May_1 %>% 
+  group_by(GRID5KM_ID, half_month, grd_x, grd_y) %>% 
+  summarise(avg_pots = mean(tottraps))
+
+df_mapping_sf_summary_May_1 <- df_full_summary_May_1 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_summary_May_1, "df_mapping_sf_summary_May_1.shp")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###OLD#####
+
+
 #read in data from a cross validation model
 
 cv_fits_5_data <- read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'cross validation', 'cv_winter_fix_test_2_iid','cv_fits_5_data.rds')) 
