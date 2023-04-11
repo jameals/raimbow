@@ -23,7 +23,9 @@ library(ggplot2)
 
 
 # _20230209.rds is the most up to date df
-d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230209.rds')) 
+#now _20230324.rds is most up to date - here: https://sfc.doc.gov/w/f-1a8e7e44-27ad-4d26-a847-4b9702ec2bd9
+#not that it makes difference - both dfs fine with sdmTMB() but neither converges with sdmTMB_cv()
+d <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds')) 
 #d = readRDS("data/df_full_final_tidy_all_data_20230209.rds")
 
 d$month_name_f <- factor(d$month_name, levels = c("December", "January", "February", "March", "April", 
