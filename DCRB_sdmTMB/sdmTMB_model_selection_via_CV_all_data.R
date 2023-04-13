@@ -1723,7 +1723,9 @@ cv_test16_all_data <- cv_fits
 # [1] FALSE  FALSE
 
 
-##16xxx -- same, with iid, but include WA pot reduciton variable
+##if remove the current years Dec-Apr from training dataset:
+#tot_loglik == -274934 But that includes May, Jun and Jul
+#May only: -119032.8
 
 
 
