@@ -641,39 +641,99 @@ ggplot(all_data_subset, aes(x = tottraps, y = OR_WA_waters, fill = OR_WA_waters)
       #investigating fuel variable more
 ##-----------------------------------------------------------------
 
-#fuel price changed in all ports (half, original price, doubled)
+
+##weighting predictions ('cap' predictions)
+
+#fuel price changed in all ports (baseline price, doubled)
 dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"winter_test_data_fuel_changes_in_all_ports.csv"))
 dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
 predictions_dummy_fuel <- predict(fit19b_winter, newdata = dummy_fuel) #, `se_fit` = TRUE
 
 predictions_dummy_fuel_v2 <- predictions_dummy_fuel %>% mutate(bck_trns_est = exp(est)) %>% 
-  select(GRID5KM_ID:tottraps, weighted_fuel_pricegal, z_weighted_fuel_pricegal,fuel_change:bck_trns_est)
+  select(GRID5KM_ID:tottraps, weighted_fuel_pricegal, z_weighted_fuel_pricegal,fuel_change:bck_trns_est) 
 
 
-scale_values <- function(x){(x-min(x))/(max(x)-min(x))}
-
+#Both, Feb_2 2017-18 at base fuel price and at doubled fuel price need to be weighted so traps total 172,800 (at each step - so)
 predictions_dummy_fuel_base <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="base") %>% 
-  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
-  
-predictions_dummy_fuel_doubled <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="doubled") %>% 
-  mutate(bck_trns_est_scaled = scale_values(bck_trns_est))
+  #each grid would be some % of the total pots
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = bck_trns_est/sum(bck_trns_est)*100) %>%
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*172800) #172800 was total estimated pots for Feb_2 2017-2018 from landings
 
-predictions_dummy_fuel_v2 <- rbind(predictions_dummy_fuel_base, predictions_dummy_fuel_doubled)
+predictions_dummy_fuel_doubled <- predictions_dummy_fuel_v2 %>% filter(fuel_change=="doubled") %>% 
+  #each grid would be some % of the total pots
+  mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
+  mutate(percent_preds = bck_trns_est/sum(bck_trns_est)*100) %>%
+  #divide percent_pred with 100 to get it as proportion
+  mutate(weighted = percent_preds/100*172800) #172800 was total estimated pots for Feb_2 2017-2018 from landings
 
 
 #read in restricted study area shapefile
-study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
-#plot(study_area)
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp')) 
+# #plot(study_area)
 
 
-fuel_mapping_sf <- predictions_dummy_fuel_v2 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
-  select(-NGDC_GRID, -ORIG_AREA)
+#get rid of duplicated IDs
+##BASE
+predictions_dummy_fuel_base_sf <- predictions_dummy_fuel_base %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+##fix cases with repeating grids, as 'weighed' gets repeated for each piece of a grid
+#grid that appears 3 times: 86945
+grid_86945 <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3)
+#grids that appear twice
+grids_twice <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                            98826, 98827, 99157, 100808, 101138, 105429, 
+                                                            105759, 107079, 112031, 112361, 112691, 117310, 
+                                                            117311, 117639, 117640, 117970, 118960, 119290, 
+                                                            119950, 120280, 120610, 120940, 122258, 122259, 
+                                                            122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)
+grids_ok <- predictions_dummy_fuel_base_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                         98826, 98827, 99157, 100808, 101138, 105429, 
+                                                         105759, 107079, 112031, 112361, 112691, 117310, 
+                                                         117311, 117639, 117640, 117970, 118960, 119290, 
+                                                         119950, 120280, 120610, 120940, 122258, 122259, 
+                                                         122588, 122589, 122919, 129512, 129842, 86945))
+fuel_mapping_sf_fix_base <- rbind(grids_ok, grids_twice, grid_86945)
 
+##DOUBLED
+predictions_dummy_fuel_doubled_sf <- predictions_dummy_fuel_doubled %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+##fix cases with repeating grids, as 'weighed' gets repeated for each piece of a grid
+#grid that appears 3 times: 86945
+grid_86945 <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3)
+grids_twice <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                           98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                           105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                           117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                           119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                           122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)
+grids_ok <- predictions_dummy_fuel_doubled_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                         98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                         105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                         117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                         119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                         122588, 122589, 122919, 129512, 129842, 86945))
+fuel_mapping_sf_fix_doubled <- rbind(grids_ok, grids_twice, grid_86945)
+
+
+fuel_mapping_sf <- rbind(fuel_mapping_sf_fix_base, fuel_mapping_sf_fix_doubled)
 #export shapefile for QGIS
-#st_write(fuel_mapping_sf, "fuel_mapping_sf.shp")
+#st_write(fuel_mapping_sf, "fuel_mapping_sf_weighted.shp")
 
 
 
+
+
+
+
+
+
+##this is old and hasn't been 'updated'
 ## fuel price doubled in TLA only
 dummy_fuel <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"winter_test_data_fuel_changes_in_TLA_port_only.csv"))
 dummy_fuel$half_month_of_seasonf <- as.factor(dummy_fuel$half_month_of_seasonf)
