@@ -57,8 +57,28 @@ df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May1_2016 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May1_2016 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                           98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                           105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                           117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                           119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                           122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May1_2016 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                         98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                         105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                         117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                         119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                         122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May1_2016 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016.shp")
+#st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016_20230414.shp")
 
 
 #May_2 of 2016
@@ -85,8 +105,28 @@ df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May2_2016 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May2_2016 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May2_2016 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May2_2016 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016.shp")
+#st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016_20230414.shp")
 
 
 #---------------------------------------------
@@ -119,8 +159,28 @@ df_mapping_sf_May1_2017 <- cv_test16_all_data_data_May1_2017 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May1_2017 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May1_2017 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May1_2017 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May1_2017 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May1_2017, "df_mapping_sf_May1_2017.shp")
+#st_write(df_mapping_sf_May1_2017, "df_mapping_sf_May1_2017_20230414.shp")
 
 
 #May_2 of 2017
@@ -147,8 +207,28 @@ df_mapping_sf_May2_2017 <- cv_test16_all_data_data_May2_2017 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May2_2017 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May2_2017 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May2_2017 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May2_2017 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May2_2017, "df_mapping_sf_May2_2017.shp")
+#st_write(df_mapping_sf_May2_2017, "df_mapping_sf_May2_2017_20230414.shp")
 
 
 
@@ -182,8 +262,28 @@ df_mapping_sf_May1_2018 <- cv_test16_all_data_data_May1_2018 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May1_2018 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May1_2018 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May1_2018 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May1_2018 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May1_2018, "df_mapping_sf_May1_2018.shp")
+#st_write(df_mapping_sf_May1_2018, "df_mapping_sf_May1_2018_20230414.shp")
 
 
 #May_2 of 2018
@@ -199,7 +299,8 @@ cv_test16_all_data_data_May2_2018 <- cv_test16_all_data[[3]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*73400) #73400 was total estimated pots for May_2 2018 from landings
+  mutate(weighted = percent_preds/100*73400) %>%  #73400 was total estimated pots for May_2 2018 from landings
+  mutate(tottraps = percent_tottrap/100*73400)
 
 glimpse(cv_test16_all_data_data_May2_2018)
 
@@ -210,8 +311,28 @@ df_mapping_sf_May2_2018 <- cv_test16_all_data_data_May2_2018 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May2_2018 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May2_2018 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May2_2018 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May2_2018 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May2_2018, "df_mapping_sf_May2_2018.shp")
+#st_write(df_mapping_sf_May2_2018, "df_mapping_sf_May2_2018_20230414.shp")
 
 
 #---------------------------------------------
@@ -244,8 +365,28 @@ df_mapping_sf_May1_2019 <- cv_test16_all_data_data_May1_2019 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May1_2019 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May1_2019 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May1_2019 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May1_2019 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May1_2019, "df_mapping_sf_May1_2019.shp")
+#st_write(df_mapping_sf_May1_2019, "df_mapping_sf_May1_2019_20230414.shp")
 
 
 #May_2 of 2019
@@ -272,8 +413,28 @@ df_mapping_sf_May2_2019 <- cv_test16_all_data_data_May2_2019 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May2_2019 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May2_2019 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May2_2019 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May2_2019 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May2_2019, "df_mapping_sf_May2_2019.shp")
+#st_write(df_mapping_sf_May2_2019, "df_mapping_sf_May2_2019_20230414.shp")
 
 
 #---------------------------------------------
@@ -294,7 +455,8 @@ cv_test16_all_data_data_May1_2020 <- cv_test16_all_data[[5]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*65400) #65400 was total estimated pots for May_1 2020 from landings
+  mutate(weighted = percent_preds/100*65400) %>%  #65400 was total estimated pots for May_1 2020 from landings
+  mutate(tottraps = percent_tottrap/100*65400)
 
 glimpse(cv_test16_all_data_data_May1_2020)
 
@@ -306,8 +468,28 @@ df_mapping_sf_May1_2020 <- cv_test16_all_data_data_May1_2020 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May1_2020 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May1_2020 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May1_2020 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May1_2020 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May1_2020, "df_mapping_sf_May1_2020.shp")
+#st_write(df_mapping_sf_May1_2020, "df_mapping_sf_May1_2020_20230414.shp")
 
 
 #May_2 of 2020
@@ -323,7 +505,8 @@ cv_test16_all_data_data_May2_2020 <- cv_test16_all_data[[5]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*63700) #63700 was total estimated pots for May_2 2019 from landings
+  mutate(weighted = percent_preds/100*63700) %>%  #63700 was total estimated pots for May_2 2019 from landings
+  mutate(tottraps = percent_tottrap/100*63700)
 
 glimpse(cv_test16_all_data_data_May2_2020)
 
@@ -334,8 +517,28 @@ df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(study
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
+grid_86945 <- df_mapping_sf_May2_2020 %>% filter(GRID5KM_ID == 86945) %>% 
+  mutate(weighted = weighted/3) %>% 
+  mutate(tottraps = tottraps/3)
+#grids that appear twice
+grids_twice <- df_mapping_sf_May2_2020 %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                    98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                    105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                    117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                    119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                    122588, 122589, 122919, 129512, 129842)) %>% 
+  mutate(weighted = weighted/2)%>% 
+  mutate(tottraps = tottraps/2)
+grids_ok <- df_mapping_sf_May2_2020 %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+                                                                  98826, 98827, 99157, 100808, 101138, 105429, 
+                                                                  105759, 107079, 112031, 112361, 112691, 117310, 
+                                                                  117311, 117639, 117640, 117970, 118960, 119290, 
+                                                                  119950, 120280, 120610, 120940, 122258, 122259, 
+                                                                  122588, 122589, 122919, 129512, 129842, 86945))
+df_mapping_sf_May2_2020 <- rbind(grids_ok, grids_twice, grid_86945)
+
 #export shapefile for QGIS
-#st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020.shp")
+#st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230414.shp")
 
 
 
@@ -367,6 +570,22 @@ df_mapping_sf_summary_May_1 <- df_full_summary_May_1 %>% left_join(study_area, b
 
 
 
+
+df_full_filtered_May_2 <- df_full %>% 
+  filter(half_month == "May_2") 
+
+sum(df_full_filtered_May_2$tottraps)
+#680881.8 ##across all seasons 2009-2010 to 2019-2020
+
+df_full_summary_May_2 <- df_full_filtered_May_2 %>% 
+  group_by(GRID5KM_ID, half_month, grd_x, grd_y) %>% 
+  summarise(avg_pots = mean(tottraps)) #if wanted a % -- would need to look one season at a time, grid was % of that time step, then average those
+
+df_mapping_sf_summary_May_2 <- df_full_summary_May_2 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_summary_May_2, "df_mapping_sf_summary_May_2.shp")
 
 
 
