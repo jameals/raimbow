@@ -12,6 +12,7 @@ library(ggeffects)
 library(tictoc)
 library(plotmo)
 library(viridis)
+library(ggridges)
 
 #this was needed for sdmTMB to work
 #install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
@@ -616,8 +617,12 @@ ggplot(data=predictionsv2, aes(x=z_dist_to_closed_km, y=resids, group=OR_WA_wate
 
 
 
-#
-all_data_subset <- all_data %>% filter(tottraps <500)
+##-----------------------------------------------------------------
+#investigating result that 'WA has more pots' 
+#does it really, or is it just a marginal effect -- all other things being equal a grid in WA has more pots
+#suspect this would be due to WA having a shorter coastline
+##-----------------------------------------------------------------
+all_data_subset <- all_data %>% filter(tottraps <250)
 ggplot(data=all_data_subset, aes(x=tottraps, group=OR_WA_waters, fill=OR_WA_waters)) +
   geom_density(adjust=1.5) +
   theme_classic() +
@@ -628,9 +633,47 @@ ggplot(data=all_data_subset, aes(x=tottraps, group=OR_WA_waters, fill=OR_WA_wate
     axis.ticks.x=element_blank()
   )
 
+#using a subset of data
 ggplot(all_data_subset, aes(x = tottraps, y = OR_WA_waters, fill = OR_WA_waters)) +
-  geom_density_ridges()
+  geom_density_ridges() +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  xlab("No. of pots") +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        legend.position = "none",
+        #legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 0.5, size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
+  )
 
+#using all_data df
+ggplot(all_data, aes(x = tottraps, y = OR_WA_waters, fill = OR_WA_waters)) +
+  geom_density_ridges() +
+  theme_ridges(grid = TRUE, center_axis_labels = TRUE) +
+  xlab("No. of pots") +
+  theme(legend.title = element_blank(),
+        #title = element_text(size = 26),
+        legend.text = element_text(size = 40),
+        legend.position = "none",
+        #legend.position = c(.8, .5),
+        axis.text.x = element_text(hjust = 0.5, size = 40, angle = 0),
+        axis.text.y = element_text(size = 40),
+        axis.title = element_text(size = 50),
+        strip.text = element_text(size=40),
+        strip.background = element_blank(),
+        strip.placement = "left",
+        panel.grid.major = element_blank(), 
+        panel.background = element_blank(), 
+        axis.title.y=element_blank()
+  )
 
 
 
