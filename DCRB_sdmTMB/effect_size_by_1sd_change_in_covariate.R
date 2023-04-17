@@ -715,58 +715,77 @@ predictions_dummy_fuel_doubled <- predictions_dummy_fuel_v2 %>% filter(fuel_chan
 #read in restricted study area shapefile
 study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp')) 
 # #plot(study_area)
-
-
-#get rid of duplicated IDs
-##BASE
 predictions_dummy_fuel_base_sf <- predictions_dummy_fuel_base %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) 
-##fix cases with repeating grids, as 'weighed' gets repeated for each piece of a grid
-#grid that appears 3 times: 86945
-grid_86945 <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID == 86945) %>% 
-  mutate(weighted = weighted/3)
-#grids that appear twice
-grids_twice <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
-                                                            98826, 98827, 99157, 100808, 101138, 105429, 
-                                                            105759, 107079, 112031, 112361, 112691, 117310, 
-                                                            117311, 117639, 117640, 117970, 118960, 119290, 
-                                                            119950, 120280, 120610, 120940, 122258, 122259, 
-                                                            122588, 122589, 122919, 129512, 129842)) %>% 
-  mutate(weighted = weighted/2)
-grids_ok <- predictions_dummy_fuel_base_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
-                                                         98826, 98827, 99157, 100808, 101138, 105429, 
-                                                         105759, 107079, 112031, 112361, 112691, 117310, 
-                                                         117311, 117639, 117640, 117970, 118960, 119290, 
-                                                         119950, 120280, 120610, 120940, 122258, 122259, 
-                                                         122588, 122589, 122919, 129512, 129842, 86945))
-fuel_mapping_sf_fix_base <- rbind(grids_ok, grids_twice, grid_86945)
-
-##DOUBLED
 predictions_dummy_fuel_doubled_sf <- predictions_dummy_fuel_doubled %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) 
-##fix cases with repeating grids, as 'weighed' gets repeated for each piece of a grid
-#grid that appears 3 times: 86945
-grid_86945 <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID == 86945) %>% 
-  mutate(weighted = weighted/3)
-grids_twice <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
-                                                                           98826, 98827, 99157, 100808, 101138, 105429, 
-                                                                           105759, 107079, 112031, 112361, 112691, 117310, 
-                                                                           117311, 117639, 117640, 117970, 118960, 119290, 
-                                                                           119950, 120280, 120610, 120940, 122258, 122259, 
-                                                                           122588, 122589, 122919, 129512, 129842)) %>% 
-  mutate(weighted = weighted/2)
-grids_ok <- predictions_dummy_fuel_doubled_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
-                                                                         98826, 98827, 99157, 100808, 101138, 105429, 
-                                                                         105759, 107079, 112031, 112361, 112691, 117310, 
-                                                                         117311, 117639, 117640, 117970, 118960, 119290, 
-                                                                         119950, 120280, 120610, 120940, 122258, 122259, 
-                                                                         122588, 122589, 122919, 129512, 129842, 86945))
-fuel_mapping_sf_fix_doubled <- rbind(grids_ok, grids_twice, grid_86945)
-
-
-fuel_mapping_sf <- rbind(fuel_mapping_sf_fix_base, fuel_mapping_sf_fix_doubled)
+fuel_mapping_sf <- rbind(predictions_dummy_fuel_base_sf, predictions_dummy_fuel_doubled_sf)
 #export shapefile for QGIS
-#st_write(fuel_mapping_sf, "fuel_mapping_sf_weighted.shp")
+#st_write(fuel_mapping_sf, "fuel_mapping_sf_weighted_20230417.shp")
+
+#difference between the 2 layers
+predictions_dummy_fuel_base_sf <- predictions_dummy_fuel_base_sf %>% select(GRID5KM_ID, grd_x, grd_y, weighted,geometry) %>% 
+  rename(weighted_base = weighted)
+predictions_dummy_fuel_doubled_sf <- predictions_dummy_fuel_doubled_sf %>% select(GRID5KM_ID, grd_x, grd_y, weighted,geometry) %>% 
+  rename(weighted_doubled = weighted)
+fuel_mapping_sf <- predictions_dummy_fuel_base_sf %>% left_join(predictions_dummy_fuel_doubled_sf) %>% 
+  mutate(difference = weighted_base-weighted_doubled)
+#export shapefile for QGIS
+#st_write(fuel_mapping_sf, "difference_weighted_base_minus_doubled_20230417.shp")
+
+
+##decided that the below is not actually necessary if just mapping things. if don't fix repeating grids and
+#e.g. sum pots, then get a wrong result. but for our mapping purposes we don't need to do it
+#get rid of duplicated IDs
+##BASE
+# predictions_dummy_fuel_base_sf <- predictions_dummy_fuel_base %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+#   select(-NGDC_GRID, -ORIG_AREA) 
+# ##fix cases with repeating grids, as 'weighted' gets repeated for each piece of a grid
+# #grid that appears 3 times: 86945
+# grid_86945 <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID == 86945) %>% 
+#   mutate(weighted = weighted/3)
+# #grids that appear twice
+# grids_twice <- predictions_dummy_fuel_base_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+#                                                             98826, 98827, 99157, 100808, 101138, 105429, 
+#                                                             105759, 107079, 112031, 112361, 112691, 117310, 
+#                                                             117311, 117639, 117640, 117970, 118960, 119290, 
+#                                                             119950, 120280, 120610, 120940, 122258, 122259, 
+#                                                             122588, 122589, 122919, 129512, 129842)) %>% 
+#   mutate(weighted = weighted/2)
+# grids_ok <- predictions_dummy_fuel_base_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+#                                                          98826, 98827, 99157, 100808, 101138, 105429, 
+#                                                          105759, 107079, 112031, 112361, 112691, 117310, 
+#                                                          117311, 117639, 117640, 117970, 118960, 119290, 
+#                                                          119950, 120280, 120610, 120940, 122258, 122259, 
+#                                                          122588, 122589, 122919, 129512, 129842, 86945))
+# fuel_mapping_sf_fix_base <- rbind(grids_ok, grids_twice, grid_86945)
+# 
+# ##DOUBLED
+# predictions_dummy_fuel_doubled_sf <- predictions_dummy_fuel_doubled %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+#   select(-NGDC_GRID, -ORIG_AREA) 
+# ##fix cases with repeating grids, as 'weighed' gets repeated for each piece of a grid
+# #grid that appears 3 times: 86945
+# grid_86945 <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID == 86945) %>% 
+#   mutate(weighted = weighted/3)
+# grids_twice <- predictions_dummy_fuel_doubled_sf %>% filter(GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+#                                                                            98826, 98827, 99157, 100808, 101138, 105429, 
+#                                                                            105759, 107079, 112031, 112361, 112691, 117310, 
+#                                                                            117311, 117639, 117640, 117970, 118960, 119290, 
+#                                                                            119950, 120280, 120610, 120940, 122258, 122259, 
+#                                                                            122588, 122589, 122919, 129512, 129842)) %>% 
+#   mutate(weighted = weighted/2)
+# grids_ok <- predictions_dummy_fuel_doubled_sf %>% filter(!GRID5KM_ID %in% c(89582, 89913, 96184, 96514, 96515, 96845, 
+#                                                                          98826, 98827, 99157, 100808, 101138, 105429, 
+#                                                                          105759, 107079, 112031, 112361, 112691, 117310, 
+#                                                                          117311, 117639, 117640, 117970, 118960, 119290, 
+#                                                                          119950, 120280, 120610, 120940, 122258, 122259, 
+#                                                                          122588, 122589, 122919, 129512, 129842, 86945))
+# fuel_mapping_sf_fix_doubled <- rbind(grids_ok, grids_twice, grid_86945)
+# 
+# 
+# fuel_mapping_sf <- rbind(fuel_mapping_sf_fix_base, fuel_mapping_sf_fix_doubled)
+# #export shapefile for QGIS
+# #st_write(fuel_mapping_sf, "fuel_mapping_sf_weighted.shp")
 
 
 
