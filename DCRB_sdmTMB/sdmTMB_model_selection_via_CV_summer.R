@@ -794,6 +794,20 @@ cv_test8_summer <- cv_fits
 #EXPORT THIS MODEL
 #write_rds(cv_test8_summer, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via CV',"cv_test8_summer.rds"))
 
+###########################
+###extra test, use yearn (numeric) instead of season (categorical)
+#model does partly converge, except for month fixed effect where coef.se are NaN (at least first model), also much poorer LL -33558.4 
+
+## if bot yearn and month_n are numeric:
+#first model
+#                             coef.est coef.se
+# yearn                       -0.16     NaN
+# month_n                     -0.49    0.03
+# OR_WA_watersOR             333.91     NaN
+# OR_WA_watersWA             333.41     NaN
+#later ones seem fine, but LL still poor: -32915.96
+
+
 #---------------------------------------------
 
 #test 9
