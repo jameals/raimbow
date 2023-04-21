@@ -332,7 +332,9 @@ ggplot(data=predictions_dummy_fuel, aes(x=z_weighted_fuel_pricegal, y=est, group
 
 
 #-------------------------------------------------------------------------------------------------
-
+#-------------------------------------------------------------------------------------------------
+####MARGINAL EFFECT OF SEASON
+#-------------------------------------------------------------------------------------------------
 ##summer - season effect
 
 dummy_season <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_season.csv"))
@@ -359,8 +361,67 @@ pd <- position_dodge(0.1) # move them .05 to the left and right
 ggplot(predictions_season, aes(x=season, y=est,group=1)) + 
   geom_errorbar(aes(ymin=est-est_se, ymax=est+est_se), colour="black", width=.1, position=pd) +
   geom_point(position=pd, size=3)
-#-------------------------------------------------------------------------------------------------
 
+# Predictions at original data locations
+#predictions_winter <- predict(fit19b_winter) #file becomes too big if include , `se_fit` = TRUE
+#so don't use that approach
+
+
+
+
+#######################################
+#plotting marginal effect for season
+
+fit19b_winter <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC','winter','after fixing fuel and crab price',"fit19b_winter.rds"))
+fit19b_summer <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC','summer','after fixing fuel and crab ppp',"fit19b_summer.rds"))
+fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC', 'all data', 'after fixes',"fit16b_all_data.rds"))
+## also need to load the base dfs
+#glimpse(winter)
+#glimpse(summer)
+#glimpse(all_data)
+
+
+#tweaking Eric's 'plot_log' function
+g_winter <- ggeffect(fit19b_winter, "season [all]", back.transform = FALSE)
+g_winter$conf.low <- log(g_winter$conf.low)
+g_winter$conf.high <- log(g_winter$conf.high)
+g_winter$predicted <- log(g_winter$predicted)
+g_winter$group <- "winter"
+
+g_summer <- ggeffect(fit19b_summer, "season [all]", back.transform = FALSE)
+g_summer$conf.low <- log(g_summer$conf.low)
+g_summer$conf.high <- log(g_summer$conf.high)
+g_summer$predicted <- log(g_summer$predicted)
+g_summer$group <- "summer"
+
+g_all_data <- ggeffect(fit16b_all_data, "season [all]", back.transform = FALSE)
+g_all_data$conf.low <- log(g_all_data$conf.low)
+g_all_data$conf.high <- log(g_all_data$conf.high)
+g_all_data$predicted <- log(g_all_data$predicted)
+g_all_data$group <- "all data"
+
+g_data <- rbind(g_winter, g_summer, g_all_data)
+
+plot_season_ME <- ggplot() + 
+  geom_errorbar(data=g_data, aes(x=x, ymin=conf.low, ymax=conf.high, group=group, color=group), width=.1, position=position_dodge(width = 0.5)) +
+  geom_point(data=g_data, aes(x=x, y=predicted, group=group, color=group), size=3, position=position_dodge(width = 0.5)) +
+  theme_classic()
+plot_season_ME
+
+
+# plot_season_ME <- ggplot() + 
+#   geom_errorbar(data=g_winter, aes(x=x, ymin=conf.low, ymax=conf.high), colour="#68a2b9", width=.1, position=position_dodge()) +
+#   geom_point(data=g_winter, aes(x=x, y=predicted), size=3, position=pd, colour='#68a2b9') +
+#   geom_errorbar(data=g_summer, aes(x=x, ymin=conf.low, ymax=conf.high), colour="#99d9d9", width=.1, position=position_dodge()) +
+#   geom_point(data=g_summer, aes(x=x, y=predicted), size=3, position=pd, colour='#99d9d9') +
+#   theme_classic()
+# plot_season_ME
+
+
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
+####MARGINAL EFFECT OF MONTH AND HMOS
+#-------------------------------------------------------------------------------------------------
 #SUMMER - VISUALISING HMOS EFFECT
 
 dummy_HMOS_test <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_HMOS_fixed_effect_all_HMOS.csv"))
@@ -493,6 +554,58 @@ ggplot(data=predictions_testtest, aes(x=month_name_f, y=est, group=season)) +
   #scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
 
+
+
+
+
+#tweaking Eric's 'plot_log' function
+#winter and summer use HMOS (while all data uses month)
+gg_winter <- ggeffect(fit19b_winter, "half_month_of_seasonf [all]", back.transform = FALSE)
+gg_winter$conf.low <- log(gg_winter$conf.low)
+gg_winter$conf.high <- log(gg_winter$conf.high)
+gg_winter$predicted <- log(gg_winter$predicted)
+gg_winter$group <- "winter"
+
+gg_summer <- ggeffect(fit19b_summer, "half_month_of_seasonf [all]", back.transform = FALSE)
+gg_summer$conf.low <- log(gg_summer$conf.low)
+gg_summer$conf.high <- log(gg_summer$conf.high)
+gg_summer$predicted <- log(gg_summer$predicted)
+gg_summer$group <- "summer"
+
+gg_data <- rbind(gg_winter, gg_summer)
+
+plot_HMOS_ME <- ggplot() + 
+  geom_errorbar(data=gg_data, aes(x=x, ymin=conf.low, ymax=conf.high, group=group, color=group), width=.1, position=position_dodge(width = 0.5)) +
+  geom_point(data=gg_data, aes(x=x, y=predicted, group=group, color=group), size=3, position=position_dodge(width = 0.5)) +
+  theme_classic()
+plot_HMOS_ME
+
+
+# all data uses month
+gg_all_data <- ggeffect(fit16b_all_data, "month_name_f [all]", back.transform = FALSE)
+gg_all_data$conf.low <- log(gg_all_data$conf.low)
+gg_all_data$conf.high <- log(gg_all_data$conf.high)
+gg_all_data$predicted <- log(gg_all_data$predicted)
+gg_all_data$group <- "all data"
+
+plot_month_ME <- ggplot() + 
+  geom_errorbar(data=gg_all_data, aes(x=x, ymin=conf.low, ymax=conf.high, group=1), width=.1, position=position_dodge(width = 0.5)) +
+  geom_point(data=gg_all_data, aes(x=x, y=predicted, group=group, color=1), position=position_dodge(width = 0.5)) +
+  theme_classic()
+plot_month_ME
+##this plot doesn't seem quite right, it's to flat, no change from month to month
+
+
+dummy_month_effect <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_month.csv"))
+dummy_month_effect$month_name_f <- factor(dummy_month_effect$month_name_f, levels = c("December", "January", "February", "March", "April",
+                                                                              "May", "June", "July", "August", "September"))
+
+predictions_month_effect <- predict(fit16b_all_data, newdata = dummy_month_effect, `se_fit` = TRUE)
+
+ggplot(predictions_month_effect, aes(x=month_name_f, y=est, group=1)) + 
+  geom_errorbar(aes(ymin=est-est_se, ymax=est+est_se), colour="black", width=.1) +
+  geom_point(position=pd, size=3)+
+  theme_classic()
 
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
