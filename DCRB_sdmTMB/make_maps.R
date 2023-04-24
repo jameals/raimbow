@@ -616,6 +616,39 @@ df_mapping_sf_summary_May_2 <- df_full_summary_May_2 %>% left_join(study_area, b
 #st_write(df_mapping_sf_summary_May_2, "df_mapping_sf_summary_May_2.shp")
 
 
+
+
+#avg across all winters:
+
+df_full_filtered_winter <- df_full %>% 
+  filter(month_name %in% c('December', 'January', 'February', 'March', 'April')) 
+
+df_full_summary_winter <- df_full_filtered_winter %>% 
+  group_by(GRID5KM_ID, grd_x, grd_y) %>% 
+  summarise(avg_pots = mean(tottraps))
+
+df_mapping_sf_summary_winter <- df_full_summary_winter %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_summary_winter, "df_mapping_sf_summary_winter.shp")
+
+
+#avg across all summers:
+
+df_full_filtered_summer <- df_full %>% 
+  filter(month_name %in% c('May', 'June', 'July', 'August', 'September')) 
+
+df_full_summary_summer <- df_full_filtered_summer %>% 
+  group_by(GRID5KM_ID, grd_x, grd_y) %>% 
+  summarise(avg_pots = mean(tottraps))
+
+df_mapping_sf_summary_summer <- df_full_summary_summer %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#export shapefile for QGIS
+#st_write(df_mapping_sf_summary_summer, "df_mapping_sf_summary_summer.shp")
+
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
 
