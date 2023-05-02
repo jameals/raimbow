@@ -18,6 +18,18 @@ library(sf)
 
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
+
+#for each restricted study area grid, assign a smaller area (management area & inshore/offshore)
+
+restricted_study_area_management_areas <- read_csv(here::here('DCRB_sdmTMB',  'data', 'restricted_study_area_management_areas.csv')) 
+
+study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
+
+restricted_study_area_management_areas_sp <- study_area %>% left_join(restricted_study_area_management_areas)
+
+# #st_write(restricted_study_area_management_areas_sp, "restricted_study_area_management_areas_sp.shp")
+
+
 #------------------------------------------------------------------------------------------
 
 #make map of actuals vs predicted for best CV model
@@ -532,11 +544,12 @@ cv_test16_all_data_data_May2_2020 <- cv_test16_all_data[[5]]$data %>%
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
   mutate(weighted = percent_preds/100*63700) %>%  #63700 was total estimated pots for May_2 2019 from landings
-  mutate(tottraps = percent_tottrap/100*63700)
+  mutate(tottraps = percent_tottrap/100*63700) %>% 
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May2_2020)
 
-df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
   select(-(SST_avg:month_name_f)) %>% 
@@ -567,10 +580,43 @@ df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(study
 # df_mapping_sf_May2_2020 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230414.shp")
+# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230502.shp")
 # 
 
 
+#average across mgmt areas
+mgmt_averages_May1_2020 <- df_mapping_sf_May2_2020 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff = median(difference))
+
+df_mapping_sf_May2_2020 <- df_mapping_sf_May2_2020 %>% left_join(mgmt_averages_May1_2020)
+# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230502.shp")
+
+
+
+
+p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+       geom_violin() +
+       facet_wrap(~ mgmt_area) +
+       coord_flip()+
+       theme_classic()
+ p
+
+#inshore vs offshore
+ p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+   geom_violin() +
+   facet_wrap(~ inshore_offshore) +
+   coord_flip()+
+   theme_classic()
+ p
+ 
+#across all WC
+ p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+   geom_violin() +
+   coord_flip()+
+   theme_classic()
+ p
+ 
+ 
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
