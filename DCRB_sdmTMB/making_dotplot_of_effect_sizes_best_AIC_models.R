@@ -37,42 +37,6 @@ pars_winter$term <- c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-
 
 
 
-
-
-
-ggplot(pars_winter, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high),col=viridis(1)) +
-  geom_point(col=viridis(1)) +
-  theme_bw() +
-  xlab("") +
-  ylab("Estimate") + 
-  ##change the odder of items
-  scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
-                              "2017-2018", "2018-2019", "2019-2020", "HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", "HMOS_8",                      
-                              "HMOS_9", "HMOS_10",  "Fishing State", "SST", "Wind", "Bottom O2",                             
-                              "Depth_sd", "Faults",  "Canyon dist",  "Port dist", "Fuel price",  "Crab price",  "Dist closed area",   
-                              "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2", "Depth_poly1",  "Depth_poly2")) +
-  ylim(c(-15,15))+
-  coord_flip()
-
-
-
-pars_winter_HMOS <- pars_winter %>% filter(term %in% c("HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", "HMOS_8",                      
-                                                       "HMOS_9", "HMOS_10"))
-ggplot(pars_winter_HMOS, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high),col=viridis(1)) +
-  geom_point(col=viridis(1)) +
-  theme_bw() +
-  xlab("") +
-  ylab("Estimate") + 
-  ##change the odder of items
-  scale_x_discrete(limits = c("HMOS_10", "HMOS_9","HMOS_8", "HMOS_7", "HMOS_6", 
-                              "HMOS_5", "HMOS_4", "HMOS_3",  "HMOS_2"))+
-  #ylim(c(-5,5))+
-  coord_flip()
-
-
-
 ###SUMMER
 
 
@@ -91,24 +55,6 @@ pars_summer$term <- c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-
                       "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2")
 
 
-ggplot(pars_summer, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high),col=viridis(1)) +
-  geom_point(col=viridis(1)) +
-  theme_bw() +
-  xlab("") +
-  ylab("Estimate") + 
-  ##change the odder of items
-  scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
-                              "2017-2018", "2018-2019", "2019-2020", "HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", "HMOS_8",                      
-                              "HMOS_9", "HMOS_10",  "HMOS_11", "HMOS_12", "HMOS_13", "HMOS_14", "HMOS_15", "HMOS_16", "HMOS_17", "HMOS_18", "HMOS_19",
-                              "Fishing State", "WA pot reduction", "SST", "Wind", "Bottom O2",                             
-                              "Depth_sd", "Faults",  "Canyon dist",  "Port dist", "Fuel price",  "Crab price",  "Dist closed area",   
-                              "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2", "Depth_poly1",  "Depth_poly2")) +
-  ylim(c(-15,15))+
-  coord_flip()
-
-
-
 
 ###ALL DATA
 
@@ -125,20 +71,6 @@ pars_all_data$term <- c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "201
                        "Faults",  "Canyon dist",  "Port dist", "Fuel price",  "Crab price", "Bottom O2", "Fishing State", 
                       "Dist closed area", "Fishing State : Dist closed area")
 
-ggplot(pars_all_data, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high),col=viridis(1)) +
-  geom_point(col=viridis(1)) +
-  theme_bw() +
-  xlab("") +
-  ylab("Estimate") + 
-  ##change the odder of items
-  scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
-                              "2017-2018", "2018-2019", "2019-2020", "January", "February", "March", "April", "May", "June",
-                              "July", "August", "September",  "WA pot reduction", "SST", "Wind",  "Depth_sd", 
-                              "Faults",  "Canyon dist",  "Port dist", "Fuel price",  "Crab price", "Bottom O2", "Fishing State", 
-                              "Dist closed area", "Fishing State : Dist closed area", "Depth_poly1",  "Depth_poly2")) +
-  ylim(c(-15,15))+
-  coord_flip()
 
 
 #-------------------------------------------------------------------------------------------------
@@ -162,23 +94,47 @@ pars_all_data_season <- pars_all_data %>% filter(term %in% c("2009-2010", "2010-
 
 pars_season <- rbind(pars_winter_season, pars_summer_season, pars_all_data_season)
 
+
+
+##### FIGURE - SEASON EFFECT SIZE (DOTPLOT) ##### 
 ggplot(pars_season, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high,color=model), position=position_dodge(width = 0.5)) +
-  geom_point(aes(color=model), position=position_dodge(width = 0.5)) +
+  geom_hline(yintercept = 0,linetype="dotted")+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
+  scale_linetype_manual(values=c("solid", "dashed","solid"))+
+  scale_shape_manual(values=c(8, 16, 15)) +
+  scale_color_manual(values=c('black','grey50', 'gray70'))+
   theme_bw() +
   xlab("") +
-  ylab("Estimate") + 
+  ylab("Coefficient Estimate") +
   ##change the odder of items
   scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
                               "2017-2018", "2018-2019", "2019-2020")) +
-  ylim(c(-15,5))+
-  coord_flip()
+  ylim(c(-13,3))+
+  coord_flip() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 
 
 
-
+#########################################################################################################
 
 ##MOST PREDICTORS
 pars_winter_me <- pars_winter %>% filter(term %in% c("SST", "Wind",  "Depth_sd", "Faults",  
@@ -198,25 +154,128 @@ pars_all_data_me <- pars_all_data %>% filter(term %in% c("WA pot reduction", "SS
 
 pars_me <- rbind(pars_winter_me, pars_summer_me, pars_all_data_me)
 
+
+##### FIGURE - MOST VARIABLES ##### 
 ggplot(pars_me, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high,color=model), position=position_dodge(width = 0.5)) +
-  geom_point(aes(color=model), position=position_dodge(width = 0.5)) +
+  geom_hline(yintercept = 0, linetype='dotted')+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
+  scale_linetype_manual(values=c("solid", "dashed","solid"))+
+  scale_shape_manual(values=c(8, 16, 15)) +
+  scale_color_manual(values=c('black','grey50', 'gray70'))+
   theme_bw() +
   xlab("") +
-  ylab("Estimate") + 
+  ylab("Coefficient Estimate") +
   ##change the odder of items
   scale_x_discrete(limits = c("WA pot reduction", "SST", "Wind",  "Depth_sd", "Faults",  
                               "Canyon dist",  "Port dist",  "Fuel price",  "Crab price", 
                                "Fishing State", "Dist closed area", 
                               "Fishing State : Dist closed area", "Bottom O2",
                               "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2","Depth_poly1",  "Depth_poly2")) +
-  ylim(c(-2,3))+
+  #ylim(c(-2,3))+
+  coord_flip() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
+
+
+pars_me_no_depth <- pars_me %>% filter(!term %in% c("Depth_poly1", "Depth_poly2", "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2"))
+
+ggplot(pars_me_no_depth, aes(term, estimate)) +
   geom_hline(yintercept = 0, linetype='dotted')+
-  coord_flip() 
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
+  scale_linetype_manual(values=c("solid", "dashed","solid"))+
+  scale_shape_manual(values=c(8, 16, 15)) +
+  scale_color_manual(values=c('black','grey50', 'gray70'))+
+  theme_bw() +
+  xlab("") +
+  ylab("Coefficient Estimate") +
+  ##change the odder of items
+  scale_x_discrete(limits = c("WA pot reduction", "SST", "Wind",  "Depth_sd", "Faults",  
+                              "Canyon dist",  "Port dist",  "Fuel price",  "Crab price", 
+                              "Fishing State", "Dist closed area", 
+                              "Fishing State : Dist closed area", "Bottom O2")) +
+  #ylim(c(-2,3))+
+  coord_flip() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
+
+
+
+pars_me_depth_only <- pars_me %>% filter(term %in% c("Depth_poly1", "Depth_poly2", "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2"))
+
+ggplot(pars_me_depth_only, aes(term, estimate)) +
+  geom_hline(yintercept = 0, linetype='dotted')+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.5)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.5), size=2.2) +
+  scale_linetype_manual(values=c("solid", "dashed","solid"))+
+  scale_shape_manual(values=c(8, 16, 15)) +
+  scale_color_manual(values=c('black','grey50', 'gray70'))+
+  theme_bw() +
+  xlab("") +
+  ylab("Coefficient Estimate") +
+  ##change the odder of items
+  scale_x_discrete(limits = c("Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2", "Depth_poly1",  "Depth_poly2")) +
+  #ylim(c(-2,3))+
+  coord_flip() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 
 
+
+
+
+
+
+
+#########################################################################################################
 ##MONTH AND HMOS
 
 pars_winter_HMOS <- pars_winter %>% filter(term %in% c("HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", 
@@ -231,32 +290,55 @@ pars_all_data_month <- pars_all_data %>% filter(term %in% c("January", "February
 
 pars_month_HMOS<- rbind(pars_winter_HMOS, pars_summer_HMOS, pars_all_data_month)
 
+
+
+
+##### FIGURE - MONTH/HMOS EFFECT SIZE (DOTPLOT) ##### 
 ggplot(pars_month_HMOS, aes(term, estimate)) +
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high,color=model), position=position_dodge(width = 0.5)) +
-  geom_point(aes(color=model), position=position_dodge(width = 0.5)) +
+  geom_hline(yintercept = 0,linetype="dotted")+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
+  scale_linetype_manual(values=c("solid", "dashed","solid"))+
+  scale_shape_manual(values=c(8, 16, 15)) +
+  scale_color_manual(values=c('black','grey50', 'gray70'))+
   theme_bw() +
   xlab("") +
-  ylab("Estimate") + 
+  ylab("Coefficient Estimate") +
   ##change the odder of items
   scale_x_discrete(limits = c("HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", 
                               "HMOS_8", "HMOS_9", "HMOS_10",  "HMOS_11", "HMOS_12", "HMOS_13",
                               "HMOS_14", "HMOS_15", "HMOS_16", "HMOS_17", "HMOS_18", "HMOS_19",
                               "January", "February", "March", "April", "May", "June",
-                              "July", "August", "September")) +
+                              "July", "August", "September"),
+                   labels = c("HMOS_2", " ", "HMOS_4", " ", "HMOS_6",  " ", 
+                             "HMOS_8", " ", "HMOS_10",  " ", "HMOS_12", " ",
+                             "HMOS_14", " ", "HMOS_16", " ", "HMOS_18", " ",
+                              "January", " ", "March", " ", "May", " ",
+                             "July", " ", "September")) +
   #ylim(c(-15,5))+
-  geom_hline(yintercept = 0, linetype='dotted')+
-  coord_flip()
+  coord_flip() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 
-
-
-
-
-
-
-
-
+############################################################################################################
+############################################################################################################
 
 
 
