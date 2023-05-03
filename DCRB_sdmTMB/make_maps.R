@@ -52,7 +52,8 @@ cv_test16_all_data_data_May1_2016 <- cv_test16_all_data[[1]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*70900) #70900 was total estimated pots for May_1 2016 from landings
+  mutate(weighted = percent_preds/100*70900) %>%  #70900 was total estimated pots for May_1 2016 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May1_2016)
 
@@ -61,11 +62,12 @@ glimpse(cv_test16_all_data_data_May1_2016)
 study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp'))
 #plot(study_area)
 
-df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(study_area, by=c('GRID5KM_ID')) %>%
+df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
   select(-NGDC_GRID, -ORIG_AREA) %>%
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>%
-  #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
+  select(-(SST_avg:dist_to_closed_km)) %>%
+  select(-(month_name:weighted_crab_ppp)) %>%
+    #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
 ## go back to the original methods, left join grid to df, and export, skip the below
@@ -91,8 +93,67 @@ df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(study
 #                                                                          122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May1_2016 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+#average across states
+state_averages_May1_2016 <- df_mapping_sf_May1_2016 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May1_2016 <- df_mapping_sf_May1_2016 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May1_2016 <- df_mapping_sf_May1_2016 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May1_2016 <- df_mapping_sf_May1_2016 %>% left_join(state_averages_May1_2016) %>% 
+  left_join(mgmt_averages_May1_2016) %>% 
+  left_join(inshore_offshore_averages_May1_2016)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016_20230414.shp")
+# #st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
+
+
+
 
 
 #May_2 of 2016
@@ -108,14 +169,16 @@ cv_test16_all_data_data_May2_2016 <- cv_test16_all_data[[1]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*55900) #55900 was total estimated pots for May_2 2016 from landings
+  mutate(weighted = percent_preds/100*55900) %>%  #55900 was total estimated pots for May_2 2016 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May2_2016)
 
-df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -141,9 +204,64 @@ df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(study
 #                                                                   119950, 120280, 120610, 120940, 122258, 122259, 
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May2_2016 <- rbind(grids_ok, grids_twice, grid_86945)
-# 
+#
+
+#average across states
+state_averages_May2_2016 <- df_mapping_sf_May2_2016 %>% group_by(OR_WA_waters ) %>% 
+   summarise(median_diff_state = median(difference))
+ 
+#average across mgmt areas
+mgmt_averages_May2_2016 <- df_mapping_sf_May2_2016 %>% group_by(mgmt_area) %>% 
+ summarise(median_diff_mgmt = median(difference))
+ 
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May2_2016 <- df_mapping_sf_May2_2016 %>% group_by(inshore_offshore) %>% 
+ summarise(median_diff_shore = median(difference))
+ 
+df_mapping_sf_May2_2016 <- df_mapping_sf_May2_2016 %>% left_join(state_averages_May2_2016) %>% 
+ left_join(mgmt_averages_May2_2016) %>% 
+ left_join(inshore_offshore_averages_May2_2016)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016_20230414.shp")
+# #st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May2_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May2_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May2_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May2_2016, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
 
 
 #---------------------------------------------
@@ -164,15 +282,17 @@ cv_test16_all_data_data_May1_2017 <- cv_test16_all_data[[2]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*94800) #94800 was total estimated pots for May_1 2017 from landings
+  mutate(weighted = percent_preds/100*94800) %>%  #94800 was total estimated pots for May_1 2017 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May1_2017)
 
 
-df_mapping_sf_May1_2017 <- cv_test16_all_data_data_May1_2017 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May1_2017 <- cv_test16_all_data_data_May1_2017 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -199,8 +319,65 @@ df_mapping_sf_May1_2017 <- cv_test16_all_data_data_May1_2017 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May1_2017 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+#average across states
+state_averages_May1_2017 <- df_mapping_sf_May1_2017 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May1_2017 <- df_mapping_sf_May1_2017 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May1_2017 <- df_mapping_sf_May1_2017 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May1_2017 <- df_mapping_sf_May1_2017 %>% left_join(state_averages_May1_2017) %>% 
+  left_join(mgmt_averages_May1_2017) %>% 
+  left_join(inshore_offshore_averages_May1_2017)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2017, "df_mapping_sf_May1_2017_20230414.shp")
+# #st_write(df_mapping_sf_May1_2017, "df_mapping_sf_May1_2017_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May1_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May1_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May1_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May1_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
+
+
 
 
 #May_2 of 2017
@@ -216,14 +393,16 @@ cv_test16_all_data_data_May2_2017 <- cv_test16_all_data[[2]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*67700) #67700 was total estimated pots for May_2 2017 from landings
+  mutate(weighted = percent_preds/100*67700) %>%  #67700 was total estimated pots for May_2 2017 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May2_2017)
 
-df_mapping_sf_May2_2017 <- cv_test16_all_data_data_May2_2017 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May2_2017 <- cv_test16_all_data_data_May2_2017 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -250,9 +429,64 @@ df_mapping_sf_May2_2017 <- cv_test16_all_data_data_May2_2017 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May2_2017 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
-# #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2017, "df_mapping_sf_May2_2017_20230414.shp")
 
+
+#average across states
+state_averages_May2_2017 <- df_mapping_sf_May2_2017 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May2_2017 <- df_mapping_sf_May2_2017 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May2_2017 <- df_mapping_sf_May2_2017 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May2_2017 <- df_mapping_sf_May2_2017 %>% left_join(state_averages_May2_2017) %>% 
+  left_join(mgmt_averages_May2_2017) %>% 
+  left_join(inshore_offshore_averages_May2_2017)
+
+# #export shapefile for QGIS
+# #st_write(df_mapping_sf_May2_2017, "df_mapping_sf_May2_2017_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May2_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May2_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May2_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May2_2017, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
 
 
 #---------------------------------------------
@@ -273,15 +507,17 @@ cv_test16_all_data_data_May1_2018 <- cv_test16_all_data[[3]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*89800) #89800 was total estimated pots for May_1 2018 from landings
+  mutate(weighted = percent_preds/100*89800) %>%  #89800 was total estimated pots for May_1 2018 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May1_2018)
 
 
-df_mapping_sf_May1_2018 <- cv_test16_all_data_data_May1_2018 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May1_2018 <- cv_test16_all_data_data_May1_2018 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -308,8 +544,65 @@ df_mapping_sf_May1_2018 <- cv_test16_all_data_data_May1_2018 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May1_2018 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+#average across states
+state_averages_May1_2018 <- df_mapping_sf_May1_2018 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May1_2018 <- df_mapping_sf_May1_2018 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May1_2018 <- df_mapping_sf_May1_2018 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May1_2018 <- df_mapping_sf_May1_2018 %>% left_join(state_averages_May1_2018) %>% 
+  left_join(mgmt_averages_May1_2018) %>% 
+  left_join(inshore_offshore_averages_May1_2018)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2018, "df_mapping_sf_May1_2018_20230414.shp")
+# #st_write(df_mapping_sf_May1_2018, "df_mapping_sf_May1_2018_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May1_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May1_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May1_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May1_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
+
 
 
 #May_2 of 2018
@@ -326,14 +619,15 @@ cv_test16_all_data_data_May2_2018 <- cv_test16_all_data[[3]]$data %>%
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
   mutate(weighted = percent_preds/100*73400) %>%  #73400 was total estimated pots for May_2 2018 from landings
-  mutate(tottraps = percent_tottrap/100*73400)
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May2_2018)
 
-df_mapping_sf_May2_2018 <- cv_test16_all_data_data_May2_2018 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May2_2018 <- cv_test16_all_data_data_May2_2018 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -360,8 +654,64 @@ df_mapping_sf_May2_2018 <- cv_test16_all_data_data_May2_2018 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May2_2018 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+#average across states
+state_averages_May2_2018 <- df_mapping_sf_May2_2018 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May2_2018 <- df_mapping_sf_May2_2018 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May2_2018 <- df_mapping_sf_May2_2018 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May2_2018 <- df_mapping_sf_May2_2018 %>% left_join(state_averages_May2_2018) %>% 
+  left_join(mgmt_averages_May2_2018) %>% 
+  left_join(inshore_offshore_averages_May2_2018)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2018, "df_mapping_sf_May2_2018_20230414.shp")
+# #st_write(df_mapping_sf_May2_2018, "df_mapping_sf_May2_2018_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May2_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May2_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May2_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May2_2018, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
 
 
 #---------------------------------------------
@@ -382,15 +732,17 @@ cv_test16_all_data_data_May1_2019 <- cv_test16_all_data[[4]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*79400) #79400 was total estimated pots for May_1 2019 from landings
+  mutate(weighted = percent_preds/100*79400) %>%  #79400 was total estimated pots for May_1 2019 from landings
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May1_2019)
 
 
-df_mapping_sf_May1_2019 <- cv_test16_all_data_data_May1_2019 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May1_2019 <- cv_test16_all_data_data_May1_2019 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -417,8 +769,68 @@ df_mapping_sf_May1_2019 <- cv_test16_all_data_data_May1_2019 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May1_2019 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+
+#average across states
+state_averages_May1_2019 <- df_mapping_sf_May1_2019 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May1_2019 <- df_mapping_sf_May1_2019 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May1_2019 <- df_mapping_sf_May1_2019 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May1_2019 <- df_mapping_sf_May1_2019 %>% left_join(state_averages_May1_2019) %>% 
+  left_join(mgmt_averages_May1_2019) %>% 
+  left_join(inshore_offshore_averages_May1_2019)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2019, "df_mapping_sf_May1_2019_20230414.shp")
+# #st_write(df_mapping_sf_May1_2019, "df_mapping_sf_May1_2019_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May1_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May1_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May1_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May1_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
+
+
+
 
 
 #May_2 of 2019
@@ -434,14 +846,16 @@ cv_test16_all_data_data_May2_2019 <- cv_test16_all_data[[4]]$data %>%
   mutate(percent_tottrap = tottraps/sum(tottraps)*100) %>% 
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
-  mutate(weighted = percent_preds/100*61100) #61100 was total estimated pots for May_2 2019 from landings
+  mutate(weighted = percent_preds/100*61100) %>%  #61100 was total estimated pots for May_2 2019 from landings
+mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May2_2019)
 
-df_mapping_sf_May2_2019 <- cv_test16_all_data_data_May2_2019 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May2_2019 <- cv_test16_all_data_data_May2_2019 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -468,8 +882,64 @@ df_mapping_sf_May2_2019 <- cv_test16_all_data_data_May2_2019 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May2_2019 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+#average across states
+state_averages_May2_2019 <- df_mapping_sf_May2_2019 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May2_2019 <- df_mapping_sf_May2_2019 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May2_2019 <- df_mapping_sf_May2_2019 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May2_2019 <- df_mapping_sf_May2_2019 %>% left_join(state_averages_May2_2019) %>% 
+  left_join(mgmt_averages_May2_2019) %>% 
+  left_join(inshore_offshore_averages_May2_2019)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2019, "df_mapping_sf_May2_2019_20230414.shp")
+# #st_write(df_mapping_sf_May2_2019, "df_mapping_sf_May2_2019_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May2_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May2_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May2_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May2_2019, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
 
 
 #---------------------------------------------
@@ -491,15 +961,16 @@ cv_test16_all_data_data_May1_2020 <- cv_test16_all_data[[5]]$data %>%
   mutate(percent_preds = cv_predicted/sum(cv_predicted)*100) %>% 
   #divide percent_pred with 100 to get it as proportion
   mutate(weighted = percent_preds/100*65400) %>%  #65400 was total estimated pots for May_1 2020 from landings
-  mutate(tottraps = percent_tottrap/100*65400)
+  mutate(difference = weighted - tottraps)
 
 glimpse(cv_test16_all_data_data_May1_2020)
 
 
-df_mapping_sf_May1_2020 <- cv_test16_all_data_data_May1_2020 %>% left_join(study_area, by=c('GRID5KM_ID')) %>% 
+df_mapping_sf_May1_2020 <- cv_test16_all_data_data_May1_2020 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>%
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -526,8 +997,65 @@ df_mapping_sf_May1_2020 <- cv_test16_all_data_data_May1_2020 %>% left_join(study
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May1_2020 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
+
+
+#average across states
+state_averages_May1_2020 <- df_mapping_sf_May1_2020 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
+#average across mgmt areas
+mgmt_averages_May1_2020 <- df_mapping_sf_May1_2020 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
+
+##average across slightly larger mgmt areas in OR - need to decide what these are
+
+#average across inshore/offshore
+inshore_offshore_averages_May1_2020 <- df_mapping_sf_May1_2020 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
+
+df_mapping_sf_May1_2020 <- df_mapping_sf_May1_2020 %>% left_join(state_averages_May1_2020) %>% 
+  left_join(mgmt_averages_May1_2020) %>% 
+  left_join(inshore_offshore_averages_May1_2020)
+
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2020, "df_mapping_sf_May1_2020_20230414.shp")
+# #st_write(df_mapping_sf_May1_2020, "df_mapping_sf_May1_2020_20230504.shp")
+
+#plot
+
+#across all WC
+p <- ggplot(df_mapping_sf_May1_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May1_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May1_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
+
+#inshore vs offshore
+p <- ggplot(df_mapping_sf_May1_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
+
 
 
 #May_2 of 2020
@@ -552,7 +1080,8 @@ glimpse(cv_test16_all_data_data_May2_2020)
 df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:month_name_f)) %>% 
+  select(-(SST_avg:dist_to_closed_km)) %>% 
+  select(-(month_name:weighted_crab_ppp)) %>%
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -579,43 +1108,65 @@ df_mapping_sf_May2_2020 <- cv_test16_all_data_data_May2_2020 %>% left_join(restr
 #                                                                   122588, 122589, 122919, 129512, 129842, 86945))
 # df_mapping_sf_May2_2020 <- rbind(grids_ok, grids_twice, grid_86945)
 # 
-# #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230502.shp")
 # 
 
 
+#average across states
+state_averages_May2_2020 <- df_mapping_sf_May2_2020 %>% group_by(OR_WA_waters ) %>% 
+  summarise(median_diff_state = median(difference))
+
 #average across mgmt areas
-mgmt_averages_May1_2020 <- df_mapping_sf_May2_2020 %>% group_by(mgmt_area) %>% 
-  summarise(median_diff = median(difference))
+mgmt_averages_May2_2020 <- df_mapping_sf_May2_2020 %>% group_by(mgmt_area) %>% 
+  summarise(median_diff_mgmt = median(difference))
 
-df_mapping_sf_May2_2020 <- df_mapping_sf_May2_2020 %>% left_join(mgmt_averages_May1_2020)
-# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230502.shp")
+##average across slightly larger mgmt areas in OR - need to decide what these are
 
+#average across inshore/offshore
+inshore_offshore_averages_May2_2020 <- df_mapping_sf_May2_2020 %>% group_by(inshore_offshore) %>% 
+  summarise(median_diff_shore = median(difference))
 
+df_mapping_sf_May2_2020 <- df_mapping_sf_May2_2020 %>% left_join(state_averages_May2_2020) %>% 
+  left_join(mgmt_averages_May2_2020) %>% 
+  left_join(inshore_offshore_averages_May2_2020)
 
+# #export shapefile for QGIS
+# #st_write(df_mapping_sf_May2_2020, "df_mapping_sf_May2_2020_20230504.shp")
 
+#plot
+
+#across all WC
 p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
-       geom_violin() +
-       facet_wrap(~ mgmt_area) +
-       coord_flip()+
-       theme_classic()
- p
+  geom_violin() +
+  coord_flip()+
+  theme_classic()
+p
+
+#across states
+p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ OR_WA_waters) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across mgmt areas
+p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+#across larger mgmt areas (in OR)
+
 
 #inshore vs offshore
- p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
-   geom_violin() +
-   facet_wrap(~ inshore_offshore) +
-   coord_flip()+
-   theme_classic()
- p
- 
-#across all WC
- p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
-   geom_violin() +
-   coord_flip()+
-   theme_classic()
- p
- 
+p <- ggplot(df_mapping_sf_May2_2020, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ inshore_offshore) +
+  coord_flip()+
+  theme_classic()
+p
  
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
