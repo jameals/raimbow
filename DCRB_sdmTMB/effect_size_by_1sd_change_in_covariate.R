@@ -607,13 +607,21 @@ ggplot(predictions_month_effect, aes(x=month_name_f, y=est, group=1)) +
   geom_point(position=pd, size=3)+
   theme_classic()
 
+
+
+
+
 #-------------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------------
 
-#visualising interaction
+########################visualising interaction###################################################
 
+#-------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 ##interaction between depth and bottom O2
-#SUMMER
+
+#############################SUMMER
+#the low, med, high bottom O2 values should come from the summer only df
 dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth_O2_interaction.csv"))
 dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
 predictions_depth_O2_interaction <- predict(fit19b_summer, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
@@ -638,7 +646,44 @@ ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, g
   scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
 
-#WINTER
+
+##back transform estimate and CI, change bottom O2 & depth values from z-scale to original
+#-0.7253 --> 35.455
+#-0.3027 --> 54.759
+#0.4734 --> 90.213
+
+predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>% 
+  mutate(bottom_O2 = case_when(z_bottom_O2_avg == -0.7253 ~ 35.455,
+                               z_bottom_O2_avg == -0.3027 ~ 54.759,
+                               z_bottom_O2_avg == 0.4734  ~ 90.213)) %>% 
+  mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -190, 
+                           z_depth_point_mean == -1.5 ~ -163, 
+                           z_depth_point_mean == -1.0 ~ -137, 
+                           z_depth_point_mean == -0.5 ~ -111, 
+                           z_depth_point_mean == 0.0 ~ -84, 
+                           z_depth_point_mean == 0.5 ~ -58, 
+                           z_depth_point_mean == 1.0 ~ -31, 
+                           z_depth_point_mean == 1.5 ~ -5)) %>%  
+                           #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
+
+#backtransformed ribbon uses 95%CI
+ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
+  geom_line(aes(color=as.factor(bottom_O2)))+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975),color=as.factor(bottom_O2), fill = as.factor(bottom_O2)), alpha=0.2)+
+  geom_point(aes(color=as.factor(bottom_O2)))+
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
+
+
+
+#########################WINTER
+#the low, med, high bottom O2 values should come from the summer only df -- looks like there had been a mistake with those values -- used summer values
+#now fixed
 dummy_depth_O2_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth_O2_interaction.csv"))
 dummy_depth_O2_interaction$half_month_of_seasonf <- as.factor(dummy_depth_O2_interaction$half_month_of_seasonf)
 predictions_depth_O2_interaction <- predict(fit19b_winter, newdata = dummy_depth_O2_interaction, `se_fit` = TRUE)
@@ -664,8 +709,41 @@ ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, g
   theme_classic()
 
 #boxplot -- but not enough instance to make a box
-p <- ggplot(predictions_depth_O2_interaction, aes(as.factor(z_depth_point_mean), est, colour = as.factor(z_bottom_O2_avg))) + geom_boxplot()
-p
+# p <- ggplot(predictions_depth_O2_interaction, aes(as.factor(z_depth_point_mean), est, colour = as.factor(z_bottom_O2_avg))) + geom_boxplot()
+# p
+
+
+##back transform estimate and CI, change bottom O2 & depth values from z-scale to original
+#-0.8209 --> 59.519
+#-0.2169 --> 99.075
+#0.6517 --> 155.954
+
+predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>% 
+  mutate(bottom_O2 = case_when(z_bottom_O2_avg == -0.8209 ~ 59.519,
+                               z_bottom_O2_avg == -0.2169 ~ 99.075,
+                               z_bottom_O2_avg == 0.6517  ~ 155.954)) %>% 
+  mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -193, 
+                           z_depth_point_mean == -1.5 ~ -166, 
+                           z_depth_point_mean == -1.0 ~ -140, 
+                           z_depth_point_mean == -0.5 ~ -113, 
+                           z_depth_point_mean == 0.0 ~ -87, 
+                           z_depth_point_mean == 0.5 ~ -60, 
+                           z_depth_point_mean == 1.0 ~ -34, 
+                           z_depth_point_mean == 1.5 ~ -7)) %>%   
+  #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
+
+#backtransformed ribbon uses 95%CI
+ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
+  geom_line(aes(color=as.factor(bottom_O2)))+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975),color=as.factor(bottom_O2), fill = as.factor(bottom_O2)), alpha=0.2)+
+  geom_point(aes(color=as.factor(bottom_O2)))+
+  #scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  theme_classic()
+
 
 
 #-------------------------------------------------------------------------------------------------
@@ -691,7 +769,7 @@ mesh_all_data$mesh$n
 
 #-------------------------------------------------------------------------------------------------
 
-fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"fit16b_all_data.rds"))
+fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC','all data','after fixes',"fit16b_all_data.rds"))
 
 
 dummy_dist_to_closed_interaction <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_dist_to_closed_effect.csv"))
@@ -715,15 +793,35 @@ View(predictions_v2)
 #for OR, between 0 and 1 of covariate 7.9% decrease in effort
 
 
+##back transform estimate and CI, change dist to closed values from z-scale to original
+predictions_x <- predictions %>% 
+  mutate(dist_to_closed_km = case_when(z_dist_to_closed_km == -1.0 ~ 32, 
+                           z_dist_to_closed_km == -0.5 ~ 127, 
+                           z_dist_to_closed_km == 0.0 ~ 222, 
+                           z_dist_to_closed_km == 0.5 ~ 316, 
+                           z_dist_to_closed_km == 1.0 ~ 411, 
+                           z_dist_to_closed_km == 1.5 ~ 505)) %>%   
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
 
-predictionsv2 <- predict(fit16b_all_data)
-predictionsv2$resids <- residuals(fit16b_all_data)
-
-ggplot(data=predictionsv2, aes(x=z_dist_to_closed_km, y=resids, group=OR_WA_waters)) +
+#backtransformed plot
+ggplot(data=predictions_x, aes(x=dist_to_closed_km, y=est_backtransformed, group=OR_WA_waters)) +
   geom_line(aes(color=OR_WA_waters))+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed, ymax=est_backtransformed+est_se_backtransformed,color=OR_WA_waters, fill = OR_WA_waters), alpha=0.2)+
   geom_point(aes(color=OR_WA_waters))+
-  scale_color_grey() + 
+  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   theme_classic()
+
+
+# predictionsv2 <- predict(fit16b_all_data)
+# predictionsv2$resids <- residuals(fit16b_all_data)
+# 
+# ggplot(data=predictionsv2, aes(x=z_dist_to_closed_km, y=resids, group=OR_WA_waters)) +
+#   geom_line(aes(color=OR_WA_waters))+
+#   geom_point(aes(color=OR_WA_waters))+
+#   scale_color_grey() + 
+#   theme_classic()
 
 
 
