@@ -1172,7 +1172,7 @@ p
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
 
-#would e.g. avg. pots in grid in all May_1/May_2 across all years produce an equally good map?
+#would e.g. avg. actual pots in grid in all May_1/May_2 across all years produce an equally good map?
 
 df_full <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds')) 
 
@@ -1248,6 +1248,141 @@ df_mapping_sf_summary_summer <- df_full_summary_summer %>% left_join(study_area,
 
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
+
+#avg/median predicted integrated over a long time period 
+# -- for May_1 across all years, and for May-2 across all years
+
+#tidy dfs and join all May_1s
+May_1_2016 <- cv_test16_all_data_data_May1_2016 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_1_2017 <- cv_test16_all_data_data_May1_2017 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_1_2018 <- cv_test16_all_data_data_May1_2018 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_1_2019 <- cv_test16_all_data_data_May1_2019 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_1_2020 <- cv_test16_all_data_data_May1_2020 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+
+all_May_1_predicted <- rbind(May_1_2016,May_1_2017,May_1_2017,May_1_2019,May_1_2020)
+
+all_May_1_summarised <- all_May_1_predicted %>%  
+  group_by(GRID5KM_ID, grd_x, grd_y) %>% 
+  summarise(mean_tottraps = mean(tottraps),
+            median_tottraps = median(tottraps),
+            mean_predicted = mean(predicted),
+            median_predicted = median(predicted),
+            mean_difference = mean(difference),
+            median_difference = median(difference))
+
+all_May_1_summarised_sf <- all_May_1_summarised %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+# #export shapefile for QGIS
+# #st_write(all_May_1_summarised_sf, "all_May_1_summarised_sf.shp")
+
+##For plotting
+all_May_1_predicted_sf <- all_May_1_predicted %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#across mgmt areas
+p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+
+
+
+#tidy dfs and join all May_2s
+May_2_2016 <- cv_test16_all_data_data_May2_2016 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_2_2017 <- cv_test16_all_data_data_May2_2017 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_2_2018 <- cv_test16_all_data_data_May2_2018 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_2_2019 <- cv_test16_all_data_data_May2_2019 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+May_2_2020 <- cv_test16_all_data_data_May2_2020 %>% 
+  select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
+  rename(predicted = weighted)
+
+
+all_May_2_predicted <- rbind(May_2_2016,May_2_2017,May_2_2017,May_2_2019,May_2_2020)
+
+all_May_2_summarised <- all_May_2_predicted %>%  
+  group_by(GRID5KM_ID, grd_x, grd_y) %>% 
+  summarise(mean_tottraps = mean(tottraps),
+            median_tottraps = median(tottraps),
+            mean_predicted = mean(predicted),
+            median_predicted = median(predicted),
+            mean_difference = mean(difference),
+            median_difference = median(difference))
+
+all_May_2_summarised_sf <- all_May_2_summarised %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+# #export shapefile for QGIS
+# #st_write(all_May_2_summarised_sf, "all_May_2_summarised_sf.shp")
+
+##For plotting
+all_May_2_predicted_sf <- all_May_2_predicted %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
+  select(-NGDC_GRID, -ORIG_AREA) 
+
+#across mgmt areas
+p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin() +
+  facet_wrap(~ mgmt_area) +
+  coord_flip()+
+  theme_classic()
+p
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
