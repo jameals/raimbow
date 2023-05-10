@@ -82,7 +82,8 @@ summer_persistence_sf <- summer_persistence_sf %>%
 # #st_write(summer_persistence_sf, "summer_persistence_sf.shp")
 
 
-
+p <- ggplot(summer_persistence_sf, aes(factor(n_seasons_grouping))) + geom_bar() 
+p
 
 
 
