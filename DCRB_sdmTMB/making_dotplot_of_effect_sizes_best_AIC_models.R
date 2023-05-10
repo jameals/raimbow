@@ -92,25 +92,31 @@ pars_all_data_season <- pars_all_data %>% filter(term %in% c("2009-2010", "2010-
                                                          "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
                                                          "2017-2018", "2018-2019", "2019-2020"))
 
-pars_season <- rbind(pars_winter_season, pars_summer_season, pars_all_data_season)
+pars_season <- rbind(pars_winter_season, pars_summer_season, pars_all_data_season) %>% 
+  mutate(estimate_backtransformed = exp(estimate),
+         conf.low_backtransformed = exp(conf.low),
+         conf.high_backtransformed = exp(conf.high))
 
 
 
 ##### FIGURE - SEASON EFFECT SIZE (DOTPLOT) ##### 
-ggplot(pars_season, aes(term, estimate)) +
-  geom_hline(yintercept = 0,linetype="dotted")+
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+ggplot(pars_season, aes(term, estimate_backtransformed)) +
+  geom_hline(yintercept = 1,linetype="dotted")+
+  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
   geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c("solid", "dashed","solid"))+
-  scale_shape_manual(values=c(8, 16, 15)) +
-  scale_color_manual(values=c('black','grey50', 'gray70'))+
+  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+  scale_shape_manual(values=c(16, 15, 8)) +
+  #grayscale plot
+  #scale_color_manual(values=c('black', 'gray70','grey50'))+
+  #color plot
+  scale_color_manual(values=c("#e9072b", "#99d9d9", "#355464" ))+
   theme_bw() +
   xlab("") +
   ylab("Coefficient Estimate") +
   ##change the odder of items
   scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
                               "2017-2018", "2018-2019", "2019-2020")) +
-  ylim(c(-13,3))+
+  #ylim(c(-3,3))+
   coord_flip() +
   theme(
     panel.grid.major = element_blank(),
@@ -119,7 +125,7 @@ ggplot(pars_season, aes(term, estimate)) +
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
     legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.x = element_text(size = 12, colour = 'black'),
     axis.text.y = element_text(size = 12, colour = 'black'),
     axis.title = element_text(size = 12),
     axis.line = element_line(colour = 'black', size = 0.7),
@@ -193,15 +199,26 @@ ggplot(pars_me, aes(term, estimate)) +
   ) 
 
 
-pars_me_no_depth <- pars_me %>% filter(!term %in% c("Depth_poly1", "Depth_poly2", "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2"))
+pars_me_no_depth <- pars_me %>% filter(!term %in% c("Depth_poly1", "Depth_poly2", "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2")) %>% 
+  mutate(estimate_backtransformed = exp(estimate),
+         conf.low_backtransformed = exp(conf.low),
+         conf.high_backtransformed = exp(conf.high))
 
-ggplot(pars_me_no_depth, aes(term, estimate)) +
-  geom_hline(yintercept = 0, linetype='dotted')+
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+#pars_me_no_depth$model <- factor(pars_me_no_depth$model, levels = c("winter", "summer", "all data"))
+
+
+ggplot(pars_me_no_depth, aes(term, estimate_backtransformed)) +
+  geom_hline(yintercept = 1, linetype='dotted')+ #exp(0)=1
+  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, 
+                     color=model, linetype=model),
+                     size = 0.9, position=position_dodge(width = 0.7)) +
   geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c("solid", "dashed","solid"))+
-  scale_shape_manual(values=c(8, 16, 15)) +
-  scale_color_manual(values=c('black','grey50', 'gray70'))+
+  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+  scale_shape_manual(values=c(16, 15, 8)) +
+  #grayscale plot
+  #scale_color_manual(values=c('black', 'gray70','grey50'))+
+  #color plot
+  scale_color_manual(values=c("#e9072b", "#99d9d9", "#355464" ))+
   theme_bw() +
   xlab("") +
   ylab("Coefficient Estimate") +
@@ -210,22 +227,22 @@ ggplot(pars_me_no_depth, aes(term, estimate)) +
                               "Canyon dist",  "Port dist",  "Fuel price",  "Crab price", 
                               "Fishing State", "Dist closed area", 
                               "Fishing State : Dist closed area", "Bottom O2")) +
-  #ylim(c(-2,3))+
+  ylim(c(-1,11))+
   coord_flip() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14),
     legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 12),
+    axis.text.x = element_text(size = 14, colour = 'black'),
+    axis.text.y = element_text(size = 14, colour = 'black'),
+    axis.title = element_text(size = 14),
     axis.line = element_line(colour = 'black', size = 0.7),
     axis.ticks.length=unit(.1, "cm"),
     axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    strip.text = element_text(size=14, colour = 'black'),
     strip.background = element_blank(),
     strip.placement = "left"
   ) 
@@ -288,19 +305,27 @@ pars_summer_HMOS <- pars_summer %>% filter(term %in% c("HMOS_2", "HMOS_3", "HMOS
 pars_all_data_month <- pars_all_data %>% filter(term %in% c("January", "February", "March", "April", "May", "June",
                                                             "July", "August", "September"))
 
-pars_month_HMOS<- rbind(pars_winter_HMOS, pars_summer_HMOS, pars_all_data_month)
+pars_month_HMOS<- rbind(pars_winter_HMOS, pars_summer_HMOS, pars_all_data_month) %>% 
+  mutate(estimate_backtransformed = exp(estimate),
+         conf.low_backtransformed = exp(conf.low),
+         conf.high_backtransformed = exp(conf.high))
 
 
 
 
 ##### FIGURE - MONTH/HMOS EFFECT SIZE (DOTPLOT) ##### 
-ggplot(pars_month_HMOS, aes(term, estimate)) +
-  geom_hline(yintercept = 0,linetype="dotted")+
-  geom_linerange(aes(ymin=conf.low, ymax = conf.high, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
+ggplot(pars_month_HMOS, aes(term, estimate_backtransformed)) +
+  geom_hline(yintercept = 1,linetype="dotted")+
+  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, 
+                     color=model, linetype=model),size = 0.9, 
+                     position=position_dodge(width = 0.7)) +
   geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c("solid", "dashed","solid"))+
-  scale_shape_manual(values=c(8, 16, 15)) +
-  scale_color_manual(values=c('black','grey50', 'gray70'))+
+  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+  scale_shape_manual(values=c(16, 15, 8)) +
+  #grayscale plot
+  #scale_color_manual(values=c('black', 'gray70','grey50'))+
+  #color plot
+  scale_color_manual(values=c("#e9072b", "#99d9d9", "#355464" ))+
   theme_bw() +
   xlab("") +
   ylab("Coefficient Estimate") +
@@ -316,7 +341,7 @@ ggplot(pars_month_HMOS, aes(term, estimate)) +
                               "January", " ", "March", " ", "May", " ",
                              "July", " ", "September")) +
   #ylim(c(-15,5))+
-  coord_flip() +
+  #coord_flip() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -324,7 +349,7 @@ ggplot(pars_month_HMOS, aes(term, estimate)) +
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
     legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(hjust = 1,size = 12, colour = 'black'),
+    axis.text.x = element_text(size = 12, colour = 'black'), #hjust = 1,
     axis.text.y = element_text(size = 12, colour = 'black'),
     axis.title = element_text(size = 12),
     axis.line = element_line(colour = 'black', size = 0.7),
