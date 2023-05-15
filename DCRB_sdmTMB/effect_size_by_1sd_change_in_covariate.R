@@ -676,7 +676,26 @@ ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransfor
   #scale_color_grey() + 
   scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
-  theme_classic()
+  ylab("Predicted no. of pots") +
+  xlab("Depth (m)") +
+  theme_classic() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 
@@ -742,8 +761,26 @@ ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransfor
   #scale_color_grey() + 
   scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
-  theme_classic()
-
+  ylab("Predicted no. of pots") +
+  xlab("Depth (m)") +
+  theme_classic() + 
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 #-------------------------------------------------------------------------------------------------
@@ -788,7 +825,7 @@ ggplot(data=predictions, aes(x=z_dist_to_closed_km, y=est, group=OR_WA_waters)) 
   theme_classic()
 
 
-View(predictions_v2)
+#View(predictions_v2)
 #for WA, between 0 and 1 of covariate 1.6% increase in effort
 #for OR, between 0 and 1 of covariate 7.9% decrease in effort
 
@@ -811,7 +848,26 @@ ggplot(data=predictions_x, aes(x=dist_to_closed_km, y=est_backtransformed, group
   geom_point(aes(color=OR_WA_waters))+
   scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
   scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
-  theme_classic()
+  ylab("Predicted no. of pots") +
+  xlab("Distance to closed area (km)") +
+  theme_classic() + 
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
 
 
 # predictionsv2 <- predict(fit16b_all_data)
