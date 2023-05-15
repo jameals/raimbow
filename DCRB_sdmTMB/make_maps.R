@@ -11,6 +11,7 @@ library(ggeffects)
 library(ggplot2)
 library(sf)
 library(lubridate)
+library(ggpubr)
 
 
 #---------------------------------------------
@@ -1296,13 +1297,28 @@ all_May_1_summarised_sf <- all_May_1_summarised %>% left_join(restricted_study_a
 all_May_1_predicted_sf <- all_May_1_predicted %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
   select(-NGDC_GRID, -ORIG_AREA) 
 
+all_May_1_predicted_sf$mgmt_area <- factor(all_May_1_predicted_sf$mgmt_area, levels = c("59A-1", "59A-2", "60A-1",
+                                                                                        "60B", "60A-2", "60C",
+                                                                                        "50-A", "60D", "50-B",
+                                                                                        "50-C", "50-D", "50-E",
+                                                                                        "50-F", "50-G", "50-H",
+                                                                                        "50-I", "50-J", "50-K","50-L"))
+
 #across mgmt areas
 p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
-  geom_violin() +
-  facet_wrap(~ mgmt_area) +
+  geom_violin(size=1) +
+  facet_wrap(~ mgmt_area, ncol=2) +
   coord_flip()+
-  theme_classic()
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
 p
+
+
+
 
 
 
@@ -1350,15 +1366,26 @@ all_May_2_summarised_sf <- all_May_2_summarised %>% left_join(restricted_study_a
 all_May_2_predicted_sf <- all_May_2_predicted %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
   select(-NGDC_GRID, -ORIG_AREA) 
 
+all_May_2_predicted_sf$mgmt_area <- factor(all_May_2_predicted_sf$mgmt_area, levels = c("59A-1", "59A-2", "60A-1",
+                                                                                        "60B", "60A-2", "60C",
+                                                                                        "50-A", "60D", "50-B",
+                                                                                        "50-C", "50-D", "50-E",
+                                                                                        "50-F", "50-G", "50-H",
+                                                                                        "50-I", "50-J", "50-K","50-L"))
+
+
 #across mgmt areas
 p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
-  geom_violin() +
-  facet_wrap(~ mgmt_area) +
+  geom_violin(size=1) +
+  facet_wrap(~ mgmt_area, ncol=2) +
   coord_flip()+
-  theme_classic()
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
 p
-
-
 
 
 
