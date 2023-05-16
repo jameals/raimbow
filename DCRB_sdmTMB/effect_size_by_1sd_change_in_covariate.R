@@ -49,7 +49,56 @@ predictions_SST <- predict(fit19b_winter, newdata = dummy_SST)
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','winter',"dummy_df_depth.csv"))
 dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf)
-predictions_depth <- predict(fit19b_winter, newdata = dummy_depth)
+predictions_depth <- predict(fit19b_winter, newdata = dummy_depth, `se_fit` = TRUE)
+
+ggplot(data=predictions_depth, aes(x=z_depth_point_mean, y=est, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est-est_se*qnorm(0.975), ymax=est+est_se*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  theme_classic()
+
+
+predictions_depth_v2 <- predictions_depth %>% 
+  mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -193, 
+                           z_depth_point_mean == -1.5 ~ -167, 
+                           z_depth_point_mean == -1.0 ~ -140, 
+                           z_depth_point_mean == -0.5 ~ -114, 
+                           z_depth_point_mean == 0.0 ~ -87, 
+                           z_depth_point_mean == 0.5 ~ -61, 
+                           z_depth_point_mean == 1.0 ~ -34, 
+                           z_depth_point_mean == 1.5 ~ -8)) %>%  
+  #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
+
+#backtransformed ribbon uses 95%CI
+ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  ylab("Predicted no. of pots") +
+  xlab("Depth (m)") +
+  theme_classic() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
+
 
 
 #fishing state
@@ -170,7 +219,52 @@ predictions <- predict(fit19b_summer, newdata = dummy_SST)
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','summer',"dummy_df_depth.csv"))
 dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf)
-predictions_depth <- predict(fit19b_summer, newdata = dummy_depth)
+predictions_depth <- predict(fit19b_summer, newdata = dummy_depth, `se_fit` = TRUE)
+
+
+predictions_depth_v2 <- predictions_depth %>% 
+  mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -190, 
+                           z_depth_point_mean == -1.5 ~ -163, 
+                           z_depth_point_mean == -1.0 ~ -137, 
+                           z_depth_point_mean == -0.5 ~ -111, 
+                           z_depth_point_mean == 0.0 ~ -84, 
+                           z_depth_point_mean == 0.5 ~ -58, 
+                           z_depth_point_mean == 1.0 ~ -31, 
+                           z_depth_point_mean == 1.5 ~ -5)) %>%  
+  #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
+
+#backtransformed ribbon uses 95%CI
+ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  ylab("Predicted no. of pots") +
+  xlab("Depth (m)") +
+  theme_classic() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
+
+
+
+
 
 
 #fishing state
@@ -265,12 +359,72 @@ predictions_dummy_dist_to_closed <- predict(fit19b_summer, newdata = dummy_dist_
 
 #-------------------------------------------------------------------------------------------------
 
+
+#read in all data - the version where z-scoring is done across all data
+all_data <- read_rds(here::here('DCRB_sdmTMB', 'data','df_full_final_tidy_all_data_20230324.rds'))
+glimpse(all_data) 
+
+all_data$month_name_f <- factor(all_data$month_name, levels = c("December", "January", "February", "March", "April",
+                                                                "May", "June", "July", "August", "September"))
+
+# Add UTM columns (zone 10)
+all_data = add_utm_columns(all_data, ll_names = c("grd_x", "grd_y"))
+
+
+mesh_all_data <- make_mesh(all_data, xy_cols = c("X","Y"), cutoff = 10)
+mesh_all_data$mesh$n
+
 fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC', 'all data', 'after fixes',"fit16b_all_data.rds"))
 
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_depth.csv"))
 dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
-predictions_depth <- predict(fit16b_all_data, newdata = dummy_depth)
+predictions_depth <- predict(fit16b_all_data, newdata = dummy_depth, `se_fit` = TRUE)
+
+predictions_depth_v2 <- predictions_depth %>% 
+  mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -192, 
+                           z_depth_point_mean == -1.5 ~ -165, 
+                           z_depth_point_mean == -1.0 ~ -139, 
+                           z_depth_point_mean == -0.5 ~ -112, 
+                           z_depth_point_mean == 0.0 ~ -86, 
+                           z_depth_point_mean == 0.5 ~ -59, 
+                           z_depth_point_mean == 1.0 ~ -32, 
+                           z_depth_point_mean == 1.5 ~ -6)) %>%  
+  #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
+  mutate(est_backtransformed = exp(est),
+         est_se_backtransformed = exp(est_se))
+
+#backtransformed ribbon uses 95%CI
+ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_line()+
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
+  geom_point()+
+  #scale_color_grey() + 
+  ylab("Predicted no. of pots") +
+  xlab("Depth (m)") +
+  theme_classic() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.title.align = .5,
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.key.size = unit(1, units = "cm"),
+    axis.text.x = element_text(size = 12, colour = 'black'),
+    axis.text.y = element_text(size = 12, colour = 'black'),
+    axis.title = element_text(size = 14),
+    axis.line = element_line(colour = 'black', size = 0.7),
+    axis.ticks.length=unit(.1, "cm"),
+    axis.ticks=element_line(size=0.7, colour = 'black'),
+    strip.text = element_text(size=12, colour = 'black'),
+    strip.background = element_blank(),
+    strip.placement = "left"
+  ) 
+
+
+
+
+
 
 dummy_SST <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_SST.csv"))
 dummy_SST$month_name_f <- as.factor(dummy_SST$month_name_f)
