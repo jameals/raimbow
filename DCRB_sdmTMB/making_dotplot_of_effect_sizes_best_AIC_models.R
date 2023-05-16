@@ -349,7 +349,7 @@ ggplot(pars_month_HMOS, aes(term, estimate_backtransformed)) +
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
     legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'), #hjust = 1,
+    axis.text.x = element_text(size = 12, colour = 'black',angle = 45, hjust = 1), #hjust = 1,
     axis.text.y = element_text(size = 12, colour = 'black'),
     axis.title = element_text(size = 12),
     axis.line = element_line(colour = 'black', size = 0.7),
