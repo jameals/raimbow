@@ -1251,6 +1251,9 @@ df_mapping_sf_summary_summer <- df_full_summary_summer %>% left_join(study_area,
 #------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------
 
+
+###THESE ARE USED FOR FIGURES IN MS###
+
 #avg/median predicted integrated over a long time period 
 # -- for May_1 across all years, and for May-2 across all years
 
@@ -1318,6 +1321,34 @@ p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) +
 p
 
 
+#across  OR vs WA
+all_May_1_predicted_sf <- all_May_1_predicted_sf %>% 
+  mutate(Fishing_State = ifelse(mgmt_area %in% c('59A-1','59A-2','60A-1','60A-2','60B','60C'), 'WA','OR')) #we'll ignore 60D here as that is both OR and WA
+
+p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin(size=1) +
+  facet_wrap(~ Fishing_State, ncol=2) +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
+
+#inshore vs offshore
+p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin(size=1) +
+  facet_wrap(~ inshore_offshore, ncol=2) +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
 
 
 
@@ -1387,6 +1418,35 @@ p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) +
         axis.title = element_text(size = 14))
 p
 
+
+#across  OR vs WA
+all_May_2_predicted_sf <- all_May_2_predicted_sf %>% 
+  mutate(Fishing_State = ifelse(mgmt_area %in% c('59A-1','59A-2','60A-1','60A-2','60B','60C'), 'WA','OR')) #we'll ignore 60D here as that is both OR and WA
+
+p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin(size=1) +
+  facet_wrap(~ Fishing_State, ncol=2) +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
+
+#inshore vs offshore
+p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
+  geom_violin(size=1) +
+  facet_wrap(~ inshore_offshore, ncol=2) +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
 
 
 
