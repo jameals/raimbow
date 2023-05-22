@@ -13,6 +13,7 @@ library(tictoc)
 library(plotmo)
 library(viridis)
 library(ggridges)
+library(ggpubr)
 
 #this was needed for sdmTMB to work
 #install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
@@ -59,7 +60,7 @@ ggplot(data=predictions_depth, aes(x=z_depth_point_mean, y=est, group=1)) +
   theme_classic()
 
 
-predictions_depth_v2 <- predictions_depth %>% 
+predictions_depth_v2_winter <- predictions_depth %>% 
   mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -193, 
                            z_depth_point_mean == -1.5 ~ -167, 
                            z_depth_point_mean == -1.0 ~ -140, 
@@ -73,31 +74,44 @@ predictions_depth_v2 <- predictions_depth %>%
          est_se_backtransformed = exp(est_se))
 
 #backtransformed ribbon uses 95%CI
-ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
-  geom_line()+
-  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
-  geom_point()+
+depth_plot_winter <-ggplot(data=predictions_depth_v2_winter, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.5), fill="#68a2b9")+
+  geom_line(size = 1.2)+
+  geom_point(size = 2.4)+
   #scale_color_grey() + 
+  #ylim(0,820)+ #if wanted to have all depth plots in same scale
   ylab("Predicted no. of pots") +
   xlab("Depth (m)") +
   theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    legend.title.align = .5,
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.position='none',
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+depth_plot_winter
+
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/depth_plot_winter.png"), width = 20, height = 14, units = "in", res = 500)
+# ggarrange(depth_plot_winter,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
@@ -222,7 +236,7 @@ dummy_depth$half_month_of_seasonf <- as.factor(dummy_depth$half_month_of_seasonf
 predictions_depth <- predict(fit19b_summer, newdata = dummy_depth, `se_fit` = TRUE)
 
 
-predictions_depth_v2 <- predictions_depth %>% 
+predictions_depth_v2_summer <- predictions_depth %>% 
   mutate(depth = case_when(z_depth_point_mean == -2.0 ~ -190, 
                            z_depth_point_mean == -1.5 ~ -163, 
                            z_depth_point_mean == -1.0 ~ -137, 
@@ -236,34 +250,45 @@ predictions_depth_v2 <- predictions_depth %>%
          est_se_backtransformed = exp(est_se))
 
 #backtransformed ribbon uses 95%CI
-ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
-  geom_line()+
-  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
-  geom_point()+
+depth_plot_all_summer <- ggplot(data=predictions_depth_v2_summer, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2), fill="#68a2b9")+
+  geom_line(size = 1.2)+
+  geom_point(size = 2.4)+
   #scale_color_grey() + 
+  #ylim(0,820)+ #if wanted to have all depth plots in same scale
   ylab("Predicted no. of pots") +
   xlab("Depth (m)") +
   theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    legend.title.align = .5,
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.position='none',
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+depth_plot_all_summer
 
 
-
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/depth_plot_all_summer.png"), width = 20, height = 14, units = "in", res = 500)
+# ggarrange(depth_plot_all_summer,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
@@ -378,7 +403,7 @@ fit16b_all_data <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects',
 
 #depth
 dummy_depth <-  read_csv(here::here('DCRB_sdmTMB', 'data','dummy dfs','all data',"dummy_df_depth.csv"))
-dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
+#dummy_dist_to_closed_interaction$month_name_f <- as.factor(dummy_dist_to_closed_interaction$month_name_f)
 predictions_depth <- predict(fit16b_all_data, newdata = dummy_depth, `se_fit` = TRUE)
 
 predictions_depth_v2 <- predictions_depth %>% 
@@ -395,33 +420,44 @@ predictions_depth_v2 <- predictions_depth %>%
          est_se_backtransformed = exp(est_se))
 
 #backtransformed ribbon uses 95%CI
-ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
-  geom_line()+
-  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.2))+
-  geom_point()+
+depth_plot_all_data <- ggplot(data=predictions_depth_v2, aes(x=depth, y=est_backtransformed, group=1)) +
+  geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975), alpha=0.5), fill="#68a2b9")+
+  geom_line(size = 1.2)+
+  geom_point(size = 2.4)+
   #scale_color_grey() + 
+  #ylim(0,820)+ #if wanted to have all depth plots in same scale
   ylab("Predicted no. of pots") +
   xlab("Depth (m)") +
   theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    legend.title.align = .5,
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.position='none',
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+depth_plot_all_data
 
-
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/depth_plot_all_data.png"), width = 20, height = 14, units = "in", res = 500)
+# ggarrange(depth_plot_winter,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
