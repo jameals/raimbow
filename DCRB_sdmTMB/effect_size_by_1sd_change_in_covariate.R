@@ -842,7 +842,7 @@ ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, g
 #-0.3027 --> 54.759
 #0.4734 --> 90.213
 
-predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>% 
+predictions_depth_O2_interaction_v2_summer <- predictions_depth_O2_interaction %>% 
   mutate(bottom_O2 = case_when(z_bottom_O2_avg == -0.7253 ~ 35.455,
                                z_bottom_O2_avg == -0.3027 ~ 54.759,
                                z_bottom_O2_avg == 0.4734  ~ 90.213)) %>% 
@@ -856,16 +856,16 @@ predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>%
                            z_depth_point_mean == 1.5 ~ -5)) %>%  
                            #z_depth_point_mean == 2.0  ~ 0)) %>%  #raw data doesn't go as far as 2 on z scale 
   mutate(est_backtransformed = exp(est),
-         est_se_backtransformed = exp(est_se))
+         est_se_backtransformed = exp(est_se)) 
 
 #backtransformed ribbon uses 95%CI
-ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
-  geom_line(aes(color=as.factor(bottom_O2)))+
+depth_o2_interaction_summer <- ggplot(data=predictions_depth_O2_interaction_v2_summer, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
   geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975),color=as.factor(bottom_O2), fill = as.factor(bottom_O2)), alpha=0.2)+
-  geom_point(aes(color=as.factor(bottom_O2)))+
+  geom_line(aes(color=as.factor(bottom_O2)),size = 1)+
+  geom_point(aes(color=as.factor(bottom_O2)),size = 1.5)+
   #scale_color_grey() + 
-  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
-  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_color_manual(values = c("#76E5CA", "#3da7c6",  "#011029"))+
+  scale_fill_manual(values = c("#76E5CA", "#3da7c6",  "#011029"))+
   ylab("Predicted no. of pots") +
   xlab("Depth (m)") +
   theme_classic() +
@@ -873,20 +873,35 @@ ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransfor
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.title = element_text(size = 50),
+    legend.text = element_text(size = 45),
+    legend.key.size = unit(1.5, units = "cm"),
+    legend.position = c(.25, .75),
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+depth_o2_interaction_summer
 
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/depth_o2_interaction_summer.png"), width = 20, height = 14, units = "in", res = 500)
+# ggarrange(depth_o2_interaction_summer,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 
@@ -927,7 +942,7 @@ ggplot(data=predictions_depth_O2_interaction, aes(x=z_depth_point_mean, y=est, g
 #-0.2169 --> 99.075
 #0.6517 --> 155.954
 
-predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>% 
+predictions_depth_O2_interaction_v2_winter <- predictions_depth_O2_interaction %>% 
   mutate(bottom_O2 = case_when(z_bottom_O2_avg == -0.8209 ~ 59.519,
                                z_bottom_O2_avg == -0.2169 ~ 99.075,
                                z_bottom_O2_avg == 0.6517  ~ 155.954)) %>% 
@@ -944,13 +959,13 @@ predictions_depth_O2_interaction_v2 <- predictions_depth_O2_interaction %>%
          est_se_backtransformed = exp(est_se))
 
 #backtransformed ribbon uses 95%CI
-ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
-  geom_line(aes(color=as.factor(bottom_O2)))+
+depth_o2_interaction_winter <- ggplot(data=predictions_depth_O2_interaction_v2_winter, aes(x=depth, y=est_backtransformed, group=as.factor(bottom_O2))) +
   geom_ribbon(aes(ymin=est_backtransformed-est_se_backtransformed*qnorm(0.975), ymax=est_backtransformed+est_se_backtransformed*qnorm(0.975),color=as.factor(bottom_O2), fill = as.factor(bottom_O2)), alpha=0.2)+
-  geom_point(aes(color=as.factor(bottom_O2)))+
+  geom_line(aes(color=as.factor(bottom_O2)),size = 1)+
+  geom_point(aes(color=as.factor(bottom_O2)),size = 1.5)+
   #scale_color_grey() + 
-  scale_color_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
-  scale_fill_manual(values = c("#fde725", "#5ec962",  "#3b528b"))+
+  scale_color_manual(values = c("#76E5CA", "#3da7c6",  "#011029"))+
+  scale_fill_manual(values = c("#76E5CA", "#3da7c6",  "#011029"))+
   ylab("Predicted no. of pots") +
   xlab("Depth (m)") +
   theme_classic() + 
@@ -958,19 +973,35 @@ ggplot(data=predictions_depth_O2_interaction_v2, aes(x=depth, y=est_backtransfor
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.title = element_text(size = 50),
+    legend.text = element_text(size = 45),
+    legend.key.size = unit(1.5, units = "cm"),
+    legend.position = c(.25, .75),
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+depth_o2_interaction_winter
+
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/depth_o2_interaction_winter.png"), width = 20, height = 14, units = "in", res = 500)
+# ggarrange(depth_o2_interaction_winter,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 #-------------------------------------------------------------------------------------------------
