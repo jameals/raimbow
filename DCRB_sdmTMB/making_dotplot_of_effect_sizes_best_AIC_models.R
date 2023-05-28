@@ -15,6 +15,7 @@ library(tictoc)
 library(plotmo)
 library(viridis)
 library(ggridges)
+library(ggpubr)
 
 
 #-------------------------------------------------------------------------------------------------
@@ -100,11 +101,13 @@ pars_season <- rbind(pars_winter_season, pars_summer_season, pars_all_data_seaso
 
 
 ##### FIGURE - SEASON EFFECT SIZE (DOTPLOT) ##### 
-ggplot(pars_season, aes(term, estimate_backtransformed)) +
-  geom_hline(yintercept = 1,linetype="dotted")+
-  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, color=model, linetype=model),size = 0.9, position=position_dodge(width = 0.7)) +
-  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+dotplot_season <- ggplot(pars_season, aes(term, estimate)) +
+  geom_hline(yintercept = 0,linetype="dotted",size = 1)+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, 
+                  color=model, linetype=model),
+                 size = 3, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=6.5) +
+  scale_linetype_manual(values=c( "solid", "solid","solid"))+
   scale_shape_manual(values=c(16, 15, 8)) +
   #grayscale plot
   #scale_color_manual(values=c('black', 'gray70','grey50'))+
@@ -118,26 +121,39 @@ ggplot(pars_season, aes(term, estimate_backtransformed)) +
                               "2017-2018", "2018-2019", "2019-2020")) +
   #ylim(c(-3,3))+
   coord_flip() +
+  theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 12),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.title = element_text(size = 50),
+    legend.text = element_text(size = 45),
+    legend.key.size = unit(1.9, units = "cm"),
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+dotplot_season
 
-
-
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/dotplot_season.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(dotplot_season,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 #########################################################################################################
@@ -159,6 +175,9 @@ pars_all_data_me <- pars_all_data %>% filter(term %in% c("WA pot reduction", "SS
                                                          "Fishing State : Dist closed area", "Depth_poly1",  "Depth_poly2"))
 
 pars_me <- rbind(pars_winter_me, pars_summer_me, pars_all_data_me)
+
+pars_me <- pars_me %>% 
+  mutate(term = ifelse(term == 'Depth_sd','Rugosity',term))
 
 
 ##### FIGURE - MOST VARIABLES ##### 
@@ -207,13 +226,13 @@ pars_me_no_depth <- pars_me %>% filter(!term %in% c("Depth_poly1", "Depth_poly2"
 #pars_me_no_depth$model <- factor(pars_me_no_depth$model, levels = c("winter", "summer", "all data"))
 
 
-ggplot(pars_me_no_depth, aes(term, estimate_backtransformed)) +
-  geom_hline(yintercept = 1, linetype='dotted')+ #exp(0)=1
-  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, 
+dotplot_covars <- ggplot(pars_me_no_depth, aes(term, estimate)) +
+  geom_hline(yintercept = 0, linetype='dotted',size = 1)+ #exp(0)=1
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, 
                      color=model, linetype=model),
-                     size = 0.9, position=position_dodge(width = 0.7)) +
-  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+                     size = 3.5, position=position_dodge(width = 0.7)) +
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=6.5) +
+  scale_linetype_manual(values=c( "solid", "solid","solid"))+
   scale_shape_manual(values=c(16, 15, 8)) +
   #grayscale plot
   #scale_color_manual(values=c('black', 'gray70','grey50'))+
@@ -223,30 +242,45 @@ ggplot(pars_me_no_depth, aes(term, estimate_backtransformed)) +
   xlab("") +
   ylab("Coefficient Estimate") +
   ##change the odder of items
-  scale_x_discrete(limits = c("WA pot reduction", "SST", "Wind",  "Depth_sd", "Faults",  
+  scale_x_discrete(limits = c("WA pot reduction", "SST", "Wind",  "Rugosity", "Faults",  
                               "Canyon dist",  "Port dist",  "Fuel price",  "Crab price", 
-                              "Fishing State", "Dist closed area", 
-                              "Fishing State : Dist closed area", "Bottom O2")) +
-  ylim(c(-1,11))+
+                              "Fishing State : Dist closed area", "Fishing State", "Dist closed area", 
+                              "Bottom O2")) +
+  #ylim(c(-1,11))+
   coord_flip() +
+  theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 16),
-    legend.text = element_text(size = 14),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 14, colour = 'black'),
-    axis.text.y = element_text(size = 14, colour = 'black'),
-    axis.title = element_text(size = 14),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=14, colour = 'black'),
+    legend.title = element_text(size = 50),
+    legend.text = element_text(size = 45),
+    legend.key.size = unit(1.9, units = "cm"),
+    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+dotplot_covars
 
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/dotplot_covars.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(dotplot_covars,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 pars_me_depth_only <- pars_me %>% filter(term %in% c("Depth_poly1", "Depth_poly2", "Depth_poly1 : bottom O2", "Depth_poly2 : bottom O2"))
@@ -314,13 +348,14 @@ pars_month_HMOS<- rbind(pars_winter_HMOS, pars_summer_HMOS, pars_all_data_month)
 
 
 ##### FIGURE - MONTH/HMOS EFFECT SIZE (DOTPLOT) ##### 
-ggplot(pars_month_HMOS, aes(term, estimate_backtransformed)) +
-  geom_hline(yintercept = 1,linetype="dotted")+
-  geom_linerange(aes(ymin=conf.low_backtransformed, ymax = conf.high_backtransformed, 
-                     color=model, linetype=model),size = 0.9, 
+##KEEP IN LOG SCALE##
+dotplot_month_HMOS <-ggplot(pars_month_HMOS, aes(term, estimate)) +
+  geom_hline(yintercept = 0,linetype="dotted",size = 1)+
+  geom_linerange(aes(ymin=conf.low, ymax = conf.high, 
+                     color=model, linetype=model),size =3, 
                      position=position_dodge(width = 0.7)) +
-  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=2.2) +
-  scale_linetype_manual(values=c( "dashed", "solid","solid"))+
+  geom_point(aes(color=model, shape=model), position=position_dodge(width = 0.7), size=6.5) +
+  scale_linetype_manual(values=c( "solid", "solid","solid"))+
   scale_shape_manual(values=c(16, 15, 8)) +
   #grayscale plot
   #scale_color_manual(values=c('black', 'gray70','grey50'))+
@@ -342,25 +377,39 @@ ggplot(pars_month_HMOS, aes(term, estimate_backtransformed)) +
                              "July", " ", "September")) +
   #ylim(c(-15,5))+
   #coord_flip() +
+  theme_classic() +
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title.align = .5,
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
-    legend.key.size = unit(1, units = "cm"),
-    axis.text.x = element_text(size = 12, colour = 'black',angle = 45, hjust = 1), #hjust = 1,
-    axis.text.y = element_text(size = 12, colour = 'black'),
-    axis.title = element_text(size = 12),
-    axis.line = element_line(colour = 'black', size = 0.7),
-    axis.ticks.length=unit(.1, "cm"),
-    axis.ticks=element_line(size=0.7, colour = 'black'),
-    strip.text = element_text(size=12, colour = 'black'),
+    legend.title = element_text(size = 50),
+    legend.text = element_text(size = 45),
+    legend.key.size = unit(1.9, units = "cm"),
+    axis.text.x = element_text(size = 45, colour = 'black',angle = 45, hjust = 1), #hjust = 1,
+    axis.text.y = element_text(size = 45, colour = 'black'),
+    axis.title = element_text(size = 50),
+    axis.line = element_line(colour = 'black', size = 2),
+    axis.ticks.length=unit(.25, "cm"),
+    axis.ticks=element_line(size=2, colour = 'black'),
+    strip.text = element_text(size=50, colour = 'black'),
     strip.background = element_blank(),
-    strip.placement = "left"
+    strip.placement = "left",
+    plot.margin = unit(c(0,0,0,30), "pt")
   ) 
+dotplot_month_HMOS
 
-
+# #export for main text figure - depth curve
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/dotplot_month_HMOS.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(dotplot_month_HMOS,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 ############################################################################################################
 ############################################################################################################
