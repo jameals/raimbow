@@ -81,7 +81,7 @@ unique_vessels_landing <- fishtix_2009_2020 %>%
 
 plot_number_of_vessels <- ggplot(unique_vessels_landing, aes(x= month_name, y= n_unique_vessel, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
-  scale_colour_brewer(palette = "PRGn") +
+  scale_colour_brewer(palette = "Paired") +
   ylab("Number of unique vessels landing") +
   xlab("Month") + 
   guides(color = guide_legend(override.aes = list(size = 2))) +
@@ -90,10 +90,10 @@ plot_number_of_vessels <- ggplot(unique_vessels_landing, aes(x= month_name, y= n
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         legend.title = element_blank(),
-        legend.text = element_text(size=12),
-        axis.text.x = element_text(size = 12, colour = 'black'),
-        axis.text.y = element_text(size = 13, colour = 'black'),
-        axis.title = element_text(size = 12, colour = 'black'),
+        legend.text = element_text(size=13),
+        axis.text.x = element_text(size = 14, colour = 'black'),
+        axis.text.y = element_text(size = 14, colour = 'black'),
+        axis.title = element_text(size = 16, colour = 'black'),
         axis.line = element_line(colour = 'black', size = 0.7),
         axis.ticks.length=unit(.1, "cm"),
         axis.ticks=element_line(size=0.7, colour = 'black'),
@@ -127,7 +127,7 @@ max_pots_by_month <- max_pots_per_month_WA %>%  left_join(max_pots_per_month_OR,
 
 plot_max_pots <- ggplot(max_pots_by_month, aes(x= month_name, y= max_pots, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
-  scale_colour_brewer(palette = "PRGn") +
+  scale_colour_brewer(palette = "Paired") +
   ylab("Maximum number of pots") +
   xlab("Month") + 
   guides(color = guide_legend(override.aes = list(size = 2))) +
@@ -136,10 +136,10 @@ plot_max_pots <- ggplot(max_pots_by_month, aes(x= month_name, y= max_pots, colou
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title = element_blank(),
-    legend.text = element_text(size=12),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 13, colour = 'black'),
-    axis.title = element_text(size = 12, colour = 'black'),
+    legend.text = element_text(size=13),
+    axis.text.x = element_text(size = 14, colour = 'black'),
+    axis.text.y = element_text(size = 14, colour = 'black'),
+    axis.title = element_text(size = 16, colour = 'black'),
     axis.line = element_line(colour = 'black', size = 0.7),
     axis.ticks.length=unit(.1, "cm"),
     axis.ticks=element_line(size=0.7, colour = 'black'),
@@ -169,7 +169,7 @@ fisery_footprint <- traps_g_ALL_WA_2010_2020_and_ALL_OR_2008_2020 %>%
 
 plot_fishery_footprint <- ggplot(fisery_footprint, aes(x= month_name, y= total_area_km2, colour=season,  group=season))+
   geom_line(size=1.5, lineend = "round") + 
-  scale_colour_brewer(palette = "PRGn") +
+  scale_colour_brewer(palette = "Paired") +
   ylab("Fishery footprint area (km2)") +
   xlab("Month") + 
   guides(color = guide_legend(override.aes = list(size = 2))) +
@@ -178,10 +178,10 @@ plot_fishery_footprint <- ggplot(fisery_footprint, aes(x= month_name, y= total_a
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.title = element_blank(),
-    legend.text = element_text(size=12),
-    axis.text.x = element_text(size = 12, colour = 'black'),
-    axis.text.y = element_text(size = 13, colour = 'black'),
-    axis.title = element_text(size = 12, colour = 'black'),
+    legend.text = element_text(size=13),
+    axis.text.x = element_text(size = 14, colour = 'black'),
+    axis.text.y = element_text(size = 14, colour = 'black'),
+    axis.title = element_text(size = 16, colour = 'black'),
     axis.line = element_line(colour = 'black', size = 0.7),
     axis.ticks.length=unit(.1, "cm"),
     axis.ticks=element_line(size=0.7, colour = 'black'),
