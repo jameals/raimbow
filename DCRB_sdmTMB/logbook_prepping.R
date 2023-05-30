@@ -809,7 +809,7 @@ traps_g_WA_logs_ALL_2010_2020_fixed <- rbind(traps_g_WA_logs_ALL_2010_2020_WA_wa
 #how many pots get deleted if remove pots in OR waters if no OR license? if only remove pots over the line
 removed_pots <- traps_g_WA_logs_ALL_2010_2020_fixed %>% 
   filter(Pot_State == 'OR' & is.na(OR_Potlimit))
-summary <- removed_pots %>% group_by(season) %>% summarise(n_pots =)
+summary <- removed_pots %>% group_by(season) %>% summarise(n_pots =n())
 
 all_WA_potsin_OR_waters <- traps_g_WA_logs_ALL_2010_2020_fixed %>% 
   filter(Pot_State == 'OR' )
