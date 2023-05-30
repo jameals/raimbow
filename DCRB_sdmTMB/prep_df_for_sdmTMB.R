@@ -218,13 +218,29 @@ df_all_scaled <- df_full_final_open %>%
          
          
 df_all_scaled_corrplot <- df_all_scaled %>% 
-  select(season, z_SST_avg:z_month_of_season, OR_WA_waters, WA_pot_reduction, winter_summer) 
+  select(season, z_SST_avg:z_half_month_of_season, OR_WA_waters:WA_pot_reduction) 
   #different version of corrplot if year and month are numeric
   #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
-model.matrix(~0+., data=df_all_scaled_corrplot) %>% 
+df_all_scaled_corrplot$month_name <- factor(df_all_scaled_corrplot$month_name, levels = c("December", "January", "February","March", "April", "May", "June", "July", "August", "September"))
+
+all_data_corrplot <- model.matrix(~0+., data=df_all_scaled_corrplot) %>% 
   cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3.5)
+
+# #export for supplementary figure
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/all_data_corrplot.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(all_data_corrplot,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
+
 
 
 ##we might want to have month of season as a factorial option
@@ -309,13 +325,26 @@ df_winter <- df_full_final_open %>%
 
 
 df_winter_scaled_corrplot <- df_winter %>% 
-  select(season, z_SST_avg:z_month_of_season, OR_WA_waters) #drop WA_pot_reduction
+  select(season, z_SST_avg:z_half_month_of_season, OR_WA_waters) #drop WA_pot_reduction
 #different version of corrplot if year and month are numeric
 #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
-model.matrix(~0+., data=df_winter_scaled_corrplot) %>% 
+winter_corrplot <-  model.matrix(~0+., data=df_winter_scaled_corrplot) %>% 
   cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3.5)
+
+# #export for supplementary figure
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/winter_corrplot.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(winter_corrplot,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##we might want to have month of season as a factorial option
@@ -389,13 +418,26 @@ df_summer <- df_full_final_open %>%
 
 
 df_summer_scaled_corrplot <- df_summer %>% 
-  select(season, z_SST_avg:z_month_of_season, OR_WA_waters,WA_pot_reduction) #drop WA_pot_reduction
+  select(season, z_SST_avg:z_half_month_of_season, OR_WA_waters,WA_pot_reduction) #drop WA_pot_reduction
 #different version of corrplot if year and month are numeric
 #select(SST_avg, wind_avg, depth_point_mean:weighted_crab_ppp, dist_to_closed_km:WA_pot_reduction, yearn, monthn)
 
-model.matrix(~0+., data=df_summer_scaled_corrplot) %>% 
+summer_corrplot <-  model.matrix(~0+., data=df_summer_scaled_corrplot) %>% 
   cor(use="pairwise.complete.obs") %>% 
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3.5)
+
+# #export for supplementary figure
+# path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
+# png(paste0(path_figures, "/summer_corrplot.png"), width = 25, height = 14, units = "in", res = 500)
+# ggarrange(summer_corrplot,
+#           ncol=1,
+#           nrow=1
+#           #legend="top",
+#           #labels="auto",
+#           #vjust=8,
+#           #hjust=-0.2
+# )
+# invisible(dev.off())
 
 
 ##we might want to have month of season as a factorial option
