@@ -1015,6 +1015,50 @@ res <- residuals(fit19b_winter)
 qqnorm(res,ylim=c(-5,5))
 qqline(res)
 
+
+#maps for spatial and spatiotemporal fields - supplementary
+
+fit19b_winter <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC','winter', 'after fixing fuel and crab price',"fit19b_winter.rds"))
+
+#use Eric's code from https://github.com/jameals/raimbow/blob/master/DCRB_sdmTMB/diagnostic_plots.R
+#but just for the maps for spatial and sptaiotemporal fields
+
+library(vista)
+
+##NOT WORKING PROPERLY:
+
+plot_diag = function(obj) {
+  d <- obj$data
+  pred_obj <- predict(obj)
+  d$pred <- pred_obj$est
+  d$resid <- residuals(obj)
+  d$spatial <- pred_obj$omega_s
+  d$spatiotemporal <- pred_obj$epsilon_st
+  d$rf_combined <- pred_obj$est_rf
+  
+  # first -- make basic residual plots with vista
+  # https://fate-spatialindicators.github.io/vista/
+  plots <- list()
+  
+  plots[[1]] <- ggplot(d, aes(X, Y, col = spatial)) + geom_point(size=5,alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_color_gradient2() + #scale_color_viridis(end = 0.8)
+    ggtitle("Spatial field")
+  
+  d$time <- d[[obj$time]]
+  plots[[2]] <- ggplot(d, aes(X, Y, col = spatiotemporal)) + geom_hex(bins =30, alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_fill_gradient(low = "blue", high = "red") + 
+    ggtitle("Spatiotemporal field") + facet_wrap(~ time)
+  
+  plots[[3]] <- ggplot(d, aes(X, Y, col = rf_combined)) + geom_hex(alpha = 0.5) + 
+    theme_bw() + xlab("") + ylab("") + scale_fill_gradient(low = "blue", high = "red") + 
+    ggtitle("Combined random field") + facet_wrap(~ time)
+  return(plots)
+}
+
+plots <- plot_diag(fit19b_winter)
+plots
+
+
 #-------------------------------------------------------------------------------------------------
 
 
