@@ -136,9 +136,9 @@ p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) +
 p
 
 #across mgmt areas
-p <- ggplot(df_mapping_sf_May1_2016, aes(x='', y=difference)) + 
+p <- ggplot(df_mapping_sf_May1_2016, aes(x=mgmt_area, y=difference)) + #change x from '' to 'mgmt_area'
   geom_violin() +
-  facet_wrap(~ mgmt_area) +
+  #facet_wrap(~ mgmt_area) + #don't do facet wrap
   coord_flip()+
   theme_classic()
 p
@@ -1400,23 +1400,38 @@ df_mapping_sf_summary_summer_conf <- df_mapping_sf_summary_summer %>% left_join(
 #tidy dfs and join all May_1s
 May_1_2016 <- cv_test16_all_data_data_May1_2016 %>% 
   select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
-  rename(predicted = weighted)
+  rename(predicted = weighted) %>% 
+  mutate(tottraps = tottraps + 0.000001) %>%  #do this as otherwise if divide by 0 just get infinity
+  mutate(predicted = predicted + 0.000001) %>%  #so the difference stays the same
+  mutate(percent_diff = (predicted-tottraps)/tottraps*100)
 
 May_1_2017 <- cv_test16_all_data_data_May1_2017 %>% 
   select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
-  rename(predicted = weighted)
+  rename(predicted = weighted) %>% 
+  mutate(tottraps = tottraps + 0.000001) %>%  #do this as otherwise if divide by 0 just get infinity
+  mutate(predicted = predicted + 0.000001) %>%  #so the difference stays the same
+  mutate(percent_diff = (predicted-tottraps)/tottraps*100)
 
 May_1_2018 <- cv_test16_all_data_data_May1_2018 %>% 
   select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
-  rename(predicted = weighted)
+  rename(predicted = weighted) %>% 
+  mutate(tottraps = tottraps + 0.000001) %>%  #do this as otherwise if divide by 0 just get infinity
+  mutate(predicted = predicted + 0.000001) %>%  #so the difference stays the same
+  mutate(percent_diff = (predicted-tottraps)/tottraps*100)
 
 May_1_2019 <- cv_test16_all_data_data_May1_2019 %>% 
   select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
-  rename(predicted = weighted)
+  rename(predicted = weighted) %>% 
+  mutate(tottraps = tottraps + 0.000001) %>%  #do this as otherwise if divide by 0 just get infinity
+  mutate(predicted = predicted + 0.000001) %>%  #so the difference stays the same
+  mutate(percent_diff = (predicted-tottraps)/tottraps*100)
 
 May_1_2020 <- cv_test16_all_data_data_May1_2020 %>% 
   select(GRID5KM_ID, season, half_month, grd_x, grd_y, tottraps, weighted, difference) %>% 
-  rename(predicted = weighted)
+  rename(predicted = weighted) %>% 
+  mutate(tottraps = tottraps + 0.000001) %>%  #do this as otherwise if divide by 0 just get infinity
+  mutate(predicted = predicted + 0.000001) %>%  #so the difference stays the same
+  mutate(percent_diff = (predicted-tottraps)/tottraps*100)
 
 
 all_May_1_predicted <- rbind(May_1_2016,May_1_2017,May_1_2017,May_1_2019,May_1_2020)
@@ -1447,6 +1462,14 @@ all_May_1_predicted_sf$mgmt_area <- factor(all_May_1_predicted_sf$mgmt_area, lev
                                                                                         "50-F", "50-G", "50-H",
                                                                                         "50-I", "50-J", "50-K","50-L"))
 
+all_May_1_predicted_sf$mgmt_area <- factor(all_May_1_predicted_sf$mgmt_area, levels = c("50-L", "50-K", "50-J", "50-I",
+                                                                                        "50-H", "50-G", "50-F",
+                                                                                        "50-E", "50-D", "50-C",
+                                                                                        "50-B", "50-A", "60D",
+                                                                                        "60C", "60A-2", "60B",
+                                                                                        "60A-1", "59A-2", "59A-1"))
+
+
 #across mgmt areas
 p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
   geom_violin(size=1) +
@@ -1456,6 +1479,29 @@ p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) +
   ylab("Difference (predicted-actual)") +
   theme_classic()+
   theme(strip.text.x = element_text(size = 14),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
+
+####boxplot instead of violin plot
+p <- ggplot(all_May_1_predicted_sf, aes(x=mgmt_area, y=difference)) + 
+  geom_boxplot() +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(axis.text.y = element_text(size = 12, colour = 'black'),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
+
+p <- ggplot(all_May_1_predicted_sf, aes(x=mgmt_area, y=percent_diff)) + 
+  geom_boxplot() +
+  coord_flip()+
+  xlab("") +
+  ylab("% Change (predicted-actual / actual * 100)") +
+  theme_classic()+
+  theme(axis.text.y = element_text(size = 12, colour = 'black'),
         axis.text.x = element_text(size = 12, colour = 'black'),
         axis.title = element_text(size = 14))
 p
@@ -1477,6 +1523,21 @@ p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) +
         axis.title = element_text(size = 14))
 p
 
+
+p <- ggplot(all_May_1_predicted_sf, aes(x=Fishing_State, y=difference)) + 
+  geom_boxplot() +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(axis.text.y = element_text(size = 12, colour = 'black'),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
+
+
+
+
 #inshore vs offshore
 p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
   geom_violin(size=1) +
@@ -1490,6 +1551,16 @@ p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) +
         axis.title = element_text(size = 14))
 p
 
+p <- ggplot(all_May_1_predicted_sf, aes(x=inshore_offshore, y=difference)) + 
+  geom_boxplot() +
+  coord_flip()+
+  xlab("") +
+  ylab("Difference (predicted-actual)") +
+  theme_classic()+
+  theme(axis.text.y = element_text(size = 12, colour = 'black'),
+        axis.text.x = element_text(size = 12, colour = 'black'),
+        axis.title = element_text(size = 14))
+p
 
 
 
