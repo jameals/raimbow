@@ -1035,6 +1035,7 @@ plot_diag = function(obj) {
   d$spatial <- pred_obj$omega_s
   d$spatiotemporal <- pred_obj$epsilon_st
   d$rf_combined <- pred_obj$est_rf
+  d$time <- d[[obj$time]]
   
   # first -- make basic residual plots with vista
   # https://fate-spatialindicators.github.io/vista/
@@ -1044,7 +1045,7 @@ plot_diag = function(obj) {
     theme_bw() + xlab("") + ylab("") + scale_color_gradient2() + #scale_color_viridis(end = 0.8)
     ggtitle("Spatial field")
   
-  d$time <- d[[obj$time]]
+  
   plots[[2]] <- ggplot(d, aes(X, Y, col = spatiotemporal)) + geom_hex(bins =30, alpha = 0.5) + 
     theme_bw() + xlab("") + ylab("") + scale_fill_gradient(low = "blue", high = "red") + 
     ggtitle("Spatiotemporal field") + facet_wrap(~ time)
@@ -1058,6 +1059,8 @@ plot_diag = function(obj) {
 plots <- plot_diag(fit19b_winter)
 plots
 
+#send this to Eric to try to make plots/maps
+#write_rds(d, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"winter_df_for_spatial_fields.rds"))
 
 #-------------------------------------------------------------------------------------------------
 
