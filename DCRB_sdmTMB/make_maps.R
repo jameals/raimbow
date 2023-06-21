@@ -67,8 +67,8 @@ study_area <- read_sf(here::here('DCRB_sdmTMB','data','restricted_study_area.shp
 df_mapping_sf_May1_2016 <- cv_test16_all_data_data_May1_2016 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>%
   select(-NGDC_GRID, -ORIG_AREA) %>%
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:dist_to_closed_km)) %>%
-  select(-(month_name:weighted_crab_ppp)) %>%
+  select(-(SST_avg:month_name_f)) %>%
+  #select(-(month_name:weighted_crab_ppp)) %>%
     #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -116,7 +116,7 @@ df_mapping_sf_May1_2016 <- df_mapping_sf_May1_2016 %>% left_join(state_averages_
   left_join(inshore_offshore_averages_May1_2016)
 
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016_20230504.shp")
+# #st_write(df_mapping_sf_May1_2016, "df_mapping_sf_May1_2016_20230621.shp")
 
 #plot
 
@@ -179,8 +179,8 @@ glimpse(cv_test16_all_data_data_May2_2016)
 df_mapping_sf_May2_2016 <- cv_test16_all_data_data_May2_2016 %>% left_join(restricted_study_area_management_areas_sp, by=c('GRID5KM_ID')) %>% 
   select(-NGDC_GRID, -ORIG_AREA) %>% 
   #writing shapefile has issues with column names, so drop most columns
-  select(-(SST_avg:dist_to_closed_km)) %>% 
-  select(-(month_name:weighted_crab_ppp)) %>% 
+  select(-(SST_avg:month_name_f)) %>% 
+  #select(-(month_name:weighted_crab_ppp)) %>% 
   #main issue is bck_trns_preds as too many digits in the number. not needed for mapping anyway so drop it
   select(-bck_trns_preds)
 
@@ -227,7 +227,7 @@ df_mapping_sf_May2_2016 <- df_mapping_sf_May2_2016 %>% left_join(state_averages_
  left_join(inshore_offshore_averages_May2_2016)
 
 # #export shapefile for QGIS
-# #st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016_20230504.shp")
+# #st_write(df_mapping_sf_May2_2016, "df_mapping_sf_May2_2016_20230621.shp")
 
 #plot
 
