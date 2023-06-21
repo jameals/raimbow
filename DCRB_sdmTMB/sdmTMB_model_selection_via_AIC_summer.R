@@ -1021,6 +1021,75 @@ qqnorm(res)
 qqline(res)
 
 
+
+
+  d <- fit19b_summer$data
+  pred_obj <- predict(fit19b_summer)
+  d$pred <- pred_obj$est
+  d$resid <- residuals(fit19b_summer)
+  d$spatial <- pred_obj$omega_s
+  d$spatiotemporal <- pred_obj$epsilon_st
+  d$rf_combined <- pred_obj$est_rf
+  d$time <- d[[fit19b_summer$time]]
+  
+map_data <- rnaturalearth::ne_countries(
+  scale = "large",
+  returnclass = "sf", country = "united states of america")
+# Crop the polygon for plotting and efficiency:
+# st_bbox(map_data) # find the rough coordinates
+coast <- suppressWarnings(suppressMessages(
+  st_crop(map_data,
+          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y), xmax = max(d$grd_x), ymax = max(d$grd_y)))))
+coast_proj <- sf::st_transform(coast, crs = 3157)
+
+# omega_s is the same for each year. it's redundant to plot multiple
+# years so just use the one with the
+omega <- dplyr::group_by(d, yearf) %>%
+  dplyr::mutate(n = n()) %>%
+  dplyr::filter(n == max(n)) %>%
+  dplyr::rename(Spatial = spatial)
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = omega, aes(X*1000,Y*1000,fill=Spatial),
+            width=5000,height=5000) + # I had to adjust these manually
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("summer_spatial.jpg", width=5, height=5)
+
+
+#try spatiotemporal fields by editing Erics code
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=spatiotemporal),
+            width=5000,height=5000) + # I had to adjust these manually
+  facet_wrap(~ time, ncol = 6) +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("summer_spatiotemporal.jpg", width=5, height=10)
+
+
+#try combined fields by editing Erics code
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=rf_combined),
+            width=5000,height=5000) + # I had to adjust these manually
+  facet_wrap(~ time, ncol = 6) +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("summer_combined_random_field.jpg", width=5, height=10)
+
 #-----------------------------------------
 
 #given that depth is so overwhelming in model estimates, what if that was the only predictor 

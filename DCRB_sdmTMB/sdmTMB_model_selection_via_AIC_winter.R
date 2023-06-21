@@ -1025,7 +1025,7 @@ fit19b_winter <-  read_rds(here::here('DCRB_sdmTMB', 'exported model objects', '
 
 library(vista)
 
-##NOT WORKING PROPERLY:
+##
 
 plot_diag = function(obj) {
   d <- obj$data
@@ -1061,6 +1061,71 @@ plots
 
 #send this to Eric to try to make plots/maps
 #write_rds(d, here::here('DCRB_sdmTMB', 'exported model objects', 'model selection via AIC',"winter_df_for_spatial_fields.rds"))
+
+#Eric's code
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(sf)
+
+map_data <- rnaturalearth::ne_countries(
+  scale = "large",
+  returnclass = "sf", country = "united states of america")
+# Crop the polygon for plotting and efficiency:
+# st_bbox(map_data) # find the rough coordinates
+coast <- suppressWarnings(suppressMessages(
+  st_crop(map_data,
+          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y), xmax = max(d$grd_x), ymax = max(d$grd_y)))))
+coast_proj <- sf::st_transform(coast, crs = 3157)
+
+# omega_s is the same for each year. it's redundant to plot multiple
+# years so just use the one with the
+omega <- dplyr::group_by(d, yearf) %>%
+  dplyr::mutate(n = n()) %>%
+  dplyr::filter(n == max(n)) %>%
+  dplyr::rename(Spatial = spatial)
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = omega, aes(X*1000,Y*1000,fill=Spatial),
+            width=5000,height=5000) + # I had to adjust these manually
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("winter_spatial.jpg", width=5, height=5)
+
+
+#try spatiotemporal fields by editing Erics code
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=spatiotemporal),
+            width=5000,height=5000) + # I had to adjust these manually
+  facet_wrap(~ time, ncol = 6) +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("winter_spatiotemporal.jpg", width=5, height=10)
+
+
+#try combined fields by editing Erics code
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=rf_combined),
+            width=5000,height=5000) + # I had to adjust these manually
+  facet_wrap(~ time, ncol = 6) +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("winter_combined_random_field.jpg", width=5, height=10)
+
 
 #-------------------------------------------------------------------------------------------------
 

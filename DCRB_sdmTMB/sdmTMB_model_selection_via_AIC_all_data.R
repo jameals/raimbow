@@ -1179,6 +1179,49 @@ qqline(res)
 
 
 
+d <- fit16b_all_data$data
+pred_obj <- predict(fit16b_all_data)
+d$pred <- pred_obj$est
+d$resid <- residuals(fit16b_all_data)
+d$spatial <- pred_obj$omega_s
+d$spatiotemporal <- pred_obj$epsilon_st
+d$rf_combined <- pred_obj$est_rf
+d$time <- d[[fit16b_all_data$time]]
+
+map_data <- rnaturalearth::ne_countries(
+  scale = "large",
+  returnclass = "sf", country = "united states of america")
+# Crop the polygon for plotting and efficiency:
+# st_bbox(map_data) # find the rough coordinates
+coast <- suppressWarnings(suppressMessages(
+  st_crop(map_data,
+          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y), xmax = max(d$grd_x), ymax = max(d$grd_y)))))
+coast_proj <- sf::st_transform(coast, crs = 3157)
+
+#best AIC all data model did not have spatial fields, so no need to map that
+
+#try spatiotemporal fields by editing Erics code. indexed by half month of season
+
+ggplot(coast_proj) +
+  scale_fill_viridis() +
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=spatiotemporal),
+            width=5000,height=5000) + # I had to adjust these manually
+  facet_wrap(~ time, ncol = 10) +
+  theme_bw() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_sf() + # add last so coastline on top of predictions
+  scale_x_continuous(breaks = c(-123, -124, -125))
+#ggsave("all_data_spatiotemporal.jpg", width=10, height=15)
+
+#because there were no spatial random fields, the combined random fields is jsut the same as s-t fields
+
+
+
+
+
+
+
 
 
 tic()
