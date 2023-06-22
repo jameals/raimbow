@@ -1075,7 +1075,7 @@ map_data <- rnaturalearth::ne_countries(
 # st_bbox(map_data) # find the rough coordinates
 coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
-          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y), xmax = max(d$grd_x), ymax = max(d$grd_y)))))
+          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y)-0.2, xmax = max(d$grd_x)+0.5, ymax = max(d$grd_y)))))
 coast_proj <- sf::st_transform(coast, crs = 3157)
 
 # omega_s is the same for each year. it's redundant to plot multiple
@@ -1098,10 +1098,12 @@ ggplot(coast_proj) +
 
 
 #try spatiotemporal fields by editing Erics code
+d <- d %>% 
+  rename(Spatiotemporal = spatiotemporal)
 
 ggplot(coast_proj) +
   scale_fill_viridis() +
-  geom_tile(data = d, aes(X*1000,Y*1000,fill=spatiotemporal),
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=Spatiotemporal),
             width=5000,height=5000) + # I had to adjust these manually
   facet_wrap(~ time, ncol = 6) +
   theme_bw() +
@@ -1123,7 +1125,8 @@ ggplot(coast_proj) +
   xlab("Longitude") +
   ylab("Latitude") +
   geom_sf() + # add last so coastline on top of predictions
-  scale_x_continuous(breaks = c(-123, -124, -125))
+  scale_x_continuous(breaks = c(-123, -124, -125)) +
+  labs(fill = "Combined \nrandom fields")
 #ggsave("winter_combined_random_field.jpg", width=5, height=10)
 
 

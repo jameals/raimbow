@@ -1188,6 +1188,9 @@ d$spatiotemporal <- pred_obj$epsilon_st
 d$rf_combined <- pred_obj$est_rf
 d$time <- d[[fit16b_all_data$time]]
 
+d <- d %>% 
+  rename(Spatiotemporal = spatiotemporal)
+
 map_data <- rnaturalearth::ne_countries(
   scale = "large",
   returnclass = "sf", country = "united states of america")
@@ -1195,7 +1198,7 @@ map_data <- rnaturalearth::ne_countries(
 # st_bbox(map_data) # find the rough coordinates
 coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
-          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y), xmax = max(d$grd_x), ymax = max(d$grd_y)))))
+          c(xmin = min(d$grd_x)-50, ymin = min(d$grd_y)-0.2, xmax = max(d$grd_x)+0.5, ymax = max(d$grd_y)))))
 coast_proj <- sf::st_transform(coast, crs = 3157)
 
 #best AIC all data model did not have spatial fields, so no need to map that
@@ -1204,7 +1207,7 @@ coast_proj <- sf::st_transform(coast, crs = 3157)
 
 ggplot(coast_proj) +
   scale_fill_viridis() +
-  geom_tile(data = d, aes(X*1000,Y*1000,fill=spatiotemporal),
+  geom_tile(data = d, aes(X*1000,Y*1000,fill=Spatiotemporal),
             width=5000,height=5000) + # I had to adjust these manually
   facet_wrap(~ time, ncol = 10) +
   theme_bw() +
