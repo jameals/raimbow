@@ -102,7 +102,7 @@ pars_season <- rbind(pars_winter_season, pars_summer_season, pars_all_data_seaso
 
 ##### FIGURE - SEASON EFFECT SIZE (DOTPLOT) ##### 
 dotplot_season <- ggplot(pars_season, aes(term, estimate)) +
-  geom_hline(yintercept = 0,linetype="dotted",size = 1)+
+  #geom_hline(yintercept = 0,linetype="dotted",size = 1)+
   geom_linerange(aes(ymin=conf.low, ymax = conf.high, 
                   color=model, linetype=model),
                  size = 3, position=position_dodge(width = 0.7)) +
@@ -350,7 +350,7 @@ pars_month_HMOS<- rbind(pars_winter_HMOS, pars_summer_HMOS, pars_all_data_month)
 ##### FIGURE - MONTH/HMOS EFFECT SIZE (DOTPLOT) ##### 
 ##KEEP IN LOG SCALE##
 dotplot_month_HMOS <-ggplot(pars_month_HMOS, aes(term, estimate)) +
-  geom_hline(yintercept = 0,linetype="dotted",size = 1)+
+  #geom_hline(yintercept = 0,linetype="dotted",size = 1)+
   geom_linerange(aes(ymin=conf.low, ymax = conf.high, 
                      color=model, linetype=model),size =3, 
                      position=position_dodge(width = 0.7)) +

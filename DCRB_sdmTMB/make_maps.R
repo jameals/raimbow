@@ -1568,9 +1568,9 @@ p
 # p
 
 p <- ggplot(all_May_1_predicted_sf, aes(x = difference, y = inshore_offshore, fill = inshore_offshore)) + 
-  geom_density_ridges(rel_min_height = 0.005, alpha = 0.8) +
+  geom_density_ridges(rel_min_height = 0.005) + #, alpha = 0.8
   #coord_flip()+
-  scale_fill_manual(values=c("skyblue1", "#1E847F")) +
+  scale_fill_manual(values=c("skyblue1", "blue2")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
   theme_classic()+
@@ -1719,9 +1719,9 @@ p
 # p
 
 p <- ggplot(all_May_2_predicted_sf, aes(x = difference, y = inshore_offshore, fill = inshore_offshore)) + 
-  geom_density_ridges(rel_min_height = 0.005, alpha = 0.8) +
+  geom_density_ridges(rel_min_height = 0.005) + #, alpha = 0.8
   #coord_flip()+
-  scale_fill_manual(values=c("skyblue1", "#1E847F")) +
+  scale_fill_manual(values=c("skyblue1", "blue2")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
   theme_classic()+
