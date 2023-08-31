@@ -120,7 +120,7 @@ dotplot_season <- ggplot(pars_season, aes(term, estimate)) +
   scale_x_discrete(limits = c("2009-2010", "2010-2011", "2011-2012", "2012-2013", "2013-2014", "2014-2015", "2015-2016", "2016-2017", 
                               "2017-2018", "2018-2019", "2019-2020")) +
   #ylim(c(-3,3))+
-  coord_flip() +
+  #coord_flip() +
   theme_classic() +
   theme(
     panel.grid.major = element_blank(),
@@ -129,7 +129,7 @@ dotplot_season <- ggplot(pars_season, aes(term, estimate)) +
     legend.title = element_text(size = 50),
     legend.text = element_text(size = 45),
     legend.key.size = unit(1.9, units = "cm"),
-    axis.text.x = element_text(size = 45, colour = 'black'),
+    axis.text.x = element_text(angle = 45, size = 45, colour = 'black', hjust=1),
     axis.text.y = element_text(size = 45, colour = 'black'),
     axis.title = element_text(size = 50),
     axis.line = element_line(colour = 'black', size = 2),
@@ -142,7 +142,7 @@ dotplot_season <- ggplot(pars_season, aes(term, estimate)) +
   ) 
 dotplot_season
 
-# #export for main text figure - depth curve
+# #export for main text figure 
 # path_figures <- "C:/Users/lrie0/OneDrive/NOAA/Riekkola et al - predicting fishing effort/Figures"
 # png(paste0(path_figures, "/dotplot_season.png"), width = 25, height = 14, units = "in", res = 500)
 # ggarrange(dotplot_season,
@@ -370,11 +370,11 @@ dotplot_month_HMOS <-ggplot(pars_month_HMOS, aes(term, estimate)) +
                               "HMOS_14", "HMOS_15", "HMOS_16", "HMOS_17", "HMOS_18", "HMOS_19",
                               "January", "February", "March", "April", "May", "June",
                               "July", "August", "September"),
-                   labels = c("HMOS_2", " ", "HMOS_4", " ", "HMOS_6",  " ", 
-                             "HMOS_8", " ", "HMOS_10",  " ", "HMOS_12", " ",
-                             "HMOS_14", " ", "HMOS_16", " ", "HMOS_18", " ",
-                              "January", " ", "March", " ", "May", " ",
-                             "July", " ", "September")) +
+                   labels = c("HMOS_2", "HMOS_3", "HMOS_4", "HMOS_5", "HMOS_6",  "HMOS_7", 
+                              "HMOS_8", "HMOS_9", "HMOS_10",  "HMOS_11", "HMOS_12", "HMOS_13",
+                              "HMOS_14", "HMOS_15", "HMOS_16", "HMOS_17", "HMOS_18", "HMOS_19",
+                              "January", "February", "March", "April", "May", "June",
+                              "July", "August", "September")) +
   #ylim(c(-15,5))+
   #coord_flip() +
   theme_classic() +
@@ -385,7 +385,7 @@ dotplot_month_HMOS <-ggplot(pars_month_HMOS, aes(term, estimate)) +
     legend.title = element_text(size = 50),
     legend.text = element_text(size = 45),
     legend.key.size = unit(1.9, units = "cm"),
-    axis.text.x = element_text(size = 45, colour = 'black',angle = 45, hjust = 1), #hjust = 1,
+    axis.text.x = element_text(size = 35, colour = 'black',angle = 45, hjust = 1), #hjust = 1,
     axis.text.y = element_text(size = 45, colour = 'black'),
     axis.title = element_text(size = 50),
     axis.line = element_line(colour = 'black', size = 2),
