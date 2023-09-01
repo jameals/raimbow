@@ -1470,25 +1470,17 @@ all_May_1_predicted_sf$mgmt_area <- factor(all_May_1_predicted_sf$mgmt_area, lev
                                                                                         "60A-1", "59A-2", "59A-1"))
 
 
-#across mgmt areas
-# p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ mgmt_area, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
 
 ####density ridges instead of violin plot
+
+###FIGURE 6b ######
 p <- ggplot(all_May_1_predicted_sf, aes(x = difference, y = mgmt_area)) + 
   geom_density_ridges(rel_min_height = 0.005, alpha = 0.6) +
+  xlim(-1000, 1000)+
   #coord_flip()+
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 13, colour = 'black'),
         axis.text.x = element_text(size = 12, colour = 'black'),
@@ -1497,41 +1489,21 @@ p <- ggplot(all_May_1_predicted_sf, aes(x = difference, y = mgmt_area)) +
         )
 p
 
-# p <- ggplot(all_May_1_predicted_sf, aes(x=mgmt_area, y=percent_diff)) + 
-#   geom_boxplot() +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("% Change (predicted-actual / actual * 100)") +
-#   theme_classic()+
-#   theme(axis.text.y = element_text(size = 12, colour = 'black'),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
 
 
 #across  OR vs WA
+###FIGURE 6c ######
 all_May_1_predicted_sf <- all_May_1_predicted_sf %>% 
   mutate(Fishing_State = ifelse(mgmt_area %in% c('59A-1','59A-2','60A-1','60A-2','60B','60C'), 'WA','OR')) #we'll ignore 60D here as that is both OR and WA
 
-# p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ Fishing_State, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
-
-
 p <- ggplot(all_May_1_predicted_sf, aes(x = difference, y = Fishing_State, fill = Fishing_State)) + 
   geom_density_ridges(rel_min_height = 0.005, alpha = 0.7) +
+  xlim(-1000, 1000)+
   #coord_flip()+
   scale_fill_manual(values=c("navy", "#00843D")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 14, colour = 'black'),
         axis.text.x = element_text(size = 14, colour = 'black'),
@@ -1544,35 +1516,15 @@ p
 
 
 #inshore vs offshore
-# p <- ggplot(all_May_1_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ inshore_offshore, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
-# 
-# p <- ggplot(all_May_1_predicted_sf, aes(x=inshore_offshore, y=difference)) + 
-#   geom_boxplot() +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(axis.text.y = element_text(size = 12, colour = 'black'),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
-
+###FIGURE 6d ######
 p <- ggplot(all_May_1_predicted_sf, aes(x = difference, y = inshore_offshore, fill = inshore_offshore)) + 
   geom_density_ridges(rel_min_height = 0.005) + #, alpha = 0.8
+  xlim(-1000, 1000)+
   #coord_flip()+
   scale_fill_manual(values=c("skyblue1", "blue2")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 14, colour = 'black'),
         axis.text.x = element_text(size = 14, colour = 'black'),
@@ -1643,24 +1595,15 @@ all_May_2_predicted_sf$mgmt_area <- factor(all_May_2_predicted_sf$mgmt_area, lev
                                                                                         "60A-1", "59A-2", "59A-1"))
 
 
-#across mgmt areas
-# p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ mgmt_area, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
+###SUPPLEMENTARY FIGURE S5b ######
 
 p <- ggplot(all_May_2_predicted_sf, aes(x = difference, y = mgmt_area)) + 
   geom_density_ridges(rel_min_height = 0.005, alpha = 0.6) +
+  xlim(-1000, 1000)+
   #coord_flip()+
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 13, colour = 'black'),
         axis.text.x = element_text(size = 12, colour = 'black'),
@@ -1671,30 +1614,19 @@ p
 
 
 
-
 #across  OR vs WA
+###SUPPLEMENTARY FIGURE S5c ######
 all_May_2_predicted_sf <- all_May_2_predicted_sf %>% 
   mutate(Fishing_State = ifelse(mgmt_area %in% c('59A-1','59A-2','60A-1','60A-2','60B','60C'), 'WA','OR')) #we'll ignore 60D here as that is both OR and WA
 
-# p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ Fishing_State, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
-
-
 p <- ggplot(all_May_2_predicted_sf, aes(x = difference, y = Fishing_State, fill = Fishing_State)) + 
   geom_density_ridges(rel_min_height = 0.005, alpha = 0.7) +
+  xlim(-1000, 1000)+
   #coord_flip()+
   scale_fill_manual(values=c("navy", "#00843D")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 14, colour = 'black'),
         axis.text.x = element_text(size = 14, colour = 'black'),
@@ -1706,24 +1638,15 @@ p
 
 
 #inshore vs offshore
-# p <- ggplot(all_May_2_predicted_sf, aes(x='', y=difference)) + 
-#   geom_violin(size=1) +
-#   facet_wrap(~ inshore_offshore, ncol=2) +
-#   coord_flip()+
-#   xlab("") +
-#   ylab("Difference (predicted-actual)") +
-#   theme_classic()+
-#   theme(strip.text.x = element_text(size = 14),
-#         axis.text.x = element_text(size = 12, colour = 'black'),
-#         axis.title = element_text(size = 14))
-# p
-
+###SUPPLEMENTARY FIGURE S5d ######
 p <- ggplot(all_May_2_predicted_sf, aes(x = difference, y = inshore_offshore, fill = inshore_offshore)) + 
   geom_density_ridges(rel_min_height = 0.005) + #, alpha = 0.8
+  xlim(-1000, 1000)+
   #coord_flip()+
   scale_fill_manual(values=c("skyblue1", "blue2")) +
   xlab("Difference (predicted-actual)") +
   ylab("") +
+  geom_vline(xintercept = 0)+
   theme_classic()+
   theme(axis.text.y = element_text(size = 14, colour = 'black'),
         axis.text.x = element_text(size = 14, colour = 'black'),
